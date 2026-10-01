@@ -44,6 +44,32 @@
         <div class="ramka"><div class="f-14" style="opacity:.75">🏅 {{ __('games.rated_note') }}</div></div>
         @endif
 
+        {{-- Вечер / серия --}}
+        <div class="ramka">
+            <div class="gm-actions">
+                <a class="btn btn-small {{ $scope === 'evening' ? '' : 'btn-outline' }}" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.scope_evening') }}</a>
+                <a class="btn btn-small {{ $scope === 'series' ? '' : 'btn-outline' }}" href="{{ route('game.results', $event) }}?scope=series&period={{ $period }}&occurrence={{ $occurrence->id }}">{{ __('games.scope_series') }}</a>
+            </div>
+            @if($scope === 'series')
+            <div class="gm-actions mt-1">
+                @foreach(['all' => __('games.period_all'), '30' => __('games.period_30'), '90' => __('games.period_90'), '365' => __('games.period_365')] as $k => $label)
+                <a class="btn btn-small {{ $period === (string) $k ? '' : 'btn-outline' }}" href="{{ route('game.results', $event) }}?scope=series&period={{ $k }}&occurrence={{ $occurrence->id }}">{{ $label }}</a>
+                @endforeach
+            </div>
+            @endif
+        </div>
+
+        @if($scope === 'series')
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('games.series_title') }}</h2>
+            @if(!empty($series['rows']))
+            <div class="f-13 mb-1" style="opacity:.6">{{ __('games.series_evenings', ['n' => $series['evenings']]) }}</div>
+            @endif
+            @include('games._board', ['board' => $series])
+        </div>
+        @else
+
+        <div id="gm-live" data-live="{{ $isLive ? 1 : 0 }}">
         @if($visible->isEmpty())
         <div class="ramka"><div class="f-15" style="opacity:.7">{{ __('games.results_empty') }}</div></div>
         @else
@@ -108,11 +134,40 @@
             @endforeach
         </div>
         @endif
+        </div>
+
+        @endif
 
     </div>
 
     <x-slot name="script">
     <script>
+        // Живое обновление: пока есть незавершённый матч — раз в 12 с подтягиваем свежий HTML блока #gm-live
+        (function () {
+            var box = document.getElementById('gm-live');
+            if (!box || box.getAttribute('data-live') !== '1' || !window.jQuery) return;
+            var busy = false;
+            setInterval(function () {
+                if (busy || document.hidden) return;
+                busy = true;
+                jQuery.ajax({ url: window.location.href, dataType: 'html', cache: false })
+                    .done(function (html) {
+                        var doc = new DOMParser().parseFromString(html, 'text/html');
+                        var fresh = doc.getElementById('gm-live');
+                        var cur = document.getElementById('gm-live');
+                        if (!fresh || !cur) return;
+                        var open = [];
+                        cur.querySelectorAll('[id^="match-stats-r-"],[id^="match-progress-r-"]').forEach(function (el) {
+                            if (el.style.display !== 'none') open.push(el.id);
+                        });
+                        if (cur.innerHTML.trim() === fresh.innerHTML.trim()) return;
+                        cur.innerHTML = fresh.innerHTML;
+                        cur.setAttribute('data-live', fresh.getAttribute('data-live'));
+                        open.forEach(function (id) { var el = document.getElementById(id); if (el) el.style.display = ''; });
+                    })
+                    .always(function () { busy = false; });
+            }, 12000);
+        })();
         function toggleMatchStats(id) {
             var el = document.getElementById('match-stats-r-' + id);
             if (el) el.style.display = (el.style.display === 'none') ? '' : 'none';

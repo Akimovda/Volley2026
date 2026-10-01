@@ -67,6 +67,11 @@
                             class="btn btn-small btn-secondary"
                             title="{{ __('events.occ_tournament_btn') }}">🏆</a>
                         @else
+                        @if($event->format === 'game' && $event->collect_stats)
+                        <a href="{{ route('game.manage', $event) }}?occurrence={{ (int)$occ->id }}"
+                            class="btn btn-small btn-secondary"
+                            title="{{ __('games.btn_manage') }}">📊</a>
+                        @endif
                         <a href="{{ route('events.registrations.index', ['event' => (int)$event->id, 'occurrence' => (int)$occ->id]) }}"
                             class="btn btn-svg icon-users"
                             title="{{ __('events.occ_participants') }}"></a>
