@@ -36,8 +36,7 @@
             .gm-seg label.gm-none input:checked + span { background:rgba(120,120,128,.25); color:inherit; border-color:rgba(120,120,128,.35); }
             .gm-actions { display:flex; flex-wrap:wrap; gap:.8rem; }
             .gm-lvl { font-size:1.2rem; opacity:.6; }
-            .gm-color-row { display:flex; gap:1.5rem; flex-wrap:wrap; }
-            .gm-color-row select { padding:.6rem 1rem; border-radius:.8rem; border:1px solid rgba(0,0,0,.18); background:transparent; color:inherit; }
+            .gm-color-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; }
         </style>
     </x-slot>
 
@@ -56,36 +55,56 @@
                 </div>
                 <div class="gm-actions">
                     @if($occurrences->count() > 1)
-                    <form method="GET" action="{{ route('game.manage', $event) }}">
-                        <select name="occurrence" onchange="this.form.submit()" style="padding:.6rem 1rem;border-radius:.8rem;border:1px solid rgba(0,0,0,.18);background:transparent;color:inherit">
+                    <form method="GET" action="{{ route('game.manage', $event) }}" class="form">
+                        <select name="occurrence" onchange="this.form.submit()">
                             @foreach($occurrences as $o)
                             <option value="{{ $o->id }}" @selected($o->id === $occurrence->id)>{{ $o->starts_at?->copy()->timezone($o->timezone ?? 'UTC')->format('d.m.Y H:i') }}</option>
                             @endforeach
                         </select>
                     </form>
                     @endif
-                    <a class="btn btn-secondary" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
-                    <a class="btn btn-secondary" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
+                    <a class="btn btn-outline" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
+                    <a class="btn btn-outline" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
                 </div>
             </div>
         </div>
 
-        {{-- Новый матч --}}
+        {{-- Новый матч: формат + составы --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('games.new_match_title') }}</h2>
+
+            <form method="POST" action="{{ route('game.config.update', $event) }}" class="form gm-color-row mb-2">
+                @csrf
+                <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+                <div class="w-100 b-600">{{ __('games.format_title') }}</div>
+                <div class="w-100 f-14" style="opacity:.65;margin-top:-.8rem">{{ __('games.format_hint') }}</div>
+                <label>
+                    <select name="match_format">
+                        @foreach(['bo1' => __('games.format_bo1'), 'bo3' => __('games.format_bo3'), 'bo5' => __('games.format_bo5')] as $k => $label)
+                        <option value="{{ $k }}" @selected(($config['match_format'] ?? 'bo1') === $k)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label>{{ __('games.set_points') }}: <input type="number" name="set_points" min="5" max="50" value="{{ $config['set_points'] ?? 25 }}" style="width:8rem"></label>
+                <label>{{ __('games.deciding_points') }}: <input type="number" name="deciding_set_points" min="5" max="50" value="{{ $config['deciding_set_points'] ?? 15 }}" style="width:8rem"></label>
+                <button class="btn btn-outline btn-small" type="submit">{{ __('games.save') }}</button>
+            </form>
+
+            <hr class="mb-2">
+            <div class="b-600">{{ __('games.new_match_title') }}</div>
             <div class="f-14 mb-2" style="opacity:.65">{{ __('games.new_match_hint') }}</div>
 
             @if($roster->isEmpty())
                 <div class="f-15" style="opacity:.75">{{ __('games.roster_empty') }}</div>
             @else
-            <form method="POST" action="{{ route('game.matches.store', $event) }}" id="gm-form">
+            <form method="POST" action="{{ route('game.matches.store', $event) }}" id="gm-form" class="form">
                 @csrf
                 <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
 
                 <div class="gm-actions mb-2">
-                    <button type="button" class="btn btn-secondary btn-small" id="gm-split-level">⚖️ {{ __('games.split_level') }}</button>
-                    <button type="button" class="btn btn-secondary btn-small" id="gm-split-random">🎲 {{ __('games.split_random') }}</button>
-                    <button type="button" class="btn btn-secondary btn-small" id="gm-reset">{{ __('games.reset') }}</button>
+                    <button type="button" class="btn btn-outline btn-small" id="gm-split-level">⚖️ {{ __('games.split_level') }}</button>
+                    <button type="button" class="btn btn-outline btn-small" id="gm-split-random">🎲 {{ __('games.split_random') }}</button>
+                    <button type="button" class="btn btn-outline btn-small" id="gm-reset">{{ __('games.reset') }}</button>
                 </div>
 
                 <div class="gm-color-row mb-2">
@@ -111,7 +130,16 @@
                             <img src="{{ $u->profile_photo_url }}" alt="">
                             <div style="min-width:0">
                                 <div class="b-600">{{ trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) ?: $u->name }}</div>
-                                @if($lvl)<div class="gm-lvl">{{ __('games.level_short') }} {{ $lvl }}</div>@endif
+                                @php
+                                    $pos = $positions[$u->id] ?? null;
+                                    $posText = ($pos && !($event->direction === 'beach' && $pos === 'player'))
+                                        ? __('events.positions.' . ($pos === 'middle' ? 'middle_full' : $pos)) : null;
+                                @endphp
+                                <div class="gm-lvl">
+                                    @if($posText){{ $posText }}@endif
+                                    @if($posText && $lvl) · @endif
+                                    @if($lvl){{ __('games.level_short') }} {{ $lvl }}@endif
+                                </div>
                             </div>
                         </div>
                         <span class="gm-seg">
@@ -165,14 +193,17 @@
                     @endif
                     @endforeach
                 </div>
+                @if($m->status !== 'completed')
+                <div class="f-12 mt-1" style="opacity:.6">{{ __('games.rally_hint') }}</div>
+                @endif
                 <div class="gm-actions mt-1">
                     @if($m->status !== 'completed')
-                    <a class="btn btn-small" href="{{ route('tournament.matches.rally.form', $m) }}">▶ {{ __('games.btn_rally') }}</a>
-                    <a class="btn btn-small btn-secondary" href="{{ route('tournament.matches.score.form', $m) }}">{{ __('games.btn_score') }}</a>
+                    <a class="btn btn-small" href="{{ route('tournament.matches.score.form', $m) }}">{{ __('games.btn_score') }}</a>
+                    <a class="btn btn-small btn-outline" href="{{ route('tournament.matches.rally.form', $m) }}">📊 {{ __('games.btn_rally') }}</a>
                     @else
-                    <a class="btn btn-small btn-secondary" href="{{ route('tournament.matches.player_stats.form', $m) }}">📊 {{ __('games.btn_stats') }}</a>
+                    <a class="btn btn-small btn-outline" href="{{ route('tournament.matches.player_stats.form', $m) }}">📊 {{ __('games.btn_stats') }}</a>
                     @endif
-                    <a class="btn btn-small btn-secondary" href="{{ route('game.manage', $event) }}?occurrence={{ $occurrence->id }}&from={{ $m->id }}#gm-form">🔁 {{ __('games.btn_rematch') }}</a>
+                    <a class="btn btn-small btn-outline" href="{{ route('game.manage', $event) }}?occurrence={{ $occurrence->id }}&from={{ $m->id }}#gm-form">🔁 {{ __('games.btn_rematch') }}</a>
                     <form method="POST" action="{{ route('game.matches.destroy', $m) }}" style="display:inline">
                         @csrf @method('DELETE')
                         <button type="submit" class="btn btn-small btn-danger btn-alert"
@@ -190,26 +221,6 @@
         <div class="ramka">
             <h2 class="-mt-05">{{ __('games.board_title') }}</h2>
             @include('games._board', ['board' => $board])
-        </div>
-
-        {{-- Формат матча --}}
-        <div class="ramka">
-            <h2 class="-mt-05">{{ __('games.format_title') }}</h2>
-            <div class="f-14 mb-2" style="opacity:.65">{{ __('games.format_hint') }}</div>
-            <form method="POST" action="{{ route('game.config.update', $event) }}" class="gm-color-row">
-                @csrf
-                <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
-                <label>
-                    <select name="match_format">
-                        @foreach(['bo1' => __('games.format_bo1'), 'bo3' => __('games.format_bo3'), 'bo5' => __('games.format_bo5')] as $k => $label)
-                        <option value="{{ $k }}" @selected(($config['match_format'] ?? 'bo1') === $k)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </label>
-                <label>{{ __('games.set_points') }}: <input type="number" name="set_points" min="5" max="50" value="{{ $config['set_points'] ?? 25 }}" style="width:7rem;padding:.6rem;border-radius:.8rem;border:1px solid rgba(0,0,0,.18);background:transparent;color:inherit"></label>
-                <label>{{ __('games.deciding_points') }}: <input type="number" name="deciding_set_points" min="5" max="50" value="{{ $config['deciding_set_points'] ?? 15 }}" style="width:7rem;padding:.6rem;border-radius:.8rem;border:1px solid rgba(0,0,0,.18);background:transparent;color:inherit"></label>
-                <button class="btn btn-secondary btn-small" type="submit">{{ __('games.save') }}</button>
-            </form>
         </div>
 
     </div>

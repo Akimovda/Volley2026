@@ -56,6 +56,11 @@
 
 <div class="ramka" style="z-index:5">
     <h2 class="-mt-05">{{ __('events.sp_h2') }}</h2>
+    @if($event->format === 'game' && $event->collect_stats && auth()->check() && app(\App\Services\EventAccessService::class)->canManageEvent(auth()->user(), (int) $event->organizer_id))
+    <div class="mb-2">
+        <a class="btn btn-small btn-outline" href="{{ route('game.manage', $event) }}?occurrence={{ $occurrence->id }}">⚙️ {{ __('games.btn_manage') }}</a>
+    </div>
+    @endif
 	
     @php
 	$maxPlayers    = $occurrence->effectiveMaxPlayers();

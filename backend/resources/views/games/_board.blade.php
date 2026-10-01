@@ -8,7 +8,17 @@ $__medals = ['🥇', '🥈', '🥉'];
 <div class="f-14" style="opacity:.6">{{ __('games.board_empty') }}</div>
 @else
 <div class="gm-podium mb-2">
-	@foreach($board['podium'] as $i => $p)
+	@if(($board['podium']['type'] ?? 'players') === 'teams')
+	@foreach($board['podium']['items'] as $i => $t)
+	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
+		<div class="gm-medal">{{ $__medals[$i] }}</div>
+		<span class="gm-team-tag gm-c-{{ $t['color'] }}">{{ $t['label'] }}</span>
+		<div class="f-13 mt-05" style="opacity:.8">{{ $t['users']->map(fn($u) => $__name($u))->implode(', ') }}</div>
+		<div class="f-13 mt-05" style="opacity:.7">{{ $t['wins'] }} {{ __('games.podium_wins') }} · {{ $t['win_rate'] }}%</div>
+	</div>
+	@endforeach
+	@else
+	@foreach($board['podium']['items'] ?? [] as $i => $p)
 	<div class="gm-podium-item gm-podium-{{ $i + 1 }}">
 		<div class="gm-medal">{{ $__medals[$i] }}</div>
 		@if($p['user'])
@@ -18,6 +28,7 @@ $__medals = ['🥇', '🥈', '🥉'];
 		<div class="f-13" style="opacity:.7">{{ $p['wins'] }} {{ __('games.podium_wins') }} · {{ $p['win_rate'] }}%</div>
 	</div>
 	@endforeach
+	@endif
 </div>
 
 <div class="f-13 mb-1" style="opacity:.55">{{ __('games.board_hint') }}</div>

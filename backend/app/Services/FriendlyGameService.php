@@ -85,6 +85,24 @@ class FriendlyGameService
     }
 
     /**
+     * Позиции, на которые записаны игроки occurrence: user_id => position (classic: setter/outside/…, reserve; пляж: player).
+     *
+     * @return array<int,string>
+     */
+    public function positions(int $occurrenceId): array
+    {
+        return DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->whereNull('cancelled_at')
+            ->where('status', 'confirmed')
+            ->whereNotNull('position')
+            ->pluck('position', 'user_id')
+            ->map(fn ($p) => (string) $p)
+            ->all();
+    }
+
+    /**
      * @param int[] $homeUserIds
      * @param int[] $awayUserIds
      */
@@ -159,7 +177,7 @@ class FriendlyGameService
      * Итоги игрового вечера по игрокам (по завершённым матчам стадии).
      * Порядок: победы ↓, % побед ↓, разница очков ↓, набрано очков в статистике ↓.
      *
-     * @return array{rows: array<int,array>, podium: array<int,array>}
+     * @return array{rows: array<int,array>, podium: array{type: string, items: array<int,array>}}
      */
     public function leaderboard(TournamentStage $stage): array
     {
@@ -170,10 +188,11 @@ class FriendlyGameService
             ->get();
 
         if ($matches->isEmpty()) {
-            return ['rows' => [], 'podium' => []];
+            return ['rows' => [], 'podium' => ['type' => 'players', 'items' => []]];
         }
 
-        $rows = [];
+        $rows    = [];
+        $lineups = []; // составы целиком: ключ = отсортированные id игроков
         $blank = fn () => [
             'games' => 0, 'wins' => 0, 'losses' => 0, 'sets_won' => 0, 'sets_lost' => 0,
             'pf' => 0, 'pa' => 0,
@@ -192,6 +211,18 @@ class FriendlyGameService
                 $setsAg  = (int) ($m->{'sets_' . $other} ?? 0);
                 $pf      = (int) ($m->{'total_points_' . $side} ?? 0);
                 $pa      = (int) ($m->{'total_points_' . $other} ?? 0);
+
+                $lineupKey = $team->members->pluck('user_id')->sort()->implode('-');
+                $l = $lineups[$lineupKey] ?? [
+                    'games' => 0, 'wins' => 0, 'losses' => 0, 'pf' => 0, 'pa' => 0,
+                    'color' => $team->meta['color'] ?? 'white',
+                    'user_ids' => $team->members->pluck('user_id')->all(),
+                ];
+                $l['games']++;
+                $won ? $l['wins']++ : $l['losses']++;
+                $l['pf'] += $pf;
+                $l['pa'] += $pa;
+                $lineups[$lineupKey] = $l;
 
                 foreach ($team->members as $mem) {
                     $r = $rows[$mem->user_id] ?? $blank();
@@ -236,7 +267,39 @@ class FriendlyGameService
         usort($out, fn ($a, $b) => [$b['wins'], $b['win_rate'], $b['diff'], $b['points_scored']]
             <=> [$a['wins'], $a['win_rate'], $a['diff'], $a['points_scored']]);
 
-        return ['rows' => $out, 'podium' => array_slice($out, 0, 3)];
+        return ['rows' => $out, 'podium' => $this->buildPodium($lineups, $out, $users)];
+    }
+
+    /**
+     * Пьедестал: если за вечер играло не больше трёх разных составов (например, две постоянные команды) —
+     * места занимают КОМАНДЫ (при двух командах — 1 и 2 место). Если составы менялись от матча к матчу —
+     * пьедестал из трёх лучших игроков.
+     *
+     * @return array{type: string, items: array<int,array>}
+     */
+    private function buildPodium(array $lineups, array $playerRows, Collection $users): array
+    {
+        if (count($lineups) >= 2 && count($lineups) <= 3) {
+            $items = array_map(function ($l) use ($users) {
+                $games = max(1, $l['games']);
+
+                return [
+                    'color'    => $l['color'],
+                    'label'    => self::COLORS[$l['color']] ?? $l['color'],
+                    'users'    => collect($l['user_ids'])->map(fn ($id) => $users->get($id))->filter()->values(),
+                    'wins'     => $l['wins'],
+                    'games'    => $l['games'],
+                    'win_rate' => (int) round($l['wins'] / $games * 100),
+                    'diff'     => $l['pf'] - $l['pa'],
+                ];
+            }, array_values($lineups));
+
+            usort($items, fn ($a, $b) => [$b['wins'], $b['win_rate'], $b['diff']] <=> [$a['wins'], $a['win_rate'], $a['diff']]);
+
+            return ['type' => 'teams', 'items' => $items];
+        }
+
+        return ['type' => 'players', 'items' => array_slice($playerRows, 0, 3)];
     }
 
     /** @param int[] $userIds */

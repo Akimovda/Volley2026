@@ -30,8 +30,8 @@
 
         @if($occurrences->count() > 1)
         <div class="ramka">
-            <form method="GET" action="{{ route('game.results', $event) }}">
-                <select name="occurrence" onchange="this.form.submit()" style="padding:.6rem 1rem;border-radius:.8rem;border:1px solid rgba(0,0,0,.18);background:transparent;color:inherit">
+            <form method="GET" action="{{ route('game.results', $event) }}" class="form">
+                <select name="occurrence" onchange="this.form.submit()">
                     @foreach($occurrences as $o)
                     <option value="{{ $o->id }}" @selected($o->id === $occurrence->id)>{{ $o->starts_at?->copy()->timezone($o->timezone ?? 'UTC')->format('d.m.Y H:i') }}</option>
                     @endforeach
@@ -89,7 +89,7 @@
 
                 @if(!empty($matchStatsByMatchId[$m->id]['has_stats']))
                 <div style="text-align:center;margin:4px 0 8px">
-                    <button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('games.stats_toggle') }}</button>
+                    <button type="button" class="btn btn-small btn-outline" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('games.stats_toggle') }}</button>
                 </div>
                 <div id="match-stats-r-{{ $m->id }}" class="card mb-2" style="display:none">
                     @include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
@@ -98,7 +98,7 @@
 
                 @if(!empty($matchProgressByMatchId[$m->id]['has_progress']))
                 <div style="text-align:center;margin:4px 0 8px">
-                    <button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ __('games.progress_toggle') }}</button>
+                    <button type="button" class="btn btn-small btn-outline" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ __('games.progress_toggle') }}</button>
                 </div>
                 <div id="match-progress-r-{{ $m->id }}" class="card mb-2" style="display:none">
                     @include('tournaments._partials.match_progress_fragment', ['matchProgress' => $matchProgressByMatchId[$m->id], 'match' => $m, 'event' => $event])

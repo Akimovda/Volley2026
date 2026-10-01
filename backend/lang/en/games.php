@@ -39,6 +39,7 @@ return [
     'status_live'        => 'Live',
     'status_completed'   => 'Finished',
     'btn_rally'          => 'Keep score and statistics',
+    'rally_hint'         => 'You can enter the final score right away — or keep point-by-point score with player statistics during the match.',
     'btn_score'          => 'Score by sets',
     'btn_stats'          => 'Player statistics',
     'btn_rematch'        => 'New match with these teams',
