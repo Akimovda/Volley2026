@@ -49,8 +49,10 @@
         if (v<=2) return '😖';
         if (v<=4) return '😞';
         if (v<=6) return '😐';
-        if (v<=8) return '🙂';
-        return '😄';
+        if (v==7) return '🤗';
+        if (v==8) return '🥰';
+        if (v==9) return '😍';
+        return '🤩';
     }
 
     function bootOne(root){
