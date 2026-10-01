@@ -266,6 +266,21 @@ class UserMergeService
                 ->where('submitted_by_user_id', $secondary->id)
                 ->update(['submitted_by_user_id' => $primary->id]);
 
+            // 12a. Сохранённые команды игрока (user_teams) — владелец и участники
+            DB::table('user_teams')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
+
+            $primaryUserTeams = DB::table('user_team_members')
+                ->where('user_id', $primary->id)
+                ->pluck('user_team_id')
+                ->toArray();
+
+            DB::table('user_team_members')
+                ->where('user_id', $secondary->id)
+                ->whereNotIn('user_team_id', $primaryUserTeams)
+                ->update(['user_id' => $primary->id]);
+
+            DB::table('user_team_members')->where('user_id', $secondary->id)->delete();
+
             // 13. Дружба — без дублей
             $primaryFriends = DB::table('friendships')
                 ->where('user_id', $primary->id)

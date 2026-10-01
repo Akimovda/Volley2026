@@ -690,6 +690,10 @@ Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система 
 - `TournamentTeamController::fromSaved()` — EventTeam из UserTeam, рассылает invites
 - При ошибках валидации → редирект на `/user/teams/{team}/edit?event_id=X` с session('team_validation_errors')
 
+## Добавление команды из поиска на /events/{id}/registrations (2026-10-01)
+- Поле «Добавить игрока» ищет и игроков (`ajax.users.search`), и сохранённые команды сайта (`user_teams`, роут `events.registrations.teams-search` → `EventRegistrationsManagementController::searchTeams()`, по названию или ФИО капитана, до 8). В строке: название, «Капитан: Фамилия Имя», метка Пляжка/Классика (+subtype), число игроков.
+- Выбор команды шлёт `user_team_id` вместо `user_id`: `addPlayer()` в цикле зовёт `addOnePlayer()` (вынесенная общая часть: лимит слота, гендерная квота, восстановление/вставка, уведомления) на ВСЕХ участников с ОДНОЙ выбранной позицией; неподходящие пропускаются, в flash — список причин.
+
 ## Позиция reserve в регистрациях
 - `resolvePositions()` НЕ включает 'reserve' — добавляется отдельно в index()/addPlayer()/updatePosition()
 - Источник лимита: event_role_slots.role='reserve' ИЛИ game_settings.reserve_players_max (fallback)

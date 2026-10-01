@@ -211,11 +211,12 @@ $logPositionDetail = function ($log) {
 					
 					<div class="col-md-6">
 						<div class="card">
-							<label>{{ __('events.regs_player_label') }}</label>
+							<label>{{ __('events.regs_player_or_team_label') }}</label>
 							<div style="position:relative;" id="ac-wrap">
 								<input type="text" id="ac-input" autocomplete="off" class="form-control"
 								placeholder="{{ __('events.regs_player_ph') }}">
 								<input type="hidden" name="user_id" id="ac-userid">
+								<input type="hidden" name="user_team_id" id="ac-teamid">
 								<div id="ac-dd" class="form-select-dropdown trainer_dd"></div>
 							</div>
 							<div id="ac-selected" style="display:none;margin-top:.5rem;font-size:1.4rem;color:#4caf50;font-weight:600;"></div>
@@ -812,6 +813,8 @@ $logPositionDetail = function ($log) {
 					var input     = document.getElementById('ac-input');
 					var dd        = document.getElementById('ac-dd');
 					var hidden    = document.getElementById('ac-userid');
+					var teamHidden = document.getElementById('ac-teamid');
+					var teamsUrl  = @json(route('events.registrations.teams-search', ['event' => $event->id]));
 					var sel       = document.getElementById('ac-selected');
 					var addBtn    = document.getElementById('add-player-btn');
 					var posSelect = document.querySelector('#add-player-form select[name="position"]');
@@ -828,7 +831,7 @@ $logPositionDetail = function ($log) {
 					}
 					
 					function updateBtn() {
-						var userOk = !!hidden.value;
+						var userOk = !!hidden.value || !!teamHidden.value;
 						var posOk  = !posSelect || posSelect.value !== '';
 						addBtn.disabled = !(userOk && posOk);
 						addBtn.style.opacity = (userOk && posOk) ? '1' : '.4';
@@ -836,12 +839,14 @@ $logPositionDetail = function ($log) {
 					
 					function clearSel() {
 						hidden.value = '';
+						teamHidden.value = '';
 						updateBtn();
 						sel.style.display = 'none';
 					}
 					
-					function setSel(id, label) {
-						hidden.value = id;
+					function setSel(id, label, teamId) {
+						hidden.value = teamId ? '' : id;
+						teamHidden.value = teamId ? id : '';
 						updateBtn();
 						sel.style.display = 'block';
 						sel.textContent = '✅ ' + label;
@@ -850,13 +855,26 @@ $logPositionDetail = function ($log) {
 						input.value = label.replace(/^🤖\s*/, '');
 					}
 					
-					function render(items) {
+					function render(items, teams) {
+						teams = teams || [];
+						items = items || [];
 						dd.innerHTML = '';
-						if (!items.length) {
+						if (!items.length && !teams.length) {
 							dd.innerHTML = '<div class="city-message">' + @json(__('events.regs_search_no_results')) + '</div>';
 							showDd();
 							return;
 						}
+						teams.forEach(function(t) {
+							var div = document.createElement('div');
+							div.className = 'trainer-item form-select-option';
+							div.innerHTML =
+							'<span class="b-500">👥 ' + esc(t.label) + '</span>' +
+							(t.meta ? '<span class="f-13" style="opacity:.5;">' + esc(t.meta) + '</span>' : '');
+							div.addEventListener('click', function() {
+								setSel(t.id, '👥 ' + t.label + ' (' + t.meta + ')', true);
+							});
+							dd.appendChild(div);
+						});
 						items.forEach(function(item) {
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
@@ -872,12 +890,13 @@ $logPositionDetail = function ($log) {
 					}
 					
 					function search(q) {
-						fetch(searchUrl + '?q=' + encodeURIComponent(q), {
-							headers: { 'Accept': 'application/json' },
-							credentials: 'same-origin'
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) { render(data.items || []); })
+						var opts = { headers: { 'Accept': 'application/json' }, credentials: 'same-origin' };
+						var users = fetch(searchUrl + '?q=' + encodeURIComponent(q), opts).then(function(r) { return r.json(); });
+						var teams = fetch(teamsUrl + '?q=' + encodeURIComponent(q), opts)
+							.then(function(r) { return r.json(); })
+							.catch(function() { return { items: [] }; });
+						Promise.all([users, teams])
+						.then(function(res) { render(res[0].items || [], res[1].items || []); })
 						.catch(function() {
 							dd.innerHTML = '<div class="city-message">' + @json(__('events.regs_search_error')) + '</div>';
 							showDd();

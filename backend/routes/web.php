@@ -724,6 +724,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::get('/events/{event}/registrations', [EventRegistrationsManagementController::class, 'index'])
         ->name('events.registrations.index');
 		
+		Route::get('/events/{event}/registrations/teams-search', [EventRegistrationsManagementController::class, 'searchTeams'])
+        ->name('events.registrations.teams-search');
+
 		Route::post('/events/{event}/registrations/add', [EventRegistrationsManagementController::class, 'addPlayer'])
         ->name('events.registrations.add');
 		
