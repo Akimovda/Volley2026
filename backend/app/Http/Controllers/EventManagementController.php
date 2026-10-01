@@ -2183,7 +2183,7 @@ if ($role === 'admin') {
 
         $role = (string) ($user->role ?? 'user');
         if (!in_array($role, ['admin', 'organizer', 'staff'], true)) {
-            abort(403);
+            \App\Services\EventAccessService::denyNonOrganizer($user);
         }
     }
 
