@@ -185,8 +185,19 @@ class FriendlyGameController extends Controller
             ->whereIn('id', TournamentStage::where('event_id', $event->id)->where('type', TournamentStage::TYPE_FRIENDLY)->pluck('occurrence_id'))
             ->orderByDesc('starts_at')->get();
 
+        // Итоги по серии за период (вкладка «Серия»)
+        $scope  = $request->query('scope') === 'series' ? 'series' : 'evening';
+        $period = in_array($request->query('period'), ['30', '90', '365'], true) ? $request->query('period') : 'all';
+        $series = null;
+        if ($scope === 'series') {
+            $series = $this->games->seriesLeaderboard($event, $period === 'all' ? null : now()->subDays((int) $period));
+        }
+
+        // Живое обновление: опрашиваем страницу, пока есть незавершённый матч
+        $isLive = $visible->contains(fn ($m) => $m->status !== TournamentMatch::STATUS_COMPLETED);
+
         return view('games.results', compact(
-            'event', 'occurrence', 'occurrences', 'stage', 'visible', 'board',
+            'event', 'occurrence', 'occurrences', 'stage', 'visible', 'board', 'scope', 'period', 'series', 'isLive',
             'matchStatsByMatchId', 'matchProgressByMatchId'
         ));
     }

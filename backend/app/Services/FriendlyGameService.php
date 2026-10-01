@@ -181,8 +181,36 @@ class FriendlyGameService
      */
     public function leaderboard(TournamentStage $stage): array
     {
+        return $this->leaderboardForStages([$stage->id]);
+    }
+
+    /**
+     * Итоги по серии: все игровые вечера мероприятия (опционально — не раньше $since).
+     *
+     * @return array{rows: array<int,array>, podium: array{type: string, items: array<int,array>}, evenings: int}
+     */
+    public function seriesLeaderboard(Event $event, ?\Carbon\CarbonInterface $since = null): array
+    {
+        $stageIds = TournamentStage::query()
+            ->where('event_id', $event->id)
+            ->where('type', TournamentStage::TYPE_FRIENDLY)
+            ->when($since, fn ($q) => $q->whereIn('occurrence_id',
+                DB::table('event_occurrences')->where('event_id', $event->id)->where('starts_at', '>=', $since)->select('id')))
+            ->pluck('id')->all();
+
+        $board = $this->leaderboardForStages($stageIds, false);
+        $board['evenings'] = $stageIds
+            ? TournamentMatch::whereIn('stage_id', $stageIds)->where('status', TournamentMatch::STATUS_COMPLETED)->distinct()->count('stage_id')
+            : 0;
+
+        return $board;
+    }
+
+    /** @param int[] $stageIds */
+    private function leaderboardForStages(array $stageIds, bool $teamPodium = true): array
+    {
         $matches = TournamentMatch::query()
-            ->where('stage_id', $stage->id)
+            ->whereIn('stage_id', $stageIds)
             ->where('status', TournamentMatch::STATUS_COMPLETED)
             ->with(['teamHome.members', 'teamAway.members'])
             ->get();
@@ -267,7 +295,7 @@ class FriendlyGameService
         usort($out, fn ($a, $b) => [$b['wins'], $b['win_rate'], $b['diff'], $b['points_scored']]
             <=> [$a['wins'], $a['win_rate'], $a['diff'], $a['points_scored']]);
 
-        return ['rows' => $out, 'podium' => $this->buildPodium($lineups, $out, $users)];
+        return ['rows' => $out, 'podium' => $this->buildPodium($teamPodium ? $lineups : [], $out, $users)];
     }
 
     /**

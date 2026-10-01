@@ -96,6 +96,9 @@ $fmtAddress = function ($row) {
 							@if($isTournament)
 							<a href="{{ $tournamentUrl }}" class="btn btn-outline-primary btn-sm">{{ __('events.occ_tournament_btn') }}</a>
 							@endif
+							@if(($row->format ?? '') === 'game' && !empty($row->collect_stats))
+							<a href="{{ route('game.manage', ['event' => (int)$row->event_id, 'occurrence' => (int)$row->occurrence_id]) }}" class="btn btn-outline-primary btn-sm">⚙️ {{ __('games.btn_manage') }}</a>
+							@endif
 							<a href="{{ $registrationsUrl }}" class="btn btn-outline-primary btn-sm">{{ __('events.registrations_manage') }}</a>
 						</div>
 					</div>

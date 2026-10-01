@@ -352,6 +352,7 @@ class OrgDashboardController extends Controller
                 'e.title',
                 'e.format',
                 'e.is_recurring',
+                'e.collect_stats',
                 'l.name as loc_name',
                 'l.address as loc_address',
             ]);
