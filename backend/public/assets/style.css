@@ -4660,6 +4660,13 @@ body.dark .avatar-small {
 }
 .profile-avatar img,
 .avatar-small img {
+	/* position:absolute + inset:0 вместо height:100%: в Safari процентная высота ребёнка у контейнера, высота которого
+	   задана только aspect-ratio, считается неопределённой — не квадратное фото растягивалось в овал. */
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
 	height: 100%;
 	width: 100%;
 	object-fit: cover;
