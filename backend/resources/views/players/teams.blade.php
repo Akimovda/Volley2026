@@ -18,32 +18,40 @@
     </div>
 </x-slot>
 
+@php
+    $schemeLabel = fn($v) => $v === '5x1_libero' ? '5x1 ' . __('events.libero_word') : $v;
+@endphp
+<x-slot name="style">
+    <style>
+        .pair-cell { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem 1rem; }
+        .pair-player { display:inline-flex; align-items:center; gap:.8rem; }
+        .pair-avatar { width:3.2rem; height:3.2rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
+        .pair-sep { opacity:.4; }
+        @media (max-width: 600px) {
+            .pair-cell { flex-direction:column; align-items:flex-start; gap:.6rem; }
+            .pair-sep { display:none; }
+        }
+    </style>
+</x-slot>
+
 <div class="container">
 <div class="ramka">
 
     {{-- Направление --}}
-    <div class="d-flex gap-1 mb-3 flex-wrap">
+    <div class="filter-tabs mb-2">
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'beach', 'scheme'=>null])) }}"
-           class="btn {{ $direction === 'beach' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            {{ __('players.beach') }}
-        </a>
+           class="filter-tab {{ $direction === 'beach' ? 'active' : '' }}">{{ __('players.beach') }}</a>
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'classic', 'scheme'=>null])) }}"
-           class="btn {{ $direction === 'classic' ? 'btn-primary' : 'btn-secondary' }} btn-small">
-            {{ __('players.classic') }}
-        </a>
+           class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{{ __('players.classic') }}</a>
     </div>
 
     {{-- Схема --}}
-    <div class="d-flex gap-1 mb-3 flex-wrap f-13">
+    <div class="filter-tabs mb-3">
         <a href="{{ route('players.teams', array_merge(request()->query(), ['scheme'=>null])) }}"
-           class="btn btn-small {{ !$scheme ? '' : 'btn-secondary' }}" style="padding:2px 10px">
-            {{ __('players.all_schemes') }}
-        </a>
+           class="filter-tab {{ !$scheme ? 'active' : '' }}">{{ __('players.all_schemes') }}</a>
         @foreach($availableSchemes as $s)
         <a href="{{ route('players.teams', array_merge(request()->query(), ['scheme'=>$s])) }}"
-           class="btn btn-small {{ $scheme === $s ? '' : 'btn-secondary' }}" style="padding:2px 10px">
-            {{ $s }}
-        </a>
+           class="filter-tab {{ $scheme === $s ? 'active' : '' }}">{{ $schemeLabel($s) }}</a>
         @endforeach
     </div>
 
@@ -58,7 +66,7 @@
             <option value="wins"     {{ $sort==='wins'     ? 'selected':'' }}>{{ __('players.sort_wins') }}</option>
             <option value="matches"  {{ $sort==='matches'  ? 'selected':'' }}>{{ __('players.sort_matches') }}</option>
         </select>
-        <button type="submit" class="btn btn-secondary btn-small">Найти</button>
+        <button type="submit" class="btn btn-outline btn-small">Найти</button>
     </form>
 
     {{-- Таблица --}}
@@ -73,11 +81,11 @@
                 <tr>
                     <th style="width:32px">#</th>
                     <th>{{ __('players.pair_or_team') }}</th>
-                    <th>{{ __('players.scheme') }}</th>
-                    <th>{{ __('players.matches_together') }}</th>
-                    <th class="b-600">{{ __('players.wins') }}</th>
-                    <th>{{ __('players.losses') }}</th>
-                    <th class="b-600">%{{ __('players.wins') }}</th>
+                    <th class="text-center">{{ __('players.scheme') }}</th>
+                    <th class="text-center">{{ __('players.matches_together') }}</th>
+                    <th class="b-600 text-center">{{ __('players.wins') }}</th>
+                    <th class="text-center">{{ __('players.losses') }}</th>
+                    <th class="b-600 text-center">%{{ __('players.wins') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -91,25 +99,27 @@
                 <tr>
                     <td><span style="opacity:.5">{{ $rank }}</span></td>
                     <td>
-                        <a href="{{ route('users.show', $pair->player1_id) }}" class="blink">
-                            {{ trim($pair->p1_last . ' ' . $pair->p1_first) ?: '#'.$pair->player1_id }}
-                        </a>
-                        <span style="opacity:.4"> × </span>
-                        <a href="{{ route('users.show', $pair->player2_id) }}" class="blink">
-                            {{ trim($pair->p2_last . ' ' . $pair->p2_first) ?: '#'.$pair->player2_id }}
-                        </a>
+                        <div class="pair-cell">
+                            @foreach([[$pair->player1_id, $pair->p1_last, $pair->p1_first], [$pair->player2_id, $pair->p2_last, $pair->p2_first]] as $pi => [$pid, $plast, $pfirst])
+                            @if($pi === 1)<span class="pair-sep">×</span>@endif
+                            <a href="{{ route('users.show', $pid) }}" class="pair-player blink">
+                                <img src="{{ ($pairUsers[$pid] ?? null)?->profile_photo_url }}" alt="" class="pair-avatar" loading="lazy">
+                                <span>{{ trim($plast . ' ' . $pfirst) ?: '#'.$pid }}</span>
+                            </a>
+                            @endforeach
+                        </div>
                     </td>
-                    <td>
+                    <td class="text-center">
                         @if($pair->game_scheme)
-                            <span class="f-12 b-600 px-2 py-1" style="background:rgba(128,128,128,.1);border-radius:4px">{{ $pair->game_scheme }}</span>
+                            <span class="f-12 b-600 px-2 py-1" style="background:rgba(128,128,128,.1);border-radius:4px">{{ $schemeLabel($pair->game_scheme) }}</span>
                         @else
                             <span style="opacity:.3">—</span>
                         @endif
                     </td>
-                    <td>{{ $pair->matches_together }}</td>
-                    <td class="cs b-600">{{ $pair->wins_together }}</td>
-                    <td class="red">{{ $losses }}</td>
-                    <td class="b-600 {{ $wrClass }}">{{ number_format($wr, 1) }}%</td>
+                    <td class="text-center">{{ $pair->matches_together }}</td>
+                    <td class="cs b-600 text-center">{{ $pair->wins_together }}</td>
+                    <td class="red text-center">{{ $losses }}</td>
+                    <td class="b-600 text-center {{ $wrClass }}">{{ number_format($wr, 1) }}%</td>
                 </tr>
             @endforeach
             </tbody>

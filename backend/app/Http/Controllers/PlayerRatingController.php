@@ -101,12 +101,17 @@ class PlayerRatingController extends Controller
 
         $pairs = $query->paginate(30)->withQueryString();
 
+        // Аватары игроков пар: один запрос + eager load media (profile_photo_url иначе даёт N+1)
+        $userIds = $pairs->getCollection()->pluck('player1_id')
+            ->merge($pairs->getCollection()->pluck('player2_id'))->unique()->values();
+        $pairUsers = \App\Models\User::whereIn('id', $userIds)->with('media')->get()->keyBy('id');
+
         $availableSchemes = $direction === 'beach'
             ? ['2x2', '3x3', '4x4']
             : ['4x4', '4x2', '5x1', '5x1_libero'];
 
         return view('players.teams', compact(
-            'pairs', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
+            'pairs', 'pairUsers', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
         ));
     }
 
