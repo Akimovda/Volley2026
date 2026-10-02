@@ -94,7 +94,11 @@ class YandexAuthController extends Controller
         }
 
         $yandexId = (string) $yaUser->getId();
+        // is_avatar_empty=true — у человека нет фото, getAvatar() всё равно вернёт URL заглушки: не сохраняем её как аватар
         $avatar   = $yaUser->getAvatar();
+        if (!empty(($yaUser->user ?? [])['is_avatar_empty'])) {
+            $avatar = null;
+        }
         $raw      = is_array($yaUser->user ?? null) ? $yaUser->user : [];
 
         $intent = (string) $request->session()->pull('oauth_intent', Auth::check() ? 'link' : 'login');

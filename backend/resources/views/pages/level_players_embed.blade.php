@@ -9,7 +9,9 @@
     <link href="/assets/style.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-        body { padding: 1.2rem 1.6rem 2.4rem; margin: 0; }
+        /* сверху оставляем место под кнопку «закрыть» всплывающего окна (fancybox) — иначе она перекрывает первые вкладки */
+        body { padding: calc(env(safe-area-inset-top, 0px) + 5.4rem) 1.6rem 2.4rem; margin: 0; }
+        @media (min-width: 768px) { body { padding-top: 1.6rem; } }
         .tab-highlight { display: none; }
         .tabs { display: flex; flex-wrap: wrap; gap: 1.6rem; border-bottom: 1px solid rgba(128,128,128,.25); margin-bottom: 1.4rem; }
         .tabs .tab { cursor: pointer; margin: 0 0 -1px; padding: .6rem .1rem; border-bottom: 2px solid transparent; font-size: 1.6rem; opacity: .6; }
