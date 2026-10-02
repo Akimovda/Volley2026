@@ -977,7 +977,7 @@ final class UserNotificationService
             if ($channel === 'push') {
                 $hasPushTokens = \App\Models\DeviceToken::where('user_id', $user->id)
                     ->where('is_active', true)
-                    ->where('platform', 'ios')
+                    ->whereIn('platform', ['ios', 'android'])
                     ->exists();
                 if (!$hasPushTokens) {
                     continue;

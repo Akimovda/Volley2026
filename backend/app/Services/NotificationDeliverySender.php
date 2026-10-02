@@ -88,7 +88,7 @@ final class NotificationDeliverySender
     private function sendPush(User $user, array $payload): void
     {
         $service = app(\App\Services\PushNotificationService::class);
-        $service->send(
+        $result = $service->send(
             userId: (int) $user->id,
             title:  (string) ($payload['title'] ?? 'Уведомление'),
             body:   $this->cleanBodyForPush((string) ($payload['body'] ?? '')),
@@ -99,6 +99,12 @@ final class NotificationDeliverySender
                 'button_url'    => $payload['button_url'] ?? null,
             ], fn ($v) => $v !== null)
         );
+
+        // Ни одно устройство не приняло push из-за ошибки (не из-за устаревшего токена) —
+        // это сбой доставки, а не «sent»: пусть сработает ретрай notifications:retry-failed.
+        if (($result['sent'] ?? 0) === 0 && ($result['failed'] ?? 0) > 0) {
+            throw new \RuntimeException('Push не доставлен: ошибка на ' . $result['failed'] . ' устр.');
+        }
     }
 
     private function cleanBodyForPush(string $body): string
