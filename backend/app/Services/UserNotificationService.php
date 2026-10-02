@@ -1106,7 +1106,7 @@ final class UserNotificationService
                 title: 'Вам поставили оценку уровня!',
                 body: null,
                 payload: ['profile_url' => $profileUrl],
-                channels: ['in_app', 'telegram', 'vk', 'max'],
+                channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
             );
         } catch (\Throwable $e) {
             \Log::warning('user_level_voted notification failed: ' . $e->getMessage());
@@ -1122,7 +1122,7 @@ final class UserNotificationService
                 title: 'Кому-то нравится с вами играть!',
                 body: null,
                 payload: ['profile_url' => $profileUrl],
-                channels: ['in_app', 'telegram', 'vk', 'max'],
+                channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
             );
         } catch (\Throwable $e) {
             \Log::warning('user_play_liked notification failed: ' . $e->getMessage());
