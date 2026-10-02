@@ -38,7 +38,7 @@ return [
     'teams_title'          => 'Связки и команды',
     'pairs'                => 'Пары',
     'teams'                => 'Команды',
-    'pair_or_team'         => 'Связка',
+    'pair_or_team'         => 'Связки/Команды',
     'all_schemes'          => 'Все схемы',
     'sort_winrate'         => 'По %побед',
     'sort_wins'            => 'По победам',

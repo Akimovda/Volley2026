@@ -85,7 +85,7 @@
             <thead>
                 <tr>
                     <th style="width:32px">#</th>
-                    <th>{{ $isTeamMode ? __('players.team_col') : __('players.pair_or_team') }}</th>
+                    <th>{{ __('players.pair_or_team') }}</th>
                     <th class="text-center">{{ __('players.scheme') }}</th>
                     <th class="text-center">{{ __('players.matches_together') }}</th>
                     <th class="b-600 text-center">{{ __('players.wins') }}</th>
