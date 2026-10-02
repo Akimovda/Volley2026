@@ -12,6 +12,10 @@
 </x-slot>
 <x-slot name="h1">{{ __('pages.about_h1') }}</x-slot>
 
+<x-slot name="style">
+    <style>html.is-app .about-store-buttons { display: none; }</style>
+</x-slot>
+
 <div class="container">
 @php
     $a = trans('pages.about');
@@ -20,16 +24,16 @@
     // Порядок секций и кнопки под ними (тексты — lang/*/pages.php → about.sections.<id>)
     $sectionOrder = ['players', 'premium', 'rating', 'activity', 'tournaments', 'stats_game', 'leagues', 'club', 'org', 'pro', 'white_label', 'school', 'app'];
     $sectionButtons = [
-        'premium'     => [[route('premium.index'), 'btn_premium', 'btn-secondary']],
-        'rating'      => [[route('players.rating'), 'btn_rating', 'btn-secondary'], [route('players.teams'), 'btn_teams', 'btn-secondary'], [route('pages.rating_info'), 'btn_rating_info', 'btn-secondary']],
-        'activity'    => [[route('activity.index'), 'btn_activity', 'btn-secondary']],
-        'leagues'     => [[route('leagues.public'), 'btn_leagues', 'btn-secondary']],
-        'club'        => [[route('locations.index'), 'btn_locations', 'btn-secondary']],
-        'org'         => array_filter([[$orgApplyUrl, 'btn_apply_org', ''], $canOrgDash ? [route('org.dashboard'), 'btn_org_dash', 'btn-secondary'] : null]),
-        'pro'         => [[route('organizer_pro.index'), 'btn_pro', 'btn-secondary']],
+        'premium'     => [[route('premium.index'), 'btn_premium', 'btn-outline']],
+        'rating'      => [[route('players.rating'), 'btn_rating', 'btn-outline'], [route('players.teams'), 'btn_teams', 'btn-outline'], [route('pages.rating_info'), 'btn_rating_info', 'btn-outline']],
+        'activity'    => [[route('activity.index'), 'btn_activity', 'btn-outline']],
+        'leagues'     => [[route('leagues.public'), 'btn_leagues', 'btn-outline']],
+        'club'        => [[route('locations.index'), 'btn_locations', 'btn-outline']],
+        'org'         => array_filter([[$orgApplyUrl, 'btn_apply_org', ''], $canOrgDash ? [route('org.dashboard'), 'btn_org_dash', 'btn-outline'] : null]),
+        'pro'         => [[route('organizer_pro.index'), 'btn_pro', 'btn-outline']],
         'white_label' => [['https://t.me/akimovda', 'btn_wl', '']],
-        'school'      => [[route('volleyball_school.index'), 'btn_schools', 'btn-secondary']],
-        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', 'btn-secondary'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', 'btn-secondary']],
+        'school'      => [[route('volleyball_school.index'), 'btn_schools', 'btn-outline']],
+        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', 'btn-outline'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', 'btn-outline']],
     ];
 @endphp
 
@@ -38,10 +42,10 @@
     <div style="font-size:3rem;margin-bottom:1rem">🏐</div>
     <h2 style="color:#fff;font-size:1.8rem;margin-bottom:1rem">VolleyPlay.Club</h2>
     <p style="font-size:1.15rem;opacity:.9;max-width:660px;margin:0 auto 1.5rem">{{ $a['hero_text'] }}</p>
-    <div class="d-flex gap-2 justify-content-center flex-wrap">
+    <div class="d-flex gap-2 flex-wrap" style="justify-content:center">
         <a href="{{ route('events.index') }}" class="btn">{{ $a['btn_find'] }}</a>
-        <a href="{{ route('players.rating') }}" class="btn btn-secondary">{{ $a['btn_rating'] }}</a>
-        <a href="{{ route('about') }}#org" class="btn btn-secondary">{{ $a['btn_become_org'] }}</a>
+        <a href="{{ route('players.rating') }}" class="btn btn-outline" style="color:#fff;border-color:#fff;background:transparent">{{ $a['btn_rating'] }}</a>
+        <a href="{{ route('about') }}#org" class="btn btn-outline" style="color:#fff;border-color:#fff;background:transparent">{{ $a['btn_become_org'] }}</a>
     </div>
 </div>
 
@@ -128,9 +132,9 @@
     </div>
     @endforeach
     @if(!empty($sectionButtons[$id]))
-    <div class="mt-2 d-flex gap-1 flex-wrap">
+    <div class="mt-2 d-flex gap-1 flex-wrap {{ $id === 'app' ? 'about-store-buttons' : '' }}">
         @foreach($sectionButtons[$id] as [$url, $labelKey, $btnClass])
-        <a href="{{ $url }}" class="btn {{ $btnClass }}" @if(str_starts_with($url, 'http')) target="_blank" rel="noopener noreferrer" @endif>{{ $a[$labelKey] }}</a>
+        <a href="{{ $url }}" class="btn {{ $btnClass }}" @if(parse_url($url, PHP_URL_HOST) !== request()->getHost()) target="_blank" rel="noopener noreferrer" @endif>{{ $a[$labelKey] }}</a>
         @endforeach
     </div>
     @endif
