@@ -38,7 +38,7 @@ return [
     'teams_title'          => 'Pairs & Teams',
     'pairs'                => 'Pairs',
     'teams'                => 'Teams',
-    'pair_or_team'         => 'Pair/Team',
+    'pair_or_team'         => 'Pairs/Teams',
     'all_schemes'          => 'All schemes',
     'sort_winrate'         => 'By win%',
     'sort_wins'            => 'By wins',
