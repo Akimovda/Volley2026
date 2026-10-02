@@ -35,3 +35,6 @@ Thumbs.db
 /diagnosis_*.md
 /report/
 public/robots.txt
+
+# APK для скачивания (бинарники не коммитим, кладутся на сервер вручную)
+/public/downloads
