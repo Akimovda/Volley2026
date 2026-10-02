@@ -52,6 +52,9 @@ return [
     | Application Locale Configuration
     |--------------------------------------------------------------------------
     */
+    // Ссылка на APK для скачивания (файл лежит в public/downloads/, не в git). Используется в футере и на /about.
+    'android_apk_url' => '/downloads/VolleyClub-1.1.6-release.apk',
+
     'locale' => env('APP_LOCALE', 'ru'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'ru'),

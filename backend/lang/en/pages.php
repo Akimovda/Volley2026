@@ -271,6 +271,7 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
         'btn_wl'          => 'Discuss on Telegram',
         'btn_ios'         => 'App Store',
         'btn_android'     => 'RuStore',
+        'btn_apk'         => 'Download for Android (APK)',
 
         'why_player_title' => 'Why players love it:',
         'why_player_text'  => 'Stop searching for a game in chats and calls — open the app and sign up in a minute.',

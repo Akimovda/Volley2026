@@ -280,6 +280,7 @@ return [
         'btn_wl'          => 'Обсудить подключение в Telegram',
         'btn_ios'         => 'App Store',
         'btn_android'     => 'RuStore',
+        'btn_apk'         => 'Скачать для Android (APK)',
 
         'why_player_title' => 'Зачем игроку:',
         'why_player_text'  => 'Хватит искать игру в чатах и созвонах — открой приложение и запишись за минуту.',
