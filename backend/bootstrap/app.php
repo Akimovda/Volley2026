@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'block.impersonation' => \App\Http\Middleware\BlockInImpersonation::class,
             'no-store-html'       => \App\Http\Middleware\NoStoreHtml::class,
             'abilities'           => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'organizer.pro'       => \App\Http\Middleware\EnsureOrganizerPro::class,
         ]);
         $middleware->append(\App\Http\Middleware\DetectBrand::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);

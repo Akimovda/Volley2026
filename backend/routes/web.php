@@ -1577,14 +1577,19 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/org/dashboard', [\App\Http\Controllers\OrgDashboardController::class, 'index'])
         ->name('org.dashboard');
     Route::get('/org/players', [\App\Http\Controllers\OrgPlayersController::class, 'index'])
+        ->middleware('organizer.pro')
         ->name('org.players');
     Route::get('/org/players/audience', [\App\Http\Controllers\OrgPlayersController::class, 'audienceData'])
+        ->middleware('organizer.pro')
         ->name('org.players.audience');
     Route::get('/org/players/audience/export/csv', [\App\Http\Controllers\OrgPlayersController::class, 'audienceExportCsv'])
+        ->middleware('organizer.pro')
         ->name('org.players.audience.export_csv');
     Route::get('/org/players/audience/export/pdf', [\App\Http\Controllers\OrgPlayersController::class, 'audienceExportPdf'])
+        ->middleware('organizer.pro')
         ->name('org.players.audience.export_pdf');
     Route::get('/org/tournament-analytics', [\App\Http\Controllers\OrgTournamentAnalyticsController::class, 'index'])
+        ->middleware('organizer.pro')
         ->name('org.tournament-analytics');
     Route::get('/player/dashboard', [\App\Http\Controllers\PlayerDashboardController::class, 'index'])
         ->name('player.dashboard');

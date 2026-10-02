@@ -123,4 +123,11 @@ return [
     // Pagination
     'pagination_jump_back'    => 'Back :n',
     'pagination_jump_forward' => 'Forward :n',
+
+    // Organizer Pro analytics (subscription required)
+    'pro_analytics_locked_title' => 'Analytics — Organizer Pro',
+    'pro_analytics_locked_h2'    => 'This page requires an Organizer Pro subscription',
+    'pro_analytics_locked_text'  => 'Detailed player and tournament analytics (audience, top lists, churn, CSV/PDF export) is part of Organizer Pro.',
+    'pro_analytics_locked_btn'   => 'Get Organizer Pro',
+    'pro_analytics_locked_back'  => 'Back to organizer dashboard',
 ];

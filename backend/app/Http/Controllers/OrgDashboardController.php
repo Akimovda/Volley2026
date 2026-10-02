@@ -310,7 +310,10 @@ class OrgDashboardController extends Controller
                 \DB::raw('SUM(uses_used) as total_uses')
             )->first();
 
+        $proAnalytics = $user->isAdmin() || $user->isOrganizerPro();
+
         return view('dashboard.org', compact(
+            'proAnalytics',
             'totalEvents', 'activeEvents', 'recurringEvents', 'oneTimeEvents',
             'playersStats', 'newPlayers',
             'monthlyStats', 'occurrenceLoad',

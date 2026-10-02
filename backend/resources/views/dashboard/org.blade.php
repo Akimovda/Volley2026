@@ -27,7 +27,7 @@
     <x-slot name="d_description">
         <div class="org-nav-grid">
             <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
-            <a href="{{ route('org.players') }}" class="btn btn-secondary">👥 Аналитика игроков</a>
+            <a href="{{ route('org.players') }}" class="btn btn-secondary">{{ $proAnalytics ? '' : '🔒 ' }}👥 Аналитика игроков</a>
             <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
             <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
             @if(auth()->user()?->is_club_manager && auth()->user()->ownedLocations()->exists())
@@ -172,7 +172,7 @@
         <div class="ramka">
             <div class="section-title-row">
                 <h2 class="-mt-05">🏆 Турниры</h2>
-                <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">📊 Аналитика турниров</a>
+                <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">{{ $proAnalytics ? '' : '🔒 ' }}📊 Аналитика турниров</a>
             </div>
             <div class="row mb-2">
                 <div class="col-md-4">
@@ -273,7 +273,7 @@
 				<div class="ramka">
                     <div class="section-title-row">
                         <h2 class="-mt-05">🏆 Самые активные игроки</h2>
-                        <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">👥 Подробнее</a>
+                        <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">{{ $proAnalytics ? '' : '🔒 ' }}👥 Подробнее</a>
                     </div>
                     
                         @forelse($topPlayers as $i => $player)
