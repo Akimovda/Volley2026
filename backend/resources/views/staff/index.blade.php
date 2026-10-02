@@ -12,7 +12,7 @@
                         @include('profile._menu', [
                             'menuUser'       => auth()->user(),
                             'isEditingOther' => false,
-                            'activeMenu'     => 'org_dashboard',
+                            'activeMenu'     => 'staff',
                         ])
                     </div>
                 </div>
@@ -29,22 +29,25 @@
                 {{-- Форма добавления --}}
                 <div class="ramka">
                     <h2 class="-mt-05">Добавить помощника</h2>
-                    <div class="card">
-                        <form method="POST" action="{{ route('staff.store') }}" id="staffAddForm">
-                            @csrf
-                            <input type="hidden" name="staff_user_id" id="staff_user_id_input" value="{{ old('staff_user_id') }}">
-                            <label>Поиск пользователя</label>
-                            <input type="text" id="staff_search_input"
-                                   placeholder="Введите имя, фамилию или email..."
-                                   autocomplete="off" class="w-100">
-                            <div id="staff_search_results" class="mt-1" style="display:none;border:0.1rem solid var(--border-color,#eee);border-radius:0.8rem;overflow:hidden;"></div>
-                            <div id="staff_selected" class="mt-1 f-15" style="display:none;"></div>
+                    <form method="POST" action="{{ route('staff.store') }}" id="staffAddForm" class="form">
+                        @csrf
+                        <input type="hidden" name="staff_user_id" id="staff_user_id_input" value="{{ old('staff_user_id') }}">
+                        <div class="card" style="overflow:visible;height:auto">
+                            <label for="staff_search_input">Поиск пользователя</label>
+                            <div style="position:relative" id="staff_ac_wrap">
+                                <input type="text" id="staff_search_input"
+                                       placeholder="Введите имя или фамилию..."
+                                       autocomplete="off">
+                                <div id="staff_search_results" class="form-select-dropdown staff-dd"></div>
+                            </div>
+                            <div id="staff_selected" class="f-15 mt-1" style="display:none;"></div>
                             @error('staff_user_id')
                             <div class="f-14 red mt-05">{{ $message }}</div>
                             @enderror
+                            <div class="f-13 mt-1" style="opacity:.6;">Начните вводить — минимум 2 символа. Помощник получит доступ к управлению вашими мероприятиями, действия фиксируются в логах.</div>
                             <button type="submit" class="btn mt-2 w-100" id="staff_submit_btn" disabled>Назначить помощником</button>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
 
                 {{-- Список помощников --}}
@@ -56,19 +59,19 @@
                     <div class="row row2">
                         @foreach($staffMembers as $assignment)
                         <div class="col-md-6">
-                            <div class="card">
+                            <div class="card mb-2" style="height:auto">
                                 <div class="d-flex fvc gap-2">
                                     <img src="{{ $assignment->staff->profile_photo_url }}"
                                          alt="" style="width:5rem;height:5rem;border-radius:50%;object-fit:cover;">
-                                    <div class="flex-1">
+                                    <div style="flex:1;min-width:0">
                                         <div class="b-600">{{ trim($assignment->staff->first_name . ' ' . $assignment->staff->last_name) }}</div>
-                                        <div class="f-13" style="opacity:.6;">{{ $assignment->staff->email }}</div>
+                                        <div class="f-13" style="opacity:.6;word-break:break-all">{{ $assignment->staff->email }}</div>
                                         <div class="f-13 mt-05" style="opacity:.6;">
                                             С {{ $assignment->created_at->format('d.m.Y') }}
                                         </div>
                                     </div>
                                 </div>
-                                <div class="d-flex gap-1 mt-2">
+                                <div class="d-flex flex-wrap gap-1 mt-2">
                                     <a href="{{ route('users.show', $assignment->staff->id) }}"
                                        class="btn btn-secondary btn-small">👤 Профиль</a>
                                     <form method="POST" action="{{ route('staff.destroy', $assignment->id) }}">
@@ -99,22 +102,41 @@
     </div>
 
     <x-slot name="script">
+        <style>
+            /* Дропдаун поиска: показ через display (без transition — иначе в Safari внутри backdrop-filter ломается скролл) */
+            .staff-dd { display:none; opacity:1; visibility:visible; transform:none; transition:none; }
+            .staff-dd .staff-result-item { padding:1rem 1.4rem; cursor:pointer; }
+            .staff-dd .staff-result-meta { font-size:1.3rem; opacity:.6; }
+            .staff-dd .staff-bot-badge { display:inline-block; padding:.1rem .8rem; border-radius:1rem; font-size:1.1rem; font-weight:600; background:#fef3c7; color:#92400e; margin-left:.5rem; }
+        </style>
         <script src="/assets/fas.js"></script>
         <script>
         (function() {
+            const wrap         = document.getElementById('staff_ac_wrap');
             const searchInput  = document.getElementById('staff_search_input');
             const resultsBox   = document.getElementById('staff_search_results');
             const selectedBox  = document.getElementById('staff_selected');
             const hiddenInput  = document.getElementById('staff_user_id_input');
             const submitBtn    = document.getElementById('staff_submit_btn');
+            const ramkaEl      = wrap ? wrap.closest('.ramka, .card-ramka') : null;
             let searchTimeout  = null;
+            let reqSeq         = 0;
+
+            function esc(v) {
+                return String(v == null ? '' : v).replace(/[&<>"']/g, function(c) {
+                    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+                });
+            }
+            // Поднимаем свою .ramka выше соседних (backdrop-filter создаёт stacking context)
+            function showDd() { resultsBox.style.display = 'block'; if (ramkaEl) ramkaEl.classList.add('select-dropdown-open'); }
+            function hideDd() { resultsBox.style.display = 'none';  if (ramkaEl) ramkaEl.classList.remove('select-dropdown-open'); }
 
             function selectUser(id, name) {
                 hiddenInput.value = id;
                 searchInput.value = name;
-                resultsBox.style.display = 'none';
+                hideDd();
                 selectedBox.style.display = '';
-                selectedBox.innerHTML = '<span style="color:var(--cd)">✅ Выбран:</span> <strong>' + name + '</strong> <span style="opacity:.4;"> (#' + id + ')</span>';
+                selectedBox.innerHTML = '<span class="cd">✅ Выбран:</span> <strong>' + esc(name) + '</strong> <span style="opacity:.4;">(#' + esc(id) + ')</span>';
                 submitBtn.disabled = false;
             }
 
@@ -124,40 +146,41 @@
                 submitBtn.disabled = true;
                 selectedBox.style.display = 'none';
                 clearTimeout(searchTimeout);
-                if (q.length < 2) { resultsBox.style.display = 'none'; return; }
+                if (q.length < 2) { hideDd(); return; }
                 searchTimeout = setTimeout(async function() {
-                    const res  = await fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
-                        headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                        credentials: 'same-origin'
-                    });
-                    const data = res.status === 401 ? { ok: false, items: [] } : await res.json();
-                    if (!data.ok || !data.items.length) {
-                        resultsBox.innerHTML = '<div class="p-2 f-14" style="opacity:.6;">Ничего не найдено</div>';
-                        resultsBox.style.display = '';
+                    const seq = ++reqSeq;
+                    let data = { ok: false, items: [] };
+                    try {
+                        const res = await fetch('/ajax/users/search?q=' + encodeURIComponent(q), {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                            credentials: 'same-origin'
+                        });
+                        if (res.ok) data = await res.json();
+                    } catch (e) {}
+                    if (seq !== reqSeq) return; // устаревший ответ
+                    if (!data.ok || !data.items || !data.items.length) {
+                        resultsBox.innerHTML = '<div class="city-message">Ничего не найдено</div>';
+                        showDd();
                         return;
                     }
-                    console.log('items:', JSON.stringify(data.items[0]));
-                    resultsBox.innerHTML = data.items.slice(0, 8).map(u => {
+                    resultsBox.innerHTML = data.items.slice(0, 8).map(function(u) {
                         const name = u.full_name || u.label || u.name || ('#' + u.id);
-                        const botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
-                        return '<div class="staff-result-item" data-id="' + u.id + '" data-name="' + name + '" style="padding:.8rem 1.2rem;cursor:pointer;border-bottom:0.1rem solid var(--border-color,#eee);">'
-                            + '<div class="b-600">' + name + botBadge + '</div>'
-                            + '<div class="f-13" style="opacity:.6;">#' + u.id + '</div>'
+                        const botBadge = u.is_bot ? '<span class="staff-bot-badge">🤖 бот</span>' : '';
+                        return '<div class="staff-result-item form-select-option" data-id="' + esc(u.id) + '" data-name="' + esc(name) + '">'
+                            + '<div class="b-600">' + esc(name) + botBadge + '</div>'
+                            + '<div class="staff-result-meta">#' + esc(u.id) + '</div>'
                             + '</div>';
                     }).join('');
-                    resultsBox.style.display = '';
-                    resultsBox.querySelectorAll('.staff-result-item').forEach(el => {
-                        el.addEventListener('mouseenter', () => el.style.background = 'var(--bg2,#f5f5f5)');
-                        el.addEventListener('mouseleave', () => el.style.background = '');
-                        el.addEventListener('click', () => selectUser(el.dataset.id, el.dataset.name));
+                    showDd();
+                    resultsBox.querySelectorAll('.staff-result-item').forEach(function(el) {
+                        el.addEventListener('click', function() { selectUser(el.dataset.id, el.dataset.name); });
                     });
                 }, 300);
             });
 
+            searchInput.addEventListener('keydown', function(e) { if (e.key === 'Escape') hideDd(); });
             document.addEventListener('click', function(e) {
-                if (!resultsBox.contains(e.target) && e.target !== searchInput) {
-                    resultsBox.style.display = 'none';
-                }
+                if (wrap && !wrap.contains(e.target)) hideDd();
             });
         })();
         </script>
