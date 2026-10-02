@@ -858,4 +858,7 @@ return [
     'visitors_empty'       => 'No visitors yet.',
 
     'complete_title'       => 'Complete profile',
+    'cp_lvl_hint' => 'Swipe the levels left and right, then <b>tap the square</b> with your level — it gets a frame and a check mark.',
+    'cp_lvl_picked' => 'Selected: :n — :name',
+    'cp_lvl_none' => 'No level selected yet — tap the square with your level',
 ];
