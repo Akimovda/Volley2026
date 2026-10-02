@@ -179,7 +179,9 @@ class AdminAuditController extends Controller
             }
 
             if (is_array($value)) {
-                $value = implode(',', $value);
+                $value = count($value) === count($value, COUNT_RECURSIVE)
+                    ? implode(',', $value)
+                    : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             } elseif (is_bool($value)) {
                 $value = $this->boolLabel($value);
             }
