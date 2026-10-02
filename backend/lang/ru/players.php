@@ -57,4 +57,8 @@ return [
     'no_data'              => 'Нет данных',
     'search_placeholder'   => 'Поиск по имени...',
     'rank'                 => '#',
+    'team_col' => 'Команда',
+    'team_size' => 'Игроков: :n',
+    'team_roster_empty' => 'Состав не найден',
+    'team_captain' => 'капитан',
 ];
