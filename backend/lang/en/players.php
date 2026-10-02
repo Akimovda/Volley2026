@@ -61,4 +61,9 @@ return [
     'team_size' => 'Players: :n',
     'team_roster_empty' => 'Roster not found',
     'team_captain' => 'captain',
+    'games_modal_h' => 'Tournaments',
+    'games_modal_empty' => 'No tournaments found (team tournaments with completed matches only).',
+    'games_modal_row' => 'Matches: :m · Wins: :w',
+    'games_modal_open' => 'Open tournament results',
+    'games_modal_place' => 'place :n',
 ];

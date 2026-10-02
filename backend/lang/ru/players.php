@@ -33,7 +33,7 @@ return [
     'scheme'               => 'Схема',
     'win_short'            => 'В',
     'loss_short'           => 'П',
-    'beach'                => '🏖 Пляжный',
+    'beach'                => '🏖 Пляжка',
     'classic'              => '🏐 Классика',
     'teams_title'          => 'Связки и команды',
     'pairs'                => 'Пары',
@@ -61,4 +61,9 @@ return [
     'team_size' => 'Игроков: :n',
     'team_roster_empty' => 'Состав не найден',
     'team_captain' => 'капитан',
+    'games_modal_h' => 'Турниры',
+    'games_modal_empty' => 'Турниров не найдено (учитываются командные турниры с завершёнными матчами).',
+    'games_modal_row' => 'Матчей: :m · Побед: :w',
+    'games_modal_open' => 'Открыть результаты турнира',
+    'games_modal_place' => ':n место',
 ];

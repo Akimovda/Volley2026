@@ -1784,6 +1784,8 @@ body.dark .btn-secondary.btn-alert:hover {
 
 /* Тёмная тема для кнопок */
 body.dark .btn-outline {
+	/* body.dark .btn (оранжевая заливка, специфичнее .btn-outline) иначе красит контурную кнопку в оранжевый */
+	background: transparent;
 	border-color: #FFB171;
 	color: #FFB171;
 }

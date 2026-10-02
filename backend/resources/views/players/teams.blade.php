@@ -20,14 +20,22 @@
 
 @php
     $isTeamMode = isset($teamRosters);
+    $gamesHeads = [];
     $schemeLabel = fn($v) => $v === '5x1_libero' ? '5x1 ' . __('events.libero_word') : $v;
 @endphp
 <x-slot name="style">
     <style>
-        /* Колонка «Связки/Команды»: каждый игрок пары — на отдельной строке (на любой ширине), чтобы ничто не залезало на соседнюю колонку */
-        .pair-cell { display:flex; flex-direction:column; align-items:flex-start; gap:.6rem; }
-        .pair-player { display:inline-flex; align-items:center; gap:.8rem; }
-        .pair-avatar { width:3.2rem; height:3.2rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
+        /* Колонка «Связки/Команды»: каждый игрок пары — на отдельной строке. Вёрстка БЕЗ flex (display:table + table-cell):
+           в Safari/WebKit ячейка с flex-контейнерами внутри auto-таблицы получает ширину меньше содержимого,
+           и фамилия вылезает в соседнюю колонку. Табличная вёрстка даёт min-content = самое длинное слово + аватар. */
+        .pair-cell { display:block; }
+        .pair-player { display:table; margin:0 0 .6rem; }
+        .pair-cell .pair-player:last-child { margin-bottom:0; }
+        .pair-ava, .pair-name { display:table-cell; vertical-align:middle; }
+        .pair-ava { width:3.2rem; padding-right:.8rem; box-sizing:content-box; }
+        .pair-name { overflow-wrap:break-word; }
+        /* max-width:none — глобальное img{max-width:100%} в ячейке таблицы с шириной по содержимому сворачивало аватар в 0 */
+        .pair-avatar { display:block; width:3.2rem; height:3.2rem; max-width:none; border-radius:50%; object-fit:cover; }
         .pair-sep { display:none; }
         @media (min-width: 768px) {
             /* ширина колонки — по самому длинному имени, без переноса внутри имени */
@@ -108,15 +116,19 @@
                     <td><span style="opacity:.5">{{ $rank }}</span></td>
                     <td class="pair-col">
                         @if($isTeamMode)
-                            <a href="javascript:void(0)" class="blink b-600 team-roster-link" data-team="{{ $pair->last_team_id }}">{{ $pair->team_name ?: __('players.team_col') . ' #' . $pair->last_team_id }}</a>
-                            <div class="f-13" style="opacity:.6">{{ __('players.team_size', ['n' => (int) $pair->size]) }}</div>
+                            @php $capAva = $captainAvatars[$pair->last_team_id] ?? null; @endphp
+                            <div class="pair-player">
+                                <span class="pair-ava"><img src="{{ $capAva }}" alt="" class="pair-avatar" loading="lazy"></span><span class="pair-name">
+                                    <a href="javascript:void(0)" class="blink b-600 team-roster-link" data-team="{{ $pair->last_team_id }}">{{ $pair->team_name ?: __('players.team_col') . ' #' . $pair->last_team_id }}</a>
+                                    <div class="f-13" style="opacity:.6">{{ __('players.team_size', ['n' => (int) $pair->size]) }}</div>
+                                </span>
+                            </div>
                         @else
                         <div class="pair-cell">
                             @foreach([[$pair->player1_id, $pair->p1_last, $pair->p1_first], [$pair->player2_id, $pair->p2_last, $pair->p2_first]] as $pi => [$pid, $plast, $pfirst])
                             @if($pi === 1)<span class="pair-sep">×</span>@endif
                             <a href="{{ route('users.show', $pid) }}" class="pair-player blink">
-                                <img src="{{ ($pairUsers[$pid] ?? null)?->profile_photo_url }}" alt="" class="pair-avatar" loading="lazy">
-                                <span>{{ trim($plast . ' ' . $pfirst) ?: '#'.$pid }}</span>
+                                <span class="pair-ava"><img src="{{ ($pairUsers[$pid] ?? null)?->profile_photo_url }}" alt="" class="pair-avatar" loading="lazy"></span><span class="pair-name">{{ trim($plast . ' ' . $pfirst) ?: '#'.$pid }}</span>
                             </a>
                             @endforeach
                         </div>
@@ -129,7 +141,19 @@
                             <span style="opacity:.3">—</span>
                         @endif
                     </td>
-                    <td class="text-center">{{ (int) $pair->matches_together }}</td>
+                    @php
+                        $gamesHeads[$isTeamMode ? (string) $pair->roster : ($pair->player1_id . '-' . $pair->player2_id)] = $isTeamMode
+                            ? [[($pair->team_name ?: __('players.team_col')), $captainAvatars[$pair->last_team_id] ?? null]]
+                            : [
+                                [trim($pair->p1_last . ' ' . $pair->p1_first), ($pairUsers[$pair->player1_id] ?? null)?->profile_photo_url],
+                                [trim($pair->p2_last . ' ' . $pair->p2_first), ($pairUsers[$pair->player2_id] ?? null)?->profile_photo_url],
+                              ];
+                        $gKey   = $isTeamMode ? (string) $pair->roster : ($pair->player1_id . '-' . $pair->player2_id);
+                        $gTitle = $isTeamMode
+                            ? ($pair->team_name ?: __('players.team_col'))
+                            : (trim($pair->p1_last . ' ' . $pair->p1_first) . ' × ' . trim($pair->p2_last . ' ' . $pair->p2_first));
+                    @endphp
+                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ $gKey }}" data-title="{{ $gTitle }}">{{ (int) $pair->matches_together }}</a></td>
                     <td class="cs b-600 text-center">{{ (int) $pair->wins_together }}</td>
                     <td class="red text-center">{{ $losses }}</td>
                     <td class="b-600 text-center {{ $wrClass }}">{{ number_format($wr, 1) }}%</td>
@@ -143,13 +167,16 @@
 
 </div>
 </div>
+@include('players._games_modal')
 @if($isTeamMode)
 <div id="team-roster-modal" style="display:none;max-width:48rem;width:100%">
     <h3 class="-mt-05 mb-2" id="team-roster-title"></h3>
     <div id="team-roster-list"></div>
 </div>
+@endif
 <x-slot name="script">
     <script src="/assets/fas.js"></script>
+    @if($isTeamMode)
     <script>
     (function() {
         var rosters = @json($teamRosters);
@@ -187,6 +214,7 @@
         });
     })();
     </script>
+    @endif
+    @include('players._games_script')
 </x-slot>
-@endif
 </x-voll-layout>
