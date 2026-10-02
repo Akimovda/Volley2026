@@ -702,7 +702,7 @@ body.dark .gradient-marker-line,
                         @if($careerBeach && $careerBeach->total_matches > 0)
                         <div class="card p-3 mb-3">
                             <div class="f-13 b-600 mb-2" style="opacity:.6">🏖 Итого</div>
-                            <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                            <div class="stat-grid">
                                 @php $crBeach = max(0, ($careerBeach->mu ?? 25) - 3 * ($careerBeach->sigma ?? 8.333)); @endphp
                                 @if($careerBeach->total_matches >= 3)
                                 <div style="text-align:center">
@@ -748,13 +748,11 @@ body.dark .gradient-marker-line,
                                 $url = route('tournament.public.show', $eventId) . ($occId ? '?tab=overview&occurrence_id='.$occId : '');
                                 $rank = $rankByTeam[$s->team_id] ?? null;
                             @endphp
-                            <div class="d-flex f-13" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center;flex-wrap:wrap">
-                                <a href="{{ $url }}" class="blink b-600" style="flex:1;min-width:140px">{{ $s->event->title ?? 'Турнир' }}</a>
-                                @if($rank)
-                                <span class="b-700" style="font-size:{{ $rank <= 3 ? '16px' : '13px' }}">{{ $medals[$rank] ?? $rank.'.' }}</span>
-                                @endif
-                                <span class="b-700" style="color:#E7612F">{{ $s->match_win_rate }}%</span>
-                                <span style="opacity:.5">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
+                            <div class="stat-row stat-row--tourney f-13">
+                                <a href="{{ $url }}" class="blink b-600 sr-name">{{ $s->event->title ?? 'Турнир' }}</a>
+                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>{{ $rank ? ($medals[$rank] ?? $rank.'.') : '' }}</span>
+                                <span class="sr-pct b-700">{{ $s->match_win_rate }}%</span>
+                                <span class="sr-rec">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
                             </div>
                             @endforeach
                         </div>
@@ -798,7 +796,7 @@ body.dark .gradient-marker-line,
                         @if($careerClassic && $careerClassic->total_matches > 0)
                         <div class="card p-3 mb-3">
                             <div class="f-13 b-600 mb-2" style="opacity:.6">🏐 Итого</div>
-                            <div class="d-flex" style="gap:16px;flex-wrap:wrap">
+                            <div class="stat-grid">
                                 @php $crClassic = max(0, ($careerClassic->mu ?? 25) - 3 * ($careerClassic->sigma ?? 8.333)); @endphp
                                 @if($careerClassic->total_matches >= 3)
                                 <div style="text-align:center">
@@ -844,13 +842,11 @@ body.dark .gradient-marker-line,
                                 $url = route('tournament.public.show', $eventId) . ($occId ? '?tab=overview&occurrence_id='.$occId : '');
                                 $rank = $rankByTeam[$s->team_id] ?? null;
                             @endphp
-                            <div class="d-flex f-13" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center;flex-wrap:wrap">
-                                <a href="{{ $url }}" class="blink b-600" style="flex:1;min-width:140px">{{ $s->event->title ?? 'Турнир' }}</a>
-                                @if($rank)
-                                <span class="b-700" style="font-size:{{ $rank <= 3 ? '16px' : '13px' }}">{{ $medals[$rank] ?? $rank.'.' }}</span>
-                                @endif
-                                <span class="b-700" style="color:#E7612F">{{ $s->match_win_rate }}%</span>
-                                <span style="opacity:.5">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
+                            <div class="stat-row stat-row--tourney f-13">
+                                <a href="{{ $url }}" class="blink b-600 sr-name">{{ $s->event->title ?? 'Турнир' }}</a>
+                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>{{ $rank ? ($medals[$rank] ?? $rank.'.') : '' }}</span>
+                                <span class="sr-pct b-700">{{ $s->match_win_rate }}%</span>
+                                <span class="sr-rec">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
                             </div>
                             @endforeach
                         </div>
@@ -859,10 +855,10 @@ body.dark .gradient-marker-line,
                         <div class="b-600 f-14 mb-2">Команды</div>
                         <div class="card">
                             @foreach($tStatsClassic->unique('team_id') as $s)
-                            <div class="d-flex f-13" style="padding:8px 0;border-bottom:1px solid rgba(128,128,128,.08);gap:8px;align-items:center">
-                                <span class="b-600" style="flex:1">{{ $s->team->name ?? '—' }}</span>
-                                <span class="b-700" style="color:#E7612F">{{ $s->match_win_rate }}%</span>
-                                <span style="opacity:.5">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
+                            <div class="stat-row stat-row--team f-13">
+                                <span class="b-600 sr-name">{{ $s->team->name ?? '—' }}</span>
+                                <span class="sr-pct b-700">{{ $s->match_win_rate }}%</span>
+                                <span class="sr-rec">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
                             </div>
                             @endforeach
                         </div>
@@ -934,11 +930,11 @@ body.dark .gradient-marker-line,
                     @endphp
                     @if($dirStats && $dirStats->total_matches > 0 && ($f5 || $f10))
                     <div class="f-13 b-600 mb-1" style="opacity:.6">{{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</div>
-                    <div class="d-flex gap-2 mb-3 flex-wrap">
+                    <div class="form-cards mb-3">
                         @if($f5)
-                        <div class="card text-center" style="padding:8px 14px">
+                        <div class="card form-card">
                             <div class="f-11" style="opacity:.5">{{ __('players.last_5') }}</div>
-                            <div class="f-15 b-700">
+                            <div class="f-15 b-700 form-letters">
                                 @foreach(mb_str_split($f5) as $ch)
                                     <span class="{{ in_array($ch,['В','W']) ? 'cs' : 'red' }}">{{ $ch }}</span>
                                 @endforeach
@@ -946,9 +942,9 @@ body.dark .gradient-marker-line,
                         </div>
                         @endif
                         @if($f10)
-                        <div class="card text-center" style="padding:8px 14px">
+                        <div class="card form-card">
                             <div class="f-11" style="opacity:.5">{{ __('players.last_10') }}</div>
-                            <div class="f-14 b-700">
+                            <div class="f-15 b-700 form-letters">
                                 @foreach(mb_str_split($f10) as $ch)
                                     <span class="{{ in_array($ch,['В','W']) ? 'cs' : 'red' }}">{{ $ch }}</span>
                                 @endforeach
@@ -958,7 +954,7 @@ body.dark .gradient-marker-line,
                         @if(($dirStats->pair_stability ?? 0) > 0 && $dirStats->main_partner_id)
                         @php $mp = \App\Models\User::select('id','first_name','last_name')->find($dirStats->main_partner_id); @endphp
                         @if($mp)
-                        <div class="card text-center" style="padding:8px 14px">
+                        <div class="card form-card">
                             <div class="f-11" style="opacity:.5">{{ __('players.pair_stability') }}</div>
                             <div class="f-15 b-700">{{ round($dirStats->pair_stability) }}%</div>
                             <div class="f-11" style="opacity:.5">{{ trim($mp->last_name . ' ' . mb_substr($mp->first_name,0,1)) }}.</div>
@@ -977,21 +973,12 @@ body.dark .gradient-marker-line,
                     <div class="card mb-3">
                         @foreach($dirPairs->take(5) as $i => $pair)
                         @php $wr = $pair->matches_together > 0 ? round($pair->wins_together / $pair->matches_together * 100) : 0; @endphp
-                        <div class="d-flex between fvc py-1 f-14 {{ $i > 0 ? 'border-top' : '' }}">
-                            <div class="d-flex fvc gap-2">
-                                <span class="f-13" style="width:20px;opacity:.4">{{ $i+1 }}</span>
-                                <a href="{{ route('users.show', $pair->partner->id) }}" class="blink">
-                                    {{ trim($pair->partner->last_name . ' ' . $pair->partner->first_name) }}
-                                </a>
-                                @if($pair->game_scheme)
-                                <span class="f-12" style="opacity:.4">{{ $pair->game_scheme }}</span>
-                                @endif
-                            </div>
-                            <div class="text-right">
-                                <span class="b-600">{{ $pair->matches_together }}</span>
-                                <span style="opacity:.5"> игр</span>
-                                <span class="{{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13 ml-1">{{ $wr }}%</span>
-                            </div>
+                        <div class="stat-row stat-row--partner f-14">
+                            <span class="sr-rank f-13">{{ $i+1 }}</span>
+                            <a href="{{ route('users.show', $pair->partner->id) }}" class="blink sr-name">{{ trim($pair->partner->last_name . ' ' . $pair->partner->first_name) }}</a>
+                            <span class="sr-scheme f-12">{{ $pair->game_scheme }}</span>
+                            <span class="sr-games"><span class="b-600">{{ $pair->matches_together }}</span><span class="sr-unit"> игр</span></span>
+                            <span class="sr-pct2 {{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13">{{ $wr }}%</span>
                         </div>
                         @endforeach
                     </div>
@@ -1004,18 +991,11 @@ body.dark .gradient-marker-line,
                     <div class="card mb-3">
                         @foreach($ratingOpponents->take(5) as $i => $opp)
                         @php $wr = $opp->matches_against > 0 ? round($opp->wins_against / $opp->matches_against * 100) : 0; @endphp
-                        <div class="d-flex between fvc py-1 f-14 {{ $i > 0 ? 'border-top' : '' }}">
-                            <div class="d-flex fvc gap-2">
-                                <span class="f-13" style="width:20px;opacity:.4">{{ $i+1 }}</span>
-                                <a href="{{ route('users.show', $opp->opponent_id) }}" class="blink">
-                                    {{ trim($opp->last_name . ' ' . $opp->first_name) }}
-                                </a>
-                            </div>
-                            <div class="text-right">
-                                <span class="b-600">{{ $opp->matches_against }}</span>
-                                <span style="opacity:.5"> встреч</span>
-                                <span class="{{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13 ml-1">{{ $wr }}%В</span>
-                            </div>
+                        <div class="stat-row stat-row--opp f-14">
+                            <span class="sr-rank f-13">{{ $i+1 }}</span>
+                            <a href="{{ route('users.show', $opp->opponent_id) }}" class="blink sr-name">{{ trim($opp->last_name . ' ' . $opp->first_name) }}</a>
+                            <span class="sr-games"><span class="b-600">{{ $opp->matches_against }}</span><span class="sr-unit"> встреч</span></span>
+                            <span class="sr-pct2 {{ $wr >= 50 ? 'cs' : 'red' }} b-600 f-13">{{ $wr }}%В</span>
                         </div>
                         @endforeach
                     </div>
