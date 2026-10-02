@@ -550,9 +550,9 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
 
         'bots_title' => '🤖 Bots and notifications',
         'bots' => [
-            ['✈️', 'Telegram', 'Notifications about sign-ups, cancellations, 2-hour reminders and changes. Announcements in the organizer’s channels and groups.'],
-            ['💙', 'VKontakte', 'Notifications in VKontakte messages. Announcements published in chats and communities.'],
-            ['🟣', 'MAX', 'A bot in the MAX messenger — notifications and announcements for the audience on the platform.'],
+            ['tg', 'Telegram', 'Notifications about sign-ups, cancellations, 2-hour reminders and changes. Announcements in the organizer’s channels and groups.'],
+            ['vk', 'VKontakte', 'Notifications in VKontakte messages. Announcements published in chats and communities.'],
+            ['max', 'MAX', 'A bot in the MAX messenger — notifications and announcements for the audience on the platform.'],
         ],
 
         'cities_title' => '📍 Launch cities',

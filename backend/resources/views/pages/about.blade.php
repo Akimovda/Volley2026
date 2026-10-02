@@ -13,7 +13,18 @@
 <x-slot name="h1">{{ __('pages.about_h1') }}</x-slot>
 
 <x-slot name="style">
-    <style>html.is-app .about-store-buttons { display: none; }</style>
+    <style>
+        html.is-app .about-store-buttons { display: none; }
+        .about-hero-link { color: #fff; }
+        .about-hero-link:before { border-bottom-color: #fff; }
+        .about-hero-link:after { border-bottom-color: rgba(255, 255, 255, .45); }
+        .about-store-logo { display: block; }
+        .about-bot-icon { width: 5.6rem; height: 5.6rem; margin: 0 auto .5rem; }
+        .about-bot-icon svg { width: 2.8rem; height: 2.8rem; }
+        .about-store-logo img { display: block; width: auto; height: 5.5rem; border-radius: 1rem; border: 1px solid rgba(41, 103, 186, .3); transition: transform .25s ease, box-shadow .25s ease; }
+        .about-store-logo:hover img { transform: translateY(-.2rem); box-shadow: 0 .4rem 1.2rem rgba(41, 103, 186, .2); }
+        body.dark .about-store-logo img { filter: invert(94%); }
+    </style>
 </x-slot>
 
 <div class="container">
@@ -24,16 +35,16 @@
     // Порядок секций и кнопки под ними (тексты — lang/*/pages.php → about.sections.<id>)
     $sectionOrder = ['players', 'premium', 'rating', 'activity', 'tournaments', 'stats_game', 'leagues', 'club', 'org', 'pro', 'white_label', 'school', 'app'];
     $sectionButtons = [
-        'premium'     => [[route('premium.index'), 'btn_premium', 'btn-outline']],
-        'rating'      => [[route('players.rating'), 'btn_rating', 'btn-outline'], [route('players.teams'), 'btn_teams', 'btn-outline'], [route('pages.rating_info'), 'btn_rating_info', 'btn-outline']],
-        'activity'    => [[route('activity.index'), 'btn_activity', 'btn-outline']],
-        'leagues'     => [[route('leagues.public'), 'btn_leagues', 'btn-outline']],
-        'club'        => [[route('locations.index'), 'btn_locations', 'btn-outline']],
-        'org'         => array_filter([[$orgApplyUrl, 'btn_apply_org', ''], $canOrgDash ? [route('org.dashboard'), 'btn_org_dash', 'btn-outline'] : null]),
-        'pro'         => [[route('organizer_pro.index'), 'btn_pro', 'btn-outline']],
-        'white_label' => [['https://t.me/akimovda', 'btn_wl', '']],
-        'school'      => [[route('volleyball_school.index'), 'btn_schools', 'btn-outline']],
-        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', 'btn-outline'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', 'btn-outline']],
+        'premium'     => [[route('premium.index'), 'btn_premium', 'link']],
+        'rating'      => [[route('players.rating'), 'btn_rating', 'link'], [route('players.teams'), 'btn_teams', 'link'], [route('pages.rating_info'), 'btn_rating_info', 'link']],
+        'activity'    => [[route('activity.index'), 'btn_activity', 'link']],
+        'leagues'     => [[route('leagues.public'), 'btn_leagues', 'link']],
+        'club'        => [[route('locations.index'), 'btn_locations', 'link']],
+        'org'         => array_filter([[$orgApplyUrl, 'btn_apply_org', 'primary'], $canOrgDash ? [route('org.dashboard'), 'btn_org_dash', 'link'] : null]),
+        'pro'         => [[route('organizer_pro.index'), 'btn_pro', 'link']],
+        'white_label' => [['https://t.me/akimovda', 'btn_wl', 'link']],
+        'school'      => [[route('volleyball_school.index'), 'btn_schools', 'link']],
+        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', '/img/appstore.png'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', '/img/rustore.png']],
     ];
 @endphp
 
@@ -42,10 +53,10 @@
     <div style="font-size:3rem;margin-bottom:1rem">🏐</div>
     <h2 style="color:#fff;font-size:1.8rem;margin-bottom:1rem">VolleyPlay.Club</h2>
     <p style="font-size:1.15rem;opacity:.9;max-width:660px;margin:0 auto 1.5rem">{{ $a['hero_text'] }}</p>
-    <div class="d-flex gap-2 flex-wrap" style="justify-content:center">
-        <a href="{{ route('events.index') }}" class="btn">{{ $a['btn_find'] }}</a>
-        <a href="{{ route('players.rating') }}" class="btn btn-outline" style="color:#fff;border-color:#fff;background:transparent">{{ $a['btn_rating'] }}</a>
-        <a href="{{ route('about') }}#org" class="btn btn-outline" style="color:#fff;border-color:#fff;background:transparent">{{ $a['btn_become_org'] }}</a>
+    <div><a href="{{ route('events.index') }}" class="btn">{{ $a['btn_find'] }}</a></div>
+    <div class="d-flex flex-wrap mt-2" style="justify-content:center;gap:.8rem 2.4rem">
+        <a href="{{ route('players.rating') }}" class="blink b-600 about-hero-link">{{ $a['btn_rating'] }} →</a>
+        <a href="{{ route('about') }}#org" class="blink b-600 about-hero-link">{{ $a['btn_become_org'] }} →</a>
     </div>
 </div>
 
@@ -132,9 +143,21 @@
     </div>
     @endforeach
     @if(!empty($sectionButtons[$id]))
-    <div class="mt-2 d-flex gap-1 flex-wrap {{ $id === 'app' ? 'about-store-buttons' : '' }}">
-        @foreach($sectionButtons[$id] as [$url, $labelKey, $btnClass])
-        <a href="{{ $url }}" class="btn {{ $btnClass }}" @if(parse_url($url, PHP_URL_HOST) !== request()->getHost()) target="_blank" rel="noopener noreferrer" @endif>{{ $a[$labelKey] }}</a>
+    <div class="mt-2 d-flex flex-wrap {{ $id === 'app' ? 'about-store-buttons' : '' }}" style="gap:.8rem 2.4rem;align-items:center">
+        @foreach($sectionButtons[$id] as [$url, $labelKey, $kind])
+        @php $external = parse_url($url, PHP_URL_HOST) !== request()->getHost(); @endphp
+        @if($id === 'app')
+        {{-- Логотипы магазинов (те же картинки 256×72, что в футере) --}}
+        <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="about-store-logo">
+            <img src="{{ $kind }}" alt="{{ $a[$labelKey] }}" width="256" height="72" loading="lazy">
+        </a>
+        @elseif($kind === 'primary')
+        {{-- Единственная заливная кнопка секции — главное действие --}}
+        <a href="{{ $url }}" class="btn btn-small" @if($external) target="_blank" rel="noopener noreferrer" @endif>{{ $a[$labelKey] }}</a>
+        @else
+        {{-- Остальное — текстовые ссылки в стиле сайта (blink), чтобы страница не состояла из кнопок --}}
+        <a href="{{ $url }}" class="blink b-600" @if($external) target="_blank" rel="noopener noreferrer" @endif>{{ $a[$labelKey] }} →</a>
+        @endif
         @endforeach
     </div>
     @endif
@@ -148,7 +171,8 @@
         @foreach($a['bots'] as [$icon, $title, $text])
         <div class="col-md-4">
             <div class="card text-center" style="height:100%">
-                <div style="font-size:2rem">{{ $icon }}</div>
+                {{-- Реальные логотипы сетей: круглые значки провайдеров (SVG подставляет lib.js по классу icon-tg/icon-vk/icon-max) --}}
+                <span class="provider-card__icon icon-{{ $icon }} about-bot-icon"></span>
                 <h3 style="margin:.5rem 0">{{ $title }}</h3>
                 <p class="f-14">{{ $text }}</p>
             </div>
