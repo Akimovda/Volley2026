@@ -62,7 +62,7 @@ return [
     'team_roster_empty' => 'Состав не найден',
     'team_captain' => 'капитан',
     'games_modal_h' => 'Турниры',
-    'games_modal_empty' => 'Турниров не найдено (учитываются командные турниры с завершёнными матчами).',
+    'games_modal_empty' => 'Турниров с завершёнными матчами пока нет.',
     'games_modal_row' => 'Матчей: :m · Побед: :w',
     'games_modal_open' => 'Открыть результаты турнира',
     'games_modal_place' => ':n место',
