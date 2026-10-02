@@ -700,6 +700,13 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::post('/events/{event}/copy', [EventCreateController::class, 'fromEvent'])
         ->name('events.copy');
 		
+		// Быстрое создание локации организатором (из мастера создания мероприятия, модалка ?embed=1)
+		Route::get('/organizer/locations/create', [\App\Http\Controllers\OrganizerLocationController::class, 'create'])
+        ->name('organizer.locations.create');
+		Route::post('/organizer/locations', [\App\Http\Controllers\OrganizerLocationController::class, 'store'])
+        ->middleware('throttle:15,60')
+        ->name('organizer.locations.store');
+
 		Route::post('/locations/quick', [LocationController::class, 'quickStore'])
         ->name('locations.quick_store')
         ->middleware(['can:is-admin']);

@@ -720,7 +720,7 @@ return [
     'location_label'      => 'Location',
     'location_choose'     => '— pick a location —',
     'location_create_btn' => '+ Create location',
-    'location_admin_only_hint' => 'Locations are created by an administrator. If the location is missing, message the admin.',
+    'location_admin_only_hint' => 'Can’t find your location? Create it with the “+ Create location” button — an administrator will review and complete the details.',
 
     'duration_label'      => 'Event duration',
     'duration_days'       => 'Days:',

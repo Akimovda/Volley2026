@@ -547,10 +547,10 @@
                     {{-- ADDRESS --}}
                     <div class="col-md-8">
                         <div class="card">
-                            <label>{{ __('admin.loc_label_address') }}</label>
+                            <label>{{ __('admin.loc_label_address') }} *</label>
                             <input
 							type="text"
-							name="address"
+							name="address" required
 							class="@error('address') is-invalid @enderror"
 							value="{{ old('address', $location->address) }}"
                             >
@@ -601,11 +601,12 @@
                     {{-- COORDS --}}
                     <div class="col-md-6">
                         <div class="card">
-                            <label>{{ __('admin.loc_label_lat') }} (lat)</label>
+                            <label>{{ __('admin.loc_label_lat') }} (lat) *</label>
                             <input
 							type="number"
 							name="lat"
 							step="any"
+							required
 							class="@error('lat') is-invalid @enderror"
 							value="{{ old('lat', $location->lat) }}"
                             >
@@ -615,17 +616,21 @@
 					
                     <div class="col-md-6">
                         <div class="card">
-                            <label>{{ __('admin.loc_label_lng') }} (lng)</label>
+                            <label>{{ __('admin.loc_label_lng') }} (lng) *</label>
                             <input
 							type="number"
 							name="lng"
 							step="any"
+							required
 							class="@error('lng') is-invalid @enderror"
 							value="{{ old('lng', $location->lng) }}"
                             >
                             @error('lng')<div class="invalid-feedback">{{ $message }}</div>@enderror
 						</div>
 					</div>
+                    <div class="col-12">
+                        @include('locations._map_picker', ['cityName' => null, 'addressSel' => '[name="address"]'])
+                    </div>
 					
                     {{-- PHOTOS (новые) --}}
                     <div class="col-12">

@@ -155,10 +155,10 @@
                     {{-- ADDRESS --}}
                     <div class="col-md-8">
 						<div class="card">
-							<label>{{ __('admin.loc_label_address') }}</label>
+							<label>{{ __('admin.loc_label_address') }} *</label>
 							<input
 							type="text"
-							name="address"
+							name="address" required
 							class="@error('address') is-invalid @enderror"
 							value="{{ old('address') }}"
 							>
@@ -212,11 +212,12 @@
                     {{-- COORDS --}}
                     <div class="col-md-6">
 						<div class="card">
-							<label>{{ __('admin.loc_label_lat') }} (lat)</label>
+							<label>{{ __('admin.loc_label_lat') }} (lat) *</label>
 							<input
 							type="number"
 							name="lat"
 							step="any"
+							required
 							class="@error('lat') is-invalid @enderror"
 							value="{{ old('lat') }}"
 							>
@@ -226,11 +227,12 @@
 					</div>
                     <div class="col-md-6">
 						<div class="card">
-							<label>{{ __('admin.loc_label_lng') }} (lng)</label>
+							<label>{{ __('admin.loc_label_lng') }} (lng) *</label>
 							<input
 							type="number"
 							name="lng"
 							step="any"
+							required
 							class="@error('lng') is-invalid @enderror"
 							value="{{ old('lng') }}"
 							>
@@ -238,6 +240,9 @@
 							<div class="pb-05"></div>
 						</div>
 					</div>
+                    <div class="col-12">
+                        @include('locations._map_picker', ['cityName' => null, 'addressSel' => '[name="address"]'])
+                    </div>
 					
 					
 					

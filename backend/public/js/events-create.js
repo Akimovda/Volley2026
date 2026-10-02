@@ -1902,6 +1902,53 @@ document.addEventListener("trix-file-accept", function (event) {
 		if (cityHiddenId && cityHiddenId.value) {
 			loadLocationsByCity(cityHiddenId.value);
 		}
+
+		// ===== Создание локации организатором: модалка с формой и картой (данные мастера не теряются) =====
+		var orgLocBtn = document.getElementById('org_location_create_btn');
+		if (orgLocBtn) {
+			orgLocBtn.addEventListener('click', function () {
+				var cid = cityHiddenId ? cityHiddenId.value : '';
+				if (!cid) {
+					var needCity = orgLocBtn.getAttribute('data-need-city') || '';
+					if (typeof swal === 'function') swal({ text: needCity, icon: 'warning' }); else alert(needCity);
+					return;
+				}
+				var url = (orgLocBtn.getAttribute('data-url') || '') + '?embed=1&city_id=' + encodeURIComponent(cid);
+				if (window.jQuery && window.jQuery.fancybox) {
+					window.jQuery.fancybox.open({
+						src: url,
+						type: 'iframe',
+						opts: { smallBtn: true, iframe: { preload: false, css: { width: '760px', maxWidth: '96vw', height: '92vh' } } }
+					});
+				} else {
+					window.open(url, '_blank');
+				}
+			});
+
+			window.addEventListener('message', function (e) {
+				if (e.origin !== window.location.origin) return;
+				var d = e.data;
+				if (!d || d.type !== 'location-created') return;
+				var base = cityWrap.getAttribute('data-locations-url') || '';
+				if (!base) return;
+				fetchJson(base + '?city_id=' + encodeURIComponent(d.cityId), function (data) {
+					if (!data || data.ok !== true) return;
+					fillLocationsSelect(data.items || []);
+					var loc = document.getElementById('location_id');
+					if (!loc) return;
+					loc.value = String(d.id);
+					// select обёрнут createCustomSelect() — после перезаполнения <option> пересоздаём обёртку
+					if (window.customSelect && typeof window.customSelect.destroy === 'function'
+						&& typeof window.createCustomSelect === 'function' && window.jQuery) {
+						window.customSelect.destroy('location_id');
+						window.createCustomSelect(window.jQuery(loc));
+					}
+					try { updatePreview(); } catch (err) {}
+					loc.dispatchEvent(new Event('change', { bubbles: true }));
+					if (window.jQuery && window.jQuery.fancybox) window.jQuery.fancybox.close(true);
+				});
+			});
+		}
 	})();
 	
 	// ========== 14. TRAINER AUTOCOMPLETE ==========

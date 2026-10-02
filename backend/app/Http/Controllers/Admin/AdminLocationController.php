@@ -38,15 +38,15 @@ public function store(Request $request)
 {
     $data = $request->validate([
         'name'           => ['required', 'string', 'max:255'],
-        'address'        => ['nullable', 'string', 'max:255'],
+        'address'        => ['required', 'string', 'max:255'],
         'city_id'        => ['required', 'integer', 'exists:cities,id'],
         'timezone'       => ['nullable', 'string', 'max:64'],
         'short_text'     => ['nullable', 'string', 'max:255'],
         'long_text'      => ['nullable', 'string'],
         'long_text_full' => ['nullable', 'string'], // ДОБАВЛЕНО
         'note'           => ['nullable', 'string'], // ДОБАВЛЕНО
-        'lat'            => ['nullable', 'numeric', 'between:-90,90'],
-        'lng'            => ['nullable', 'numeric', 'between:-180,180'],
+        'lat'            => ['required', 'numeric', 'between:-90,90'],
+        'lng'            => ['required', 'numeric', 'between:-180,180'],
         'photos'         => ['nullable', 'array'],
         'photos.*'       => ['nullable', 'image', 'max:5120'],
     ]);
@@ -120,15 +120,15 @@ public function update(Request $request, Location $location)
 {
     $data = $request->validate([
         'name'           => ['required', 'string', 'max:255'],
-        'address'        => ['nullable', 'string', 'max:255'],
+        'address'        => ['required', 'string', 'max:255'],
         'city_id'        => ['required', 'integer', 'exists:cities,id'],
         'timezone'       => ['nullable', 'string', 'max:64'],
         'short_text'     => ['nullable', 'string', 'max:255'],
         'long_text'      => ['nullable', 'string'],
         'long_text_full' => ['nullable', 'string'], // ДОБАВИТЬ
         'note'           => ['nullable', 'string'], // ДОБАВИТЬ
-        'lat'            => ['nullable', 'numeric', 'between:-90,90'],
-        'lng'            => ['nullable', 'numeric', 'between:-180,180'],
+        'lat'            => ['required', 'numeric', 'between:-90,90'],
+        'lng'            => ['required', 'numeric', 'between:-180,180'],
         'photos'         => ['nullable', 'array'],
         'photos.*'       => ['nullable', 'image', 'max:5120'],
         'owner_id'       => ['nullable', 'integer', 'exists:users,id'],

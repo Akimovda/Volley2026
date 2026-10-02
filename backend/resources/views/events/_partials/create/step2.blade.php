@@ -84,6 +84,14 @@
 											class="text-sm font-semibold text-blue-600 hover:text-blue-700">
 												{{ __('events.location_create_btn') }}
 											</a>
+											@else
+											{{-- Организатор: форма с картой во всплывающем окне, данные мастера не теряются --}}
+											<a href="javascript:void(0)" id="org_location_create_btn"
+											data-url="{{ route('organizer.locations.create') }}"
+											data-need-city="{{ __('locations.org_choose_city') }}"
+											class="text-sm font-semibold text-blue-600 hover:text-blue-700">
+												{{ __('events.location_create_btn') }}
+											</a>
 											@endif
 										</div>
 										
