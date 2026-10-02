@@ -162,7 +162,7 @@
                         <td class="f-13 hm text-center" style="opacity:.5">{{ number_format($stat->sigma ?? 8.333, 2) }}</td>
                     @endif
                     @php $gamesHeads[(int) $uid] = [[trim($lname . ' ' . $fname) ?: '#'.$uid, ($ratingUsers[$uid] ?? null)?->profile_photo_url]]; @endphp
-                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ (int) $uid }}" data-title="{{ trim($lname . ' ' . $fname) ?: '#'.$uid }}">{{ $matches }}</a></td>
+                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ (int) $uid }}" data-title="{{ trim($lname . ' ' . $fname) ?: '#'.$uid }}" data-count="{{ (int) $matches }}">{{ $matches }}</a></td>
                     <td class="cs b-600 text-center">{{ $wins }}</td>
                     <td class="hm f-13 text-center">{{ $wr }}%</td>
                     <td class="hm f-13 text-center" style="opacity:.7">{{ $isSeasonMode ? '—' : ($stat->unique_opponents ?? 0) }}</td>
