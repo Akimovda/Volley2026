@@ -55,6 +55,9 @@ class CitySearchController extends Controller
         // с name — отдаём region_display, чтобы клиентский JS не дублировал город в подписи.
         $items->each(function ($item) {
             $item->region_display = City::displayRegion($item->name, $item->region);
+            // Терминология уровней по региону города (Санкт-Петербург и Ленинградская область — 'spb'): на /profile/complete
+            // названия уровней должны меняться сразу при выборе города, не дожидаясь сохранения профиля.
+            $item->level_scope = level_terminology_scope_for_region($item->region);
         });
 
         return response()->json(['items' => $items]);

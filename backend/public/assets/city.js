@@ -71,7 +71,8 @@ document.addEventListener('DOMContentLoaded', function() {
 				'data-id="' + escapeHtml(item.id) + '" ' +
 				'data-name="' + escapeHtml(item.name) + '" ' +
 				'data-country="' + escapeHtml(item.country_code || '') + '" ' +
-				'data-region="' + escapeHtml(item.region_display || '') + '">' +
+				'data-region="' + escapeHtml(item.region_display || '') + '" ' +
+				'data-scope="' + escapeHtml(item.level_scope || 'standard') + '">' +
 				'<div class="city-item-name">' + escapeHtml(item.name) + '</div>' +
 				(subText ? '<div class="city-item-sub">' + subText + '</div>' : '') +
 				'</button>'
@@ -112,8 +113,10 @@ document.addEventListener('DOMContentLoaded', function() {
 		return await r.json();
 	}
 	
-	function applySelected(id, name, countryCode, region) {
+	function applySelected(id, name, countryCode, region, levelScope) {
 		if (cityId) cityId.value = id ? String(id) : '';
+		// Страница может подписаться (profile/complete меняет названия уровней под терминологию города)
+		document.dispatchEvent(new CustomEvent('city:selected', { detail: { id: id ? String(id) : '', name: name || '', scope: levelScope || 'standard' } }));
 		
 		if (cityInput) {
 			let displayName = name;
@@ -213,7 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
 						const name = btn.getAttribute('data-name') || btn.querySelector('.city-item-name')?.textContent || '';
 						const countryCode = btn.getAttribute('data-country');
 						const region = btn.getAttribute('data-region');
-						applySelected(id, name, countryCode, region);
+						applySelected(id, name, countryCode, region, btn.getAttribute('data-scope'));
 					});
 				});
 			}, 220);

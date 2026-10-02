@@ -266,6 +266,15 @@
 					}
 					
 					/* 3. Выбранный вариант - полностью непрозрачный */
+					.level-hint { display: flex; align-items: flex-start; gap: .8rem; padding: .9rem 1.2rem; border-radius: 1rem; background: rgba(41, 103, 186, .08); color: #2967BA; }
+					.level-hint-ico { flex-shrink: 0; }
+					body.dark .level-hint { background: rgba(255, 177, 113, .1); color: #FFB171; }
+					.level-picked { margin-top: .8rem; font-size: 1.5rem; font-weight: 600; text-align: center; }
+					.level-picked--ok { color: #1e9e3e; }
+					.level-picked--none { color: #E7612F; }
+					body.dark .level-picked--ok { color: #5ee68c; }
+					.levelmark--selected { position: relative; }
+					.levelmark--selected::before { content: "✓"; position: absolute; top: -.7rem; right: -.4rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: #1e9e3e; color: #fff; font-size: 1.3rem; font-weight: 700; line-height: 2.2rem; text-align: center; z-index: 2; box-shadow: 0 .2rem .6rem rgba(0,0,0,.25); }
 					.levelmark--selected {
 					opacity: 1 !important;
 					filter: grayscale(0) !important;
@@ -809,9 +818,13 @@
 														@endforeach
 													</select>
 													<ul class="list f-16 mt-1">
-														<li><a href="/level_players">{{ __('profile.cp_lvl_link') }}</a></li>
+														<li><a href="/level_players" class="level-info-link">{{ __('profile.cp_lvl_link') }}</a></li>
 													</ul>
 													{{-- Кнопки уровней --}}
+													<div class="level-hint f-15 mt-1 mb-1">
+														<span class="level-hint-ico" aria-hidden="true">👆</span>
+														<span>{!! __('profile.cp_lvl_hint') !!}</span>
+													</div>
 													<div class="swiper levelmark-row" id="levelmark-wrap-classic" data-type="classic">
 														<div class="swiper-wrapper">
 															@foreach(range(1, 7) as $lvl)
@@ -848,6 +861,7 @@
 														</div>
 														<div class="swiper-pagination"></div>
 													</div>
+													<div class="level-picked" id="level-picked-classic" data-type="classic" aria-live="polite"></div>
 													<ul class="list f-16 mt-1">
 														@error('classic_level')
 														<li class="red b-600">{{ $message }}</li>
@@ -934,10 +948,14 @@
 													</select>
 													
 													<ul class="list f-16 mt-1">
-														<li><a href="/level_players">{{ __('profile.cp_lvl_link') }}</a></li>
+														<li><a href="/level_players" class="level-info-link">{{ __('profile.cp_lvl_link') }}</a></li>
 													</ul>
 													
 													{{-- Кнопки уровней --}}
+													<div class="level-hint f-15 mt-1 mb-1">
+														<span class="level-hint-ico" aria-hidden="true">👆</span>
+														<span>{!! __('profile.cp_lvl_hint') !!}</span>
+													</div>
 													<div class="swiper levelmark-row" id="levelmark-wrap-beach" data-type="beach">
 														<div class="swiper-wrapper">
 															@foreach(range(1, 7) as $lvl)
@@ -974,6 +992,7 @@
 														</div>
 														<div class="swiper-pagination"></div>
 													</div>
+													<div class="level-picked" id="level-picked-beach" data-type="beach" aria-live="polite"></div>
 													
 													<ul class="list f-16 mt-1">
 														@error('beach_level')
@@ -1126,6 +1145,66 @@
 							levelTypes.forEach(type => {
 								selects[type] = document.getElementById(type + '_level_select');
 								wraps[type] = document.getElementById('levelmark-wrap-' + type);
+							});
+
+							// Строка «Выбрано: 4 — Средний» / «Уровень не выбран…» под слайдером: людям не очевидно, что мало
+							// пролистать — нужно ещё нажать на квадрат уровня. Обновляется по смене класса плиток (клик, возрастные ограничения).
+							const pickedTpl = @json(__('profile.cp_lvl_picked'));
+							const pickedNone = @json(__('profile.cp_lvl_none'));
+							function updatePicked(type) {
+								const box = document.getElementById('level-picked-' + type);
+								const wrap = wraps[type];
+								if (!box || !wrap) return;
+								const sel = wrap.querySelector('.levelmark--selected');
+								if (sel) {
+									const name = (sel.querySelector('.level-name') || {}).textContent || '';
+									box.textContent = '✓ ' + pickedTpl.replace(':n', sel.dataset.level).replace(':name', name.trim());
+									box.className = 'level-picked level-picked--ok';
+								} else {
+									box.textContent = pickedNone;
+									box.className = 'level-picked level-picked--none';
+								}
+							}
+							levelTypes.forEach(type => {
+								const wrap = wraps[type];
+								if (!wrap) return;
+								new MutationObserver(() => updatePicked(type)).observe(wrap, { subtree: true, attributes: true, attributeFilter: ['class'] });
+								updatePicked(type);
+							});
+
+							// «Подробная информация об уровнях» — во всплывающем окне (iframe), а не на отдельной странице.
+							// Терминология (стандартная/питерская) — по городу, ВЫБРАННОМУ в форме (даже если ещё не сохранён).
+							let currentLevelScope = @json($levelScope);
+							document.addEventListener('city:selected', function (e) { currentLevelScope = (e.detail && e.detail.scope) || 'standard'; });
+							document.querySelectorAll('.level-info-link').forEach(function (a) {
+								a.addEventListener('click', function (ev) {
+									if (!window.jQuery || !jQuery.fancybox) return; // без fancybox — обычный переход по ссылке
+									ev.preventDefault();
+									jQuery.fancybox.open({
+										src: '/level_players?embed=1&scope=' + encodeURIComponent(currentLevelScope),
+										type: 'iframe',
+										iframe: { css: { width: '960px', maxWidth: '96vw', height: '82vh' } }
+									});
+								});
+							});
+
+							// Названия уровней зависят от города (Санкт-Петербург / Ленинградская область — своя терминология):
+							// при выборе города в автокомплите меняем подписи плиток сразу, не дожидаясь сохранения.
+							const levelNamesByScope = {
+								standard: @json(collect(range(1, 7))->mapWithKeys(fn($l) => [$l => level_name($l, 'standard')])->all()),
+								spb: @json(collect(range(1, 7))->mapWithKeys(fn($l) => [$l => level_name($l, 'spb')])->all()),
+							};
+							document.addEventListener('city:selected', function (e) {
+								const names = levelNamesByScope[(e.detail && e.detail.scope) || 'standard'] || levelNamesByScope.standard;
+								levelTypes.forEach(type => {
+									const wrap = wraps[type];
+									if (!wrap) return;
+									wrap.querySelectorAll('.levelmark').forEach(tile => {
+										const n = tile.querySelector('.level-name');
+										if (n && names[tile.dataset.level]) n.textContent = names[tile.dataset.level];
+									});
+									updatePicked(type);
+								});
 							});
 							
 							const birthInput = document.querySelector('input[name="birth_date"]');
