@@ -374,6 +374,12 @@
 {{-- Обычный пользователь --}}
 @else
 <nav class="menu-nav sidebar-menu">
+    @if(($menuUser->role ?? 'user') === 'user')
+    {{-- /events/create отправит обычного пользователя на заявку организатора в профиле --}}
+    <a href="/events/create" class="menu-item">
+        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+    </a>
+    @endif
     <a href="{{ route('users.show', ['user' => $menuUser->id]) }}"
        class="menu-item {{ $activeMenu === 'public_profile' ? 'active' : '' }}">
         @if($activeMenu === 'public_profile')
