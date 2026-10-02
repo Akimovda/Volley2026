@@ -250,4 +250,325 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
     'tf_t_description' => 'Volleyball tournament formats and schemes',
     'tf_breadcrumb'    => 'Tournament formats',
     'tf_h1'            => 'Tournament formats',
+
+    // ── /about (all page texts; structure: resources/views/pages/about.blade.php) ──
+    'about' => [
+        'hero_text' => 'A complete ecosystem for the volleyball community — from casual games to professional leagues. Event sign-up, tournaments, ratings, volleyball schools, court booking and a CRM for organizers.',
+        'btn_find'        => 'Find an event',
+        'btn_find_arrow'  => 'Find an event →',
+        'btn_rating'      => 'Player rating',
+        'btn_teams'       => 'Pairs and teams',
+        'btn_rating_info' => 'How the rating works',
+        'btn_become_org'  => 'Become an organizer',
+        'btn_apply_org'   => 'Apply to become an organizer',
+        'btn_org_dash'    => 'Organizer dashboard',
+        'btn_activity'    => 'My workouts',
+        'btn_leagues'     => 'All leagues',
+        'btn_locations'   => 'Find a venue',
+        'btn_schools'     => 'School catalog',
+        'btn_premium'     => 'More about Premium',
+        'btn_pro'         => 'Organizer Pro plans',
+        'btn_wl'          => 'Discuss on Telegram',
+        'btn_ios'         => 'App Store',
+        'btn_android'     => 'RuStore',
+
+        'why_player_title' => 'Why players love it:',
+        'why_player_text'  => 'Stop searching for a game in chats and calls — open the app and sign up in a minute.',
+        'why_player_items' => [
+            'Find a game at your level right now — filter by city, format and rating',
+            'Your progress is never lost — a fair rating after every match, calculated automatically (OpenSkill)',
+            "You won't miss a spot — the waitlist grabs it for you, even when you're not watching",
+        ],
+        'why_org_title' => 'Why organizers love it:',
+        'why_org_text'  => 'Less admin in messengers — more time for the game itself.',
+        'why_org_items' => [
+            'Sign-up, waitlist and payments in one place, no manual lists',
+            'Payment at registration — automatically via YooKassa or by T-Bank / Sber link',
+            'Tournaments and leagues without spreadsheets — brackets, ratings and division promotion are calculated automatically',
+        ],
+
+        'audience_title' => 'Who the service is for',
+        'audiences' => [
+            ['🙋', 'Players', 'Find games near home, sign up in one click, track your OpenSkill rating and partner history.'],
+            ['📋', 'Organizers', 'Create events, manage participants and payments. CRM dashboard, waitlist, tournaments, leagues and games with statistics.'],
+            ['🏫', 'Volleyball schools', 'Your own school page, training schedule with online sign-up, subscriptions and group management.'],
+            ['🏅', 'Coaches', 'A public coach profile with specialization and experience, ratings from training participants, training groups and the event catalog.'],
+            ['🏆', 'Leagues and federations', 'Run seasons with divisions, automatic promotion, cross tables and player rating tracking.'],
+            ['🏟️', 'Sports centers', 'Accept direct court bookings from players with online payment, publish your court schedule and track occupancy and revenue on one platform.'],
+        ],
+
+        'sections' => [
+            'players' => [
+                'title' => '🙋 Features for players',
+                'blocks' => [[
+                    'left' => [
+                        '🔍 Search events by city, level and game format',
+                        '✅ One-click event sign-up',
+                        '⏳ Waitlist — automatic sign-up when a spot frees up',
+                        '🔔 Notifications in Telegram, VKontakte and MAX',
+                        '🏙 Notifications about new events in your city (enabled in your profile)',
+                        '📍 Venue map with address and directions',
+                        '🌤 Weather forecast for outdoor events (up to 5 days ahead)',
+                        '🤝 Invite friends to an event',
+                    ],
+                    'right' => [
+                        '📈 A fair skill rating — calculated automatically after every match (OpenSkill)',
+                        '🎯 Profile with positions, level, tournament and partner history',
+                        '🤜 Save your favorite pairs and teams',
+                        '📊 Personal match statistics at games with statistics',
+                        '🔒 Private events — by invitation link only',
+                        '💳 Online payment via YooKassa, T-Bank or Sber',
+                        '⭐ Premium subscription — see below',
+                        '📲 Mobile app for iOS and Android',
+                    ],
+                ]],
+            ],
+            'premium' => [
+                'title' => '⭐ Premium for players',
+                'intro' => 'A subscription for those who play a lot and do not want to miss spots. 7-day free trial.',
+                'blocks' => [[
+                    'left' => [
+                        '⏳ Waitlist priority — you get a freed-up spot first',
+                        '🤖 Auto sign-up: up to 5 event series — the system signs you up as soon as registration opens (confirm your attendance within 12 hours)',
+                    ],
+                    'right' => [
+                        '👀 Follow players — find out when they sign up for games',
+                        '🔔 Personal notifications about new games at your level in your city and a weekly digest',
+                    ],
+                ]],
+            ],
+            'rating' => [
+                'title' => '📈 OpenSkill rating system',
+                'intro' => 'VolleyPlay.Club uses three independent ratings to objectively assess every player.',
+                'cards' => [
+                    ['⚡ OpenSkill — a fair rating', "Calculated automatically after every match, accounting not only for wins but also for the strength of opponents. For the technically minded: a Bayesian μ/σ algorithm; the public score is the conservative CR\u{00A0}=\u{00A0}μ\u{00A0}−\u{00A0}3σ, which you can trust."],
+                    ['🎯 Elo rating', 'The classic rating based on completed tournaments. Calculated separately per season and for the whole career — handy for tracking progress.'],
+                    ['📊 WinRate', 'Win percentage in matches, tournaments and series. Shows consistency of results and complements OpenSkill well.'],
+                ],
+                'blocks' => [[
+                    'left' => [
+                        '📉 Rating chart for recent matches in the player profile',
+                        '🤜 Pair statistics: pairs for beach, permanent teams with rosters for indoor',
+                        '⚔️ Head-to-head statistics against opponents',
+                    ],
+                    'right' => [
+                        '🏄 Separate ratings for beach and indoor volleyball',
+                        '📅 Season rating — you start fresh every season',
+                        '🔝 Peak rating — history of your best result',
+                    ],
+                ]],
+            ],
+            'activity' => [
+                'title' => '❤️ Workout tracker',
+                'intro' => 'Connect a BLE heart rate sensor in the mobile app and watch your load right during the game.',
+                'blocks' => [[
+                    'left' => [
+                        '❤️ Real-time heart rate from a BLE sensor (chest strap, watch)',
+                        '🔥 Calories burned and time in heart rate zones per workout',
+                        '📈 Average/maximum heart rate and overall load (load score)',
+                    ],
+                    'right' => [
+                        '🦘 Jump counter and height — for compatible devices',
+                        '📊 Jump height trend compared with previous workouts',
+                        '📱 Available in the iOS and Android mobile app',
+                    ],
+                ]],
+            ],
+            'tournaments' => [
+                'title' => '🏆 Tournaments and competitions',
+                'intro' => 'A complete tournament system: from the draw to the final protocol.',
+                'blocks' => [
+                    [
+                        'left_title'  => 'Formats for indoor and beach',
+                        'left' => [
+                            '🔁 Round Robin',
+                            '🏟️ Group stage + playoffs, including final groups by level',
+                            '❌ Single Elimination',
+                            '🔄 Double Elimination',
+                            '🇨🇭 Swiss system',
+                        ],
+                        'right_title' => 'Beach only',
+                        'right' => [
+                            '👑 King of the Court',
+                            '🏖️ Beach King — an individual tournament with rotating partners',
+                        ],
+                    ],
+                    [
+                        'left' => [
+                            '📋 Cross tables and live brackets',
+                            '🤝 Team registration — captain + members',
+                            '👤 Individual tournament sign-up (distribution into teams)',
+                            '⚖️ Tiebreak system with additional criteria',
+                        ],
+                        'right' => [
+                            '📺 TV mode — show the bracket on a screen',
+                            '📄 Protocol export to PDF',
+                            '🔀 Draw and team rearrangement by the organizer',
+                            '📊 Ratings update automatically after every match',
+                        ],
+                    ],
+                ],
+            ],
+            'stats_game' => [
+                'title' => '📊 Game with statistics',
+                'intro' => 'A regular game with matches, scores and statistics — no tournament bracket. The organizer turns it on with a checkbox when creating the event.',
+                'blocks' => [[
+                    'left' => [
+                        '🔄 Line-ups change during the evening — teams are formed for each match from the players who signed up',
+                        '🏐 Score by sets or point by point, statistics for every player',
+                    ],
+                    'right' => [
+                        '🏅 Public results page: podium, player table, top scorers',
+                        '📅 Series results for a period and a "Rated event" flag — matches count toward the overall rating',
+                    ],
+                ]],
+            ],
+            'leagues' => [
+                'title' => '🏅 Leagues and seasons',
+                'intro' => 'A long-term competition system with divisions, promotion and accumulated statistics.',
+                'blocks' => [[
+                    'left' => [
+                        '🏢 Hierarchy: League → Season → Divisions → Rounds',
+                        '⬆️ Automatic promotion and relegation at the end of the season',
+                        '📋 Division roster with movement history',
+                        '🔄 In-season player substitutions with double confirmation',
+                    ],
+                    'right' => [
+                        '📊 Cumulative table for the whole season',
+                        '🗓️ Rounds linked to specific divisions',
+                        '👥 League reserve — a queue of teams for a division spot',
+                        '🌐 Public page for the league and each season',
+                    ],
+                ]],
+            ],
+            'club' => [
+                'title' => '🏟️ Court booking for clubs',
+                'intro' => 'Tools for venue owners and sports centers: hall occupancy and bookings in one window.',
+                'blocks' => [[
+                    'left' => [
+                        '🗓️ Court occupancy timeline by direction and hall',
+                        '🏐 Players book a court directly on the site, no calls to the administrator',
+                        '💳 Online booking payment via YooKassa',
+                        '✅ Booking confirmation or rejection by the venue owner',
+                    ],
+                    'right' => [
+                        '📊 Occupancy and revenue analytics by court and direction',
+                        '🔔 Notifications about new bookings, payments and reminders',
+                        '↩️ Flexible cancellation and refund policy',
+                        '🏆 Automatic assignment of tournament matches to specific courts',
+                    ],
+                ]],
+            ],
+            'org' => [
+                'title' => '📋 CRM and tools for organizers',
+                'intro' => 'A full toolkit for managing events, your team and finances.',
+                'blocks' => [[
+                    'left_title' => 'Event management',
+                    'left' => [
+                        '📅 One-off events and recurring series',
+                        '👥 Add/move participants, forced sign-up',
+                        '⏳ Waitlist with manual ordering',
+                        '🔔 Push notifications to participants about changes',
+                        '📢 Announcements in Telegram channels, VKontakte groups and MAX',
+                        '📄 Participant list export to PDF and TXT',
+                    ],
+                    'right_title' => 'Analytics and finance',
+                    'right' => [
+                        '📊 Organizer dashboard: activity, sign-ups, revenue, event occupancy',
+                        '🧑‍🤝‍🧑 Player and tournament analytics — in Organizer Pro',
+                        '💰 Payment acceptance: YooKassa, T-Bank, Sberbank',
+                        "👛 Player's virtual wallet with the organizer",
+                        '🎫 Subscriptions and discount coupons',
+                        '👨‍💼 Assistant team (staff) with an action log',
+                    ],
+                ]],
+            ],
+            'pro' => [
+                'title' => '⭐ Organizer Pro',
+                'intro' => 'An extended plan for organizers who are building their own community. 7-day free trial.',
+                'blocks' => [[
+                    'left' => [
+                        '🤖 Your own bot: announcements from your personal bot in Telegram and MAX',
+                        '🌐 Website widget: a list of your events via iFrame or a JS script',
+                    ],
+                    'right' => [
+                        '📊 Player analytics (audience, top players, churn, CSV/PDF export) and tournament analytics',
+                        '🛠 Priority support',
+                    ],
+                ]],
+            ],
+            'white_label' => [
+                'title' => '📱 Your own app — White Label',
+                'intro' => 'A club, school or league gets a separate mobile app under its own name. Connected separately from the subscription; the price depends on the amount of setup — on request.',
+                'blocks' => [[
+                    'left' => [
+                        '🎨 Your brand: name, icon and splash screen, logo and colors in light and dark themes',
+                        '🏐 Only your games: the app feed shows your organization’s events',
+                    ],
+                    'right' => [
+                        '🧭 Your own menu: hide unneeded sections and add your own links',
+                        '📲 In the stores: App Store and RuStore, push notifications',
+                    ],
+                ]],
+            ],
+            'school' => [
+                'title' => '🏫 Volleyball schools',
+                'intro' => 'A separate module for coaches and heads of volleyball schools.',
+                'blocks' => [[
+                    'left' => [
+                        '📄 School page with description, photos and contacts',
+                        '📅 Training group schedule with online sign-up',
+                        '🎓 Groups by level: beginners, advanced, mixed',
+                        '💳 Subscriptions — sell training packages online',
+                    ],
+                    'right' => [
+                        '🔔 Automatic training reminders for students',
+                        '📍 Linked to a venue/hall with a map',
+                        '🏅 Coach profile with ratings from training participants',
+                        '📢 Promotion in the common event and school catalogs',
+                    ],
+                ]],
+            ],
+            'app' => [
+                'title' => '📱 Mobile app',
+                'blocks' => [[
+                    'left' => [
+                        '🍎 iOS — available in the App Store',
+                        '🤳 Face ID / Touch ID for quick sign-in (iOS)',
+                        '🔔 Push notifications about sign-ups, reminders and tournaments',
+                        '🌐 All site features in a convenient mobile form',
+                    ],
+                    'right' => [
+                        '🤖 Android — available in RuStore',
+                        '🌙 Dark theme — follows the system setting automatically',
+                        '🔗 Universal Links — links open right in the app',
+                        '🔑 Sign in with Telegram, VKontakte, Yandex, Google or Apple ID (the set of methods depends on the device)',
+                    ],
+                ]],
+            ],
+        ],
+
+        'bots_title' => '🤖 Bots and notifications',
+        'bots' => [
+            ['✈️', 'Telegram', 'Notifications about sign-ups, cancellations, 2-hour reminders and changes. Announcements in the organizer’s channels and groups.'],
+            ['💙', 'VKontakte', 'Notifications in VKontakte messages. Announcements published in chats and communities.'],
+            ['🟣', 'MAX', 'A bot in the MAX messenger — notifications and announcements for the audience on the platform.'],
+        ],
+
+        'cities_title' => '📍 Launch cities',
+        'cities_text'  => 'We operate and are launching in these cities. The list keeps growing — want to add your city?',
+        'cities_contact' => 'Contact us',
+        'cities' => [
+            ['Moscow', '🏙️'], ['Novosibirsk', '❄️'], ['Saint Petersburg', '🌊'], ['Sestroretsk', '🌊'],
+            ['Voronezh', '🌿'], ['Lipetsk', '🌿'], ['Saratov', '🌾'], ['Sochi', '☀️'], ['Sirius', '☀️'],
+        ],
+
+        'start_title' => '🚀 How to start',
+        'steps' => [
+            ['Sign up', 'Sign in with Telegram, VKontakte, Yandex, Google or Apple ID — no passwords or extra data.'],
+            ['Fill in your profile', 'Add your position, level and city — the system will pick suitable events and start calculating your rating.'],
+            ['Find an event', 'Choose a city, format and level — sign up for the nearest game, training or tournament.'],
+            ['Play and grow', 'After matches your rating updates automatically. Join leagues and tournaments, track your progress.'],
+        ],
+    ],
 ];
