@@ -42,6 +42,8 @@ class AdminPlatformPaymentController extends Controller
         $settings->organizer_pro_quarter_rub   = max(0, (int) $request->input('organizer_pro_quarter_rub', 1199));
         $settings->organizer_pro_half_rub      = max(0, (int) $request->input('organizer_pro_half_rub', 3490));
         $settings->organizer_pro_year_rub      = max(0, (int) $request->input('organizer_pro_year_rub', 4990));
+        $settings->premium_half_rub            = max(0, (int) $request->input('premium_half_rub', 2490));
+        $settings->premium_year_rub            = max(0, (int) $request->input('premium_year_rub', 3990));
 
         $settings->save();
 

@@ -20,6 +20,8 @@ class PlatformPaymentSetting extends Model
         'organizer_pro_quarter_rub',
         'organizer_pro_half_rub',
         'organizer_pro_year_rub',
+        'premium_half_rub',
+        'premium_year_rub',
     ];
 
     protected $casts = [

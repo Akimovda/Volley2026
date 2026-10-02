@@ -170,10 +170,14 @@
             <div class="card mb-2" style="border-radius:1.6rem;padding:2rem;">
                 <div class="f-17 b-600 mb-2">Продлить подписку</div>
                 <div class="row row2">
-                    @foreach([
-                        ['half', '6 месяцев', '2490₽', ''],
-                        ['year', '1 год',     '3990₽', 'Выгода 20%'],
-                    ] as [$plan, $label, $price, $economy])
+                    @php
+                        $yearEconomyText = $yearSaving ? 'Выгода ' . $yearSaving . '%' : '';
+                        $renewPlans = [
+                            ['half', '6 месяцев', $priceHalf . '₽', ''],
+                            ['year', '1 год', $priceYear . '₽', $yearEconomyText],
+                        ];
+                    @endphp
+                    @foreach($renewPlans as [$plan, $label, $price, $economy])
                     <div class="col-md-6">
                         <div class="card text-center" style="padding:1.5rem;">
                             <div class="f-15 b-600">{{ $label }}</div>
@@ -201,8 +205,8 @@
                     План: {{ match($pending->plan) {
                         'month'   => '1 месяц — 199₽',
                         'quarter' => '3 месяца — 499₽',
-                        'half'    => '6 месяцев — 2490₽',
-                        'year'    => '1 год — 3990₽',
+                        'half'    => '6 месяцев — ' . $priceHalf . '₽',
+                        'year'    => '1 год — ' . $priceYear . '₽',
                     } }}
                 </div>
                 @if($platformPayment && !$pending->payment?->user_confirmed)
@@ -272,7 +276,7 @@
                 <div class="plan-card popular">
                     <div class="badge-popular">ПОПУЛЯРНЫЙ</div>
                     <div class="plan-label">6 месяцев</div>
-                    <div class="plan-price">2490₽</div>
+                    <div class="plan-price">{{ $priceHalf }}₽</div>
                     <div class="plan-economy"></div>
                     @auth
                     <form method="POST" action="{{ route('premium.pay') }}">
@@ -290,8 +294,8 @@
                 {{-- Год --}}
                 <div class="plan-card">
                     <div class="plan-label">1 год</div>
-                    <div class="plan-price">3990₽</div>
-                    <div class="plan-economy">Выгода 20%</div>
+                    <div class="plan-price">{{ $priceYear }}₽</div>
+                    <div class="plan-economy">{{ $yearSaving ? 'Выгода ' . $yearSaving . '%' : '' }}</div>
                     @auth
                     <form method="POST" action="{{ route('premium.pay') }}">
                         @csrf
