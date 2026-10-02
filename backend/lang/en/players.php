@@ -57,4 +57,8 @@ return [
     'no_data'              => 'No data',
     'search_placeholder'   => 'Search by name...',
     'rank'                 => '#',
+    'team_col' => 'Team',
+    'team_size' => 'Players: :n',
+    'team_roster_empty' => 'Roster not found',
+    'team_captain' => 'captain',
 ];

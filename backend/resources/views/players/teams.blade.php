@@ -19,6 +19,7 @@
 </x-slot>
 
 @php
+    $isTeamMode = isset($teamRosters);
     $schemeLabel = fn($v) => $v === '5x1_libero' ? '5x1 ' . __('events.libero_word') : $v;
 @endphp
 <x-slot name="style">
@@ -27,6 +28,10 @@
         .pair-player { display:inline-flex; align-items:center; gap:.8rem; }
         .pair-avatar { width:3.2rem; height:3.2rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
         .pair-sep { opacity:.4; }
+        .roster-row { display:flex; align-items:center; gap:1.2rem; padding:.8rem 0; border-bottom:1px solid rgba(128,128,128,.15); }
+        .roster-row:last-child { border-bottom:0; }
+        .roster-info { display:flex; flex-direction:column; }
+        .roster-pos { opacity:.6; }
         @media (max-width: 600px) {
             .pair-cell { flex-direction:column; align-items:flex-start; gap:.6rem; }
             .pair-sep { display:none; }
@@ -80,7 +85,7 @@
             <thead>
                 <tr>
                     <th style="width:32px">#</th>
-                    <th>{{ __('players.pair_or_team') }}</th>
+                    <th>{{ $isTeamMode ? __('players.team_col') : __('players.pair_or_team') }}</th>
                     <th class="text-center">{{ __('players.scheme') }}</th>
                     <th class="text-center">{{ __('players.matches_together') }}</th>
                     <th class="b-600 text-center">{{ __('players.wins') }}</th>
@@ -93,12 +98,16 @@
                 @php
                     $rank  = $pairs->firstItem() + $i;
                     $wr    = (float) $pair->winrate;
-                    $losses = $pair->matches_together - $pair->wins_together;
+                    $losses = (int) $pair->matches_together - (int) $pair->wins_together;
                     $wrClass = $wr >= 60 ? 'cs' : ($wr >= 40 ? '' : 'red');
                 @endphp
                 <tr>
                     <td><span style="opacity:.5">{{ $rank }}</span></td>
                     <td>
+                        @if($isTeamMode)
+                            <a href="javascript:void(0)" class="blink b-600 team-roster-link" data-team="{{ $pair->last_team_id }}">{{ $pair->team_name ?: __('players.team_col') . ' #' . $pair->last_team_id }}</a>
+                            <div class="f-13" style="opacity:.6">{{ __('players.team_size', ['n' => (int) $pair->size]) }}</div>
+                        @else
                         <div class="pair-cell">
                             @foreach([[$pair->player1_id, $pair->p1_last, $pair->p1_first], [$pair->player2_id, $pair->p2_last, $pair->p2_first]] as $pi => [$pid, $plast, $pfirst])
                             @if($pi === 1)<span class="pair-sep">×</span>@endif
@@ -108,6 +117,7 @@
                             </a>
                             @endforeach
                         </div>
+                        @endif
                     </td>
                     <td class="text-center">
                         @if($pair->game_scheme)
@@ -116,8 +126,8 @@
                             <span style="opacity:.3">—</span>
                         @endif
                     </td>
-                    <td class="text-center">{{ $pair->matches_together }}</td>
-                    <td class="cs b-600 text-center">{{ $pair->wins_together }}</td>
+                    <td class="text-center">{{ (int) $pair->matches_together }}</td>
+                    <td class="cs b-600 text-center">{{ (int) $pair->wins_together }}</td>
                     <td class="red text-center">{{ $losses }}</td>
                     <td class="b-600 text-center {{ $wrClass }}">{{ number_format($wr, 1) }}%</td>
                 </tr>
@@ -130,4 +140,50 @@
 
 </div>
 </div>
+@if($isTeamMode)
+<div id="team-roster-modal" style="display:none;max-width:48rem;width:100%">
+    <h3 class="-mt-05 mb-2" id="team-roster-title"></h3>
+    <div id="team-roster-list"></div>
+</div>
+<x-slot name="script">
+    <script src="/assets/fas.js"></script>
+    <script>
+    (function() {
+        var rosters = @json($teamRosters);
+        var emptyText = @json(__('players.team_roster_empty'));
+        var captainText = @json(__('players.team_captain'));
+        function el(tag, cls, text) {
+            var e = document.createElement(tag);
+            if (cls) e.className = cls;
+            if (text != null) e.textContent = text;
+            return e;
+        }
+        document.querySelectorAll('.team-roster-link').forEach(function(link) {
+            link.addEventListener('click', function(ev) {
+                ev.preventDefault();
+                var list = rosters[link.dataset.team] || [];
+                document.getElementById('team-roster-title').textContent = link.textContent.trim();
+                var box = document.getElementById('team-roster-list');
+                box.innerHTML = '';
+                if (!list.length) box.appendChild(el('div', 'f-14', emptyText));
+                list.forEach(function(m) {
+                    var row = el('a', 'roster-row blink');
+                    row.href = m.url;
+                    var img = el('img', 'pair-avatar');
+                    img.src = m.avatar || '';
+                    img.alt = '';
+                    row.appendChild(img);
+                    var info = el('span', 'roster-info');
+                    info.appendChild(el('span', 'b-600', m.name + (m.captain ? ' · ' + captainText : '')));
+                    if (m.position) info.appendChild(el('span', 'f-13 roster-pos', m.position));
+                    row.appendChild(info);
+                    box.appendChild(row);
+                });
+                jQuery.fancybox.open({ src: '#team-roster-modal', type: 'inline' });
+            });
+        });
+    })();
+    </script>
+</x-slot>
+@endif
 </x-voll-layout>
