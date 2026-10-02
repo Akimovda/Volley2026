@@ -567,6 +567,12 @@
                                     @if($isAdmin)
                                         <a href="{{ route('admin.locations.create') }}"
                                            class="f-16 cd b-600">{{ __('events.location_create_btn') }}</a>
+                                    @else
+                                        {{-- Организатор: форма с картой во всплывающем окне (как на шаге 2 создания) --}}
+                                        <a href="javascript:void(0)" id="org_location_create_btn_edit"
+                                           data-url="{{ route('organizer.locations.create') }}"
+                                           data-need-city="{{ __('locations.org_choose_city') }}"
+                                           class="f-16 cd b-600">{{ __('events.location_create_btn') }}</a>
                                     @endif
                                 </div>
 
@@ -2099,6 +2105,35 @@
                     if (!locUrl || !cityId) return;
                     fetchJson(locUrl + '?city_id=' + encodeURIComponent(cityId), function(data) {
                         fillLocations(data && data.ok ? (data.items || []) : [], preselect);
+                    });
+                }
+
+                // ===== Создание локации организатором: модалка с картой, затем выбор новой локации =====
+                var orgLocBtn = document.getElementById('org_location_create_btn_edit');
+                if (orgLocBtn) {
+                    orgLocBtn.addEventListener('click', function() {
+                        var cid = cityIdEl ? cityIdEl.value : '';
+                        if (!cid) {
+                            var needCity = orgLocBtn.getAttribute('data-need-city') || '';
+                            if (typeof swal === 'function') swal({ text: needCity, icon: 'warning' }); else alert(needCity);
+                            return;
+                        }
+                        var url = (orgLocBtn.getAttribute('data-url') || '') + '?embed=1&city_id=' + encodeURIComponent(cid);
+                        if (window.jQuery && window.jQuery.fancybox) {
+                            window.jQuery.fancybox.open({
+                                src: url, type: 'iframe',
+                                opts: { smallBtn: true, iframe: { preload: false, css: { width: '760px', maxWidth: '96vw', height: '92vh' } } }
+                            });
+                        } else {
+                            window.open(url, '_blank');
+                        }
+                    });
+                    window.addEventListener('message', function(e) {
+                        if (e.origin !== window.location.origin) return;
+                        var d = e.data;
+                        if (!d || d.type !== 'location-created') return;
+                        loadLocations(d.cityId, parseInt(d.id, 10));
+                        if (window.jQuery && window.jQuery.fancybox) window.jQuery.fancybox.close(true);
                     });
                 }
 
