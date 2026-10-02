@@ -1130,6 +1130,35 @@ final class UserNotificationService
     }
 
     // -------------------------------------------------------------------------
+    // Локации: организатор создал новую локацию — админу дозаполнить
+    // -------------------------------------------------------------------------
+    public function createLocationCreatedByOrganizerNotification(User $admin, \App\Models\Location $location, User $creator): void
+    {
+        $editUrl = route('admin.locations.edit', $location);
+        $city    = trim((string) ($location->city?->name ?? ''));
+        $who     = trim(($creator->last_name ?? '') . ' ' . ($creator->first_name ?? '')) ?: ('#' . $creator->id);
+
+        $body = "📍 «{$location->name}»" . ($city !== '' ? " ({$city})" : '') . "\n"
+              . ($location->address ? "🏠 {$location->address}\n" : '')
+              . ($location->lat !== null ? "🗺 {$location->lat}, {$location->lng}\n" : "🗺 координаты не указаны\n")
+              . "👤 Создал организатор: {$who}\n"
+              . "✏️ Дозаполнить: {$editUrl}";
+
+        $this->create(
+            userId:   $admin->id,
+            type:     'location_created_by_organizer',
+            title:    '📍 Новая локация от организатора',
+            body:     $body,
+            payload:  [
+                'location_id' => $location->id,
+                'button_text' => 'Открыть локацию',
+                'button_url'  => $editUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // Рекламные мероприятия: уведомление администратору
     // -------------------------------------------------------------------------
     public function createAdPaymentPendingNotification(User $admin, Event $event, User $organizer): void

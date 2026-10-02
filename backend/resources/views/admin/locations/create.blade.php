@@ -155,10 +155,10 @@
                     {{-- ADDRESS --}}
                     <div class="col-md-8">
 						<div class="card">
-							<label>{{ __('admin.loc_label_address') }}</label>
+							<label>{{ __('admin.loc_label_address') }} *</label>
 							<input
 							type="text"
-							name="address"
+							name="address" required
 							class="@error('address') is-invalid @enderror"
 							value="{{ old('address') }}"
 							>
@@ -212,11 +212,12 @@
                     {{-- COORDS --}}
                     <div class="col-md-6">
 						<div class="card">
-							<label>{{ __('admin.loc_label_lat') }} (lat)</label>
+							<label>{{ __('admin.loc_label_lat') }} (lat) *</label>
 							<input
 							type="number"
 							name="lat"
 							step="any"
+							required
 							class="@error('lat') is-invalid @enderror"
 							value="{{ old('lat') }}"
 							>
@@ -226,11 +227,12 @@
 					</div>
                     <div class="col-md-6">
 						<div class="card">
-							<label>{{ __('admin.loc_label_lng') }} (lng)</label>
+							<label>{{ __('admin.loc_label_lng') }} (lng) *</label>
 							<input
 							type="number"
 							name="lng"
 							step="any"
+							required
 							class="@error('lng') is-invalid @enderror"
 							value="{{ old('lng') }}"
 							>
@@ -238,28 +240,15 @@
 							<div class="pb-05"></div>
 						</div>
 					</div>
+                    <div class="col-12">
+                        @include('locations._map_picker', ['cityName' => null, 'addressSel' => '[name="address"]'])
+                    </div>
 					
 					
 					
                     {{-- PHOTOS --}}
                     <div class="col-12">
-						<div class="card">
-							<label>{{ __('admin.loc_label_photos_5') }}</label>
-							<input
-							id="loc_photos"
-							type="file"
-							name="photos[]"
-							multiple
-							accept="image/*"
-							class="@error('photos') is-invalid @enderror"
-							>
-							<div class="f-16 b-500 mt-1">
-								{{ __('admin.loc_photos_hint') }}
-							</div>
-							@error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-							@error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-							<div class="pb-05"></div>
-						</div>
+						@include('admin.locations._photo_picker', ['label' => __('admin.loc_label_photos_5'), 'max' => 5])
 					</div>
                     {{-- NOTE --}}
                     <div class="col-12">

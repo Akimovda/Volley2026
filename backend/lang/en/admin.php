@@ -410,4 +410,5 @@ return [
     'app_err_link_incomplete' => 'A custom link needs both a title and a URL.',
     'app_c_menu_icon' => 'Header icons (login/avatar, mail, menu, theme)',
     'app_c_menu_icon_hover' => 'Header icons on hover',
+    'loc_photo_add'         => 'Add',
 ];

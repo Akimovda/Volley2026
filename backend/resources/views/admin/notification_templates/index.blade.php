@@ -41,7 +41,7 @@
                 'Уведомления организатору' => ['organizer_player_registered','organizer_player_cancelled','organizer_player_auto_booked','organizer_player_waitlisted','organizer_registered_player','organizer_cancelled_player','organizer_deleted_player','reserve_spot_offered_organizer','organizer_broadcast','organizer_player_waitlist_left'],
             'Организатор Pro' => ['organizer_pro_expiring','organizer_pro_expired','organizer_pro_payment_pending','organizer_pro_paid_activated','organizer_pro_activated','organizer_pro_granted','organizer_pro_deactivated'],
             'Premium' => ['premium_expiring','premium_expired','premium_payment_pending','premium_activated','premium_deactivated'],
-            'Администрирование' => ['ad_event_payment_pending','ad_event_payment_result','admin_broadcast','organizer_request','personal_bot_revoked'],
+            'Администрирование' => ['location_created_by_organizer','ad_event_payment_pending','ad_event_payment_result','admin_broadcast','organizer_request','personal_bot_revoked'],
             ];
 
             $byCode = $templates->keyBy('code');
