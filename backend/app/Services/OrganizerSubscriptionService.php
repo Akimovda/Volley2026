@@ -58,6 +58,7 @@ class OrganizerSubscriptionService
         return match ($plan) {
             'month'   => (int) ($s?->organizer_pro_month_rub   ?? OrganizerSubscription::planPrice('month')),
             'quarter' => (int) ($s?->organizer_pro_quarter_rub ?? OrganizerSubscription::planPrice('quarter')),
+            'half'    => (int) ($s?->organizer_pro_half_rub    ?? OrganizerSubscription::planPrice('half')),
             'year'    => (int) ($s?->organizer_pro_year_rub    ?? OrganizerSubscription::planPrice('year')),
             default   => 0,
         };

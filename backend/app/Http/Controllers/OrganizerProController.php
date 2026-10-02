@@ -29,9 +29,8 @@ class OrganizerProController extends Controller
         $s = \App\Models\PlatformPaymentSetting::first();
 
         $trialDays   = (int) ($s?->organizer_pro_trial_days ?? 7);
-        $priceMonth  = (int) ($s?->organizer_pro_month_rub   ?? 499);
-        $priceQtr    = (int) ($s?->organizer_pro_quarter_rub ?? 1199);
-        $priceYear   = (int) ($s?->organizer_pro_year_rub    ?? 3999);
+        $priceHalf   = (int) ($s?->organizer_pro_half_rub    ?? 3490);
+        $priceYear   = (int) ($s?->organizer_pro_year_rub    ?? 4990);
 
         $plans = [
             'trial' => [
@@ -41,26 +40,19 @@ class OrganizerProController extends Controller
                 'badge'    => 'Бесплатно',
                 'features' => ['Свой бот Telegram', 'Виджет на сайт', 'Аналитика игроков и турниров', 'Без рекламы сервиса'],
             ],
-            'month' => [
-                'label'    => '1 месяц',
+            'half' => [
+                'label'    => '6 месяцев',
                 'sublabel' => null,
-                'price'    => $priceMonth,
+                'price'    => $priceHalf,
                 'badge'    => null,
-                'features' => ['Свой бот Telegram и MAX', 'Виджет на сайт', 'Аналитика игроков и турниров', 'Приоритетная поддержка'],
-            ],
-            'quarter' => [
-                'label'    => '3 месяца',
-                'sublabel' => $priceQtr < $priceMonth * 3 ? 'Выгода ' . round((1 - $priceQtr / ($priceMonth * 3)) * 100) . '%' : null,
-                'price'    => $priceQtr,
-                'badge'    => '🔥 Популярный',
                 'features' => ['Свой бот Telegram и MAX', 'Виджет на сайт', 'Аналитика игроков и турниров', 'Приоритетная поддержка'],
             ],
             'year' => [
                 'label'    => '1 год',
-                'sublabel' => $priceYear < $priceMonth * 12 ? 'Выгода ' . round((1 - $priceYear / ($priceMonth * 12)) * 100) . '%' : null,
+                'sublabel' => $priceYear < $priceHalf * 2 ? 'Выгода ' . round((1 - $priceYear / ($priceHalf * 2)) * 100) . '%' : null,
                 'price'    => $priceYear,
                 'badge'    => '⭐ Лучшая цена',
-                'features' => ['Всё из квартального', 'Персональный менеджер', 'Ранний доступ к новым функциям'],
+                'features' => ['Всё из 6-месячного', 'Персональный менеджер', 'Ранний доступ к новым функциям'],
             ],
         ];
 
@@ -118,7 +110,7 @@ class OrganizerProController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'plan' => ['required', 'string', 'in:month,quarter,year'],
+            'plan' => ['required', 'string', 'in:half,year'],
         ]);
 
         if (!PlatformPaymentSetting::first()) {

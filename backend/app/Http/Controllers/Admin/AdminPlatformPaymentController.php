@@ -40,7 +40,8 @@ class AdminPlatformPaymentController extends Controller
         $settings->organizer_pro_trial_days    = max(1, (int) $request->input('organizer_pro_trial_days', 7));
         $settings->organizer_pro_month_rub     = max(0, (int) $request->input('organizer_pro_month_rub', 499));
         $settings->organizer_pro_quarter_rub   = max(0, (int) $request->input('organizer_pro_quarter_rub', 1199));
-        $settings->organizer_pro_year_rub      = max(0, (int) $request->input('organizer_pro_year_rub', 3999));
+        $settings->organizer_pro_half_rub      = max(0, (int) $request->input('organizer_pro_half_rub', 3490));
+        $settings->organizer_pro_year_rub      = max(0, (int) $request->input('organizer_pro_year_rub', 4990));
 
         $settings->save();
 

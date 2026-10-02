@@ -214,8 +214,8 @@
             <h2 class="-mt-05">Тарифы</h2>
             <div class="row">
                 @foreach($plans as $planKey => $plan)
-                <div class="col-lg-3 col-sm-6">
-                    <div class="card pro-plan-card mb-1 {{ $planKey === 'quarter' ? 'is-popular' : '' }}">
+                <div class="col-lg-4 col-sm-6">
+                    <div class="card pro-plan-card mb-1 {{ $planKey === 'year' ? 'is-popular' : '' }}">
 
                         @if($plan['badge'])
                             <div class="pro-badge">{{ $plan['badge'] }}</div>
@@ -250,7 +250,7 @@
                                     @csrf
                                     <input type="hidden" name="plan" value="{{ $planKey }}">
                                     <button type="submit"
-                                            class="btn w-100 {{ $planKey === 'quarter' ? '' : 'btn-secondary' }}">
+                                            class="btn w-100 {{ $planKey === 'year' ? '' : 'btn-secondary' }}">
                                         @if($plan['price'] === 0)
                                             Попробовать бесплатно
                                         @elseif($active)
