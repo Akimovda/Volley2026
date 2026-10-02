@@ -405,6 +405,12 @@
 									<span class="menu-text">{{ __('activity.my_activity') }}</span>
 								</a>
 								@endif
+								@if((auth()->user()->role ?? 'user') === 'user')
+								{{-- Обычному пользователю: /events/create отправит на заявку организатора в профиле --}}
+								<a href="/events/create" class="menu-item">
+									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+								</a>
+								@endif
 								<a href="/user/profile" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_profile') }}</span>
 								</a>
