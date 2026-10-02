@@ -70,6 +70,9 @@ final class NotificationTemplateDataBuilder
             // user
             'user_id' => $user?->id,
             'user_name' => $user?->name,
+            'user_first_name' => trim((string) ($user?->first_name ?? '')) !== ''
+                ? trim((string) $user->first_name)
+                : ($user?->name ? (string) preg_split('/\s+/u', trim((string) $user->name))[0] : null),
             'user_email' => $user?->email,
             'user_phone' => $user?->phone ?? null,
             'user_city' => $this->resolveUserCity($user),
