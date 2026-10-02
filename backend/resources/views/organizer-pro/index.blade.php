@@ -195,7 +195,7 @@
                 </div>
                 @endforeach
             </div>
-            <div class="card mb-1">
+            <div class="card mb-1" style="margin-top:3rem">
                 <div class="f-16 b-600 mb-05">Как подключить</div>
                 <ul class="pro-feature-list" style="margin-bottom:1rem">
                     <li>Напишите нам в Telegram (@akimovda) — обсудим название, цвета и состав меню.</li>
