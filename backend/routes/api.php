@@ -76,3 +76,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register']);
     Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke']);
 });
+
+// Проверка версии нативного приложения (до логина, статический конфиг, без БД)
+Route::get('/app-version', function (Request $request) {
+    $platform = $request->query('platform');
+    if (!in_array($platform, ['ios', 'android'], true)) {
+        return response()->json(['error' => 'platform must be ios or android'], 400);
+    }
+    $c = config("app_version.$platform");
+
+    return response()->json([
+        'latest_version' => $c['latest'],
+        'min_version' => $c['min'],
+        'update_url' => $c['update_url'],
+    ]);
+})->middleware('throttle:120,1');
