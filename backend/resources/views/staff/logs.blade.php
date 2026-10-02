@@ -11,7 +11,7 @@
                         @include('profile._menu', [
                             'menuUser'       => auth()->user(),
                             'isEditingOther' => false,
-                            'activeMenu'     => 'org_dashboard',
+                            'activeMenu'     => 'staff_logs',
                         ])
                     </div>
                 </div>
