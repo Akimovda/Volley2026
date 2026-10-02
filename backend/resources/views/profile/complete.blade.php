@@ -200,7 +200,7 @@
 					   width:100%, из-за чего год "вылезал" за пределы строки на узких экранах.
 					   data-select-id ставит сам createCustomSelect (id исходного select). */
 					.form-select-wrapper[data-select-id="birth_day"] {
-					width: 8rem;
+					width: 8.6rem;
 					flex: 0 0 auto;
 					}
 					.form-select-wrapper[data-select-id="birth_month"] {
@@ -208,8 +208,20 @@
 					min-width: 0;
 					}
 					.form-select-wrapper[data-select-id="birth_year"] {
-					width: 9rem;
+					width: 10.6rem;
 					flex: 0 0 auto;
+					}
+					/* Компактные внутренние отступы: при стандартных (2rem по бокам + 1.2em под стрелку) на число оставалось
+					   ~28px и выбранные день/год обрезались до «1…»/«2…» (видно, какая дата выбрана — нельзя). */
+					.form-select-wrapper[data-select-id^="birth_"] .form-select-custom {
+					padding-left: 1.2rem;
+					padding-right: 1rem;
+					}
+					.form-select-wrapper[data-select-id^="birth_"] .form-select-value {
+					padding-right: 2.2rem;
+					}
+					.form-select-wrapper[data-select-id^="birth_"] .form-select-arrow {
+					right: 1rem;
 					}
 
 					/* Общие стили для контейнеров */
