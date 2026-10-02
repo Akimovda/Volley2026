@@ -25,6 +25,7 @@
     </style>
 </x-slot>
 
+@php $gamesHeads = []; @endphp
 <div class="container">
 <div class="ramka">
 
@@ -160,7 +161,8 @@
                         <td class="f-13 text-center" style="opacity:.7">{{ number_format($stat->mu ?? 25, 2) }}</td>
                         <td class="f-13 hm text-center" style="opacity:.5">{{ number_format($stat->sigma ?? 8.333, 2) }}</td>
                     @endif
-                    <td class="text-center">{{ $matches }}</td>
+                    @php $gamesHeads[(int) $uid] = [[trim($lname . ' ' . $fname) ?: '#'.$uid, ($ratingUsers[$uid] ?? null)?->profile_photo_url]]; @endphp
+                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ (int) $uid }}" data-title="{{ trim($lname . ' ' . $fname) ?: '#'.$uid }}">{{ $matches }}</a></td>
                     <td class="cs b-600 text-center">{{ $wins }}</td>
                     <td class="hm f-13 text-center">{{ $wr }}%</td>
                     <td class="hm f-13 text-center" style="opacity:.7">{{ $isSeasonMode ? '—' : ($stat->unique_opponents ?? 0) }}</td>
@@ -175,4 +177,9 @@
 
 </div>
 </div>
+@include('players._games_modal')
+<x-slot name="script">
+    <script src="/assets/fas.js"></script>
+    @include('players._games_script')
+</x-slot>
 </x-voll-layout>

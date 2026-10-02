@@ -52,8 +52,18 @@ class PlayerRatingController extends Controller
             }
         }
 
+        // Турниры игроков для всплывающего окна в колонке «Игры»
+        $gamesData = app(\App\Services\PlayerTournamentListService::class)->forPlayers(
+            $players->pluck('user_id')->map(fn ($v) => (int) $v)->all(),
+            (string) $direction,
+            $isSeasonMode ? (int) $seasonId : null
+        );
+
+        // Аватары игроков (в шапке всплывающего окна): один запрос + eager load media
+        $ratingUsers = \App\Models\User::whereIn('id', $players->pluck('user_id')->all())->with('media')->get()->keyBy('id');
+
         return view('players.rating', compact(
-            'players', 'direction', 'sort', 'dir', 'search',
+            'players', 'gamesData', 'ratingUsers', 'direction', 'sort', 'dir', 'search',
             'seasons', 'seasonId', 'isSeasonMode'
         ));
     }
@@ -115,8 +125,13 @@ class PlayerRatingController extends Controller
             ? ['2x2', '3x3', '4x4']
             : ['4x4', '4x2', '5x1', '5x1_libero'];
 
+        // Турниры пар для всплывающего окна в колонке «Игр вместе»
+        $gamesData = app(\App\Services\PlayerTournamentListService::class)->forPairs(
+            $pairs->getCollection()->map(fn ($p) => [(int) $p->player1_id, (int) $p->player2_id])->all()
+        );
+
         return view('players.teams', compact(
-            'pairs', 'pairUsers', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
+            'pairs', 'pairUsers', 'gamesData', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
         ));
     }
 
@@ -219,8 +234,21 @@ class PlayerRatingController extends Controller
         $pairUsers = collect();
         $availableSchemes = ['4x4', '4x2', '5x1', '5x1_libero'];
 
+        // Турниры команд (по составу) для всплывающего окна в колонке «Игр вместе»
+        $gamesData = app(\App\Services\PlayerTournamentListService::class)->forRosters(
+            $pairs->getCollection()->pluck('roster')->map(fn ($v) => (string) $v)->all()
+        );
+
+        // Аватары капитанов (последняя версия состава) — рядом с названием команды
+        $captainIds = DB::table('event_teams')->whereIn('id', $teamIds)->pluck('captain_user_id', 'id');
+        $captainUsers = \App\Models\User::whereIn('id', $captainIds->filter()->unique()->values()->all())->with('media')->get()->keyBy('id');
+        $captainAvatars = [];
+        foreach ($captainIds as $tid => $uid) {
+            $captainAvatars[$tid] = ($captainUsers[$uid] ?? null)?->profile_photo_url;
+        }
+
         return view('players.teams', compact(
-            'pairs', 'pairUsers', 'teamRosters', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
+            'pairs', 'pairUsers', 'teamRosters', 'captainAvatars', 'gamesData', 'direction', 'sort', 'scheme', 'availableSchemes', 'search'
         ));
     }
 
