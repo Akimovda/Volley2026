@@ -380,6 +380,7 @@
 							<select name="plan" class="form-control mb-2">
 								<option value="month">1 месяц</option>
 								<option value="quarter">3 месяца</option>
+								<option value="half">6 месяцев</option>
 								<option value="year">1 год</option>
 							</select>
 							<input type="text" name="note" class="form-control mb-2" maxlength="255" placeholder="Причина (необязательно, для журнала)">

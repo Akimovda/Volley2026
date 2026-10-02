@@ -119,7 +119,7 @@
                 <h2 class="-mt-05">⭐ Организатор Pro — Тарифы</h2>
                 <p class="f-14 text-muted mb-1">Цены отображаются на странице <a href="/organizer-pro" target="_blank">/organizer-pro</a>. 0 = бесплатно.</p>
                 <div class="row row2">
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-4 col-sm-6">
                         <div class="card">
                             <label class="f-15 b-600 mb-05">Пробный период (дней)</label>
                             <input type="number" name="organizer_pro_trial_days"
@@ -128,27 +128,19 @@
                             <div class="f-13 mt-05" style="opacity:.6">Дней бесплатного доступа</div>
                         </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-4 col-sm-6">
                         <div class="card">
-                            <label class="f-15 b-600 mb-05">1 месяц (₽)</label>
-                            <input type="number" name="organizer_pro_month_rub"
-                                   value="{{ old('organizer_pro_month_rub', $settings->organizer_pro_month_rub ?? 499) }}"
+                            <label class="f-15 b-600 mb-05">6 месяцев (₽)</label>
+                            <input type="number" name="organizer_pro_half_rub"
+                                   value="{{ old('organizer_pro_half_rub', $settings->organizer_pro_half_rub ?? 3490) }}"
                                    min="0" step="1">
                         </div>
                     </div>
-                    <div class="col-md-3 col-sm-6">
-                        <div class="card">
-                            <label class="f-15 b-600 mb-05">3 месяца (₽)</label>
-                            <input type="number" name="organizer_pro_quarter_rub"
-                                   value="{{ old('organizer_pro_quarter_rub', $settings->organizer_pro_quarter_rub ?? 1199) }}"
-                                   min="0" step="1">
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-6">
+                    <div class="col-md-4 col-sm-6">
                         <div class="card">
                             <label class="f-15 b-600 mb-05">1 год (₽)</label>
                             <input type="number" name="organizer_pro_year_rub"
-                                   value="{{ old('organizer_pro_year_rub', $settings->organizer_pro_year_rub ?? 3999) }}"
+                                   value="{{ old('organizer_pro_year_rub', $settings->organizer_pro_year_rub ?? 4990) }}"
                                    min="0" step="1">
                         </div>
                     </div>

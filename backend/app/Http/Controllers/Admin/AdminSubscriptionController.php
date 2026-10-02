@@ -116,7 +116,7 @@ class AdminSubscriptionController extends Controller
     public function grantPro(\Illuminate\Http\Request $request, User $user): RedirectResponse
     {
         $data = $request->validate([
-            'plan' => ['required', 'string', 'in:month,quarter,year'],
+            'plan' => ['required', 'string', 'in:month,quarter,half,year'],
             'note' => ['nullable', 'string', 'max:255'],
         ]);
 

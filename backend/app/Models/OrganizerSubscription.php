@@ -44,6 +44,7 @@ class OrganizerSubscription extends Model
             'trial'   => '7 дней бесплатно',
             'month'   => '1 месяц',
             'quarter' => '3 месяца',
+            'half'    => '6 месяцев',
             'year'    => '1 год',
             default   => $plan,
         };
@@ -55,6 +56,7 @@ class OrganizerSubscription extends Model
             'trial'   => 7,
             'month'   => 30,
             'quarter' => 90,
+            'half'    => 180,
             'year'    => 365,
             default   => 30,
         };
@@ -66,7 +68,8 @@ class OrganizerSubscription extends Model
             'trial'   => 0,
             'month'   => 499,
             'quarter' => 1199,
-            'year'    => 3999,
+            'half'    => 3490,
+            'year'    => 4990,
             default   => 0,
         };
     }
