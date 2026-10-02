@@ -42,19 +42,25 @@
     <a href="#p6" class="menu-item"><span class="menu-text">{{ __('help.menu_p6') }}</span></a>
     <a href="#p7" class="menu-item"><span class="menu-text">{{ __('help.menu_p7') }}</span></a>
     <a href="#p-rating" class="menu-item"><span class="menu-text">{{ __('help.menu_p_rating') }}</span></a>
+    <a href="#p-stats" class="menu-item"><span class="menu-text">{{ __('help.menu_p_stats') }}</span></a>
+    <a href="#p-premium" class="menu-item"><span class="menu-text">{{ __('help.menu_p_premium') }}</span></a>
 </div>
 
 <div class="tab-pane" id="org">
     <a href="#o1" class="menu-item"><span class="menu-text">{{ __('help.menu_o1') }}</span></a>
     <a href="#o2" class="menu-item"><span class="menu-text">{{ __('help.menu_o2') }}</span></a>
     <a href="#o3" class="menu-item"><span class="menu-text">{{ __('help.menu_o3') }}</span></a>
+    <a href="#o-staff" class="menu-item"><span class="menu-text">{{ __('help.menu_o_staff') }}</span></a>
     <a href="#o-waitlist" class="menu-item"><span class="menu-text">{{ __('help.menu_o_waitlist') }}</span></a>
     <a href="#o-tournament" class="menu-item"><span class="menu-text">{{ __('help.menu_o_tournament') }}</span></a>
+    <a href="#o-stats" class="menu-item"><span class="menu-text">{{ __('help.menu_o_stats') }}</span></a>
     <a href="#o-league" class="menu-item"><span class="menu-text">{{ __('help.menu_o_league') }}</span></a>
     <a href="#o-venue" class="menu-item"><span class="menu-text">{{ __('help.menu_o_venue') }}</span></a>
+    <a href="#o-school" class="menu-item"><span class="menu-text">{{ __('help.menu_o_school') }}</span></a>
     <a href="#o4" class="menu-item"><span class="menu-text">{{ __('help.menu_o4') }}</span></a>
     <a href="#o6" class="menu-item"><span class="menu-text">{{ __('help.menu_o6') }}</span></a>
     <a href="#o-crm" class="menu-item"><span class="menu-text">{{ __('help.menu_o_crm') }}</span></a>
+    <a href="#o-pro" class="menu-item"><span class="menu-text">{{ __('help.menu_o_pro') }}</span></a>
     <a href="#o7" class="menu-item"><span class="menu-text">{{ __('help.menu_o7') }}</span></a>
 </div>
 
@@ -72,11 +78,13 @@
 <div class="ramka">
 
 <h2 class="-mt-05" id="p1">{{ __('help.p1_h') }}</h2>
+<x-help-shot name="player-login.webp" :alt="__('help.shot_player_login')" />
 <p>{!! __('help.p1_p1') !!}</p>
 <p>{!! __('help.p1_p2') !!}</p>
 <p>{!! __('help.p1_p3') !!}</p>
 
 <h2 id="p2">{{ __('help.p2_h') }}</h2>
+<x-help-shot name="player-link-accounts.webp" :alt="__('help.shot_player_link_accounts')" />
 <p>{!! __('help.p2_p1') !!}</p>
 <p>{!! __('help.p2_p2', ['profile_url' => route('profile.show')]) !!}</p>
 <p>{!! __('help.p2_p3') !!}</p>
@@ -97,17 +105,21 @@
 <p>{!! __('help.p_app_p3') !!}</p>
 
 <h2 id="p3">{{ __('help.p3_h') }}</h2>
+<x-help-shot name="player-signup.webp" :alt="__('help.shot_player_signup')" />
 <p>{!! __('help.p3_p1', ['events_url' => route('events.index')]) !!}</p>
 <p>{!! __('help.p3_p2') !!}</p>
 <p>{!! __('help.p3_p3') !!}</p>
+<p>{!! __('help.p3_p4') !!}</p>
 
 <h2 id="p-waitlist">{{ __('help.p_waitlist_h') }}</h2>
+<x-help-shot name="player-waitlist.webp" :alt="__('help.shot_player_waitlist')" />
 <p>{!! __('help.p_waitlist_p1') !!}</p>
 <p>{!! __('help.p_waitlist_p2') !!}</p>
 <p>{!! __('help.p_waitlist_p3') !!}</p>
 <p>{!! __('help.p_waitlist_p4') !!}</p>
 
 <h2 id="p-team">{{ __('help.p_team_h') }}</h2>
+<x-help-shot name="player-team.webp" :alt="__('help.shot_player_team')" />
 <p>{!! __('help.p_team_p1') !!}</p>
 <ul class="list">
     <li>{!! __('help.p_team_li1') !!}</li>
@@ -118,6 +130,7 @@
 <p>{!! __('help.p_team_p3') !!}</p>
 
 <h2 id="p-booking">{{ __('help.p_booking_h') }}</h2>
+<x-help-shot name="player-court-booking.webp" :alt="__('help.shot_player_court_booking')" />
 <p>{!! __('help.p_booking_p1') !!}</p>
 <p>{!! __('help.p_booking_p2') !!}</p>
 <p>{!! __('help.p_booking_p3') !!}</p>
@@ -132,9 +145,11 @@
 <p>{!! __('help.p_activity_p2') !!}</p>
 
 <h2 id="p4">{{ __('help.p4_h') }}</h2>
+<x-help-shot name="player-notifications.webp" :alt="__('help.shot_player_notifications')" />
 <p>{!! __('help.p4_p1') !!}</p>
 <p>{!! __('help.p4_p2') !!}</p>
 <p>{!! __('help.p4_p3', ['profile_url' => route('profile.show')]) !!}</p>
+<p>{!! __('help.p4_p4') !!}</p>
 
 <h2 id="p5">{{ __('help.p5_h') }}</h2>
 <p>{!! __('help.p5_p1') !!}</p>
@@ -163,6 +178,22 @@
 </ul>
 <p>{!! __('help.p_rating_p3', ['rating_url' => route('players.rating'), 'rating_info_url' => route('pages.rating_info')]) !!}</p>
 
+<h2 id="p-stats">{{ __('help.p_stats_h') }}</h2>
+<p>{!! __('help.p_stats_p1') !!}</p>
+<p>{!! __('help.p_stats_p2') !!}</p>
+
+<h2 id="p-premium">{{ __('help.p_premium_h') }}</h2>
+<x-help-shot name="player-premium.webp" :alt="__('help.shot_player_premium')" />
+<p>{!! __('help.p_premium_p1', ['premium_url' => route('premium.index')]) !!}</p>
+<ul class="list">
+    <li>{!! __('help.p_premium_li1') !!}</li>
+    <li>{!! __('help.p_premium_li2', ['premium_settings_url' => route('premium.settings')]) !!}</li>
+    <li>{!! __('help.p_premium_li3') !!}</li>
+    <li>{!! __('help.p_premium_li4') !!}</li>
+</ul>
+<p>{!! __('help.p_premium_p2') !!}</p>
+<p>{!! __('help.p_premium_p3') !!}</p>
+
 </div>
 
 {{-- ОРГАНИЗАТОР --}}
@@ -173,6 +204,8 @@
 <p>{!! __('help.o1_p2') !!}</p>
 
 <h2 id="o2">{{ __('help.o2_h') }}</h2>
+<x-help-shot name="org-create-step1.webp" :alt="__('help.shot_org_create_step1')" />
+<x-help-shot name="org-create-step2.webp" :alt="__('help.shot_org_create_step2')" />
 <p>{!! __('help.o2_p1') !!}</p>
 <ul class="list">
     <li>{!! __('help.o2_li1') !!}</li>
@@ -180,8 +213,10 @@
     <li>{!! __('help.o2_li3') !!}</li>
 </ul>
 <p>{!! __('help.o2_p2') !!}</p>
+<p>{!! __('help.o2_p3') !!}</p>
 
 <h2 id="o3">{{ __('help.o3_h') }}</h2>
+<x-help-shot name="org-participants.webp" :alt="__('help.shot_org_participants')" />
 <p>{!! __('help.o3_p1') !!}</p>
 <ul class="list">
     <li>{!! __('help.o3_li1') !!}</li>
@@ -192,6 +227,10 @@
 </ul>
 <p>{!! __('help.o3_p2') !!}</p>
 
+<h2 id="o-staff">{{ __('help.o_staff_h') }}</h2>
+<p>{!! __('help.o_staff_p1') !!}</p>
+<p>{!! __('help.o_staff_p2') !!}</p>
+
 <h2 id="o-waitlist">{{ __('help.o_waitlist_h') }}</h2>
 <p>{!! __('help.o_waitlist_p1') !!}</p>
 <p>{!! __('help.o_waitlist_p2') !!}</p>
@@ -199,6 +238,7 @@
 <p>{!! __('help.o_waitlist_p4') !!}</p>
 
 <h2 id="o-tournament">{{ __('help.o_tournament_h') }}</h2>
+<x-help-shot name="org-tournament-setup.webp" :alt="__('help.shot_org_tournament_setup')" />
 <p>{!! __('help.o_tournament_p1') !!}</p>
 <ul class="list">
     <li>{!! __('help.o_tournament_li1') !!}</li>
@@ -207,6 +247,15 @@
     <li>{!! __('help.o_tournament_li4') !!}</li>
 </ul>
 <p>{!! __('help.o_tournament_p2') !!}</p>
+
+<h2 id="o-stats">{{ __('help.o_stats_h') }}</h2>
+<p>{!! __('help.o_stats_p1') !!}</p>
+<ul class="list">
+    <li>{!! __('help.o_stats_li1') !!}</li>
+    <li>{!! __('help.o_stats_li2') !!}</li>
+    <li>{!! __('help.o_stats_li3') !!}</li>
+</ul>
+<p>{!! __('help.o_stats_p2') !!}</p>
 
 <h2 id="o-league">{{ __('help.o_league_h') }}</h2>
 <p>{!! __('help.o_league_p1') !!}</p>
@@ -229,6 +278,10 @@
 </ul>
 <p>{!! __('help.o_venue_p4') !!}</p>
 
+<h2 id="o-school">{{ __('help.o_school_h') }}</h2>
+<p>{!! __('help.o_school_p1') !!}</p>
+<p>{!! __('help.o_school_p2') !!}</p>
+
 <h2 id="o4">{{ __('help.o4_h') }}</h2>
 <p>{!! __('help.o4_p1', ['profile_url' => route('profile.show')]) !!}</p>
 <p>{!! __('help.o4_p2') !!}</p>
@@ -243,6 +296,7 @@
 <p>{!! __('help.o6_p3') !!}</p>
 
 <h2 id="o-crm">{{ __('help.o_crm_h') }}</h2>
+<x-help-shot name="org-dashboard.webp" :alt="__('help.shot_org_dashboard')" />
 <p>{!! __('help.o_crm_p1') !!}</p>
 <ul class="list">
     <li>{!! __('help.o_crm_li1') !!}</li>
@@ -252,6 +306,17 @@
     <li>{!! __('help.o_crm_li5') !!}</li>
 </ul>
 <p>{!! __('help.o_crm_p2') !!}</p>
+
+<h2 id="o-pro">{{ __('help.o_pro_h') }}</h2>
+<p>{!! __('help.o_pro_p1', ['pro_url' => route('organizer_pro.index')]) !!}</p>
+<ul class="list">
+    <li>{!! __('help.o_pro_li1') !!}</li>
+    <li>{!! __('help.o_pro_li2') !!}</li>
+    <li>{!! __('help.o_pro_li3') !!}</li>
+    <li>{!! __('help.o_pro_li4') !!}</li>
+</ul>
+<p>{!! __('help.o_pro_p2') !!}</p>
+<p>{!! __('help.o_pro_p3') !!}</p>
 
 <h2 id="o7">{{ __('help.o7_h') }}</h2>
 <p>{!! __('help.o7_p1') !!}</p>
@@ -280,4 +345,9 @@
 </div>
 </div>
 </div>
+@if(!empty(glob(public_path('images/help/*.webp'))))
+<x-slot name="script">
+    <script src="/assets/fas.js"></script>
+</x-slot>
+@endif
 </x-voll-layout>
