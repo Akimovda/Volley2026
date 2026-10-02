@@ -15,6 +15,16 @@
     </div>
 </x-slot>
 
+<x-slot name="style">
+    <style>
+        @media (min-width: 768px) {
+            /* колонка «Игрок» — по содержимому: «Фамилия Имя» не переносится и не залезает на соседнюю колонку */
+            .rating-player-cell { white-space: nowrap; width: 1%; }
+            th.rating-player-cell { text-align: left; }
+        }
+    </style>
+</x-slot>
+
 <div class="container">
 <div class="ramka">
 
@@ -78,7 +88,7 @@
             <thead>
                 <tr>
                     <th style="width:32px">{{ __('players.rank') }}</th>
-                    <th>{{ __('players.player') }}</th>
+                    <th class="rating-player-cell">{{ __('players.player') }}</th>
                     @if($isSeasonMode)
                         <th>Дивизион</th>
                         <th class="text-center">Туры</th>
@@ -125,7 +135,7 @@
                             <span style="opacity:.5">{{ $rank }}</span>
                         @endif
                     </td>
-                    <td>
+                    <td class="rating-player-cell">
                         <a href="{{ route('users.show', $uid) }}" class="blink b-600">
                             {{ trim($lname . ' ' . $fname) ?: '#'.$uid }}
                         </a>

@@ -24,18 +24,21 @@
 @endphp
 <x-slot name="style">
     <style>
-        .pair-cell { display:flex; flex-wrap:wrap; align-items:center; gap:.6rem 1rem; }
+        /* Колонка «Связки/Команды»: каждый игрок пары — на отдельной строке (на любой ширине), чтобы ничто не залезало на соседнюю колонку */
+        .pair-cell { display:flex; flex-direction:column; align-items:flex-start; gap:.6rem; }
         .pair-player { display:inline-flex; align-items:center; gap:.8rem; }
         .pair-avatar { width:3.2rem; height:3.2rem; border-radius:50%; object-fit:cover; flex-shrink:0; }
-        .pair-sep { opacity:.4; }
+        .pair-sep { display:none; }
+        @media (min-width: 768px) {
+            /* ширина колонки — по самому длинному имени, без переноса внутри имени */
+            .pair-player, .team-roster-link { white-space: nowrap; }
+            th.pair-col, td.pair-col { width: 1%; white-space: nowrap; }
+            th.pair-col { text-align: left; }
+        }
         .roster-row { display:flex; align-items:center; gap:1.2rem; padding:.8rem 0; border-bottom:1px solid rgba(128,128,128,.15); }
         .roster-row:last-child { border-bottom:0; }
         .roster-info { display:flex; flex-direction:column; }
         .roster-pos { opacity:.6; }
-        @media (max-width: 600px) {
-            .pair-cell { flex-direction:column; align-items:flex-start; gap:.6rem; }
-            .pair-sep { display:none; }
-        }
     </style>
 </x-slot>
 
@@ -85,7 +88,7 @@
             <thead>
                 <tr>
                     <th style="width:32px">#</th>
-                    <th>{{ __('players.pair_or_team') }}</th>
+                    <th class="pair-col">{{ __('players.pair_or_team') }}</th>
                     <th class="text-center">{{ __('players.scheme') }}</th>
                     <th class="text-center">{{ __('players.matches_together') }}</th>
                     <th class="b-600 text-center">{{ __('players.wins') }}</th>
@@ -103,7 +106,7 @@
                 @endphp
                 <tr>
                     <td><span style="opacity:.5">{{ $rank }}</span></td>
-                    <td>
+                    <td class="pair-col">
                         @if($isTeamMode)
                             <a href="javascript:void(0)" class="blink b-600 team-roster-link" data-team="{{ $pair->last_team_id }}">{{ $pair->team_name ?: __('players.team_col') . ' #' . $pair->last_team_id }}</a>
                             <div class="f-13" style="opacity:.6">{{ __('players.team_size', ['n' => (int) $pair->size]) }}</div>
