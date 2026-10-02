@@ -248,23 +248,7 @@
 					
                     {{-- PHOTOS --}}
                     <div class="col-12">
-						<div class="card">
-							<label>{{ __('admin.loc_label_photos_5') }}</label>
-							<input
-							id="loc_photos"
-							type="file"
-							name="photos[]"
-							multiple
-							accept="image/*"
-							class="@error('photos') is-invalid @enderror"
-							>
-							<div class="f-16 b-500 mt-1">
-								{{ __('admin.loc_photos_hint') }}
-							</div>
-							@error('photos')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-							@error('photos.*')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-							<div class="pb-05"></div>
-						</div>
+						@include('admin.locations._photo_picker', ['label' => __('admin.loc_label_photos_5'), 'max' => 5])
 					</div>
                     {{-- NOTE --}}
                     <div class="col-12">
