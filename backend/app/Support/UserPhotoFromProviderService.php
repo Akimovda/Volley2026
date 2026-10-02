@@ -19,6 +19,13 @@ class UserPhotoFromProviderService
             return;
         }
 
+        // Заглушка Яндекса («серый силуэт», get-yapic/0/0-0) — это не фото пользователя: если у человека нет аватара,
+        // Яндекс всё равно отдаёт URL заглушки. Раньше она сохранялась в галерею и ставилась аватаром
+        // (в тёмной теме — «чёрная картинка с силуэтом»; так было у ~80 пользователей).
+        if (self::isProviderPlaceholder($avatarUrl)) {
+            return;
+        }
+
         try {
             // Сохраняем фото в галерею
             $media = $user->addMediaFromUrl($avatarUrl)
@@ -42,5 +49,12 @@ class UserPhotoFromProviderService
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /** URL заглушки аватара у провайдера (не реальное фото). */
+    public static function isProviderPlaceholder(string $url): bool
+    {
+        // Яндекс: default_avatar_id «0/0-0»
+        return (bool) preg_match('#avatars\.yandex\.net/get-yapic/0/0-0(/|$)#', $url);
     }
 }

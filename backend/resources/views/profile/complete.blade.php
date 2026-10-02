@@ -274,7 +274,8 @@
 					.level-picked--none { color: #E7612F; }
 					body.dark .level-picked--ok { color: #5ee68c; }
 					.levelmark--selected { position: relative; }
-					.levelmark--selected::before { content: "✓"; position: absolute; top: -.7rem; right: -.4rem; width: 2.2rem; height: 2.2rem; border-radius: 50%; background: #1e9e3e; color: #fff; font-size: 1.3rem; font-weight: 700; line-height: 2.2rem; text-align: center; z-index: 2; box-shadow: 0 .2rem .6rem rgba(0,0,0,.25); }
+					/* галочка — ВНУТРИ плитки (снаружи её обрезали скругление плитки и overflow:hidden у swiper) */
+					.levelmark--selected::before { content: "✓"; position: absolute; top: .5rem; right: .5rem; width: 2rem; height: 2rem; border-radius: 50%; background: #1e9e3e; color: #fff; font-size: 1.3rem; font-weight: 700; line-height: 2rem; text-align: center; z-index: 2; box-shadow: 0 .2rem .6rem rgba(0,0,0,.25); }
 					.levelmark--selected {
 					opacity: 1 !important;
 					filter: grayscale(0) !important;
