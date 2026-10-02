@@ -1712,6 +1712,16 @@ body.dark .btn-success{
 	transform: translateY(-2px);
 	box-shadow: 0 4px 8px rgba(41, 103, 186, 0.15);
 }
+/* Контурные кнопки: рамка 2px не должна делать кнопку выше обычной (.btn без рамки) —
+   компенсируем padding, иначе в одном ряду «заливка» и «контур» отличаются на 4px по высоте */
+.btn-outline,
+.btn-outline-danger {
+	padding: calc(1.3rem - 2px) calc(2.6rem - 2px);
+}
+.btn-small.btn-outline,
+.btn-small.btn-outline-danger {
+	padding: calc(1rem - 2px);
+}
 /* Размеры */
 .btn-small {
 	padding: 1rem;
