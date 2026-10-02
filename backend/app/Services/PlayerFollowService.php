@@ -48,14 +48,18 @@ class PlayerFollowService
     /**
      * Вызывается после записи пользователя на мероприятие.
      * Уведомляет всех активных премиум-подписчиков.
+     *
+     * @return int[] id пользователей, которым подписочное уведомление реально создано
+     *               (им не нужно дублировать «знакомый записался»)
      */
-    public function notifyFollowers(User $registeredUser, EventOccurrence $occurrence): void
+    public function notifyFollowers(User $registeredUser, EventOccurrence $occurrence): array
     {
+        $notified = [];
         try {
             // Проверяем: скрыл ли пользователь свои записи от подписчиков
             $sub = $this->premiumService->getActive($registeredUser);
             if ($sub && $sub->hide_from_followers) {
-                return;
+                return [];
             }
 
             $event       = $occurrence->event;
@@ -83,10 +87,13 @@ class PlayerFollowService
                     eventTitle:   $eventTitle,
                     isPrivate:    $isPrivate,
                 );
+                $notified[] = (int) $followerId;
             }
         } catch (\Throwable $e) {
             Log::warning('PlayerFollowService::notifyFollowers error: ' . $e->getMessage());
         }
+
+        return $notified;
     }
 
     /**
