@@ -454,8 +454,17 @@ class EventRegistrationController extends Controller
 
         // Уведомляем друзей пользователя о его записи
         if ($created) {
+            // Подписчикам (Premium) уходит «⭐ Подписка…» — им «знакомый записался» не дублируем
+            $followersNotified = [];
+            try {
+                $followersNotified = app(PlayerFollowService::class)->notifyFollowers($user, $occurrence);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('follow notification error: ' . $e->getMessage());
+            }
+
             try {
                 $friends = \App\Models\Friendship::where('friend_id', $user->id)
+                    ->whereNotIn('user_id', $followersNotified)
                     ->pluck('user_id');
 
                 foreach ($friends as $friendUserId) {
@@ -470,13 +479,6 @@ class EventRegistrationController extends Controller
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('friend_joined notification error: ' . $e->getMessage());
-            }
-
-            // Уведомляем премиум-подписчиков (следят за записями этого игрока)
-            try {
-                app(PlayerFollowService::class)->notifyFollowers($user, $occurrence);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('follow notification error: ' . $e->getMessage());
             }
         }
 
