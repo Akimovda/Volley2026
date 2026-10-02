@@ -122,8 +122,8 @@
                     @php $followed = $follow->followed; @endphp
                     <div class="d-flex fvc between mb-1 p-1" style="background:rgba(41,103,186,.06);border-radius:8px;gap:10px">
                         <div class="d-flex fvc" style="gap:10px">
-                            @if($followed?->avatar_media_id)
-                            <img src="{{ $followed->getFirstMediaUrl('avatar', 'thumb') }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover" alt="">
+                            @if($followed)
+                            <img src="{{ $followed->profile_photo_url }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover" alt="">
                             @else
                             <div style="width:36px;height:36px;border-radius:50%;background:rgba(41,103,186,.2);display:flex;align-items:center;justify-content:center;font-size:16px">👤</div>
                             @endif
