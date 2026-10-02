@@ -7563,3 +7563,51 @@ body.dark .cropper-image-wrapper { background: #1e1e2a; }
 	justify-content: center;
 	pointer-events: none;
 }
+
+
+/* ── Публичный профиль: ровные строки статистики (турнирная и рейтинговая статистика) ──────────────
+   Каждая колонка — фиксированной ширины, чтобы числа/значки не «плясали» от строки к строке
+   (раньше flex space-between: ширина имени сдвигала схему, «N игр» и процент). Имя — гибкая колонка, переносится. */
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.6rem, 11rem)); justify-content: center; gap: 1.4rem 1rem; text-align: center; }
+.stat-row { display: grid; align-items: center; column-gap: 1rem; padding: .9rem 0; border-top: 1px solid rgba(128, 128, 128, .12); }
+.stat-row:first-child { border-top: 0; }
+.stat-row .sr-name { min-width: 0; overflow-wrap: break-word; justify-self: start; }
+.stat-row .sr-rank { opacity: .4; text-align: center; }
+.stat-row .sr-medal { text-align: center; }
+.stat-row .sr-pct, .stat-row .sr-pct2 { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stat-row .sr-pct { color: #E7612F; }
+.stat-row .sr-rec, .stat-row .sr-games { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.stat-row .sr-rec { opacity: .5; }
+.stat-row .sr-unit { opacity: .5; }
+.stat-row .sr-scheme { opacity: .45; white-space: nowrap; }
+.stat-row--tourney { grid-template-columns: minmax(0, 1fr) 2.8rem 5.4rem 4.8rem; }
+.stat-row--team { grid-template-columns: minmax(0, 1fr) 5.4rem 4.8rem; }
+.stat-row--partner { grid-template-columns: 2.2rem minmax(0, 1fr) 3.6rem 7.2rem 3.8rem; }
+.stat-row--opp { grid-template-columns: 2.2rem minmax(0, 1fr) 9.4rem 4.2rem; }
+@media (max-width: 520px) {
+	/* узкий экран: имя — на всю ширину первой строкой, под ним — «схема · игр · %» в тех же столбцах у всех строк */
+	.stat-row--partner {
+		grid-template-columns: 2.2rem minmax(0, 1fr) 7.2rem 3.8rem;
+		grid-template-areas: "rank name name name" ". scheme games pct";
+		row-gap: .25rem;
+	}
+	.stat-row--partner .sr-rank { grid-area: rank; }
+	.stat-row--partner .sr-name { grid-area: name; }
+	.stat-row--partner .sr-scheme { grid-area: scheme; justify-self: start; }
+	.stat-row--partner .sr-games { grid-area: games; }
+	.stat-row--partner .sr-pct2 { grid-area: pct; }
+	.stat-row--opp {
+		grid-template-columns: 2.2rem minmax(0, 1fr) 9.4rem 4.2rem;
+		grid-template-areas: "rank name name name" ". . games pct";
+		row-gap: .25rem;
+	}
+	.stat-row--opp .sr-rank { grid-area: rank; }
+	.stat-row--opp .sr-name { grid-area: name; }
+	.stat-row--opp .sr-games { grid-area: games; }
+	.stat-row--opp .sr-pct2 { grid-area: pct; }
+}
+
+/* ── Публичный профиль: карточки «Последние 5 / Последние 10 / Стабильность» — одной высоты, содержимое по центру ── */
+.form-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(10.4rem, 1fr)); gap: 1rem; align-items: stretch; }
+.form-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; height: auto; min-height: 8.4rem; padding: .8rem 1rem; text-align: center; }
+.form-card .form-letters { display: flex; flex-wrap: wrap; justify-content: center; gap: .1rem .45rem; }
