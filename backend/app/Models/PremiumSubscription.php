@@ -46,6 +46,7 @@ class PremiumSubscription extends Model
             'trial'   => 7,
             'month'   => 30,
             'quarter' => 90,
+            'half'    => 180,
             'year'    => 365,
             default   => 30,
         };
@@ -57,8 +58,21 @@ class PremiumSubscription extends Model
             'trial'   => 'Пробный период',
             'month'   => '1 месяц',
             'quarter' => '3 месяца',
+            'half'    => '6 месяцев',
             'year'    => '1 год',
             default   => $plan,
+        };
+    }
+
+    /** Цена тарифа в копейках. month/quarter — только для уже созданных заявок (в продаже не участвуют). */
+    public static function planPriceMinor(string $plan): int
+    {
+        return match ($plan) {
+            'month'   => 19900,
+            'quarter' => 49900,
+            'half'    => 249000,
+            'year'    => 399000,
+            default   => 0,
         };
     }
 }

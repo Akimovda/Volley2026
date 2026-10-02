@@ -12,7 +12,7 @@
         <style>
             .premium-plans {
                 display: grid;
-                grid-template-columns: repeat(4, 1fr);
+                grid-template-columns: repeat(3, 1fr);
                 gap: 2rem;
                 margin-top: 4rem;
             }
@@ -156,6 +156,7 @@
                     'trial'   => 'Пробный период',
                     'month'   => '1 месяц',
                     'quarter' => '3 месяца',
+                    'half'    => '6 месяцев',
                     'year'    => 'Год',
                 } }}
             </div>
@@ -170,11 +171,10 @@
                 <div class="f-17 b-600 mb-2">Продлить подписку</div>
                 <div class="row row2">
                     @foreach([
-                        ['month',   '1 месяц',   '199₽',  ''],
-                        ['quarter', '3 месяца',  '499₽',  'Выгода 15%'],
-                        ['year',    '1 год',     '1699₽', 'Выгода 30%'],
+                        ['half', '6 месяцев', '2490₽', ''],
+                        ['year', '1 год',     '3990₽', 'Выгода 20%'],
                     ] as [$plan, $label, $price, $economy])
-                    <div class="col-md-4">
+                    <div class="col-md-6">
                         <div class="card text-center" style="padding:1.5rem;">
                             <div class="f-15 b-600">{{ $label }}</div>
                             <div class="f-22 b-700 cd">{{ $price }}</div>
@@ -201,7 +201,8 @@
                     План: {{ match($pending->plan) {
                         'month'   => '1 месяц — 199₽',
                         'quarter' => '3 месяца — 499₽',
-                        'year'    => '1 год — 1699₽',
+                        'half'    => '6 месяцев — 2490₽',
+                        'year'    => '1 год — 3990₽',
                     } }}
                 </div>
                 @if($platformPayment && !$pending->payment?->user_confirmed)
@@ -267,32 +268,16 @@
                     @endauth
                 </div>
 
-                {{-- Месяц --}}
-                <div class="plan-card">
-                    <div class="plan-label">1 месяц</div>
-                    <div class="plan-price">199₽</div>
+                {{-- 6 месяцев --}}
+                <div class="plan-card popular">
+                    <div class="badge-popular">ПОПУЛЯРНЫЙ</div>
+                    <div class="plan-label">6 месяцев</div>
+                    <div class="plan-price">2490₽</div>
                     <div class="plan-economy"></div>
                     @auth
                     <form method="POST" action="{{ route('premium.pay') }}">
                         @csrf
-                        <input type="hidden" name="plan" value="month">
-                        <button class="btn w-100">Подключить</button>
-                    </form>
-                    @else
-                    <a href="{{ route('login') }}" class="btn w-100">Войти</a>
-                    @endauth
-                </div>
-
-                {{-- 3 месяца --}}
-                <div class="plan-card popular">
-                    <div class="badge-popular">ПОПУЛЯРНЫЙ</div>
-                    <div class="plan-label">3 месяца</div>
-                    <div class="plan-price">499₽</div>
-                    <div class="plan-economy">Выгода 15%</div>
-                    @auth
-                    <form method="POST" action="{{ route('premium.pay') }}">
-                        @csrf
-                        <input type="hidden" name="plan" value="quarter">
+                        <input type="hidden" name="plan" value="half">
                         <button class="btn w-100" style="background:#f5c842;color:#333;font-weight:700;">
                             Подключить
                         </button>
@@ -305,8 +290,8 @@
                 {{-- Год --}}
                 <div class="plan-card">
                     <div class="plan-label">1 год</div>
-                    <div class="plan-price">1699₽</div>
-                    <div class="plan-economy">Выгода 30%</div>
+                    <div class="plan-price">3990₽</div>
+                    <div class="plan-economy">Выгода 20%</div>
                     @auth
                     <form method="POST" action="{{ route('premium.pay') }}">
                         @csrf

@@ -58,7 +58,7 @@ class PremiumController extends Controller
     // Платные планы — создаём платёж
     public function pay(Request $request)
     {
-        $request->validate(['plan' => 'required|in:month,quarter,year']);
+        $request->validate(['plan' => 'required|in:half,year']);
 
         $user = $request->user();
         $plan = $request->plan;
@@ -71,12 +71,6 @@ class PremiumController extends Controller
         if (!$platformPayment) {
             return back()->with('error', 'Оплата временно недоступна. Попробуйте позже.');
         }
-
-        $prices = [
-            'month'   => 19900,  // 199₽ в копейках
-            'quarter' => 49900,  // 499₽
-            'year'    => 169900, // 1699₽
-        ];
 
         // Создаём запись подписки со статусом pending
         $sub = PremiumSubscription::create([
@@ -93,7 +87,7 @@ class PremiumController extends Controller
             'organizer_id' => null,
             'method'       => $platformPayment->method,
             'status'       => 'pending',
-            'amount_minor' => $prices[$plan],
+            'amount_minor' => PremiumSubscription::planPriceMinor($plan),
             'currency'     => 'RUB',
         ]);
 
@@ -105,7 +99,7 @@ class PremiumController extends Controller
     // Продление подписки
     public function renew(Request $request)
     {
-        $request->validate(['plan' => 'required|in:month,quarter,year']);
+        $request->validate(['plan' => 'required|in:half,year']);
 
         $user = $request->user();
         $plan = $request->plan;
@@ -114,12 +108,6 @@ class PremiumController extends Controller
         if (!$platformPayment) {
             return back()->with('error', 'Оплата временно недоступна.');
         }
-
-        $prices = [
-            'month'   => 19900,
-            'quarter' => 49900,
-            'year'    => 169900,
-        ];
 
         // Создаём pending-подписку для продления
         $sub = PremiumSubscription::create([
@@ -135,7 +123,7 @@ class PremiumController extends Controller
             'organizer_id' => null,
             'method'       => $platformPayment->method,
             'status'       => 'pending',
-            'amount_minor' => $prices[$plan],
+            'amount_minor' => PremiumSubscription::planPriceMinor($plan),
             'currency'     => 'RUB',
         ]);
 

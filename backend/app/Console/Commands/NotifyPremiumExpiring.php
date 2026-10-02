@@ -24,7 +24,7 @@ class NotifyPremiumExpiring extends Command
     public static function thresholdsFor(string $plan): array
     {
         return match ($plan) {
-            'year', 'quarter' => [30, 7],
+            'year', 'half', 'quarter' => [30, 7],
             'trial'           => [1],
             default           => [7, 1],
         };
