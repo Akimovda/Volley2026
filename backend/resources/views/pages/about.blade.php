@@ -44,7 +44,7 @@
         'pro'         => [[route('organizer_pro.index'), 'btn_pro', 'link']],
         'white_label' => [['https://t.me/akimovda', 'btn_wl', 'link']],
         'school'      => [[route('volleyball_school.index'), 'btn_schools', 'link']],
-        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', '/img/appstore.png'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', '/img/rustore.png']],
+        'app'         => [['https://apps.apple.com/ru/app/volleyclub/id6764748613', 'btn_ios', '/img/appstore.png'], ['https://www.rustore.ru/catalog/app/club.volleyplay.app', 'btn_android', '/img/rustore.png'], [config('app.android_apk_url'), 'btn_apk', '/img/apk-android.svg']],
     ];
 @endphp
 
@@ -148,7 +148,7 @@
         @php $external = parse_url($url, PHP_URL_HOST) !== request()->getHost(); @endphp
         @if($id === 'app')
         {{-- Логотипы магазинов (те же картинки 256×72, что в футере) --}}
-        <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="about-store-logo">
+        <a href="{{ $url }}" class="about-store-logo" @if(str_contains($url, '/downloads/')) download @else target="_blank" rel="noopener noreferrer" @endif>
             <img src="{{ $kind }}" alt="{{ $a[$labelKey] }}" width="256" height="72" loading="lazy">
         </a>
         @elseif($kind === 'primary')
