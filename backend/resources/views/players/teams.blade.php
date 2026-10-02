@@ -153,7 +153,7 @@
                             ? ($pair->team_name ?: __('players.team_col'))
                             : (trim($pair->p1_last . ' ' . $pair->p1_first) . ' × ' . trim($pair->p2_last . ' ' . $pair->p2_first));
                     @endphp
-                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ $gKey }}" data-title="{{ $gTitle }}">{{ (int) $pair->matches_together }}</a></td>
+                    <td class="text-center"><a href="javascript:void(0)" class="blink b-600 games-link" data-key="{{ $gKey }}" data-title="{{ $gTitle }}" data-count="{{ (int) $pair->matches_together }}">{{ (int) $pair->matches_together }}</a></td>
                     <td class="cs b-600 text-center">{{ (int) $pair->wins_together }}</td>
                     <td class="red text-center">{{ $losses }}</td>
                     <td class="b-600 text-center {{ $wrClass }}">{{ number_format($wr, 1) }}%</td>

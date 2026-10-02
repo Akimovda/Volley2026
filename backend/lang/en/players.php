@@ -66,4 +66,5 @@ return [
     'games_modal_row' => 'Matches: :m · Wins: :w',
     'games_modal_open' => 'Open tournament results',
     'games_modal_place' => 'place :n',
+    'games_modal_missing' => 'Match statistics are kept, but the tournaments themselves are not found in the database (they may have been deleted).',
 ];

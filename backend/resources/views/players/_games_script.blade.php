@@ -4,6 +4,7 @@
     var data = @json($gamesData ?? []);
     var heads = @json($gamesHeads ?? []);
     var emptyText = @json(__('players.games_modal_empty'));
+    var missingText = @json(__('players.games_modal_missing'));
     var rowText = @json(__('players.games_modal_row'));
     var openText = @json(__('players.games_modal_open'));
     var placeText = @json(__('players.games_modal_place'));
@@ -27,7 +28,8 @@
             });
             var box = document.getElementById('games-modal-list');
             box.innerHTML = '';
-            if (!list.length) box.appendChild(el('div', 'f-14', emptyText));
+            // матчи в статистике есть, а самих турниров в базе нет (турнир удалён после расчёта рейтинга) — говорим об этом честно
+            if (!list.length) box.appendChild(el('div', 'f-14', parseInt(link.dataset.count || 0, 10) > 0 ? missingText : emptyText));
             list.forEach(function(t) {
                 var row = el('div', 'games-row');
                 var medals = {1: '🥇', 2: '🥈', 3: '🥉'};

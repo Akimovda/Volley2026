@@ -146,7 +146,8 @@ class PlayerTournamentListService
     }
 
     /**
-     * Итоговые места команд — ТОЛЬКО для завершённых турниров (все стадии occurrence в статусе completed).
+     * Итоговые места команд — ТОЛЬКО для завершённых турниров: все стадии completed, либо ничего не идёт, а оставшиеся стадии
+     * пусты (плей-офф так и не запускали) и дата тура прошла больше суток назад.
      * Источник — TournamentStatsService::calculateFinalClassification() (учитывает плей-офф/дивизионы), как на странице игрока.
      * @return array<string, array<int,int>> «eventId:occurrenceId» => [team_id => place]
      */
@@ -155,11 +156,28 @@ class PlayerTournamentListService
         $eventIds = $rows->pluck('event_id')->unique()->values()->all();
         if (!$eventIds) return [];
 
+        // Состояние стадий по «event:occurrence»: всё завершено / что-то идёт / остались только пустые (без матчей) стадии.
+        // Парная стадия плей-офф создаётся заранее со статусом pending и остаётся пустой, если организатор её так и не запустил —
+        // такой турнир фактически завершён группами, и без этого правила медаль у него не показывалась никогда.
+        $stage = [];
+        foreach (DB::table('tournament_stages as s')->whereIn('s.event_id', $eventIds)
+            ->selectRaw("s.event_id, s.occurrence_id,
+                bool_and(s.status = 'completed') as all_done,
+                bool_or(s.status NOT IN ('pending', 'completed')) as running,
+                bool_and(s.status = 'completed' OR NOT EXISTS (SELECT 1 FROM tournament_matches m WHERE m.stage_id = s.id)) as only_empty_left")
+            ->groupBy('s.event_id', 's.occurrence_id')->get() as $st) {
+            $stage[$st->event_id . ':' . (int) $st->occurrence_id] = $st;
+        }
+
+        $dayAgo = now()->subDay();
         $done = [];
-        foreach (DB::table('tournament_stages')->whereIn('event_id', $eventIds)
-            ->selectRaw("event_id, occurrence_id, bool_and(status = 'completed') as done")
-            ->groupBy('event_id', 'occurrence_id')->get() as $st) {
-            $done[$st->event_id . ':' . (int) $st->occurrence_id] = (bool) $st->done;
+        foreach ($rows as $r) {
+            $key = $r->event_id . ':' . (int) $r->occurrence_id;
+            if (isset($done[$key])) continue;
+            $st = $stage[$key] ?? $stage[$r->event_id . ':0'] ?? null;
+            $started = $r->starts_at ? Carbon::parse($r->starts_at) : null;
+            $done[$key] = $st && ($st->all_done
+                || (!$st->running && $st->only_empty_left && $started && $started->lt($dayAgo)));
         }
 
         $events = \App\Models\Event::whereIn('id', $eventIds)->get()->keyBy('id');
@@ -169,7 +187,7 @@ class PlayerTournamentListService
             $key = $r->event_id . ':' . (int) $r->occurrence_id;
             if (isset($out[$key])) continue;
             $out[$key] = [];
-            if (!($done[$key] ?? $done[$r->event_id . ':0'] ?? false) || !isset($events[$r->event_id])) continue;
+            if (!($done[$key] ?? false) || !isset($events[$r->event_id])) continue;
             try {
                 foreach ($svc->calculateFinalClassification($events[$r->event_id], $r->occurrence_id ? (int) $r->occurrence_id : null) as $c) {
                     $tid = (int) $c['team_id'];
