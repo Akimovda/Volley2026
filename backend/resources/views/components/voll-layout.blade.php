@@ -819,7 +819,7 @@
 											<a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="rustore app-link"></a>
 										</div>
 										<div style="flex:0 0 33.333%;max-width:33.333%;padding:0 0.4rem">
-											<a href="/downloads/VolleyClub_1.1.0.apk" class="app-link apk-dl" download></a>
+											<a href="/downloads/VolleyClub-1.1.6-release.apk" class="app-link apk-dl" download></a>
 										</div>
 									</div>
 								</div>
