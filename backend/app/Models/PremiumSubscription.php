@@ -70,9 +70,21 @@ class PremiumSubscription extends Model
         return match ($plan) {
             'month'   => 19900,
             'quarter' => 49900,
-            'half'    => 249000,
-            'year'    => 399000,
+            'half'    => self::planPriceRub('half') * 100,
+            'year'    => self::planPriceRub('year') * 100,
             default   => 0,
+        };
+    }
+
+    /** Цена продаваемого тарифа в рублях — из настроек платформы (админка), иначе значения по умолчанию. */
+    public static function planPriceRub(string $plan): int
+    {
+        $s = \App\Models\PlatformPaymentSetting::first();
+
+        return match ($plan) {
+            'half'  => (int) ($s?->premium_half_rub ?? 2490),
+            'year'  => (int) ($s?->premium_year_rub ?? 3990),
+            default => 0,
         };
     }
 }

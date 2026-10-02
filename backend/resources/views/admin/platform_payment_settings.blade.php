@@ -147,6 +147,29 @@
                 </div>
             </div>
 
+            <div class="ramka">
+                <h2 class="-mt-05">👑 Premium (игроки) — Тарифы</h2>
+                <p class="f-14 text-muted mb-1">Цены отображаются на странице <a href="/premium" target="_blank">/premium</a>. Пробный период — 7 дней, бесплатно.</p>
+                <div class="row row2">
+                    <div class="col-md-6 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">6 месяцев (₽)</label>
+                            <input type="number" name="premium_half_rub"
+                                   value="{{ old('premium_half_rub', $settings->premium_half_rub ?? 2490) }}"
+                                   min="0" step="1">
+                        </div>
+                    </div>
+                    <div class="col-md-6 col-sm-6">
+                        <div class="card">
+                            <label class="f-15 b-600 mb-05">1 год (₽)</label>
+                            <input type="number" name="premium_year_rub"
+                                   value="{{ old('premium_year_rub', $settings->premium_year_rub ?? 3990) }}"
+                                   min="0" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="ramka text-center">
                 <a href="{{ route('profile.show') }}" class="btn btn-secondary mr-2">← Назад</a>
                 <button type="submit" class="btn">Сохранить</button>

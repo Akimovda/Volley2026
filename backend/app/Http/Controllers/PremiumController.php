@@ -29,7 +29,11 @@ class PremiumController extends Controller
 
         $platformPayment = PlatformPaymentSetting::first();
 
-        return view('premium.index', compact('active', 'pending', 'platformPayment'));
+        $priceHalf = PremiumSubscription::planPriceRub('half');
+        $priceYear = PremiumSubscription::planPriceRub('year');
+        $yearSaving = $priceYear < $priceHalf * 2 ? (int) round((1 - $priceYear / ($priceHalf * 2)) * 100) : 0;
+
+        return view('premium.index', compact('active', 'pending', 'platformPayment', 'priceHalf', 'priceYear', 'yearSaving'));
     }
 
     // Пробный период — активируем сразу
