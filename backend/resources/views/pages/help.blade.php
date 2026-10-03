@@ -12,6 +12,16 @@
 </x-slot>
 <x-slot name="h1">{{ __('pages.help_h1') }}</x-slot>
 
+<x-slot name="style">
+    <style>
+        html.is-app .help-store-buttons { display: none; }
+        .help-store-logo { display: block; }
+        .help-store-logo img { display: block; width: auto; height: 5.5rem; border-radius: 1rem; border: 1px solid rgba(41, 103, 186, .3); transition: transform .25s ease, box-shadow .25s ease; }
+        .help-store-logo:hover img { transform: translateY(-.2rem); box-shadow: 0 .4rem 1.2rem rgba(41, 103, 186, .2); }
+        body.dark .help-store-logo img { filter: invert(94%); }
+    </style>
+</x-slot>
+
 <div class="container">
 <div class="row row2">
 
@@ -96,6 +106,11 @@
     <li>{!! __('help.p_app_li1') !!}</li>
     <li>{!! __('help.p_app_li2') !!}</li>
 </ul>
+<div class="help-store-buttons d-flex flex-wrap" style="gap:.8rem 2.4rem;align-items:center;margin:1.6rem 0">
+    <a href="https://apps.apple.com/ru/app/volleyclub/id6764748613" class="help-store-logo" target="_blank" rel="noopener noreferrer"><img src="/img/appstore.png" alt="App Store" width="256" height="72" loading="lazy"></a>
+    <a href="https://www.rustore.ru/catalog/app/club.volleyplay.app" class="help-store-logo" target="_blank" rel="noopener noreferrer"><img src="/img/rustore.png" alt="RuStore" width="256" height="72" loading="lazy"></a>
+    <a href="{{ config('app.android_apk_url') }}" class="help-store-logo" download><img src="/img/apk-android.svg" alt="APK" width="256" height="72" loading="lazy"></a>
+</div>
 <p>{!! __('help.p_app_p2') !!}</p>
 <ul class="list">
     <li>{!! __('help.p_app_li3') !!}</li>
