@@ -22,19 +22,19 @@
 										<div class="row">
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_start') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-1">{{ level_name(1, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_classic_start_p') }}</p>
 												</div>
 											</div>
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_start_pl') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-2">{{ level_name(2, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_classic_start_pl_p') }}</p>
 												</div>
 											</div>
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_mid') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-4">{{ level_name(4, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_classic_mid_p') }}</p>
 												</div>
 											</div>
@@ -109,19 +109,19 @@
 										<div class="row">
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_start') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-1">{{ level_name(1, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_beach_start_p') }}</p>
 												</div>
 											</div>
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_start_pl') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-2">{{ level_name(2, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_beach_start_pl_p') }}</p>
 												</div>
 											</div>
 											<div class="col-xl-4">
 												<div class="card level-card">
-													<h4>{{ __('pages.lp_child_h_mid') }} <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
+													<h4><strong class="levelmark level-4">{{ level_name(4, $levelScope) }}</strong> <span class="level-points">{!! __('pages.lp_child_points') !!}</span></h4>
 													<p>{{ __('pages.lp_child_beach_mid_p') }}</p>
 												</div>
 											</div>
