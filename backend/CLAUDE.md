@@ -380,6 +380,11 @@ sudo systemctl reload php8.3-fpm   # ← обязательно при изме�
 - **Блок «Лучшие игроки по очкам»** (`leaderboard()['top_scorers']`, отдельно от пьедестала команд, и для вечера, и для серии): топ-3 по `match_player_stats.points_scored` (>0), рендер в `games/_board`.
 - **Фаза 2 (2026-10-01)**: итоги по серии за период (`results?scope=series&period=all|30|90|365`, `FriendlyGameService::seriesLeaderboard()`, только игроки, без командного пьедестала); live-обновление публичной страницы — пока есть незавершённый матч, JS раз в 12 с подтягивает `#gm-live` (`data-live=1`) и подменяет, сохраняя раскрытые блоки; ссылки «Управление игрой» в таблице туров (`occurrences_table`, 📊) и в `/my/events` (`org_my_events`).
 
+## Тест на уровень игры (2026-10-03, dev)
+- Единый источник: `App\Services\LevelTestService` (12 вопросов × 0..3, сумма 0–36 → beginner/beginner_plus/middle_minus/middle; ограничения: классика — q8 и q9 = 3 для «Средний», q3/q10 ≥ 2; пляж — если ≥2 из q2,q3,q4,q6 ≤ 2 → максимум «Средний−»). Тексты — `lang/{ru,en}/leveltest.php`.
+- Сайт: `/level-test` (`LevelTestController`, `pages/level_test.blade.php`, подсчёт — `POST /level-test/result`). Боты: `POST /api/integrations/level-test/{questions,score}` (`Api\LevelTestBotController`, секрет `X-Bind-Secret`, тексты всегда RU).
+- Telegram (`/opt/volley-telegram-bot/bot.py`): `/leveltest` или `/start leveltest`, inline-кнопки (callback `lt:d|a|b|r`), состояние в памяти процесса. MAX (`/opt/volley-max-bot/bot.py`): `/leveltest`, ответы цифрой 1–4 (0 — назад, /cancel) — подписка MAX на dev не включает callback, менять не стали. **Файлы ботов принадлежат www-data, процессы uvicorn тоже — правка и рестарт требуют sudo** (telegram bot.py вообще 644 без группы).
+
 ## SEO (добавлено 2026-08-27)
 Полная документация — [claude_docs/claude_seo.md](claude_docs/claude_seo.md). Открытый TODO — память `project_seo_city_landing_todo.md`.
 - **КРИТИЧНО**: `public/robots.txt` — динамический роут (`Route::get('/robots.txt', ...)` в `routes/web.php`, выбор контента по `config('app.url')`), НЕ статический файл — иначе `git merge` откатит прод-версию на dev-заглушку (`Disallow: /`).
