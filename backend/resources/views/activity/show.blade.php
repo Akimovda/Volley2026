@@ -95,8 +95,7 @@
                             <form method="POST" action="{{ route('activity.destroy', $session) }}">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn-alert btn btn-sm"
-                                        style="background:none;border:1px solid #dc2626;color:#dc2626"
+                                <button type="submit" class="btn-alert btn btn-outline-danger btn-small"
                                         data-title="{{ __('activity.delete_confirm_title') }}"
                                         data-text="{{ __('activity.delete_confirm_text') }}"
                                         data-confirm-text="{{ __('activity.delete_confirm_btn') }}"
