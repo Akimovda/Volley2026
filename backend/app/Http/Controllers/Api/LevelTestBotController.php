@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use InvalidArgumentException;
 
-/** Эндпоинты для ботов Telegram/MAX (секрет X-Bind-Secret). Тексты — всегда RU. */
+/** Эндпоинты для ботов Telegram/MAX (секрет X-Bind-Secret). Язык — параметр lang (ru|en, по умолчанию ru). */
 class LevelTestBotController extends Controller
 {
     public function __construct(private LevelTestService $service) {}
@@ -16,11 +16,14 @@ class LevelTestBotController extends Controller
     public function questions(Request $request): JsonResponse
     {
         $this->authorizeBot($request);
-        $v = $request->validate(['discipline' => ['required', 'in:classic,beach']]);
+        $v = $request->validate([
+            'discipline' => ['required', 'in:classic,beach'],
+            'lang' => ['nullable', 'in:ru,en'],
+        ]);
 
         return response()->json([
             'ok' => true,
-            'questions' => $this->service->questions($v['discipline'], 'ru'),
+            'questions' => $this->service->questions($v['discipline'], $v['lang'] ?? 'ru'),
         ]);
     }
 
@@ -29,13 +32,14 @@ class LevelTestBotController extends Controller
         $this->authorizeBot($request);
         $v = $request->validate([
             'discipline' => ['required', 'in:classic,beach'],
-            'answers' => ['required', 'array', 'size:12'],
+            'lang' => ['nullable', 'in:ru,en'],
+            'answers' => ['required', 'array', 'size:16'],
             'answers.*' => ['required', 'integer', 'between:0,3'],
         ]);
 
         $res = $this->service->evaluate($v['discipline'], $v['answers']);
 
-        return response()->json(['ok' => true] + $res + $this->service->describe($res['level'], 'ru') + [
+        return response()->json(['ok' => true] + $res + $this->service->describe($res['level'], $v['lang'] ?? 'ru') + [
             'url' => route('level_test'),
         ]);
     }
