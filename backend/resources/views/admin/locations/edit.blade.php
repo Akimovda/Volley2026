@@ -143,7 +143,7 @@
 										'<label>' + nameLabel + ' ' + i + '</label>' +
 										'<input type="text" name="directions[' + directionKey + '][court_names][]" value="' + defaultName + '" maxlength="100">' +
 										'<input type="hidden" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="0">' +
-										'<label class="checkbox-item f-14">' +
+										'<label class="checkbox-item f-14" style="margin-top:1.2rem">' +
 										'<input type="checkbox" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="1">' +
 										'<div class="custom-checkbox"></div>' +
 										'<span>' + indoorLabel + '</span>' +
@@ -682,7 +682,7 @@
                     </div>
 
                     {{-- Возврат при отмене оплаченной онлайн брони (Фаза 4) --}}
-                    <div class="col-6">
+                    <div class="col-12 col-md-6">
                         <div class="card">
                             <label>{{ __('club.refund_policy_label') }}</label>
                             <select name="refund_policy" class="@error('refund_policy') is-invalid @enderror">
@@ -692,7 +692,7 @@
                             @error('refund_policy')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                         </div>
                     </div>
-                    <div class="col-6">
+                    <div class="col-12 col-md-6">
                         <div class="card">
                             <label>{{ __('club.refund_deadline_hours_label') }}</label>
                             <input type="number" name="refund_deadline_hours" min="0" max="720"
@@ -780,7 +780,7 @@
                                            value="{{ old('directions.' . $directionKey . '.court_names.' . ($i - 1), $courtNames[$i - 1] ?? __('club.court_default_name_' . $directionKey, ['n' => $i])) }}"
                                            maxlength="100">
                                     <input type="hidden" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="0">
-                                    <label class="checkbox-item f-14">
+                                    <label class="checkbox-item f-14" style="margin-top:1.2rem">
                                         <input type="checkbox" name="directions[{{ $directionKey }}][court_indoor][{{ $i - 1 }}]" value="1"
                                                @checked(old('directions.' . $directionKey . '.court_indoor.' . ($i - 1), $courtIndoor[$i - 1] ?? false))>
                                         <div class="custom-checkbox"></div>
