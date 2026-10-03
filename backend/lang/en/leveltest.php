@@ -5,6 +5,8 @@ return [
     'description' => 'Answer 16 questions to find out your approximate level in indoor or beach volleyball.',
     'breadcrumb' => 'Level test',
     'intro' => 'Answer 16 questions and we will suggest your approximate level. Pick what honestly describes your game right now.',
+    'warning_title' => 'Attention!',
+    'warning' => 'This test is for players who are not sure about their level. If you already know who you are and how you play, you do not need it — just pick your level in your profile.',
     'choose_language' => 'Choose language / Выберите язык',
     'photo_credits' => 'Photo credits and licenses',
     'choose_discipline' => 'Choose a discipline',
