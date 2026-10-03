@@ -2499,6 +2499,18 @@ body.dark .level-pro td {
 	vertical-align: middle;
 }
 
+/* Таблица уровней: пилюля уровня по центру ячейки (на узком экране ячейка — flex с пустой подписью ::before) */
+.flex-table .table.table-levels td:first-child {
+	justify-content: center;
+}
+.flex-table .table.table-levels td:first-child::before {
+	display: none;
+}
+.flex-table .table.table-levels td:first-child > * {
+	flex: 0 1 auto;
+	text-align: center;
+}
+
 .container {
 	width: 100%;
 	max-width: 134rem;
