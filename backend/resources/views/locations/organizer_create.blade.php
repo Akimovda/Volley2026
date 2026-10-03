@@ -10,7 +10,10 @@
     <link href="/assets/style.css" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
-        body { padding: 1.6rem; margin: 0; }
+        body { padding: 1.6rem; margin: 0; background: #fff; }
+        body.dark { background: #161721; }
+        /* на телефоне/в приложении верх модалки перекрывает фиксированная шапка с кнопкой закрытия */
+        @media (max-width: 767px) { body { padding-top: 8rem; } }
         .loc-org-row { margin-bottom: 1.4rem; }
         .loc-org-coords { display: flex; gap: 1rem; }
         .loc-org-coords > div { flex: 1; }
@@ -65,7 +68,7 @@
     </div>
 
     <div class="loc-org-row">
-        @include('locations._map_picker', ['cityName' => $city->name, 'addressSel' => '[name="address"]'])
+        @include('locations._map_picker', ['cityName' => $city->name, 'addressSel' => '[name="address"]', 'mapHeight' => '24rem'])
     </div>
 
     <button type="submit" class="btn">{{ __('locations.org_btn_save') }}</button>

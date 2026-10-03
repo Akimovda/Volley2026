@@ -1,6 +1,7 @@
 {{--
     Выбор точки на карте (Яндекс.Карты). Заполняет inputs name="lat" / name="lng" в ближайшей форме.
     Параметры: $cityName (string|null) — центр карты, если координат ещё нет;
+               $mapHeight (string|null) — высота карты, по умолчанию 34rem;
                $addressSel (string|null) — CSS-селектор поля адреса: кнопка «Найти» ищет по нему,
                при клике по карте пустой адрес заполняется из геокодера.
 --}}
@@ -12,7 +13,7 @@
         <button type="button" class="btn btn-secondary" id="{{ $mpId }}-find">{{ __('locations.map_find_by_address') }}</button>
         <span class="f-13" id="{{ $mpId }}-msg">{{ __('locations.map_hint') }}</span>
     </div>
-    <div id="{{ $mpId }}" style="height:34rem;width:100%;border-radius:1rem;overflow:hidden;background:#e5e5e5;"></div>
+    <div id="{{ $mpId }}" style="height:{{ $mapHeight ?? '34rem' }};width:100%;border-radius:1rem;overflow:hidden;background:#e5e5e5;"></div>
 </div>
 <script>
 (function () {
