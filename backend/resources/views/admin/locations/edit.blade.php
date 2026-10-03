@@ -897,7 +897,7 @@
                          data-remove-label="{{ __('club.remove_rule') }}"
                          data-days="{{ json_encode(__('club.days')) }}"
                     ></div>
-                    <button type="button" class="btn btn-small btn-secondary mt-1 price-add-rule-btn" data-direction="{{ $directionKey }}">{{ __('club.add_rule') }}</button>
+                    <button type="button" class="btn btn-small btn-outline mt-1 price-add-rule-btn" data-direction="{{ $directionKey }}">{{ __('club.add_rule') }}</button>
                 </div>
                 @endforeach
 
