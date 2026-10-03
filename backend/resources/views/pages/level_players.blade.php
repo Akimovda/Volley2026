@@ -44,6 +44,7 @@
 
     <div class="container">
         <div class="ramka">
+			<p class="mb-3">{{ __('pages.lp_test_hint') }} <a class="blink b-600" href="{{ route('level_test') }}">{{ __('pages.lp_test_link') }} →</a></p>
 			@include('pages._level_players_body', ['levelScope' => $levelScope])
 		</div>
 	</div>

@@ -48,6 +48,8 @@ return [
     // === pages/level_players.blade.php ===
     'lp_title'        => 'Player levels',
     'lp_description'  => 'Definitions from volleymsk.ru forum + our additions to the "Confident continuing amateur" level.',
+    'lp_test_hint' => 'Not sure about your level?',
+    'lp_test_link' => 'Take the level test',
     'lp_t_description' => 'Definitions from <span class="bold">volleymsk.ru</span> forum + our additions to the "Confident continuing amateur" level.',
     'lp_breadcrumb'   => 'Player levels',
 
