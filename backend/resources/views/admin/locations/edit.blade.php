@@ -143,9 +143,10 @@
 										'<label>' + nameLabel + ' ' + i + '</label>' +
 										'<input type="text" name="directions[' + directionKey + '][court_names][]" value="' + defaultName + '" maxlength="100">' +
 										'<input type="hidden" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="0">' +
-										'<label class="d-flex fvc gap-1 mt-1 f-14">' +
+										'<label class="checkbox-item f-14">' +
 										'<input type="checkbox" name="directions[' + directionKey + '][court_indoor][' + (i - 1) + ']" value="1">' +
-										indoorLabel +
+										'<div class="custom-checkbox"></div>' +
+										'<span>' + indoorLabel + '</span>' +
 										'</label>' +
 										'</div>';
 									namesWrap.appendChild(col);
@@ -767,7 +768,7 @@
                             </div>
                         </div>
 
-                        <div class="court-names-wrap row mt-1"
+                        <div class="court-names-wrap row mt-2"
                              data-default-label="{{ __('club.court_default_name_' . $directionKey, ['n' => '__N__']) }}"
                              data-name-label="{{ __('club.court_name_label') }}"
                              data-indoor-label="{{ __('club.court_is_indoor') }}">
