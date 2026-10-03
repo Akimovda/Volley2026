@@ -49,6 +49,7 @@
 			<div id="lt-quiz" style="display:none">
 				<div class="lt-progress"><i id="lt-bar"></i></div>
 				<div id="lt-count" style="opacity:.7"></div>
+				<img id="lt-img" alt="" style="display:none;width:100%;max-width:48rem;border-radius:1.2rem;margin:1rem 0;aspect-ratio:4/3;object-fit:cover">
 				<h3 id="lt-title" style="margin-top:.4rem"></h3>
 				<div class="lt-opts" id="lt-opts"></div>
 				<div class="lt-actions"><a class="blink b-600" href="javascript:void(0)" id="lt-back">← <span data-i18n="back"></span></a></div>
@@ -66,6 +67,14 @@
 					<a class="blink b-600" href="javascript:void(0)" id="lt-restart" data-i18n="restart"></a>
 				</div>
 			</div>
+			<details class="lt-note" style="margin-top:2.4rem">
+				<summary>{{ __('leveltest.photo_credits') }}</summary>
+				<ul style="margin-top:1rem">
+					@foreach (\App\Services\LevelTestService::PHOTOS as $n => $ph)
+						<li>{{ $n }}. {{ $ph['author'] }} — <a href="{{ $ph['source'] }}" target="_blank" rel="noopener noreferrer">Wikimedia Commons</a>, <a href="{{ $ph['license_url'] ?: $ph['source'] }}" target="_blank" rel="noopener noreferrer">{{ $ph['license'] }}</a></li>
+					@endforeach
+				</ul>
+			</details>
 		</div>
 	</div>
 
@@ -93,6 +102,8 @@
 				$('#lt-bar').css('width', (step / list.length * 100) + '%');
 				$('#lt-count').text(UI[lang].count.replace(':n', step + 1).replace(':total', list.length));
 				$('#lt-title').text(q.title);
+				var $img = $('#lt-img');
+				if (q.image) { $img.attr('src', q.image).show(); } else { $img.hide(); }
 				var $o = $('#lt-opts').empty();
 				q.options.forEach(function (text, i) {
 					var $b = $('<button type="button" class="lt-opt"></button>').text(text).attr('data-idx', i);

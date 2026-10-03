@@ -6,6 +6,7 @@ return [
     'breadcrumb' => 'Level test',
     'intro' => 'Answer 16 questions and we will suggest your approximate level. Pick what honestly describes your game right now.',
     'choose_language' => 'Choose language / Выберите язык',
+    'photo_credits' => 'Photo credits and licenses',
     'choose_discipline' => 'Choose a discipline',
     'classic' => 'Indoor volleyball',
     'beach' => 'Beach volleyball',
