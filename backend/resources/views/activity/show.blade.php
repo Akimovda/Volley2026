@@ -20,6 +20,18 @@
         </li>
     </x-slot>
 
+    <x-slot name="style">
+        <style>
+            .act-head-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.8rem; margin-top:1.2rem; }
+            .act-head-actions form { margin:0; }
+            .act-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.6rem; grid-auto-rows:1fr; margin-bottom:1.6rem; }
+            @media (min-width:768px) { .act-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+            .act-metrics .act-tile { margin:0; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; min-height:11rem; }
+            .act-tile .act-val { font-size:2rem; line-height:1.2; }
+            .act-tile .act-unit { min-height:1.6rem; }
+        </style>
+    </x-slot>
+
     @php
         $syncStatus = $session->sync_status;
         $dur = $session->duration_sec ?? 0;
@@ -77,8 +89,7 @@
                                     @endif
                                 </div>
                             @endif
-                        </div>
-                        <div style="display:flex;flex-direction:column;gap:.5rem;align-items:flex-end">
+                            <div class="act-head-actions">
                             <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
                             <form method="POST" action="{{ route('activity.destroy', $session) }}">
                                 @csrf
@@ -92,6 +103,7 @@
                                     🗑️ {{ __('activity.delete_btn') }}
                                 </button>
                             </form>
+                        </div>
                         </div>
                     </div>
                 </div>
@@ -116,57 +128,57 @@
                 @endif
 
                 {{-- Скалярные метрики --}}
-                <div class="row row2 mb-1">
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                <div class="act-metrics">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.avg_hr') }}</div>
-                            <div class="b-700 cd" style="font-size:2rem">{{ $session->avg_hr ?? '—' }}</div>
-                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                            <div class="b-700 cd act-val">{{ $session->avg_hr ?? '—' }}</div>
+                            <div class="f-12 act-unit" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.max_hr') }}</div>
-                            <div class="b-700 cd" style="font-size:2rem">{{ $session->max_hr ?? '—' }}</div>
-                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                            <div class="b-700 cd act-val">{{ $session->max_hr ?? '—' }}</div>
+                            <div class="f-12 act-unit" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.min_hr') }}</div>
-                            <div class="b-700 cd" style="font-size:2rem">{{ $session->min_hr ?? '—' }}</div>
-                            <div class="f-12" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
+                            <div class="b-700 cd act-val">{{ $session->min_hr ?? '—' }}</div>
+                            <div class="f-12 act-unit" style="opacity:.5">{{ __('activity.live_bpm') }}</div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.duration') }}</div>
-                            <div class="b-700 cd" style="font-size:1.6rem">{{ $durStr }}</div>
+                            <div class="b-700 cd act-val">{{ $durStr }}</div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.load_score') }}</div>
-                            <div class="b-700 cd" style="font-size:2rem">
+                            <div class="b-700 cd act-val">
                                 {{ (float) $session->load_score > 0 ? number_format($session->load_score, 0) : '—' }}
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="ramka text-center">
+                    <div>
+                        <div class="ramka act-tile">
                             <div class="f-13" style="opacity:.65">{{ __('activity.calories') }}</div>
                             @if($session->calories_kcal !== null)
                                 @if($session->calorie_source === 'healthkit')
                                     {{-- Измерено Apple Watch — без знака ≈ --}}
-                                    <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->calories_kcal, 0) }}</div>
-                                    <div class="f-12" style="opacity:.65">{{ __('activity.calories_measured', ['n' => '']) }}</div>
+                                    <div class="b-700 cd act-val">{{ number_format($session->calories_kcal, 0) }}</div>
+                                    <div class="f-12 act-unit" style="opacity:.65">{{ __('activity.calories_measured', ['n' => '']) }}</div>
                                 @else
                                     {{-- Расчётно по Keytel (source='keytel' или NULL у старых сессий) --}}
-                                    <div class="b-700 cd" style="font-size:2rem">≈{{ number_format($session->calories_kcal, 0) }}</div>
-                                    <div class="f-12" style="opacity:.5">ккал</div>
+                                    <div class="b-700 cd act-val">≈{{ number_format($session->calories_kcal, 0) }}</div>
+                                    <div class="f-12 act-unit" style="opacity:.5">ккал</div>
                                 @endif
                             @else
-                                <div class="b-700 cd" style="font-size:2rem">—</div>
+                                <div class="b-700 cd act-val">—</div>
                                 <div class="f-12">
                                     <a href="{{ route('profile.athlete') }}">{{ __('activity.set_weight_hint') }}</a>
                                 </div>
@@ -174,6 +186,14 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- Шаги --}}
+                @if(($session->steps ?? 0) > 0)
+                <div class="ramka mb-1 text-center">
+                    <div class="f-13" style="opacity:.65">{{ __('activity.steps_label') }}</div>
+                    <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->steps, 0, ',', ' ') }}</div>
+                </div>
+                @endif
 
                 {{-- Прыжки (capability-aware) --}}
                 @if($hasJumps)
@@ -212,14 +232,6 @@
                 @else
                 <div class="ramka mb-1" style="opacity:.55;font-size:.9rem">
                     {{ __('activity.jumps_not_tracked') }}
-                </div>
-                @endif
-
-                {{-- Шаги --}}
-                @if(($session->steps ?? 0) > 0)
-                <div class="ramka mb-1 text-center">
-                    <div class="f-13" style="opacity:.65">{{ __('activity.steps_label') }}</div>
-                    <div class="b-700 cd" style="font-size:2rem">{{ number_format($session->steps, 0, ',', ' ') }}</div>
                 </div>
                 @endif
 
