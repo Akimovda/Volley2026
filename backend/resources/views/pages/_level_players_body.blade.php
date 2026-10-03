@@ -1,4 +1,4 @@
-{{-- Тело страницы «Уровни игроков» (общее для /level_players и всплывающего окна ?embed=1). Нужен $levelScope: 'standard' | 'spb' --}}
+{{-- Тело страницы «Уровни игроков» (общее для /level_players и всплывающего окна ?embed=1). Нужен $levelScope: 'standard' | 'spb'; $embed=true скрывает блок расчёта коэффициента --}}
 			<div class="level-section">
 				<div class="tabs-content">
 					<div class="tabs">
@@ -177,6 +177,7 @@
 				</div>
 
 
+				@unless($embed ?? false)
 				<h2>{{ __('pages.lp_calc_h2') }}</h2>
 
 				<p>{!! __('pages.lp_calc_intro') !!}</p>
@@ -195,6 +196,7 @@
 					<pre>((3*10) + (4*5) + ((4*3) - 3)) / 18 = 3.28</pre>
 					<p><small>{{ __('pages.lp_formula2_note') }}</small></p>
 				</div>
+				@endunless
 
 				<p class="mt-1 text-right">{{ __('pages.lp_signoff') }} <strong class="c3">VOLLEY CLUB!</strong></p>
 			</div>

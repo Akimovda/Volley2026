@@ -28,7 +28,7 @@
     // подхватываем тёмную тему родителя (iframe на том же домене)
     try { if (window.parent && window.parent.document.body.classList.contains('dark')) document.body.classList.add('dark'); } catch (e) {}
 </script>
-@include('pages._level_players_body', ['levelScope' => $levelScope])
+@include('pages._level_players_body', ['levelScope' => $levelScope, 'embed' => true])
 <script>
     // вкладки (в основном layout ими управляет script.js — тут минимальная версия)
     document.addEventListener('click', function (e) {
