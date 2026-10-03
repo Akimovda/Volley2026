@@ -22,7 +22,8 @@
 
     <x-slot name="style">
         <style>
-            .act-head-actions { display:flex; flex-wrap:wrap; align-items:center; gap:.8rem; margin-top:1.2rem; }
+            .act-head { flex:1 1 100%; min-width:0; }
+            .act-head-actions { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.8rem; margin-top:1.2rem; }
             .act-head-actions form { margin:0; }
             .act-metrics { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.6rem; grid-auto-rows:1fr; margin-bottom:1.6rem; }
             @media (min-width:768px) { .act-metrics { grid-template-columns:repeat(3,minmax(0,1fr)); } }
@@ -68,7 +69,7 @@
                 {{-- Заголовок + дата --}}
                 <div class="ramka">
                     <div class="section-title-row">
-                        <div>
+                        <div class="act-head">
                             <div class="b-600 f-18">{{ $sessionTitle }}</div>
                             <div class="f-13" style="opacity:.6">
                                 {{ $session->started_at?->setTimezone($userTimezone)->format('d.m.Y H:i') }}
