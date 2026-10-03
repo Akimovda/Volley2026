@@ -1,0 +1,67 @@
+<?php
+
+return [
+    'title' => 'Volleyball skill level test',
+    'description' => 'Answer 12 questions to find out your approximate level in indoor or beach volleyball.',
+    'breadcrumb' => 'Level test',
+    'intro' => 'Answer 12 questions and we will suggest your approximate level. Pick what honestly describes your game right now.',
+    'choose_discipline' => 'Choose a discipline',
+    'classic' => 'Indoor volleyball',
+    'beach' => 'Beach volleyball',
+    'question_n' => 'Question :n of :total',
+    'back' => 'Back',
+    'restart' => 'Start over',
+    'your_result' => 'Your level is most likely:',
+    'points' => 'Points: :score of :max',
+    'capped_note' => 'The result is capped: some key skills are missing for a higher level (see the test limits).',
+    'find_events' => 'Find an event',
+    'levels_info' => 'More about levels',
+    'error' => 'Could not get the result. Please try again.',
+    'bot_choose' => 'Skill level test. Choose a discipline:',
+    'bot_answer_hint' => 'Reply with a number from 1 to 4.',
+    'bot_cancel_hint' => 'Send /cancel to stop the test.',
+
+    'levels' => [
+        'beginner' => 'Beginner',
+        'beginner_plus' => 'Beginner+',
+        'middle_minus' => 'Intermediate−',
+        'middle' => 'Intermediate',
+    ],
+
+    'results' => [
+        'beginner' => 'You are just learning the basics, and your game is not stable yet.',
+        'beginner_plus' => 'You have the basic skills, but lack consistency and play under difficult conditions.',
+        'middle_minus' => 'You play the main elements confidently and know the rotations, but have errors in accuracy, quality or physical conditioning.',
+        'middle' => 'Your game is stable, you understand roles and tactics, have good setting/passing technique and play at the level of mid-tier teams. Errors mostly happen only under strong pressure or when taking risks.',
+    ],
+
+    'classic_questions' => [
+        ['title' => 'Serve', 'options' => ['I just get it over / serve underhand, often miss', 'I can serve overhand, but not consistently', 'consistent overhand/float serve, almost no errors', 'I consistently serve to zones and vary power/trajectory']],
+        ['title' => 'Receive', 'options' => ['I barely receive, the ball flies away', 'I receive easy serves, delivery to the setter is inconsistent', 'I receive confidently, deliver to zones 2–3', 'I receive power/float serves, 70%+ accurate delivery']],
+        ['title' => 'Setting', 'options' => ['I set however it comes out', 'we have a setter, but my technique is weak', 'I have setting technique, but not always accurate', 'good technique, I can run a quick tempo/diagonal']],
+        ['title' => 'Attack', 'options' => ['I just send it over / sometimes above the net', 'sometimes I manage to spike', 'consistent attack in different directions', 'consistent attack, hitting around the block, playing with a 5-1 setter']],
+        ['title' => 'Block', 'options' => ['I do not block / rarely', 'a single block sometimes', 'a double block on the edge', 'I read the set, double block, cover zones']],
+        ['title' => 'Defense / front line', 'options' => ['I do not play defense', 'I sometimes dig the ball', 'active defense, movement, coverage', 'confident defense, tips, front-line play']],
+        ['title' => 'Rotation / zones', 'options' => ['I do not know', 'I know the basics', 'I know the zones and transitions', 'I know the 5-1 system, rotations, roles']],
+        ['title' => 'Roles', 'options' => ['none, everyone plays as they can', 'only a setter', 'a setter + basics of the others', 'I understand the roles: setter, opposite, outside, middle, libero']],
+        ['title' => 'Game system', 'options' => ['everyone plays as they can', '2 setters, but no clear roles', 'we try 5-1, but not always', 'we play 5-1 with a quick tempo']],
+        ['title' => 'Libero', 'options' => ['none', 'none / sometimes someone', 'we have one, but not consistent', 'libero: 70%+ receive and decent delivery']],
+        ['title' => 'Competition experience', 'options' => ['backyard / PE class', 'one-off amateur tournaments', 'regular amateur tournaments / lower leagues', 'mid/leading teams of upper amateur leagues']],
+        ['title' => 'Tactics', 'options' => ['I do not think about it', 'sometimes', 'I know the rotations, but do not always apply them', 'tactics: serving at the weak player, hitting around the block, tips, teamwork']],
+    ],
+
+    'beach_questions' => [
+        ['title' => 'Serve', 'options' => ['unstable / underhand, often miss', 'consistent underhand / overhand without a jump', 'overhand/float, but no jump serve / power', 'consistent jump serve/float, tactical']],
+        ['title' => 'Receive', 'options' => ['I cannot', 'I receive easy serves', 'I receive, but make errors on strong serves', 'stable receive of strong serves, accurate delivery']],
+        ['title' => 'Setting', 'options' => ['I cannot', 'set to the attack zone, inconsistent', 'accurate set, but not always', 'accurate sets from difficult positions, I understand signals']],
+        ['title' => 'Attack', 'options' => ['I cannot', 'approach jump / hitting in a jump, easy balls', 'I attack, but make errors / lack power / jump', 'consistent attack, hitting around the block, tips']],
+        ['title' => 'Block', 'options' => ['I do not block', 'sometimes', 'I block, but timing/choice is not always right', 'I read the attack, block-defense']],
+        ['title' => 'Defense', 'options' => ['I cannot', 'easy hits', 'I reach the ball, but lack physical ability/accuracy', 'stable defense, rebounds, tips']],
+        ['title' => 'Movement / stance', 'options' => ['learning', 'basic', 'fine, but not always', 'automatic, right choices']],
+        ['title' => 'Zones / positioning', 'options' => ['I do not know', 'basic', 'I know, but do not always call it out', 'I know and tell my partner the attack zone']],
+        ['title' => 'Teamwork with partner', 'options' => ['I do not understand signals', 'I understand sometimes', 'I understand signals, but do not always give them', 'clear teamwork, tactics']],
+        ['title' => 'Physical condition', 'options' => ['strongly limits me', 'enough for an easy game', 'lack jump/power/speed', 'enough for stable attack/defense']],
+        ['title' => 'Stability under pressure', 'options' => ['I fall apart', 'sometimes', 'errors on strong serves/attacks', 'errors only when taking risks / against a strong opponent']],
+        ['title' => 'Tactics', 'options' => ['I do not think about it', 'simple', 'I know it, but do not apply it', 'defending against tips, hitting around the block, playing on serves']],
+    ],
+];

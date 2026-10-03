@@ -1437,6 +1437,8 @@ Route::get('/seasons/{season}/excel', [TeamStatsController::class, 'exportSeason
 	*/
 	
 	Route::get('/level_players', \App\Http\Controllers\LevelPlayersController::class)->name('level_players');
+	Route::get('/level-test', [\App\Http\Controllers\LevelTestController::class, 'show'])->name('level_test');
+	Route::post('/level-test/result', [\App\Http\Controllers\LevelTestController::class, 'result'])->middleware('throttle:60,1')->name('level_test.result');
 Route::get('/tournament-formats', fn () => view('pages.tournament_formats'))->name('tournament_formats');
 	
 	Route::view('/personal_data_agreement', 'pages.personal_data_agreement')

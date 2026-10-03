@@ -38,6 +38,8 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
         'registered_total' => $count,
     ]);
 });
+Route::post('/integrations/level-test/questions', [\App\Http\Controllers\Api\LevelTestBotController::class, 'questions'])->middleware('throttle:120,1');
+Route::post('/integrations/level-test/score', [\App\Http\Controllers\Api\LevelTestBotController::class, 'score'])->middleware('throttle:120,1');
 Route::post('/integrations/channels/set-thread', [\App\Http\Controllers\Api\ChannelSetThreadController::class, '__invoke']);
 
 // Push-уведомления — device tokens + уведомления (поддержка и sanctum-токена, и web-сессии)
