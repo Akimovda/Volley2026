@@ -91,7 +91,7 @@
                                 </div>
                             @endif
                             <div class="act-head-actions">
-                            <a href="{{ route('activity.index') }}" class="btn btn-sm btn-secondary">← {{ __('activity.back_to_list') }}</a>
+                            <a href="{{ route('activity.index') }}" class="btn btn-outline btn-small">← {{ __('activity.back_to_list') }}</a>
                             <form method="POST" action="{{ route('activity.destroy', $session) }}">
                                 @csrf
                                 @method('DELETE')
