@@ -145,7 +145,7 @@
 <p>{!! __('help.p_team_p3') !!}</p>
 
 <h2 id="p-booking">{{ __('help.p_booking_h') }}</h2>
-<x-help-shot name="player-court-booking.webp" :alt="__('help.shot_player_court_booking')" />
+<x-help-shot name="player-court-booking3.webp" :alt="__('help.shot_player_court_booking')" />
 <p>{!! __('help.p_booking_p1') !!}</p>
 <p>{!! __('help.p_booking_p2') !!}</p>
 <p>{!! __('help.p_booking_p3') !!}</p>
