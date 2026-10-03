@@ -38,6 +38,10 @@
 			</div>
 
 			<div id="lt-start" style="display:none">
+				<div class="alert alert-info" style="margin-bottom:1.6rem">
+					<div class="alert-title" data-i18n="warning_title"></div>
+					<div data-i18n="warning"></div>
+				</div>
 				<p data-i18n="intro"></p>
 				<h3 class="mt-2" data-i18n="choose_discipline"></h3>
 				<div class="lt-disc">

@@ -21,6 +21,8 @@ class LevelTestController extends Controller
                 $questions[$lang][$d] = $this->service->questions($d, $lang);
             }
             $ui[$lang] = [
+                'warning_title' => __('leveltest.warning_title', [], $lang),
+                'warning' => __('leveltest.warning', [], $lang),
                 'intro' => __('leveltest.intro', [], $lang),
                 'choose_discipline' => __('leveltest.choose_discipline', [], $lang),
                 'classic' => __('leveltest.classic', [], $lang),
