@@ -63,6 +63,20 @@
         'is_club_manager',
 		];
 		
+		/**
+		 * users.locale имеет DB-default 'ru' — без этого новый пользователь из EN-браузера/приложения
+		 * получал бы 'ru' и автодетект языка (SetLocale) для него никогда бы не работал.
+		 * Берём язык, который в этом запросе реально показывался (сессия/Accept-Language).
+		 */
+		protected static function booted(): void
+		{
+			static::creating(function (self $user) {
+				if (empty($user->locale)) {
+					$user->locale = app()->getLocale();
+				}
+			});
+		}
+
 		protected $hidden = [
         'password',
         'remember_token',
