@@ -151,6 +151,10 @@
                     @endif
                 </div>
 
+                @if($sub->status === 'active' && $sub->template->auto_booking_enabled)
+                    @include('subscriptions._auto_booking', ['sub' => $sub, 'autoEvents' => $autoEvents])
+                @endif
+
                 {{-- Форма заморозки --}}
                 <div id="freeze_form_{{ $sub->id }}" style="display:none" class="mt-2">
                     <form method="POST" action="{{ route('subscriptions.freeze', $sub) }}">
@@ -189,6 +193,60 @@
     </div>
 
     <x-slot name="script">
+    @php
+        $sabEventsJson = $autoEvents;
+    @endphp
+    <script>
+    (function() {
+        var data = @json($sabEventsJson);
+        var posPlaceholder = @json(__('subscriptions.ab_position_placeholder'));
+
+        function fillPositions(subId, positions) {
+            var sel = document.getElementById('sab-pos-' + subId);
+            sel.innerHTML = '';
+            var ph = document.createElement('option');
+            ph.value = ''; ph.textContent = posPlaceholder; sel.appendChild(ph);
+            positions.forEach(function(p) {
+                var o = document.createElement('option');
+                o.value = p.value; o.textContent = p.label; sel.appendChild(o);
+            });
+            sel.disabled = !positions.length;
+            // select обёрнут createCustomSelect() — после перезаполнения <option> пересоздаём обёртку
+            if (window.customSelect && typeof window.customSelect.destroy === 'function'
+                && typeof window.createCustomSelect === 'function' && window.jQuery) {
+                window.customSelect.destroy('sab-pos-' + subId);
+                window.createCustomSelect(window.jQuery(sel));
+            }
+        }
+
+        function refresh(subId) {
+            var evSel = document.getElementById('sab-event-' + subId);
+            var wrap = document.getElementById('sab-pos-wrap-' + subId);
+            var posSel = document.getElementById('sab-pos-' + subId);
+            var btn = document.getElementById('sab-submit-' + subId);
+            var ev = (data[subId] || []).find(function(e) { return String(e.id) === String(evSel.value); });
+            if (!ev) { wrap.style.display = 'none'; fillPositions(subId, []); btn.disabled = true; return; }
+            if (ev.required) {
+                wrap.style.display = '';
+                fillPositions(subId, ev.positions);
+                btn.disabled = true; // активируется, когда выбрана позиция
+            } else {
+                wrap.style.display = 'none';
+                fillPositions(subId, []);
+                btn.disabled = false;
+            }
+        }
+
+        document.querySelectorAll('select.sab-event').forEach(function(sel) {
+            var subId = sel.getAttribute('data-sub');
+            sel.addEventListener('change', function() { refresh(subId); });
+            var posSel = document.getElementById('sab-pos-' + subId);
+            posSel.addEventListener('change', function() {
+                document.getElementById('sab-submit-' + subId).disabled = !posSel.value;
+            });
+        });
+    })();
+    </script>
     <script>
     function toggleFreeze(id) {
         const el = document.getElementById('freeze_form_' + id);

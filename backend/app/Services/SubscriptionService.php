@@ -54,7 +54,7 @@ class SubscriptionService
         string $reason = 'manual',
         ?string $paymentStatus = null
     ): Subscription {
-        return DB::transaction(function () use ($template, $userId, $issuedBy, $reason, $paymentStatus) {
+        $sub = DB::transaction(function () use ($template, $userId, $issuedBy, $reason, $paymentStatus) {
             $startsAt = now()->toDateString();
             $expiresAt = null;
 
@@ -97,6 +97,105 @@ class SubscriptionService
 
             return $sub;
         });
+
+        $this->notifyAutoBookingSetup($sub);
+
+        return $sub;
+    }
+
+    /**
+     * Мероприятия, на которые игрок может настроить автозапись по этому абонементу:
+     * мероприятия организатора абонемента (с учётом event_ids шаблона), индивидуальная
+     * запись, есть будущий тур, ещё не настроенные. Для классики с амплуа отдаёт позиции
+     * (required=true — выбор обязателен), для пляжки позиция однозначна и не спрашивается.
+     */
+    public function autoBookingEventsFor(Subscription $sub, ?\App\Models\User $viewer = null): \Illuminate\Support\Collection
+    {
+        $sub->loadMissing('template');
+        $tpl = $sub->template;
+        if (!$tpl || !$tpl->auto_booking_enabled) {
+            return collect();
+        }
+
+        $taken = $sub->autoBookings()->pluck('event_id')->all();
+
+        $query = \App\Models\Event::query()
+            ->with('location')
+            ->where('organizer_id', $sub->organizer_id)
+            ->where('allow_registration', true)
+            ->whereNotIn('registration_mode', ['team_classic', 'team_beach'])
+            ->where(function ($w) {
+                $w->where('format', '!=', 'tournament')
+                  ->orWhereNull('format')
+                  ->orWhereIn('registration_mode', ['tournament_individual', 'king_beach']);
+            })
+            ->whereHas('occurrences', function ($oq) {
+                $oq->where('starts_at', '>', now())
+                    ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)');
+            });
+
+        if (!empty($tpl->event_ids)) {
+            $query->whereIn('id', $tpl->event_ids);
+        }
+        if ($taken) {
+            $query->whereNotIn('id', $taken);
+        }
+
+        app(EventVisibilityService::class)->applyPrivateVisibilityScope($query, $viewer);
+
+        $slotService = app(EventRoleSlotService::class);
+
+        return $query->orderByDesc('id')->limit(50)->get()->map(function ($event) use ($slotService) {
+            $required = $slotService->requiresPositionChoice($event);
+            return [
+                'id'        => $event->id,
+                'label'     => '#' . $event->id . ' — ' . $event->title
+                    . ($event->location ? ' («' . $event->location->name . '»)' : ''),
+                'required'  => $required,
+                'positions' => $required
+                    ? collect($slotService->mainRoles($event))
+                        ->map(fn ($r) => ['value' => $r, 'label' => __('events.positions.' . $r)])->values()->all()
+                    : [],
+            ];
+        })->values();
+    }
+
+    /**
+     * При получении абонемента с автозаписью — сообщить игроку, что автозапись нужно
+     * настроить, и что для классики с амплуа обязательно выбрать позицию (без неё
+     * автозапись на это мероприятие не работает). Во все каналы, включая push.
+     * Сбой уведомления не должен ломать выдачу абонемента.
+     */
+    private function notifyAutoBookingSetup(Subscription $sub): void
+    {
+        try {
+            $sub->loadMissing('template');
+            if (!$sub->template || !$sub->template->auto_booking_enabled) {
+                return;
+            }
+
+            $this->notificationService->create(
+                userId: (int) $sub->user_id,
+                type: 'subscription_auto_booking_hint',
+                title: '🎫 Абонемент: настройте автозапись',
+                body: "По абонементу «{$sub->template->name}» доступна автозапись на мероприятия: "
+                    . 'откройте «Мои абонементы», выберите мероприятие, и вы будете записаны автоматически в момент открытия регистрации. '
+                    . 'Для классического волейбола (с выбором амплуа) нужно обязательно выбрать позицию, на которую вас будут записывать, '
+                    . '— без выбранной позиции автозапись на это мероприятие не сработает.',
+                payload: [
+                    'subscription_id' => $sub->id,
+                    'button_text'     => 'Настроить автозапись',
+                    'button_url'      => route('subscriptions.my'),
+                ],
+                channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('SubscriptionService: auto-booking hint failed', [
+                'subscription_id' => $sub->id,
+                'error'           => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -319,20 +418,20 @@ class SubscriptionService
      */
     public function hasUsableAutoBookingSubscription(int $userId, int $eventId): bool
     {
-        return Subscription::with('template')
+        $event = \App\Models\Event::find($eventId);
+        $needsPosition = $event ? app(EventRoleSlotService::class)->requiresPositionChoice($event) : false;
+
+        return \App\Models\SubscriptionAutoBooking::with('subscription.template')
             ->where('user_id', $userId)
-            ->where('status', 'active')
-            ->where('auto_booking', true)
-            ->where('visits_remaining', '>', 0)
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()->toDateString());
-            })
+            ->where('event_id', $eventId)
             ->get()
-            ->contains(function ($sub) use ($eventId) {
-                if (!empty($sub->auto_booking_event_ids) && !in_array($eventId, $sub->auto_booking_event_ids, true)) {
-                    return false;
-                }
-                return $sub->template->appliesToEvent($eventId);
+            ->contains(function ($ab) use ($eventId, $needsPosition) {
+                $sub = $ab->subscription;
+                if (!$sub || !$sub->template || !$sub->template->auto_booking_enabled) return false;
+                // Без выбранной позиции (классика) абонементная автозапись не сработает —
+                // тогда Premium-автозапись не должна уступать ей дорогу.
+                if ($needsPosition && !$ab->position) return false;
+                return $sub->isUsableForEvent($eventId);
             });
     }
 }

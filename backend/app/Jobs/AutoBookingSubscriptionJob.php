@@ -2,12 +2,15 @@
 namespace App\Jobs;
 
 use App\Models\Subscription;
+use App\Models\SubscriptionAutoBooking;
 use App\Models\EventOccurrence;
 use App\Models\EventRegistration;
 use App\Models\User;
+use App\Services\EventRoleSlotService;
+use App\Services\OccurrenceCapacityService;
 use App\Services\SubscriptionService;
 use App\Services\UserNotificationService;
-use App\Http\Controllers\EventRegistrationGuard;
+use App\Services\EventRegistrationGuard;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -16,6 +19,14 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Автозапись по абонементу при открытии регистрации на тур.
+ *
+ * Источник — таблица subscription_auto_bookings (игрок сам выбирает мероприятие и,
+ * для классики с амплуа, ОБЯЗАТЕЛЬНО позицию). Без позиции автозапись на такое
+ * мероприятие не срабатывает. Порядок обработки детерминирован: по id записи
+ * автозаписи (кто раньше настроил — тот раньше записывается).
+ */
 class AutoBookingSubscriptionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
@@ -29,82 +40,71 @@ class AutoBookingSubscriptionJob implements ShouldQueue
         UserNotificationService $notificationService
     ): void {
         $occurrence = EventOccurrence::with('event')->find($this->occurrenceId);
-        if (!$occurrence || !$occurrence->event) return;
+        if (!$occurrence || !$occurrence->event || $occurrence->isCancelled()) return;
 
         $event = $occurrence->event;
+        $slotService = app(EventRoleSlotService::class);
+        $needsPosition = $slotService->requiresPositionChoice($event);
+        $mainRoles = $slotService->mainRoles($event);
 
-        // Находим все активные абонементы с автозаписью на это мероприятие
-        $subscriptions = Subscription::with(['user', 'template'])
-            ->where('status', 'active')
-            ->where('auto_booking', true)
-            ->where('visits_remaining', '>', 0)
-            ->where(function ($q) {
-                $q->whereNull('expires_at')
-                  ->orWhere('expires_at', '>=', now()->toDateString());
-            })
-            ->get()
-            ->filter(function ($sub) use ($event) {
-                // Проверяем автозапись на конкретные мероприятия
-                if (!empty($sub->auto_booking_event_ids)) {
-                    if (!in_array($event->id, $sub->auto_booking_event_ids)) return false;
-                }
-                // Проверяем что абонемент действует на это мероприятие
-                return $sub->template->appliesToEvent($event->id);
-            });
+        $autoBookings = SubscriptionAutoBooking::with(['subscription.template', 'user'])
+            ->where('event_id', $event->id)
+            ->orderBy('id')
+            ->get();
 
-        foreach ($subscriptions as $sub) {
-            $user = $sub->user;
-            if (!$user || $user->is_bot) continue;
+        foreach ($autoBookings as $ab) {
+            $sub = $ab->subscription;
+            $user = $ab->user;
+            if (!$sub || !$user || $user->is_bot) continue;
+
+            if (!$this->subscriptionUsable($sub, $event->id)) continue;
+
+            $fail = function (string $reason) use ($notificationService, $user, $event, $occurrence) {
+                $notificationService->create(
+                    userId: $user->id,
+                    type: 'auto_booking_failed',
+                    title: '⚠️ Автозапись не удалась',
+                    body: "Не удалось записать вас на {$event->title}: {$reason}",
+                    payload: ['event_id' => $event->id, 'occurrence_id' => $occurrence->id],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            };
 
             try {
-                // Проверяем не записан ли уже
+                // Классика с амплуа: без выбранной позиции автозапись не работает.
+                $position = $ab->position ?: null;
+                if ($needsPosition) {
+                    if (!$position || !in_array($position, $mainRoles, true)) {
+                        $fail('не выбрана позиция (амплуа). Откройте «Мои абонементы» и выберите позицию для автозаписи на это мероприятие.');
+                        continue;
+                    }
+                } elseif ($position === null && count($mainRoles) === 1) {
+                    $position = $mainRoles[0]; // пляжка: единственная роль player
+                }
+
                 $alreadyRegistered = EventRegistration::where('user_id', $user->id)
                     ->where('occurrence_id', $occurrence->id)
-                    ->where('is_cancelled', false)
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereNull('cancelled_at')
                     ->exists();
-
                 if ($alreadyRegistered) continue;
 
-                // Проверяем guard
                 $guard = app(EventRegistrationGuard::class);
-                $result = $guard->check($user, $occurrence, []);
+                $result = $guard->check($user, $occurrence, $position ? ['position' => $position] : []);
                 if (!$result->allowed) {
-                    // Уведомляем об ошибке
-                    $notificationService->create(
-                        userId: $user->id,
-                        type: 'auto_booking_failed',
-                        title: '⚠️ Автозапись не удалась',
-                        body: "Не удалось записать вас на {$event->title}: " . implode(', ', $result->errors),
-                        payload: ['event_id' => $event->id, 'occurrence_id' => $occurrence->id],
-                        channels: ['in_app', 'telegram', 'vk', 'max'],
-                    );
+                    $fail(implode(', ', $result->errors));
                     continue;
                 }
 
-                // Записываем — под advisory lock + живой пересчёт вместимости
-                // внутри транзакции (см. EventRegistrationController::persistRegistration()
-                // и PremiumAutoBookingJob::persist()). guard->check() выше — обычный
-                // COUNT без блокировки; между ним и вставкой ниже параллельный процесс
-                // (прямая веб-запись игрока, тот же джоб для другого абонемента при
-                // будущем увеличении numprocs воркера) мог бы занять то же место —
-                // классический TOCTOU. roleKey=0 — та же формула, что для пустой
-                // позиции в persistRegistration()/WaitlistService::autoBookNext()
-                // (автозапись по абонементу никогда не выбирает конкретную роль).
+                // Запись под advisory lock + живой пересчёт вместимости внутри транзакции
+                // (см. EventRegistrationController::persistRegistration() и PremiumAutoBookingJob::persist()).
                 try {
-                    $this->persist($sub, $occurrence, $user, $subService);
+                    $this->persist($sub, $occurrence, $user, $position, $subService);
                 } catch (\RuntimeException $e) {
-                    $notificationService->create(
-                        userId: $user->id,
-                        type: 'auto_booking_failed',
-                        title: '⚠️ Автозапись не удалась',
-                        body: "Не удалось записать вас на {$event->title}: " . $e->getMessage(),
-                        payload: ['event_id' => $event->id, 'occurrence_id' => $occurrence->id],
-                        channels: ['in_app', 'telegram', 'vk', 'max'],
-                    );
+                    $fail($e->getMessage());
                     continue;
                 }
 
-                // Уведомляем — нужно подтверждение за 12 часов
                 $notificationService->create(
                     userId: $user->id,
                     type: 'auto_booking_created',
@@ -121,7 +121,7 @@ class AutoBookingSubscriptionJob implements ShouldQueue
                     channels: ['in_app', 'telegram', 'vk', 'max'],
                 );
 
-                Log::info("AutoBooking: user #{$user->id} → occurrence #{$occurrence->id} via subscription #{$sub->id}");
+                Log::info("AutoBooking: user #{$user->id} → occurrence #{$occurrence->id} via subscription #{$sub->id}, position=" . ($position ?? '-'));
 
             } catch (\Throwable $e) {
                 Log::error("AutoBooking error: user #{$user->id}, sub #{$sub->id}: " . $e->getMessage());
@@ -129,57 +129,71 @@ class AutoBookingSubscriptionJob implements ShouldQueue
         }
     }
 
+    private function subscriptionUsable(Subscription $sub, int $eventId): bool
+    {
+        $sub->loadMissing('template');
+        if (!$sub->template || !$sub->template->auto_booking_enabled) return false;
+
+        return $sub->isUsableForEvent($eventId);
+    }
+
     private function persist(
         Subscription $sub,
         EventOccurrence $occurrence,
         User $user,
+        ?string $position,
         SubscriptionService $subService
     ): EventRegistration {
         $reg = null;
 
-        DB::transaction(function () use ($sub, $occurrence, $user, $subService, &$reg) {
-            // roleKey=0 — автозапись по абонементу не выбирает конкретную роль/позицию.
-            DB::select('SELECT pg_advisory_xact_lock(?, ?)', [$occurrence->id, 0]);
+        DB::transaction(function () use ($sub, $occurrence, $user, $position, $subService, &$reg) {
+            // Формула та же, что в persistRegistration()/PremiumAutoBookingJob/WaitlistService:
+            // roleKey = позиция ? crc32(позиция) & 0x7fffffff : 0.
+            $roleKey = $position ? (crc32($position) & 0x7fffffff) : 0;
+            DB::select('SELECT pg_advisory_xact_lock(?, ?)', [$occurrence->id, $roleKey]);
 
             $existing = EventRegistration::query()
                 ->where('user_id', $user->id)
                 ->where('occurrence_id', $occurrence->id)
-                ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                 ->lockForUpdate()
                 ->first();
 
-            if ($existing) {
+            if ($existing && !$existing->is_cancelled && $existing->cancelled_at === null && $existing->status !== 'cancelled') {
                 throw new \RuntimeException('Вы уже записаны на это мероприятие.');
             }
 
-            $event = $occurrence->event;
-            $event->loadMissing('gameSettings');
-            $maxPlayers = (int) ($event->gameSettings?->max_players ?? 0);
-
-            if ($maxPlayers > 0) {
-                $registered = EventRegistration::query()
-                    ->where('occurrence_id', $occurrence->id)
-                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-                    ->count();
-
-                if ($registered >= $maxPlayers) {
-                    throw new \RuntimeException('Свободных мест на этой мероприятие больше нет.');
-                }
+            if (!app(OccurrenceCapacityService::class)->hasRoom($occurrence)) {
+                throw new \RuntimeException('Свободных мест на этом мероприятии больше нет.');
             }
 
-            $reg = EventRegistration::create([
-                'user_id'        => $user->id,
-                'event_id'       => $occurrence->event_id,
-                'occurrence_id'  => $occurrence->id,
-                'status'         => 'confirmed',
-                'is_cancelled'   => false,
-                'payment_status' => 'subscription',
-                'subscription_id' => $sub->id,
-                'auto_booked'    => true,
-            ]);
+            if ($position && !app(EventRoleSlotService::class)->tryTakeSlot($occurrence->event, $position, $occurrence->id)) {
+                throw new \RuntimeException('Свободных мест на выбранной позиции больше нет.');
+            }
+
+            // Свойства + save(), а не create([...]): subscription_id/auto_booked/payment_status/
+            // is_cancelled не входят в $fillable EventRegistration — mass-assignment молча их отбросил бы.
+            $reg = $existing ?: new EventRegistration();
+            if (!$existing) {
+                $reg->user_id = $user->id;
+                $reg->event_id = $occurrence->event_id;
+                $reg->occurrence_id = $occurrence->id;
+            }
+            // Для реактивации ранее отменённой регистрации — как Premium и persistRegistration().
+            $reg->status = 'confirmed';
+            $reg->is_cancelled = false;
+            $reg->cancelled_at = null;
+            $reg->position = $position;
+            $reg->confirmed_at = null;
+            $reg->premium_auto_booking_id = null;
+            $reg->premium_auto_confirm_deadline_at = null;
+            $reg->payment_status = 'subscription';
+            $reg->subscription_id = $sub->id;
+            $reg->auto_booked = true;
+            $reg->save();
 
             $usage = $subService->useVisit($sub, $occurrence, $reg->id);
-            $reg->update(['subscription_usage_id' => $usage->id]);
+            $reg->subscription_usage_id = $usage->id;
+            $reg->save();
         });
 
         return $reg;

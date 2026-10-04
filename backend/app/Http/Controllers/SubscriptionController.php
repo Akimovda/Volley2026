@@ -28,12 +28,20 @@ class SubscriptionController extends Controller
     // Мои абонементы (для игрока)
     public function my(Request $request)
     {
-        $subs = Subscription::with(['template', 'organizer', 'usages'])
+        $subs = Subscription::with(['template', 'organizer', 'usages', 'autoBookings.event'])
             ->where('user_id', $request->user()->id)
             ->orderByDesc('id')
             ->get();
 
-        return view('subscriptions.my', compact('subs'));
+        // Автозапись по абонементу: доступные для настройки мероприятия (только активные абонементы).
+        $autoEvents = [];
+        foreach ($subs as $sub) {
+            if ($sub->status === 'active' && $sub->template?->auto_booking_enabled) {
+                $autoEvents[$sub->id] = $this->service->autoBookingEventsFor($sub, $request->user())->all();
+            }
+        }
+
+        return view('subscriptions.my', compact('subs', 'autoEvents'));
     }
 
     // Выдать абонемент вручную

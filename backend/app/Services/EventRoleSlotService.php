@@ -23,6 +23,22 @@ class EventRoleSlotService
         );
     }
 
+    /** Основные (не запасные) роли события в порядке slots. */
+    public function mainRoles(Event $event): array
+    {
+        return $this->getSlots($event)->where('role', '!=', 'reserve')->pluck('role')->values()->all();
+    }
+
+    /**
+     * Нужно ли игроку выбирать амплуа: классика с несколькими основными ролями.
+     * У пляжки/событий с единственной основной ролью (player) выбор не нужен —
+     * позиция однозначна.
+     */
+    public function requiresPositionChoice(Event $event): bool
+    {
+        return count($this->mainRoles($event)) > 1;
+    }
+
     public function syncRoleSlots(Event $event, array $roles): void
     {
         if (empty($roles)) {

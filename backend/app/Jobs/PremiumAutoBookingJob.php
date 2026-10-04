@@ -8,6 +8,7 @@ use App\Models\PremiumAutoBooking;
 use App\Models\User;
 use App\Services\EventRegistrationGuard;
 use App\Services\EventRoleSlotService;
+use App\Services\OccurrenceCapacityService;
 use App\Services\PaymentService;
 use App\Services\PremiumService;
 use App\Services\SubscriptionService;
@@ -146,6 +147,20 @@ class PremiumAutoBookingJob implements ShouldQueue
                 ->lockForUpdate()
                 ->first();
 
+            if ($existing && !$existing->is_cancelled && $existing->cancelled_at === null && $existing->status !== 'cancelled') {
+                throw new \RuntimeException('Вы уже записаны на это мероприятие.');
+            }
+
+            // Общий лимит + слот роли — под advisory lock, ДО обеих веток (раньше реактивация
+            // ранее отменённой регистрации не проверяла вместимость вообще). Лимит —
+            // effectiveMaxPlayers() тура; занятые по cancelled_at/is_cancelled/status.
+            if (!app(OccurrenceCapacityService::class)->hasRoom($occurrence)) {
+                throw new \RuntimeException('Свободных мест на этом мероприятии больше нет.');
+            }
+            if (!app(EventRoleSlotService::class)->tryTakeSlot($occurrence->event, $position, $occurrence->id)) {
+                throw new \RuntimeException('Свободных мест на этой позиции больше нет.');
+            }
+
             if ($existing) {
                 $existing->status = 'confirmed';
                 $existing->is_cancelled = false;
@@ -161,11 +176,6 @@ class PremiumAutoBookingJob implements ShouldQueue
                 $existing->save();
                 $reg = $existing;
             } else {
-                $slotService = app(EventRoleSlotService::class);
-                if (!$slotService->tryTakeSlot($occurrence->event, $position, $occurrence->id)) {
-                    throw new \RuntimeException('Свободных мест на этой позиции больше нет.');
-                }
-
                 $reg = new EventRegistration();
                 $reg->user_id = $user->id;
                 $reg->event_id = $occurrence->event_id;
