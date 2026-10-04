@@ -202,8 +202,8 @@
 														<select name="game_subtype" id="game_subtype" class="w-full rounded-lg border-gray-200">
 															<!-- <option value="">{{ __('events.tournament_choose') }}</option> -->
 															<option value="4x4" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='4x4')>4×4</option>
-															<option value="4x2" @selected(old('game_subtype', $prefill['game_subtype'] ?? '4x2')==='4x2')>4×2</option>
-															<option value="5x1" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='5x1')>5×1</option>
+															<option value="4x2" @selected(old('game_subtype', $prefill['game_subtype'] ?? '4x2')==='4x2')>4-2</option>
+															<option value="5x1" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='5x1')>5-1</option>
 														</select>										
 														@error('game_subtype')
 														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
@@ -263,6 +263,18 @@
 															<option value="{{ $i }}" @selected((int)old('game_reserve_players_max', $prefill['game_reserve_players_max'] ?? 0) === $i)>{{ $i }}</option>
 														@endfor
 													</select>
+												</div>
+
+												{{-- Запись по амплуа (только классика, игра, подтип 4-2). Снять галочку = запись общим списком, как в пляжке --}}
+												<div class="mt-1" id="reg_by_positions_block" data-show-if="direction=classic,format=game,game_subtype=4x2">
+													<label class="checkbox-item">
+														<input type="hidden" name="game_registration_by_positions" value="0">
+														<input type="checkbox" name="game_registration_by_positions" value="1" id="game_registration_by_positions"
+														@checked(old('game_registration_by_positions', $prefill['game_registration_by_positions'] ?? true))>
+														<div class="custom-checkbox"></div>
+														<span>{{ __('events.reg_by_positions_label') }}</span>
+													</label>
+													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_positions_hint') }}</div>
 												</div>
 
 												{{-- libero_mode --}}

@@ -77,7 +77,7 @@ $step1Fields = [
 'trainer_user_label',    // чтобы ошибки лейбла тоже попадали в шаг 1 (если будут)
 
 'game_subtype','game_min_players','game_max_players',
-'game_libero_mode',
+'game_libero_mode','game_registration_by_positions',
 'game_gender_policy','game_gender_limited_side','game_gender_limited_max','game_gender_limited_positions',
 'classic_level_min','classic_level_max',
 'beach_level_min','beach_level_max',

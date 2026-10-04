@@ -27,6 +27,7 @@ class EventGameSetting extends Model
         'allow_girls',
         'girls_max',
         'reserve_players_max',
+        'registration_without_positions',
     ];
 
     protected $casts = [
@@ -43,6 +44,7 @@ class EventGameSetting extends Model
         'allow_girls' => 'boolean',
         'girls_max' => 'integer',
         'reserve_players_max' => 'integer',
+        'registration_without_positions' => 'boolean',
     ];
 
     public function event(): BelongsTo

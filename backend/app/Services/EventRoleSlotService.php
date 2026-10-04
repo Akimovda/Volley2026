@@ -178,6 +178,24 @@ class EventRoleSlotService
      * теперь используется и оттуда, и из TournamentController::setup()
      * (кнопка "Добавить игрока" для tournament_individual).
      */
+    /**
+     * Позиции для UI/валидации организатора с учётом режима «запись без амплуа»:
+     * у такого события единственная роль 'player' (как в пляжке), а не setter/outside.
+     */
+    public function resolvePositionsForEvent(Event $event): array
+    {
+        $event->loadMissing('gameSettings');
+        if ($event->registersWithoutPositions()) {
+            return ['player' => __('events.positions.player')];
+        }
+
+        return $this->resolvePositions(
+            (string) ($event->direction ?? 'classic'),
+            (string) ($event->gameSettings?->subtype ?? ''),
+            (string) ($event->gameSettings?->libero_mode ?? 'with_libero')
+        );
+    }
+
     public function resolvePositions(string $direction, string $subtype, string $liberoMode): array
     {
         if ($direction === 'beach') return [];

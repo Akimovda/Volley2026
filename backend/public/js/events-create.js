@@ -588,8 +588,8 @@ document.addEventListener("trix-file-accept", function (event) {
 		if (direction === 'classic') {
 			opts = [
 				{ v: '4x4', t: '4×4' },
-				{ v: '4x2', t: '4×2' },
-				{ v: '5x1', t: '5×1' }
+				{ v: '4x2', t: '4-2' },
+				{ v: '5x1', t: '5-1' }
 			];
 			} else {
 			opts = [
@@ -821,15 +821,26 @@ document.addEventListener("trix-file-accept", function (event) {
 		}
 	}
 	
+	// Режим «запись без амплуа»: классическая игра 4x2 с СНЯТЫМ чекбоксом «Запись по амплуа».
+	function isNoPositionsMode() {
+		var cb = document.getElementById('game_registration_by_positions');
+		if (!cb || cb.checked) return false;
+		var direction = dirEl ? dirEl.value : '';
+		var format = fmtEl ? fmtEl.value : '';
+		var st = gameSubtype ? trim(gameSubtype.value || '') : '';
+		return direction === 'classic' && format === 'game' && st === '4x2';
+	}
+
 	function syncGenderLimitedBlocks() {
 		var policy = genderPolicyEl ? trim(genderPolicyEl.value || 'mixed_open') : 'mixed_open';
 		var isLimited = (policy === 'mixed_limited');
 		
 		if (limitedSideWrap) toggleClass(limitedSideWrap, 'hidden', !isLimited);
 		if (limitedMaxWrap) toggleClass(limitedMaxWrap, 'hidden', !isLimited);
-		if (limitedPositionsWrap) toggleClass(limitedPositionsWrap, 'hidden', !isLimited);
+		// без амплуа квота по полу — общий лимит, позиции не выбираются
+		if (limitedPositionsWrap) toggleClass(limitedPositionsWrap, 'hidden', !isLimited || isNoPositionsMode());
 		
-		if (isLimited) buildPositionsCheckboxes();
+		if (isLimited && !isNoPositionsMode()) buildPositionsCheckboxes();
 		updateLegacyMappingOnly();
 		
 		syncGender5050Hint();
@@ -993,7 +1004,7 @@ document.addEventListener("trix-file-accept", function (event) {
         }
 		
 		function validateGameClassic() {
-			if (!need(gameSubtype && val(gameSubtype), 'Выбери подтип игры (4×4 / 4×2 / 5×1).', gameSubtype)) return false;
+			if (!need(gameSubtype && val(gameSubtype), 'Выбери подтип игры (4×4 / 4-2 / 5-1).', gameSubtype)) return false;
 			if (!need(gameMaxEl && val(gameMaxEl), 'Укажи максимум участников для игры.', gameMaxEl)) return false;
 			
 			if (has(gameMinEl) && has(gameMaxEl)) {
@@ -1024,7 +1035,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				if (maxPlayers > 0 && !need(genderMaxNum <= maxPlayers, 'Максимум ограничиваемых мест не может превышать ' + maxPlayers + '.', genderMaxEl)) return false;
 				
 				var picked = getCurrentSelectedPositions();
-				if (!need(picked.length > 0, 'Выбери минимум одну позицию для ограничения.', positionsBox)) return false;
+				if (!isNoPositionsMode() && !need(picked.length > 0, 'Выбери минимум одну позицию для ограничения.', positionsBox)) return false;
 			}
 			updatePreview();
 			return true;
@@ -2474,6 +2485,10 @@ function recalcPlayers() {
 	if (liberoEl) liberoEl.addEventListener('change', recalcPlayers);
 	if (dirEl) dirEl.addEventListener('change', recalcPlayers);
 	if (gameSubtype) gameSubtype.addEventListener('change', recalcPlayers);
+	(function () {
+		var byPos = document.getElementById('game_registration_by_positions');
+		if (byPos) byPos.addEventListener('change', function () { syncGenderLimitedBlocks(); });
+	})();
 	
 	document.addEventListener('change', function (e) {
 		if (!e.target.name && !e.target.id) return;

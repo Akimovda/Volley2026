@@ -186,6 +186,15 @@ class Event extends Model implements HasMedia
     {
         return $this->hasOne(EventTournamentSetting::class);
     }
+    /**
+     * Классика без амплуа (игра 4x2): запись одним общим списком, слот 'player', как в пляжке.
+     * Флаг хранится в event_game_settings.registration_without_positions.
+     */
+    public function registersWithoutPositions(): bool
+    {
+        return (bool) ($this->gameSettings?->registration_without_positions ?? false);
+    }
+
     public function gameSettings(): HasOne
     {
         return $this->hasOne(

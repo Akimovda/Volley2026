@@ -222,6 +222,25 @@ class EventGameSettingsService
         );
     }
     
+    /**
+     * Запись без амплуа (как в пляжке): только игры в классике, только подтип 4x2.
+     * Любые другие комбинации молча игнорируют флаг.
+     */
+    public function wantsNoPositions(array $data, string $direction, string $format): bool
+    {
+        if ($direction !== 'classic' || $format !== 'game') {
+            return false;
+        }
+        // Чекбокс «Запись по амплуа» (по умолчанию включён): флаг без амплуа — только если
+        // поле явно пришло и снято. Нет поля (старые формы/API) — запись по амплуа как раньше.
+        if (!array_key_exists('game_registration_by_positions', $data) || !empty($data['game_registration_by_positions'])) {
+            return false;
+        }
+        $subtype = (string) ($data['game_subtype'] ?? '') ?: '4x2';
+
+        return $subtype === '4x2';
+    }
+
     public function normalizeGameDefaults(array $data, string $direction, string $format): array
     {
         $errors = [];
@@ -518,6 +537,12 @@ class EventGameSettingsService
                 }
             }
         
+            // Запись без амплуа: квота по полу — общий лимит на единственную роль 'player',
+            // а не по позициям (выбор позиций в форме игнорируется).
+            if ($genderPolicy === 'mixed_limited' && $this->wantsNoPositions($data, $direction, $format)) {
+                $genderLimitedPositions = ['player'];
+            }
+
             return [
                 'data' => $data,
                 'genderPolicy' => $genderPolicy,
@@ -697,6 +722,13 @@ class EventGameSettingsService
             if ($expectedPlayers !== $maxPlayersCalculated) {
                 throw new \RuntimeException('Role calculation mismatch');
             }
+        // Запись без амплуа: один общий слот 'player' на весь состав (как в пляжке).
+        $noPositions = $this->wantsNoPositions($data, $direction, (string) ($data['format'] ?? $event->format ?? ''));
+        if ($noPositions) {
+            $roles = ['player' => $maxPlayersCalculated];
+            $positions = [];
+        }
+
         /*
         |--------------------------------------------------------------------------
         | SYNC ROLE SLOTS (через сервис)
@@ -730,6 +762,7 @@ class EventGameSettingsService
             'girls_max'            => $girlsMax,
             'positions'            => $positions,
             'reserve_players_max'  => $reservePlayersMax,
+            'registration_without_positions' => $noPositions,
         ];
     
         if (empty($egsPayload['subtype'])) {
