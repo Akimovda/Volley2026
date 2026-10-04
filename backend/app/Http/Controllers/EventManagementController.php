@@ -941,6 +941,7 @@ if ($role === 'admin') {
             'game_max_players'             => ['nullable', 'integer', 'min:0'],
             'game_min_players'             => ['nullable', 'integer', 'min:0'],
             'game_reserve_players_max'     => ['nullable', 'integer', 'min:0', 'max:20'],
+            'game_registration_by_positions' => ['nullable', 'boolean'],
             'game_subtype'             => ['nullable', 'string', 'max:32'],
             'game_libero_mode'         => ['nullable', 'string', 'max:32'],
             'game_gender_policy'       => ['nullable', 'string', 'max:64'],
@@ -1041,6 +1042,36 @@ if ($role === 'admin') {
             }
         }
 
+        // Запись без амплуа (классика, игра 4x2): чекбокс «Запись по амплуа» в форме.
+        // Флаг можно менять, только пока нет активных записей на будущие туры — иначе у записанных
+        // игроков позиции (setter/outside ↔ player) разойдутся со слотами.
+        $noPosCurrent = $event->registersWithoutPositions();
+        $noPosApplicable = ($event->format === 'game') && (($event->direction ?? 'classic') === 'classic');
+        $noPosSubtype = (string) ($data['game_subtype'] ?? $event->gameSettings?->subtype ?? '4x2');
+        $noPosNew = $noPosCurrent;
+        if ($noPosApplicable) {
+            if ($noPosSubtype !== '4x2') {
+                $noPosNew = false;
+            } elseif (array_key_exists('game_registration_by_positions', $data)) {
+                $noPosNew = empty($data['game_registration_by_positions']);
+            }
+        }
+        if ($noPosNew !== $noPosCurrent || ($noPosNew && $noPosSubtype !== '4x2')) {
+            $activeFuture = DB::table('event_registrations as er')
+                ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+                ->where('er.event_id', $event->id)
+                ->where('eo.starts_at', '>', now())
+                ->whereNull('er.cancelled_at')
+                ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                ->whereRaw("(er.status IS NULL OR er.status <> 'cancelled')")
+                ->count();
+            if ($activeFuture > 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'game_registration_by_positions' => __('events.reg_by_positions_locked', ['n' => $activeFuture]),
+                ]);
+            }
+        }
+
         // King Beach — жёсткая валидация min/max ДО транзакции (не warning: квота/чётность
         // настроены осознанно). Правило чётности расширенное относительно формы создания:
         // при gender_policy=mixed_5050 ОБА поля (min и max) должны быть чётными.
@@ -1104,7 +1135,7 @@ if ($role === 'admin') {
             $data['king_beach_max_players'] = $kbMax;
         }
 
-        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds) {
+        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -1289,6 +1320,10 @@ if ($role === 'admin') {
             $event->save();
 
             $glp = $data['game_gender_limited_positions'] ?? null;
+            // Без амплуа квота по полу — общий лимит на единственную роль 'player'.
+            if ($noPosNew && (($data['game_gender_policy'] ?? $event->gameSettings?->gender_policy) === 'mixed_limited')) {
+                $glp = ['player'];
+            }
             if (is_array($glp)) {
                 $glp = json_encode(array_values($glp), JSON_UNESCAPED_UNICODE);
             }
@@ -1314,6 +1349,7 @@ if ($role === 'admin') {
                 'reserve_players_max' => array_key_exists('game_reserve_players_max', $data)
                     ? (($data['game_reserve_players_max'] === '' || $data['game_reserve_players_max'] === null) ? null : (int) $data['game_reserve_players_max'])
                     : null,
+                'registration_without_positions' => $noPosApplicable ? $noPosNew : null,
             ], static fn ($v) => $v !== null);
     
             if (!isset($gsPayload['subtype']) && !$event->gameSettings) {
@@ -1364,6 +1400,11 @@ if ($role === 'admin') {
                 $roles = [];
                 foreach (($calc['roles'] ?? []) as $role => $count) {
                     $roles[$role] = $count * $teams;
+                }
+
+                // Запись без амплуа: один общий слот 'player' на весь состав.
+                if ($event->registersWithoutPositions() && !empty($roles)) {
+                    $roles = ['player' => array_sum($roles)];
                 }
 
                 if (!empty($roles)) {

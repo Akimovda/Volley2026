@@ -613,6 +613,7 @@ use App\Services\StaffLogService;
 				$prefill['game_allow_girls'] = (bool)($gs->allow_girls ?? true);
 				$prefill['game_girls_max'] = $gs->girls_max;
 				$prefill['game_reserve_players_max'] = $gs->reserve_players_max;
+				$prefill['game_registration_by_positions'] = !((bool) ($gs->registration_without_positions ?? false));
 			}
 			
 			unset($prefill['starts_at'], $prefill['public_token']);

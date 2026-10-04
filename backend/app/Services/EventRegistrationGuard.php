@@ -1342,7 +1342,14 @@
 							$positions
 						));
 
-						if (!empty($posLabels)) {
+						if ($positions === ['player']) {
+							// Запись без амплуа: единая роль — квота общая, без названия позиции
+							$result->errors[] = __('events.gender_quota_general_full', [
+								'count'  => $count,
+								'max'    => $limit,
+								'gender' => $targetGender === 'f' ? __('events.gender_women') : __('events.gender_men'),
+							]);
+						} elseif (!empty($posLabels)) {
 							$result->errors[] = __('events.gender_quota_position_full', [
 								'position' => implode(', ', $posLabels),
 								'count'    => $count,

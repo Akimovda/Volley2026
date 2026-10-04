@@ -194,6 +194,8 @@
 			'max:20'
             ],
 
+            'game_registration_by_positions' => ['nullable', 'boolean'],
+
             'game_allow_girls' => ['nullable','boolean'],
 			
             'game_girls_max' => [

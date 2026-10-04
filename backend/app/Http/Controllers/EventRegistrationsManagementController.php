@@ -73,7 +73,7 @@ class EventRegistrationsManagementController extends Controller
         $direction          = (string) ($event->direction ?? 'classic');
         $gameSubtype        = (string) ($event->gameSettings?->subtype ?? '');
         $liberoMode         = (string) ($event->gameSettings?->libero_mode ?? 'with_libero');
-        $availablePositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions($direction, $gameSubtype, $liberoMode);
+        $availablePositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
 
         $occurrenceId = (int) $request->query('occurrence', 0);
         $occurrence   = null;
@@ -386,11 +386,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
         $addDirection = (string)($event->direction ?? 'classic');
-        $addPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
-            $addDirection,
-            (string)($event->gameSettings?->subtype ?? ''),
-            (string)($event->gameSettings?->libero_mode ?? 'with_libero')
-        );
+        $addPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
 
         // Добавляем 'reserve' если настроено
         $addSlots      = null;
@@ -405,7 +401,9 @@ class EventRegistrationsManagementController extends Controller
                 $addPositions['reserve'] = __('events.positions.reserve');
             }
         }
-        $positionRequired = $addDirection === 'classic' && count($addPositions) > 0;
+        // Без амплуа (единственная роль player, резерва нет) выбор позиции не показывается и не требуется.
+        $noPosAdd = $event->registersWithoutPositions() && !isset($addPositions['reserve']);
+        $positionRequired = $addDirection === 'classic' && count($addPositions) > 0 && !$noPosAdd;
 
         $data = $request->validate([
             'user_id' => ['required_without:user_team_id', 'nullable', 'integer', 'exists:users,id'],
@@ -425,7 +423,7 @@ class EventRegistrationsManagementController extends Controller
         // — карточка позиции расходилась со счётчиком мест (баг найден на событии 401,
         // First Summer Club, 26.07.2026). Проставляем автоматически, если позиций
         // на выбор нет и роль на событие всего одна (иначе не трогаем — двусмысленно).
-        if ($pos === '' && $addDirection !== 'classic') {
+        if ($pos === '' && ($addDirection !== 'classic' || $event->registersWithoutPositions())) {
             $addNonClassicSlots = $addSlots ?? app(\App\Services\EventRoleSlotService::class)->getSlots($event);
             $addMainSlots = $addNonClassicSlots->where('role', '!=', 'reserve');
             if ($addMainSlots->count() === 1) {
@@ -701,11 +699,7 @@ class EventRegistrationsManagementController extends Controller
 
         $event->loadMissing('gameSettings');
         $updDirection = (string)($event->direction ?? 'classic');
-        $updPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
-            $updDirection,
-            (string)($event->gameSettings?->subtype ?? ''),
-            (string)($event->gameSettings?->libero_mode ?? 'with_libero')
-        );
+        $updPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
 
         // Добавляем 'reserve' если настроено
         $updSlots      = null;
@@ -859,11 +853,7 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $event->loadMissing('gameSettings');
-        $swapPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositions(
-            (string) ($event->direction ?? 'classic'),
-            (string) ($event->gameSettings?->subtype ?? ''),
-            (string) ($event->gameSettings?->libero_mode ?? 'with_libero')
-        );
+        $swapPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
         $swapPositions['reserve'] ??= __('events.positions.reserve');
         $labelA = $posA !== '' ? ($swapPositions[$posA] ?? $posA) : '—';
         $labelB = $posB !== '' ? ($swapPositions[$posB] ?? $posB) : '—';

@@ -833,7 +833,8 @@ class OccurrenceAnnouncementMessageBuilder
             $name      = $fullName !== '' ? $fullName : trim((string) ($r->name ?? 'Игрок'));
 
             $pos      = (string) ($r->position ?? '');
-            $posLabel = $posLabels[$pos] ?? ($pos !== '' ? $pos : null);
+            // 'player' (пляжка / классика без амплуа) — единая роль, подпись «player» в списке не нужна
+            $posLabel = $posLabels[$pos] ?? (($pos !== '' && $pos !== 'player') ? $pos : null);
 
             $line = ($i + 1) . '. ' . $name;
             if ($posLabel !== null) {

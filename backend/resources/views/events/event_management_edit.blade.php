@@ -801,7 +801,7 @@
                             $isBeachGame = ($event->direction ?? 'classic') === 'beach';
                             $gameSubtypes = $isBeachGame
                                 ? ['2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4']
-                                : ['4x4' => '4×4', '4x2' => '4×2', '5x1' => '5×1'];
+                                : ['4x4' => '4×4', '4x2' => '4-2', '5x1' => '5-1'];
                         @endphp
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
@@ -842,6 +842,33 @@
                                 <small style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem">Рассчитывается автоматически</small>
                             </div>
                         </div>
+
+                        @if(!$isBeachGame)
+                        {{-- Запись по амплуа (классика, игра, подтип 4-2). Снять галочку = запись общим списком, как в пляжке --}}
+                        <div class="col-md-6" id="mgmt_reg_by_positions_block" style="{{ old('game_subtype', $event->gameSettings?->subtype) === '4x2' ? '' : 'display:none' }}">
+                            <div class="card">
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="game_registration_by_positions" value="0">
+                                    <input type="checkbox" name="game_registration_by_positions" value="1"
+                                        @checked(old('game_registration_by_positions', !$event->registersWithoutPositions()))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.reg_by_positions_label') }}</span>
+                                </label>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_positions_hint') }}</div>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_positions_edit_hint') }}</div>
+                                @error('game_registration_by_positions')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var st = document.getElementById('mgmt_game_subtype'), box = document.getElementById('mgmt_reg_by_positions_block');
+                            if (!st || !box) return;
+                            st.addEventListener('change', function () { box.style.display = st.value === '4x2' ? '' : 'none'; });
+                        });
+                        </script>
+                        @endif
 
                         <div class="col-md-6">
                             <div class="card" style="overflow:visible">

@@ -1204,4 +1204,9 @@ return [
     'player_quality'          => 'Coefficient 💪 : :value of :max',
 
     'sp_confirm_premium'    => '⏰ Confirm your participation in the Premium auto-booking by',
+    'reg_by_positions_label'     => 'Registration by position',
+    'reg_by_positions_hint'      => 'If unchecked, players sign up in a single list without choosing a position (like beach volleyball). The gender quota then is a general limit.',
+    'reg_by_positions_edit_hint' => 'You can change this only while no players are registered for upcoming games.',
+    'reg_by_positions_locked'    => 'Cannot change the registration method: players are already registered for upcoming games (:n). Cancel their registrations first.',
+    'gender_quota_general_full' => 'No more slots for :gender: :count of :max taken.',
 ];

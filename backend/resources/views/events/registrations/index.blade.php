@@ -9,7 +9,7 @@ $posLabels = $availablePositions ?? [
 
 $isBeach   = ($direction ?? 'classic') === 'beach';
 $isClassic = !$isBeach;
-$hasPositions = $isClassic && count($posLabels) > 0;
+$hasPositions = $isClassic && count($posLabels) > 0 && array_keys($posLabels) !== ['player']; // запись без амплуа: позиции не показываем
 $freeSlots = $freePositionSlots ?? []; // role => free_count (пусто = нет конфига слотов)
 
 $eventTitle = (string)($event->title ?? __('events.fmt_game'));
