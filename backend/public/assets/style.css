@@ -5551,6 +5551,11 @@ body.dark .btn-outline-primary:hover {
 @media (max-width: 380px) {
     .section-title-row .btn { margin-left: auto; }
 }
+/* Вариант «в одну линию»: кнопка короткая, не переносится под заголовок, центры совпадают
+   (у h2 глобальный margin-top 3.5rem — в строке с align-items:center он сдвигал бы заголовок). */
+.section-title-row--inline { flex-wrap: nowrap; margin-top: -0.5rem; }
+.section-title-row--inline h2 { margin-top: 0; }
+.section-title-row--inline .btn { white-space: nowrap; margin-left: 0; }
 
 .join-backdrop.hidden { display:none; }
 .join-backdrop { position:fixed; inset:0; z-index:1050; background:rgba(0,0,0,.55); }

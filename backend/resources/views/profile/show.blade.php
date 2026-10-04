@@ -1098,8 +1098,8 @@
 				{{-- ===== МОИ КОМАНДЫ ===== --}}
 				@php $myUserTeams = \App\Models\UserTeam::where('user_id', auth()->id())->withCount('members')->orderByDesc('created_at')->limit(10)->get(); @endphp
 				<div class="ramka">
-					<div class="d-flex between fvc -mt-05 mb-2">
-						<h2 class="mb-0">Мои команды</h2>
+					<div class="section-title-row section-title-row--inline">
+						<h2>Мои команды</h2>
 						<a href="{{ route('user.teams.create') }}" class="btn btn-small">{{ __('profile.my_teams_create') }}</a>
 					</div>
 					@if($myUserTeams->isNotEmpty())
