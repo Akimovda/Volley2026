@@ -4,7 +4,7 @@
 ])
 @php $brand = app(\App\Models\Brand::class); @endphp
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 	<head>
 		@if(request()->getHost() === 'volleyplay.club')
 		<!-- Yandex.Metrika counter -->
