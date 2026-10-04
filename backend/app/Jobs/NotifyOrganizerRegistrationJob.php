@@ -21,6 +21,8 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
     public int $tries = 3;
     public int $backoff = 30;
 
+    public ?int $bookedSnapshot = null;
+
     private const POS_LABELS = [
         'setter'   => 'Связующий',
         'outside'  => 'Доигровщик',
@@ -36,7 +38,16 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
         public readonly string $type, // 'registered' | 'cancelled' | 'org_registered' | 'org_cancelled' | 'org_deleted'
         public readonly ?int $actorId = null,
         public readonly ?string $position = null,
-    ) {}
+    ) {
+        // Снимок числа записанных на момент события (постановки в очередь): воркер может
+        // выполнить джоб через несколько секунд, когда уже записался следующий игрок,
+        // и тогда в двух подряд уведомлениях стояла бы одна и та же цифра.
+        try {
+            $this->bookedSnapshot = self::countBooked($occurrenceId);
+        } catch (\Throwable $e) {
+            $this->bookedSnapshot = null;
+        }
+    }
 
     public function handle(UserNotificationService $notificationService): void
     {
@@ -102,6 +113,15 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
         }
     }
 
+    private static function countBooked(int $occurrenceId): int
+    {
+        return (int) DB::table('event_registrations')
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNull('cancelled_at')
+            ->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
+            ->count();
+    }
+
     private function buildExtra(EventOccurrence $occurrence, User $player): array
     {
         $event = $occurrence->event;
@@ -119,11 +139,7 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             ->value('position');
         $playerPosition = $positionCode ? (self::POS_LABELS[$positionCode] ?? $positionCode) : '';
 
-        $booked = (int) DB::table('event_registrations')
-            ->where('occurrence_id', $occurrence->id)
-            ->whereNull('cancelled_at')
-            ->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
-            ->count();
+        $booked = $this->bookedSnapshot ?? self::countBooked((int) $occurrence->id);
         $maxPlayers = (int) ($occurrence->max_players ?? $event->gameSettings?->max_players ?? 0);
         $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
         $totalMax   = $maxPlayers + $reserveMax;
