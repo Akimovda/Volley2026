@@ -41,13 +41,10 @@ class SetLocale
         return $next($request);
     }
 
-    /** Языки СНГ — для них дефолт RU, для остальных EN. */
-    private const CIS_LANGUAGES = ['ru', 'uk', 'be', 'kk', 'ky', 'uz', 'tg', 'hy', 'az', 'tk', 'ka'];
-
     /**
      * Нет заголовка Accept-Language (боты, curl) — $fallback (RU), чтобы не менять выдачу для поисковиков.
-     * Если среди принимаемых языков есть хоть один из СНГ (в т.ч. «en-US,en;q=0.9,ru;q=0.8» у русскоязычных
-     * с английской ОС) — RU, иначе EN.
+     * Иначе смотрим самый приоритетный язык клиента (в приложениях — системный язык устройства):
+     * русский → RU, любой другой → EN.
      */
     private static function detectFromRequest(Request $request, array $available, string $fallback): string
     {
@@ -56,13 +53,9 @@ class SetLocale
             return $fallback;
         }
 
-        foreach ($languages as $tag) {
-            $primary = strtolower(substr(str_replace('_', '-', (string) $tag), 0, 2));
-            if (in_array($primary, self::CIS_LANGUAGES, true)) {
-                return in_array('ru', $available, true) ? 'ru' : $fallback;
-            }
-        }
+        $primary = strtolower(substr(str_replace('_', '-', (string) $languages[0]), 0, 2));
+        $locale  = $primary === 'ru' ? 'ru' : 'en';
 
-        return in_array('en', $available, true) ? 'en' : $fallback;
+        return in_array($locale, $available, true) ? $locale : $fallback;
     }
 }
