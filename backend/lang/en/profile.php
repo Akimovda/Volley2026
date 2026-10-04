@@ -861,4 +861,6 @@ return [
     'cp_lvl_hint' => 'Swipe the levels left and right, then <b>tap the rectangle</b> with your level — it becomes bright and a check mark appears.',
     'cp_lvl_picked' => 'Selected: :n — :name',
     'cp_lvl_none' => 'No level selected yet — tap the rectangle with your level',
+    'my_teams_create' => '+ Create team',
+    'my_teams_empty'  => 'No saved teams yet. Create a team in advance with the “+ Create team” button, or while registering for a tournament, and save it to your profile.',
 ];
