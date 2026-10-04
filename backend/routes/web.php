@@ -1643,6 +1643,10 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         ->name('subscriptions.unfreeze');
     Route::post('/subscriptions/{subscription}/transfer', [\App\Http\Controllers\SubscriptionController::class, 'transfer'])
         ->name('subscriptions.transfer');
+    Route::post('/subscriptions/{subscription}/auto-bookings', [\App\Http\Controllers\SubscriptionAutoBookingController::class, 'store'])
+        ->name('subscriptions.auto_bookings.store');
+    Route::delete('/subscriptions/auto-bookings/{autoBooking}', [\App\Http\Controllers\SubscriptionAutoBookingController::class, 'destroy'])
+        ->name('subscriptions.auto_bookings.destroy');
     Route::get('/subscriptions/{subscription}/usages', [\App\Http\Controllers\SubscriptionController::class, 'usages'])
         ->name('subscriptions.usages');
 

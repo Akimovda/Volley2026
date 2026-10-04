@@ -27,7 +27,7 @@
             $groups = [
                 'Регистрация'  => ['registration_created','registration_cancelled','registration_cancelled_by_organizer','registration_failed'],
                 'Лист ожидания' => ['waitlist_joined','waitlist_spot_freed','waitlist_auto_booked','waitlist_removed_by_organizer'],
-                'Авто-запись' => ['auto_booking_created','auto_booking_failed','auto_booking_unconfirmed','premium_auto_booking_created','premium_auto_booking_failed','premium_auto_booking_unconfirmed'],
+                'Авто-запись' => ['auto_booking_created','auto_booking_failed','auto_booking_unconfirmed','premium_auto_booking_created','premium_auto_booking_failed','premium_auto_booking_unconfirmed','subscription_auto_booking_hint'],
                 'Команды' => ['team_join_request','team_join_accepted','team_join_declined','team_member_left','team_disbanded','team_captain_transferred','team_reserve_spot_offered','tournament_application_received','tournament_organizer_added'],
                 'Брони кортов' => ['court_booking_requested','court_booking_confirmed','court_booking_paid','court_booking_changed','court_booking_cancelled','court_booking_rejected','court_booking_expired','court_booking_refunded','court_booking_reminder'],
                 'Приглашения'  => ['event_invite','group_invite','tournament_team_invite'],

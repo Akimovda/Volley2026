@@ -32,6 +32,7 @@ class Subscription extends Model
     public function organizer(): BelongsTo { return $this->belongsTo(User::class, 'organizer_id'); }
     public function issuedBy(): BelongsTo  { return $this->belongsTo(User::class, 'issued_by'); }
     public function usages(): HasMany      { return $this->hasMany(SubscriptionUsage::class); }
+    public function autoBookings(): HasMany { return $this->hasMany(SubscriptionAutoBooking::class); }
 
     public function isActive(): bool   { return $this->status === 'active'; }
     public function isFrozen(): bool   { return $this->status === 'frozen'; }
