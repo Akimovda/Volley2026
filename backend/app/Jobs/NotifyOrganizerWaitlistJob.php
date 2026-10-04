@@ -21,6 +21,8 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
     public int $tries = 3;
     public int $backoff = 30;
 
+    public ?int $waitlistSnapshot = null;
+
     private const POS_LABELS = [
         'setter'   => 'Связующий',
         'outside'  => 'Доигровщик',
@@ -37,7 +39,22 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         public readonly int $playerId,
         public readonly array $positions = [],
         public readonly string $action = 'joined', // 'joined' | 'left'
-    ) {}
+    ) {
+        // Снимок длины очереди на момент события: воркер может выполнить джоб через секунды,
+        // когда очередь уже изменилась (следующая запись/выход/авто-запись из листа).
+        try {
+            $this->waitlistSnapshot = self::countWaitlist($occurrenceId);
+        } catch (\Throwable $e) {
+            $this->waitlistSnapshot = null;
+        }
+    }
+
+    private static function countWaitlist(int $occurrenceId): int
+    {
+        return (int) DB::table('occurrence_waitlist')
+            ->where('occurrence_id', $occurrenceId)
+            ->count();
+    }
 
     public function handle(UserNotificationService $notificationService): void
     {
@@ -67,9 +84,7 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
             $posLabel = 'все позиции';
         }
 
-        $waitlistCount = (int) DB::table('occurrence_waitlist')
-            ->where('occurrence_id', $this->occurrenceId)
-            ->count();
+        $waitlistCount = $this->waitlistSnapshot ?? self::countWaitlist($this->occurrenceId);
 
         $event = $occurrence->event;
         $tz    = $occurrence->timezone ?: ($event->timezone ?: 'UTC');
