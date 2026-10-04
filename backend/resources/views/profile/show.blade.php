@@ -1100,6 +1100,7 @@
 				<div class="ramka">
 					<div class="d-flex between fvc -mt-05 mb-2">
 						<h2 class="mb-0">Мои команды</h2>
+						<a href="{{ route('user.teams.create') }}" class="btn btn-small">{{ __('profile.my_teams_create') }}</a>
 					</div>
 					@if($myUserTeams->isNotEmpty())
 					@foreach($myUserTeams as $ut)
@@ -1123,7 +1124,7 @@
 					</div>
 					@endforeach
 					@else
-					<p class="f-15" style="opacity:.7">Сохранённых команд нет. Создайте команду при записи на турнир и сохраните её в профиль.</p>
+					<p class="f-15" style="opacity:.7">{{ __('profile.my_teams_empty') }}</p>
 					@endif
 				</div>
 

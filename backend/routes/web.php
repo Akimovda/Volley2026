@@ -353,6 +353,8 @@ Route::post('/profile/athlete/preferred-device', [\App\Http\Controllers\AthleteP
 Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified'])->group(function () {
     Route::get('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'index'])
         ->name('user.teams.index');
+    Route::get('/user/teams/create', [\App\Http\Controllers\UserTeamController::class, 'create'])
+        ->name('user.teams.create');
     Route::post('/user/teams', [\App\Http\Controllers\UserTeamController::class, 'store'])
         ->name('user.teams.store');
     Route::get('/user/teams/{team}/edit', [\App\Http\Controllers\UserTeamController::class, 'edit'])

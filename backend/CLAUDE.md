@@ -752,6 +752,7 @@ Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система 
 - `TournamentTeamController::saveToProfile()` — EventTeam → UserTeam (только капитан)
 - `TournamentTeamController::fromSaved()` — EventTeam из UserTeam, рассылает invites
 - При ошибках валидации → редирект на `/user/teams/{team}/edit?event_id=X` с session('team_validation_errors')
+- **Создание команды заранее (2026-10-04)**: кнопка «+ Создать команду» в блоке «Мои команды» на `/user/profile` → `GET /user/teams/create` (`UserTeamController::create()`, роут `user.teams.create`, объявлен ДО `/{team}/edit`) рендерит тот же `user/teams/edit.blade.php` в режиме `$isNew` (`new UserTeam(['direction'=>'classic'])`), сохранение — существующий `POST /user/teams` (`store()`, капитан = владелец, редирект в профиль). Тексты — `profile.my_teams_create|my_teams_empty` (RU+EN).
 
 ## Добавление команды из поиска на /events/{id}/registrations (2026-10-01)
 - Поле «Добавить игрока» ищет и игроков (`ajax.users.search`), и сохранённые команды сайта (`user_teams`, роут `events.registrations.teams-search` → `EventRegistrationsManagementController::searchTeams()`, по названию или ФИО капитана, до 8). В строке: название, «Капитан: Фамилия Имя», метка Пляжка/Классика (+subtype), число игроков.

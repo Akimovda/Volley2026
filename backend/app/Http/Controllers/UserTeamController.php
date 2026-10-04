@@ -21,6 +21,20 @@ class UserTeamController extends Controller
         return view('user.teams.index', compact('teams'));
     }
 
+    /** Создание команды заранее — из профиля, без привязки к турниру. */
+    public function create(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) return redirect()->route('login');
+
+        $team = new UserTeam(['direction' => 'classic']);
+        $event = null;
+        $validationErrors = [];
+        $teamSizeError = null;
+
+        return view('user.teams.edit', compact('team', 'event', 'validationErrors', 'teamSizeError'));
+    }
+
     public function edit(Request $request, UserTeam $team)
     {
         $user = $request->user();
