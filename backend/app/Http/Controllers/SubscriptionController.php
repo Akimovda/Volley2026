@@ -17,8 +17,10 @@ class SubscriptionController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        $access = app(\App\Services\EventAccessService::class);
+        $access->ensureCanUseSubs($user);
         $subs = Subscription::with(['user', 'template'])
-            ->when(!$user->isAdmin(), fn($q) => $q->where('organizer_id', $user->id))
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
             ->orderByDesc('id')
             ->paginate(30);
 
@@ -56,7 +58,7 @@ class SubscriptionController extends Controller
         $template = SubscriptionTemplate::findOrFail($data['template_id']);
         $user = auth()->user();
 
-        if (!$user->isAdmin() && $template->organizer_id !== $user->id) {
+        if (!app(\App\Services\EventAccessService::class)->canManageSubsOf($user, (int) $template->organizer_id)) {
             abort(403);
         }
 
@@ -67,10 +69,9 @@ class SubscriptionController extends Controller
             $data['reason'] ?? 'manual'
         );
 
-        // Лог Staff
-        if ($user->isStaff()) {
-            $orgId = $user->getOrganizerIdForStaff();
-            if ($orgId) app(\App\Services\StaffLogService::class)->log($user, $orgId, 'issue_subscription', 'subscription', $sub->id, "Выдал абонемент #{$sub->id} пользователю #{$data['user_id']}");
+        // Лог помощника (выдача от имени другого организатора)
+        if (!$user->isAdmin() && (int) $template->organizer_id !== (int) $user->id) {
+            app(\App\Services\StaffLogService::class)->log($user, (int) $template->organizer_id, 'issue_subscription', 'subscription', $sub->id, "Выдал абонемент #{$sub->id} пользователю #{$data['user_id']}");
         }
 
         return back()->with('status', "✅ Абонемент #{$sub->id} выдан пользователю #{$data['user_id']}");
@@ -120,11 +121,10 @@ class SubscriptionController extends Controller
 
         $this->service->extend($subscription, $data['days']);
 
-        // Лог Staff
+        // Лог помощника
         $authUser = $request->user();
-        if ($authUser->isStaff()) {
-            $orgId = $authUser->getOrganizerIdForStaff();
-            if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'extend_subscription', 'subscription', $subscription->id, "Продлил абонемент # на {$data['days']} дней");
+        if (!$authUser->isAdmin() && (int) $subscription->organizer_id !== (int) $authUser->id) {
+            app(StaffLogService::class)->log($authUser, (int) $subscription->organizer_id, 'extend_subscription', 'subscription', $subscription->id, "Продлил абонемент #{$subscription->id} на {$data['days']} дней");
         }
 
         return back()->with('status', "✅ Срок продлён на {$data['days']} дней");
@@ -147,8 +147,8 @@ class SubscriptionController extends Controller
     public function unfreeze(Request $request, Subscription $subscription)
     {
         $user = $request->user();
-        if (!$user->isAdmin() && $subscription->organizer_id !== $user->id
-            && $subscription->user_id !== $user->id) {
+        if ($subscription->user_id !== $user->id
+            && !app(\App\Services\EventAccessService::class)->canManageSubsOf($user, (int) $subscription->organizer_id)) {
             abort(403);
         }
 
@@ -173,8 +173,8 @@ class SubscriptionController extends Controller
     public function usages(Subscription $subscription)
     {
         $user = auth()->user();
-        if (!$user->isAdmin() && $subscription->user_id !== $user->id
-            && $subscription->organizer_id !== $user->id) {
+        if ($subscription->user_id !== $user->id
+            && !app(\App\Services\EventAccessService::class)->canManageSubsOf($user, (int) $subscription->organizer_id)) {
             abort(403);
         }
 
@@ -185,6 +185,6 @@ class SubscriptionController extends Controller
     private function authorizeSubscription(Subscription $sub): void
     {
         $user = auth()->user();
-        if (!$user->isAdmin() && $sub->organizer_id !== $user->id) abort(403);
+        if (!app(\App\Services\EventAccessService::class)->canManageSubsOf($user, (int) $sub->organizer_id)) abort(403);
     }
 }

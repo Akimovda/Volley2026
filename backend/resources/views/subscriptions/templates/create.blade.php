@@ -14,6 +14,28 @@
         <div class="form">
         <form method="POST" action="{{ route('subscription_templates.store') }}">
             @csrf
+            @if(!empty($organizerChoices) && $organizerChoices->count() > 1)
+            <div class="ramka" style="z-index:10">
+                <h2 class="-mt-05">{{ __('subscriptions.tpl_owner_h2') }}</h2>
+                <div class="row">
+                    <div class="col-md-6">
+                        <select name="organizer_id">
+                            @foreach($organizerChoices as $org)
+                            <option value="{{ $org->id }}" @selected((int) old('organizer_id', auth()->id()) === (int) $org->id)>
+                                @if((int) $org->id === (int) auth()->id())
+                                {{ __('subscriptions.tpl_owner_self') }}
+                                @else
+                                {{ trim(($org->first_name ?? '') . ' ' . ($org->last_name ?? '')) ?: ('#' . $org->id) }} (#{{ $org->id }})
+                                @endif
+                            </option>
+                            @endforeach
+                        </select>
+                        <div class="f-14 mt-1" style="opacity:.7;">{{ __('subscriptions.tpl_owner_hint') }}</div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
 
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_main') }}</h2>

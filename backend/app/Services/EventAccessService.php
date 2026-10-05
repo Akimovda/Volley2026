@@ -112,10 +112,10 @@ class EventAccessService
         */
         if ($role === 'organizer') {
 
-            if ($organizerId && (int) $organizerId !== (int) $user->id) {
+            if ($organizerId && !in_array((int) $organizerId, $this->creatableOrganizerIds($user), true)) {
                 throw ValidationException::withMessages([
                     'organizer_id' => [
-                        'Organizer может создавать мероприятия только от своего имени.'
+                        'Organizer может создавать мероприятия только от своего имени или от имени организатора, у которого он помощник.'
                     ]
                 ]);
             }
@@ -201,5 +201,85 @@ class EventAccessService
             ->all();
 
         return array_values(array_unique(array_merge([(int) $user->id], $staffOrgIds)));
+    }
+
+    /**
+     * Организаторы, от чьего имени пользователь может создавать мероприятия:
+     * он сам (если у него своя роль organizer/admin) + все, у кого он помощник.
+     * Если пользователь только помощник (роль staff) — свой id не включается.
+     */
+    public function creatableOrganizerIds(User $user): array
+    {
+        $role = (string) ($user->role ?? 'user');
+        $ids = DB::table('organizer_staff')
+            ->where('staff_user_id', (int) $user->id)
+            ->pluck('organizer_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        if (in_array($role, ['organizer', 'admin'], true)) {
+            array_unshift($ids, (int) $user->id);
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    /**
+     * Организаторы, чьими абонементами и купонами пользователь вправе управлять:
+     * он сам + те, у кого он помощник с флагом «мастер» (can_manage_subs).
+     */
+    public function subsOrganizerIds(User $user): array
+    {
+        $ids = DB::table('organizer_staff')
+            ->where('staff_user_id', (int) $user->id)
+            ->where('can_manage_subs', true)
+            ->pluck('organizer_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $ids[] = (int) $user->id;
+
+        return array_values(array_unique($ids));
+    }
+
+    public function canManageSubsOf(User $user, int $organizerId): bool
+    {
+        return $user->isAdmin() || in_array($organizerId, $this->subsOrganizerIds($user), true);
+    }
+
+    /**
+     * Помощник (роль staff) без флага «мастер» к абонементам и купонам не допускается.
+     */
+    public function ensureCanUseSubs(User $user): void
+    {
+        if ($user->isAdmin()) {
+            return;
+        }
+        if ((string) ($user->role ?? 'user') === 'staff' && count($this->subsOrganizerIds($user)) < 2) {
+            abort(403);
+        }
+    }
+
+    /**
+     * Организатор для нового шаблона: явно выбранный (если разрешён), иначе
+     * у помощника-мастера — его организатор, у остальных — он сам.
+     */
+    public function resolveSubsOrganizerId(User $user, ?int $requested): int
+    {
+        $allowed = $this->subsOrganizerIds($user);
+
+        if ($requested && in_array($requested, $allowed, true)) {
+            return $requested;
+        }
+
+        if ((string) ($user->role ?? 'user') === 'staff') {
+            foreach ($allowed as $id) {
+                if ($id !== (int) $user->id) {
+                    return $id;
+                }
+            }
+        }
+
+        return (int) $user->id;
     }
 }

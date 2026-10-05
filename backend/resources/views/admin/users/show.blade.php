@@ -428,6 +428,10 @@
 								<a href="{{ route('admin.users.show', $sa->staff_user_id) }}" class="b-600">{{ trim(($sa->staff->last_name ?? '') . ' ' . ($sa->staff->first_name ?? '')) ?: ('#' . $sa->staff_user_id) }}</a>
 								<span class="f-13" style="opacity:.5;">#{{ $sa->staff_user_id }}</span>
 							</div>
+							<form method="POST" action="{{ route('staff.master', $sa->id) }}">
+								@csrf
+								<button type="submit" class="btn btn-secondary btn-small">{{ $sa->can_manage_subs ? '⭐ Мастер: снять' : '⭐ Сделать мастером' }}</button>
+							</form>
 							<form method="POST" action="{{ route('staff.destroy', $sa->id) }}">
 								@csrf @method('DELETE')
 								<button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Снять помощника?')">Снять</button>

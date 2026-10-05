@@ -2,7 +2,9 @@
     $menuUser = $menuUser ?? auth()->user();
     $isEditingOther = $isEditingOther ?? false;
     $activeMenu = $activeMenu ?? '';
-    $isOrgOrAdmin = $menuUser->isOrganizer() || $menuUser->isAdmin();
+    $isStaffHelper = ($menuUser->role ?? 'user') === 'staff' && $menuUser->staffAssignment()->exists();
+    $isStaffMaster = $isStaffHelper && (bool) $menuUser->staffAssignment()->value('can_manage_subs');
+    $isOrgOrAdmin = $menuUser->isOrganizer() || $menuUser->isAdmin() || $isStaffHelper;
 @endphp
 
                     <div class="menu-move">
@@ -179,7 +181,7 @@
 
             {{-- Таб: Организатор --}}
             <div class="tab-pane" id="org-menu">
-                {{-- 1. Панель организатора --}}
+                @if(!$isStaffHelper) {{-- 1. Панель организатора — не для помощника --}}
                 <a href="{{ route('org.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'org_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'org_dashboard')
@@ -188,6 +190,7 @@
                         <span class="menu-text">{{ __('profile.menu_org_dashboard') }}</span>
                     @endif
                 </a>
+                @endif
                 {{-- 2. Панель арендатора — только для арендодателей кортов --}}
                 @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
                 <a href="{{ route('club.analytics.index') }}"
@@ -246,6 +249,7 @@
                         <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</span>
                     @endif
                 </a>
+                @if(!$isStaffHelper || $isStaffMaster) {{-- абонементы и купоны: организатору и помощнику-мастеру --}}
                 {{-- 8. Абонементы --}}
                 <a href="{{ route('subscription_templates.index') }}"
                    class="menu-item {{ $activeMenu === 'sub_templates' ? 'active' : '' }}">
@@ -264,6 +268,7 @@
                         <span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
                     @endif
                 </a>
+                @endif
                 {{-- 10. Мои лиги и сезоны --}}
                 <a href="{{ route('leagues.index') }}"
                    class="menu-item {{ $activeMenu === 'org_leagues' ? 'active' : '' }}">
@@ -282,6 +287,7 @@
                         <span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
                     @endif
                 </a>
+                @if(!$isStaffHelper) {{-- помощнику Виджет и Pro не показываем --}}
                 {{-- 12. Виджет на сайт --}}
                 <a href="{{ route('profile.widget') }}"
                    class="menu-item {{ $activeMenu === 'org_widget' ? 'active' : '' }}">
@@ -300,8 +306,10 @@
                         <span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
                     @endif
                 </a>
+                @endif
 
                 {{-- Доп. пункты профиля-организатора, не входящие в единый порядок орг. меню (см. CLAUDE.md) --}}
+                @if(!$isStaffHelper || $isStaffMaster)
                 <a href="{{ route('subscriptions.index') }}"
                    class="menu-item {{ $activeMenu === 'org_subscriptions' ? 'active' : '' }}">
                     @if($activeMenu === 'org_subscriptions')
@@ -310,6 +318,8 @@
                         <span class="menu-text">{{ __('profile.menu_org_subs') }}</span>
                     @endif
                 </a>
+                @endif
+                @if(!$isStaffHelper) {{-- помощники/логи/школа — только организатору --}}
                 <a href="{{ route('staff.index') }}"
                    class="menu-item {{ $activeMenu === 'staff' ? 'active' : '' }}">
                     @if($activeMenu === 'staff')
@@ -361,6 +371,7 @@
                     @endif
                 </a>
                 @endif
+                @endif
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
                     @csrf
                     <button type="submit" class="menu-item">{{ __('profile.menu_logout') }}</button>
@@ -376,20 +387,6 @@
 <nav class="menu-nav sidebar-menu">
     @if(($menuUser->role ?? 'user') === 'user')
     {{-- /events/create отправит обычного пользователя на заявку организатора в профиле --}}
-    <a href="/events/create" class="menu-item">
-        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
-    </a>
-    @endif
-    @if(($menuUser->role ?? 'user') === 'staff' && $menuUser->staffAssignment()->exists())
-    {{-- Помощник организатора: управление мероприятиями своего организатора --}}
-    <a href="{{ route('events.create.event_management') }}"
-       class="menu-item {{ $activeMenu === 'event_management' ? 'active' : '' }}">
-        <span class="menu-text">{{ __('ui.org_events_management') }}</span>
-    </a>
-    <a href="{{ route('events.registrations.manage') }}"
-       class="menu-item {{ $activeMenu === 'regs_manage' ? 'active' : '' }}">
-        <span class="menu-text">{{ __('profile.menu_org_regs_manage') }}</span>
-    </a>
     <a href="/events/create" class="menu-item">
         <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
     </a>

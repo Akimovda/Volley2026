@@ -242,4 +242,7 @@ return [
     'ab_position_unavailable'  => 'The chosen position is not available at this event.',
     'ab_no_future_occurrences' => 'The event has no upcoming sessions.',
     'ab_already_exists'        => 'Auto-booking for this event is already set up.',
+    'tpl_owner_h2'   => 'Create for',
+    'tpl_owner_self' => 'For myself',
+    'tpl_owner_hint' => 'Choose whose template this is: yours, or the organizer you assist as a master helper.',
 ];

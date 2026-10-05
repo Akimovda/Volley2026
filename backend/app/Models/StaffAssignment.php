@@ -7,7 +7,9 @@ class StaffAssignment extends Model
 {
     protected $table = 'organizer_staff';
 
-    protected $fillable = ['staff_user_id', 'organizer_id'];
+    protected $fillable = ['staff_user_id', 'organizer_id', 'can_manage_subs'];
+
+    protected $casts = ['can_manage_subs' => 'boolean'];
 
     public function staff()
     {
