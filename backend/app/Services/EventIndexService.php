@@ -114,12 +114,11 @@ class EventIndexService
         // Staff: получаем organizer_id своего организатора
         $staffOrganizerIds = [];
         if ($userId > 0 && $user && in_array($user->role ?? '', ['staff'], true)) {
-            $staffOrgId = \DB::table('staff_assignments')
+            $staffOrganizerIds = \DB::table('organizer_staff')
                 ->where('staff_user_id', $userId)
-                ->value('organizer_id');
-            if ($staffOrgId) {
-                $staffOrganizerIds = [$staffOrgId];
-            }
+                ->pluck('organizer_id')
+                ->map(fn($v) => (int)$v)
+                ->all();
         }
 
         // Приватные события к которым у пользователя есть доступ по токену
