@@ -104,9 +104,21 @@ class EventIndexService
         $cityParam = trim((string) request('city', ''));
         if ($cityParam !== 'all' && $user && $user->city_id) {
             $userCityId = (int) $user->city_id;
-            $occQ->whereHas('event', function ($eq) use ($userCityId) {
-                $eq->whereHas('location', function ($lq) use ($userCityId) {
-                    $lq->where('city_id', $userCityId);
+            // Житель города видит мероприятия всего своего региона
+            // (Москва ↔ Московская область, СПб ↔ Ленинградская область, остальные — регион города)
+            $scope = \App\Models\City::feedRegionScope($userCityId);
+            $occQ->whereHas('event', function ($eq) use ($userCityId, $scope) {
+                $eq->whereHas('location', function ($lq) use ($userCityId, $scope) {
+                    $lq->where(function ($w) use ($userCityId, $scope) {
+                        $w->where('city_id', $userCityId);
+                        if ($scope) {
+                            [$country, $regions] = $scope;
+                            $w->orWhereIn('city_id', \DB::table('cities')
+                                ->whereIn('region', $regions)
+                                ->when($country !== '', fn ($c) => $c->where('country_code', $country))
+                                ->select('id'));
+                        }
+                    });
                 });
             });
         }
