@@ -156,6 +156,7 @@ class UserSearchController extends Controller
                     'meta'             => $metaStr,
                     'sub'              => $metaStr,
                     'is_bot'           => (bool) ($u->is_bot ?? false),
+                    'role'             => $isTrusted ? (string) ($u->role ?? 'user') : null,
                 ];
             })
             ->values()

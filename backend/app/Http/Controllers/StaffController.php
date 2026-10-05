@@ -5,6 +5,7 @@ use App\Models\StaffAssignment;
 use App\Models\StaffLog;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class StaffController extends Controller
 {
@@ -23,6 +24,8 @@ class StaffController extends Controller
     // Назначить staff
     public function store(Request $request)
     {
+        Gate::authorize('assign-staff');
+
         $currentUser = $request->user();
         $data = $request->validate([
             'staff_user_id'      => ['required', 'integer', 'exists:users,id'],
@@ -40,6 +43,10 @@ class StaffController extends Controller
             }
         } else {
             $organizerId = $currentUser->id;
+        }
+
+        if ((int) $staffUser->id === (int) $organizerId) {
+            return back()->with('error', 'Нельзя назначить помощником самого себя.');
         }
 
         // Админа помощником назначить нельзя (у него и так полный доступ),
