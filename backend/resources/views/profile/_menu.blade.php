@@ -380,6 +380,20 @@
         <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
     </a>
     @endif
+    @if(($menuUser->role ?? 'user') === 'staff' && $menuUser->staffAssignment()->exists())
+    {{-- Помощник организатора: управление мероприятиями своего организатора --}}
+    <a href="{{ route('events.create.event_management') }}"
+       class="menu-item {{ $activeMenu === 'event_management' ? 'active' : '' }}">
+        <span class="menu-text">{{ __('ui.org_events_management') }}</span>
+    </a>
+    <a href="{{ route('events.registrations.manage') }}"
+       class="menu-item {{ $activeMenu === 'regs_manage' ? 'active' : '' }}">
+        <span class="menu-text">{{ __('profile.menu_org_regs_manage') }}</span>
+    </a>
+    <a href="/events/create" class="menu-item">
+        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+    </a>
+    @endif
     <a href="{{ route('users.show', ['user' => $menuUser->id]) }}"
        class="menu-item {{ $activeMenu === 'public_profile' ? 'active' : '' }}">
         @if($activeMenu === 'public_profile')
