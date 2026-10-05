@@ -113,7 +113,7 @@ class EventIndexService
 
         // Staff: получаем organizer_id своего организатора
         $staffOrganizerIds = [];
-        if ($userId > 0 && $user && in_array($user->role ?? '', ['staff'], true)) {
+        if ($userId > 0 && $user) { // помощник — независимо от собственной роли
             $staffOrganizerIds = \DB::table('organizer_staff')
                 ->where('staff_user_id', $userId)
                 ->pluck('organizer_id')

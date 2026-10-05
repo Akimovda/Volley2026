@@ -54,7 +54,8 @@ class EventVisibilityService
             return true;
         }
 
-        if ($role === 'staff' && $eventOrgId > 0) {
+        // Помощник организатора — независимо от собственной роли (организатор тоже может быть чьим-то помощником)
+        if ($eventOrgId > 0) {
             $orgIds = $this->staffOrganizerIds($uid);
             if (in_array($eventOrgId, $orgIds, true)) {
                 return true;
@@ -137,12 +138,11 @@ class EventVisibilityService
 
                     $w->orWhere($prefix.'organizer_id', $uid);
 
-                    if ($role === 'staff') {
-                        $orgIds = $this->staffOrganizerIds($uid);
+                    // Помощник организатора — независимо от собственной роли
+                    $orgIds = $this->staffOrganizerIds($uid);
 
-                        if (!empty($orgIds)) {
-                            $w->orWhereIn($prefix.'organizer_id', $orgIds);
-                        }
+                    if (!empty($orgIds)) {
+                        $w->orWhereIn($prefix.'organizer_id', $orgIds);
                     }
                 }
 
@@ -186,14 +186,11 @@ class EventVisibilityService
 
                 $w->where($prefix.'organizer_id','!=',$uid);
 
-                if ($role === 'staff') {
+                // помощник организатора — независимо от собственной роли
+                $orgIds = $this->staffOrganizerIds($uid);
 
-                    $orgIds = $this->staffOrganizerIds($uid);
-
-                    if (!empty($orgIds)) {
-                        $w->whereNotIn($prefix.'organizer_id',$orgIds);
-                    }
-
+                if (!empty($orgIds)) {
+                    $w->whereNotIn($prefix.'organizer_id',$orgIds);
                 }
 
             }
