@@ -25,6 +25,9 @@ class BrandThemeService
             'primary'   => '#2967BA',
             'secondary' => '#E7612F',
             'bg_page'   => '#C8DCFF',
+            'bg_page_to' => '#C8DCFF', // конец градиента фона; совпадает с bg_page => сплошной фон
+            'orb_main'   => '#2967BA', // два больших размытых шара фона (десктоп)
+            'orb_center' => '#FFFFFF', // центральный пульсирующий шар
             'bg_card'   => '#FFFFFF',
             'text'      => '#2C2C2C',
             'menu_bg'     => '#FFFFFF',
@@ -38,6 +41,9 @@ class BrandThemeService
             'primary'   => '#2967BA',
             'secondary' => '#E7612F',
             'bg_page'   => '#161721',
+            'bg_page_to' => '#161721',
+            'orb_main'   => '#E7612F',
+            'orb_center' => '#000000',
             'bg_card'   => '#222333',
             'text'      => '#CACACA',
             'menu_bg'     => '#222333',
@@ -214,6 +220,18 @@ class BrandThemeService
         if (!empty($vals['secondary']) && $this->validHex($vals['secondary'])) {
             $add(self::SECONDARY_LIGHT, $this->mix($vals['secondary'], '#FFFFFF', 0.4));
         }
+        // Цвет текста алертов (info/warning/danger, пилюли score-pill) выводится из акцентов:
+        // иначе при несиневом акценте фон и иконка меняются, а текст остаётся синим/красным.
+        $pri = $this->validHex($vals['primary'] ?? '') ? $vals['primary'] : null;
+        $sec = $this->validHex($vals['secondary'] ?? '') ? $vals['secondary'] : null;
+        $night = $mode === 'night';
+        if ($pri) {
+            $add($night ? '#A5C4EB' : '#1A4A8A', $night ? $this->mix($pri, '#FFFFFF', 0.6) : $this->mix($pri, '#000000', 0.36));
+        }
+        if ($sec) {
+            $add($night ? '#FFAAA3' : '#A8231A', $night ? $this->mix($sec, '#FFFFFF', 0.55) : $this->mix($sec, '#000000', 0.4));
+            $add($night ? '#FFC085' : '#B84D00', $night ? $this->mix($sec, '#FFFFFF', 0.45) : $this->mix($sec, '#000000', 0.2));
+        }
         $add($base['text'], $vals['text'] ?? null);
         if ($mode === 'night') {
             $add($base['bg_page'], $vals['bg_page'] ?? null);
@@ -232,9 +250,7 @@ class BrandThemeService
         $day = (array) ($theme['day'] ?? []);
         $night = (array) ($theme['night'] ?? []);
 
-        if ($this->validHex($day['bg_page'] ?? '')) {
-            $out .= 'body{background:' . $day['bg_page'] . '}';
-        }
+        $out .= $this->pageBackgroundCss('body', 'day', $day);
         if ($this->validHex($day['text'] ?? '')) {
             $out .= 'body{color:' . $day['text'] . '}';
         }
@@ -245,9 +261,7 @@ class BrandThemeService
                 . $this->rgba($c, 0.9) . ' 0%,' . $this->rgba($c, 0.7) . ' 100%)}';
         }
 
-        if ($this->validHex($night['bg_page'] ?? '')) {
-            $out .= 'body.dark{background:' . $night['bg_page'] . '}';
-        }
+        $out .= $this->pageBackgroundCss('body.dark', 'night', $night);
         if ($this->validHex($night['text'] ?? '')) {
             $out .= 'body.dark{color:' . $night['text'] . '}';
         }
@@ -256,6 +270,16 @@ class BrandThemeService
             $out .= 'body.dark .card{background:' . $c . '}'
                 . 'body.dark .ramka,body.dark .card-ramka{background-image:linear-gradient(to bottom,'
                 . $this->rgba($c, 0.8) . ' 0%,' . $this->rgba($this->mix($c, '#000000', 0.12), 0.5) . ' 100%)}';
+        }
+
+        // Шары фона (.bg-orb): без своей настройки следуют акцентам через общую карту hex
+        foreach (['day' => ['', $day], 'night' => ['body.dark ', $night]] as [$pfx, $v]) {
+            if ($this->validHex($v['orb_main'] ?? '')) {
+                $out .= $pfx . '.orb-1,' . $pfx . '.orb-2{background:' . $v['orb_main'] . '}';
+            }
+            if ($this->validHex($v['orb_center'] ?? '')) {
+                $out .= $pfx . '.orb-3{background:' . $v['orb_center'] . '}';
+            }
         }
 
         // Меню и шапка (.fix-header содержит и выпадающее меню, и кнопку пользователя)
@@ -291,6 +315,21 @@ class BrandThemeService
         }
 
         return $out;
+    }
+
+    /** Фон страницы: сплошной или градиент (bg_page → bg_page_to), если задан конечный цвет. */
+    private function pageBackgroundCss(string $sel, string $mode, array $v): string
+    {
+        $from = $this->validHex($v['bg_page'] ?? '') ? $v['bg_page'] : null;
+        $to = $this->validHex($v['bg_page_to'] ?? '') ? $v['bg_page_to'] : null;
+        if ($to) {
+            $from = $from ?: self::BASE[$mode]['bg_page'];
+            if (strcasecmp($from, $to) !== 0) {
+                return $sel . '{background:' . $from . ' linear-gradient(160deg,' . $from . ' 0%,' . $to . ' 100%) fixed}';
+            }
+        }
+
+        return $from ? $sel . '{background:' . $from . '}' : '';
     }
 
     public function validHex(?string $hex): bool

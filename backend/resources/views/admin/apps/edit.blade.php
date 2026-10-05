@@ -6,6 +6,9 @@
         'primary'   => __('admin.app_c_primary'),
         'secondary' => __('admin.app_c_secondary'),
         'bg_page'   => __('admin.app_c_bg_page'),
+        'bg_page_to' => __('admin.app_c_bg_page_to'),
+        'orb_main'   => __('admin.app_c_orb_main'),
+        'orb_center' => __('admin.app_c_orb_center'),
         'bg_card'   => __('admin.app_c_bg_card'),
         'text'      => __('admin.app_c_text'),
     ];
@@ -116,6 +119,11 @@
                                     <span data-pv="secondary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_secondary') }}</span>
                                 </div>
                             </div>
+                            <div style="margin-top:1.4rem; display:flex; flex-direction:column; gap:0.8rem;">
+                                <div data-pv="alert_info" style="padding:0.9rem 1.2rem; border-radius:1rem; border:0.2rem solid;">Info — {{ __('admin.app_preview_alert') }}</div>
+                                <div data-pv="alert_danger" style="padding:0.9rem 1.2rem; border-radius:1rem; border:0.2rem solid;">Danger — {{ __('admin.app_preview_alert') }}</div>
+                                <input type="text" data-pv="input" value="{{ __('admin.app_preview_input') }}" readonly style="padding:0.8rem 1.2rem; border-radius:0.8rem; border:0.1rem solid rgba(128,128,128,.4); width:100%;">
+                            </div>
                             <div data-pv="menu" style="margin-top:1.4rem; padding:1.2rem 1.4rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
                                 <div data-pv="menu_title" style="font-size:1.2rem; font-weight:600; text-transform:uppercase; margin-bottom:0.6rem;">{{ __('admin.app_preview_menu_title') }}</div>
                                 <div data-pv="menu_text" style="padding:0.5rem 0;">{{ __('admin.app_preview_menu_item') }}</div>
@@ -222,16 +230,36 @@
             return hexRe.test(v) ? v : defaults[mode][key];
         }
 
+        function hx(h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }
+        function mix(a, b, r) {
+            var x = hx(a), y = hx(b);
+            return 'rgb(' + x.map(function (v, i) { return Math.round(v + (y[i] - v) * r); }).join(',') + ')';
+        }
+        function rgba(h, a) { return 'rgba(' + hx(h).join(',') + ',' + a + ')'; }
+
         function renderPreview() {
             ['day', 'night'].forEach(function (mode) {
                 var box = document.querySelector('[data-preview="' + mode + '"]');
                 if (!box) { return; }
-                box.style.background = val(mode, 'bg_page');
+                var bgTo = document.querySelector('[data-color-text][data-mode="' + mode + '"][data-key="bg_page_to"]');
+                var bgFrom = val(mode, 'bg_page'), bgEnd = bgTo ? bgTo.value.trim() : '';
+                box.style.background = hexRe.test(bgEnd) && bgEnd.toLowerCase() !== bgFrom.toLowerCase()
+                    ? 'linear-gradient(160deg,' + bgFrom + ' 0%,' + bgEnd + ' 100%)' : bgFrom;
                 box.style.color = val(mode, 'text');
                 box.querySelector('[data-pv="card"]').style.background = val(mode, 'bg_card');
                 box.querySelector('[data-pv="link"]').style.color = val(mode, 'primary');
                 box.querySelector('[data-pv="primary"]').style.background = val(mode, 'primary');
                 box.querySelector('[data-pv="secondary"]').style.background = val(mode, 'secondary');
+                var night = mode === 'night', pri = val(mode, 'primary'), sec = val(mode, 'secondary');
+                var ai = box.querySelector('[data-pv="alert_info"]'), ad = box.querySelector('[data-pv="alert_danger"]');
+                ai.style.background = rgba(pri, 0.1); ai.style.borderColor = rgba(pri, 0.2);
+                ai.style.color = night ? mix(pri, '#FFFFFF', 0.6) : mix(pri, '#000000', 0.36);
+                ai.style.borderLeft = '1rem solid ' + pri;
+                ad.style.background = rgba(sec, 0.1); ad.style.borderColor = rgba(sec, 0.2);
+                ad.style.color = night ? mix(sec, '#FFFFFF', 0.55) : mix(sec, '#000000', 0.4);
+                ad.style.borderLeft = '1rem solid ' + sec;
+                var inp = box.querySelector('[data-pv="input"]');
+                inp.style.background = night ? val(mode, 'bg_page') : '#fff'; inp.style.color = val(mode, 'text');
                 box.querySelector('[data-pv="menu"]').style.background = val(mode, 'menu_bg');
                 box.querySelector('[data-pv="menu_title"]').style.color = val(mode, 'menu_title');
                 box.querySelectorAll('[data-pv="menu_text"]').forEach(function (el) { el.style.color = val(mode, 'menu_text'); });
