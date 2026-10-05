@@ -269,6 +269,7 @@
                     @endif
                 </a>
                 @endif
+                @if(!$isStaffHelper) {{-- лиги и каналы — только организатору --}}
                 {{-- 10. Мои лиги и сезоны --}}
                 <a href="{{ route('leagues.index') }}"
                    class="menu-item {{ $activeMenu === 'org_leagues' ? 'active' : '' }}">
@@ -287,6 +288,7 @@
                         <span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
                     @endif
                 </a>
+                @endif
                 @if(!$isStaffHelper) {{-- помощнику Виджет и Pro не показываем --}}
                 {{-- 12. Виджет на сайт --}}
                 <a href="{{ route('profile.widget') }}"

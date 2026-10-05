@@ -335,8 +335,25 @@ class OrgDashboardController extends Controller
         $user = $request->user();
 
         $role = (string) ($user->role ?? 'user');
-        if (!in_array($role, ['organizer', 'admin'], true)) {
+        $access = app(\App\Services\EventAccessService::class);
+
+        // Чьи мероприятия показываем: свои (organizer/admin) и/или организаторов, у которых пользователь помощник.
+        // Админ видит только свои (как и раньше).
+        $orgIds = $role === 'admin' ? [(int) $user->id] : $access->creatableOrganizerIds($user);
+        if (!in_array($role, ['organizer', 'admin', 'staff'], true) || empty($orgIds)) {
             abort(403);
+        }
+
+        $orgNames = \App\Models\User::whereIn('id', $orgIds)->get(['id', 'first_name', 'last_name'])->keyBy('id');
+        $orgTabs = [];
+        foreach ($orgIds as $oid) {
+            $orgTabs[$oid] = (int) $oid === (int) $user->id
+                ? 'Мои'
+                : (trim(($orgNames[$oid]->first_name ?? '') . ' ' . ($orgNames[$oid]->last_name ?? '')) ?: ('Организатор #' . $oid));
+        }
+        $orgSel = (int) $request->input('org', 0);
+        if (!isset($orgTabs[$orgSel])) {
+            $orgSel = (int) array_key_first($orgTabs);
         }
 
         $filter = $request->input('filter', 'current');
@@ -345,7 +362,7 @@ class OrgDashboardController extends Controller
         $q = DB::table('event_occurrences as eo')
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->leftJoin('locations as l', 'l.id', '=', 'e.location_id')
-            ->where('e.organizer_id', (int) $user->id)
+            ->where('e.organizer_id', $orgSel)
             ->where(function ($w) {
                 $w->whereNull('eo.is_cancelled')->orWhere('eo.is_cancelled', false);
             })
@@ -372,6 +389,6 @@ class OrgDashboardController extends Controller
 
         $occurrences = $q->paginate(25)->withQueryString();
 
-        return view('dashboard.org_my_events', compact('occurrences', 'filter'));
+        return view('dashboard.org_my_events', compact('occurrences', 'filter', 'orgTabs', 'orgSel'));
     }
 }

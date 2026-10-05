@@ -36,13 +36,13 @@ $fmtAddress = function ($row) {
 	<x-slot name="d_description">
 		<div class="d-flex flex-wrap gap-1 m-center">
 			<div class="mt-2" data-aos-delay="250" data-aos="fade-up">
-				<a href="{{ route('organizer.my-events', ['filter' => 'current']) }}"
+				<a href="{{ route('organizer.my-events', ['filter' => 'current', 'org' => $orgSel]) }}"
 				class="btn {{ $filter === 'current' ? 'btn-primary' : 'btn-secondary' }}">
 					Текущие
 				</a>
 			</div>
 			<div class="mt-2" data-aos-delay="350" data-aos="fade-up">
-				<a href="{{ route('organizer.my-events', ['filter' => 'archive']) }}"
+				<a href="{{ route('organizer.my-events', ['filter' => 'archive', 'org' => $orgSel]) }}"
 				class="btn {{ $filter === 'archive' ? 'btn-primary' : 'btn-secondary' }}">
 					Архивные
 				</a>
@@ -64,6 +64,17 @@ $fmtAddress = function ($row) {
 					<h2 class="-mt-05">
 						{{ $filter === 'current' ? 'Текущие' : 'Архивные' }} мероприятия
 					</h2>
+					{{-- Разделение: свои мероприятия и мероприятия организаторов, у которых пользователь помощник --}}
+					@if(count($orgTabs) > 1)
+					<div class="filter-tabs mt-1">
+						@foreach($orgTabs as $oid => $label)
+						<a href="{{ route('organizer.my-events', ['filter' => $filter, 'org' => $oid]) }}"
+						class="filter-tab {{ (int) $oid === (int) $orgSel ? 'active' : '' }}">{{ $label }}</a>
+						@endforeach
+					</div>
+					@elseif(count($orgTabs) === 1 && (int) array_key_first($orgTabs) !== (int) auth()->id())
+					<div class="f-14 mt-1" style="opacity:.7;">Организатор: {{ reset($orgTabs) }}</div>
+					@endif
 				</div>
 
 				@if($occurrences->isEmpty())
