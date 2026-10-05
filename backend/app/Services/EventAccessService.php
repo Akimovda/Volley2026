@@ -60,6 +60,16 @@ class EventAccessService
                 ]);
             }
 
+            // Staff создаёт мероприятия только от имени СВОЕГО организатора —
+            // явно переданный чужой organizer_id не принимаем.
+            if ($organizerId && (int) $organizerId !== $resolvedOrganizerId) {
+                throw ValidationException::withMessages([
+                    'organizer_id' => [
+                        'Staff может создавать мероприятия только от имени своего организатора.'
+                    ]
+                ]);
+            }
+
             return;
         }
 

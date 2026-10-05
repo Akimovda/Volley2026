@@ -543,6 +543,25 @@
 						@endif
 						
 						@endif
+						{{-- Помощник (staff) организатора: только то, к чему у него есть доступ --}}
+						@if(auth()->user()->role === 'staff' && auth()->user()->staffAssignment()->exists())
+						<div class="menu-column column-secondary">
+							<nav class="menu-nav">
+								<div class="menu-item-title">
+									<span class="menu-text">{{ __('ui.org_menu_title') }}</span>
+								</div>
+								<a href="/events/create/event_management" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
+								</a>
+								<a href="/events/registrations/manage" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
+								</a>
+								<a href="/events/create" class="menu-item">
+									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+								</a>
+							</nav>
+						</div>
+						@endif
 					</div>
 					@else
 					@php
