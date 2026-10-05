@@ -414,6 +414,85 @@
 					</div>
 				</div>
 
+				{{-- Помощники (Staff) этого организатора --}}
+				@if(in_array($user->role, ['organizer', 'admin'], true))
+				<div class="ramka">
+					<h2 class="-mt-05">🧑‍💻 Помощники организатора</h2>
+					<div class="card-body">
+						@php
+						$ownStaff = \App\Models\StaffAssignment::where('organizer_id', $user->id)->with('staff:id,first_name,last_name')->orderBy('id')->get();
+						@endphp
+						@forelse($ownStaff as $sa)
+						<div class="d-flex fvc gap-2 mb-2">
+							<div style="flex:1;min-width:0">
+								<a href="{{ route('admin.users.show', $sa->staff_user_id) }}" class="b-600">{{ trim(($sa->staff->last_name ?? '') . ' ' . ($sa->staff->first_name ?? '')) ?: ('#' . $sa->staff_user_id) }}</a>
+								<span class="f-13" style="opacity:.5;">#{{ $sa->staff_user_id }}</span>
+							</div>
+							<form method="POST" action="{{ route('staff.destroy', $sa->id) }}">
+								@csrf @method('DELETE')
+								<button type="submit" class="btn btn-danger btn-small" onclick="return confirm('Снять помощника?')">Снять</button>
+							</form>
+						</div>
+						@empty
+						<div class="alert alert-info mb-2">Помощников пока нет.</div>
+						@endforelse
+						<form class="form" method="POST" action="{{ route('staff.store') }}">
+							@csrf
+							<input type="hidden" name="organizer_id_override" value="{{ $user->id }}">
+							<input type="hidden" name="staff_user_id" id="own_staff_id_input">
+							<label class="f-14 b-600">Добавить помощника</label>
+							<input type="text" id="own_staff_search" placeholder="Имя, фамилия или #id пользователя..." autocomplete="off" class="w-100 mt-1">
+							<div id="own_staff_results" style="display:none;border:0.1rem solid var(--border-color,#eee);border-radius:0.8rem;overflow:hidden;max-height:20rem;overflow-y:auto;"></div>
+							<div id="own_staff_selected" class="f-14 mt-1" style="display:none;"></div>
+							<button type="submit" class="btn w-100 mt-1" id="own_staff_submit" disabled>Назначить помощником</button>
+						</form>
+						<script>
+						(function() {
+							const search = document.getElementById('own_staff_search');
+							const results = document.getElementById('own_staff_results');
+							const hidden = document.getElementById('own_staff_id_input');
+							const selected = document.getElementById('own_staff_selected');
+							const submit = document.getElementById('own_staff_submit');
+							let timer = null;
+							function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+							function pick(id, name) {
+								hidden.value = id; search.value = name; results.style.display = 'none';
+								selected.style.display = '';
+								selected.innerHTML = '✅ <strong>' + esc(name) + '</strong> <span style="opacity:.5;">#' + esc(id) + '</span>';
+								submit.disabled = false;
+							}
+							search.addEventListener('input', function() {
+								hidden.value = ''; submit.disabled = true; selected.style.display = 'none';
+								clearTimeout(timer);
+								const q = this.value.trim();
+								if (q.length < 2) { results.style.display = 'none'; return; }
+								timer = setTimeout(async function() {
+									let data = { ok: false, items: [] };
+									try {
+										const res = await fetch('/ajax/users/search?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' });
+										if (res.ok) data = await res.json();
+									} catch (e) {}
+									if (!data.ok || !data.items.length) {
+										results.innerHTML = '<div class="p-2 f-14" style="opacity:.6;">Ничего не найдено</div>';
+										results.style.display = ''; return;
+									}
+									results.innerHTML = data.items.slice(0, 8).map(u => {
+										const name = u.full_name || u.label || u.name || ('#' + u.id);
+										return '<div class="own-staff-item" data-id="' + esc(u.id) + '" data-name="' + esc(name) + '" style="padding:.8rem 1.2rem;cursor:pointer;border-bottom:.1rem solid var(--border-color,#eee);">'
+											+ '<div class="b-600">' + esc(name) + (u.is_bot ? ' 🤖' : '') + '</div>'
+											+ '<div class="f-13" style="opacity:.6;">#' + esc(u.id) + (u.role ? ' · ' + esc(u.role) : '') + '</div></div>';
+									}).join('');
+									results.style.display = '';
+									results.querySelectorAll('.own-staff-item').forEach(el => el.addEventListener('click', () => pick(el.dataset.id, el.dataset.name)));
+								}, 300);
+							});
+							document.addEventListener('click', e => { if (!results.contains(e.target) && e.target !== search) results.style.display = 'none'; });
+						})();
+						</script>
+					</div>
+				</div>
+				@endif
+
 				{{-- Привязка Staff к организатору --}}
 				@if(true) {{-- всегда показываем для Админа --}}
 				<div class="ramka">
