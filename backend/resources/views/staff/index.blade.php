@@ -69,11 +69,21 @@
                                         <div class="f-13 mt-05" style="opacity:.6;">
                                             С {{ $assignment->created_at->format('d.m.Y') }}
                                         </div>
+                                        @if($assignment->can_manage_subs)
+                                        <div class="f-13 mt-05 b-600">⭐ Мастер: абонементы и купоны</div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div class="d-flex flex-wrap gap-1 mt-2">
                                     <a href="{{ route('users.show', $assignment->staff->id) }}"
                                        class="btn btn-secondary btn-small">👤 Профиль</a>
+                                    <form method="POST" action="{{ route('staff.master', $assignment->id) }}">
+                                        @csrf
+                                        <button type="submit" class="btn btn-secondary btn-small"
+                                                title="Мастер может создавать шаблоны и выдавать абонементы и купоны от вашего имени">
+                                            {{ $assignment->can_manage_subs ? '⭐ Снять права мастера' : '⭐ Сделать мастером' }}
+                                        </button>
+                                    </form>
                                     <form method="POST" action="{{ route('staff.destroy', $assignment->id) }}">
                                         @csrf @method('DELETE')
                                         <button type="submit"

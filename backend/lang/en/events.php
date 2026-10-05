@@ -551,6 +551,9 @@ return [
     'organizer_assign'      => 'Assign organizer',
     'organizer_choose'      => '— pick an organizer —',
     'organizer_hint_admin'  => 'Optional — if not chosen, the current admin becomes the organizer.',
+    'create_for_whom'       => 'Create the event for',
+    'create_for_self'       => 'For myself',
+    'create_for_whom_hint'  => 'Choose who the event is created for: you, or the organizer you assist.',
 
     'event_setup'           => 'Event setup',
     'direction'             => 'Discipline',

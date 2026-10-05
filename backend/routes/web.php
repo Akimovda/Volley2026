@@ -1780,6 +1780,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     ->group(function () {
         Route::get('/staff', [\App\Http\Controllers\StaffController::class, 'index'])->name('staff.index');
         Route::post('/staff', [\App\Http\Controllers\StaffController::class, 'store'])->name('staff.store');
+        Route::post('/staff/{assignment}/master', [\App\Http\Controllers\StaffController::class, 'toggleMaster'])->name('staff.master');
         Route::delete('/staff/{assignment}', [\App\Http\Controllers\StaffController::class, 'destroy'])->name('staff.destroy');
         Route::get('/staff/logs', [\App\Http\Controllers\StaffController::class, 'logs'])->name('staff.logs');
     });

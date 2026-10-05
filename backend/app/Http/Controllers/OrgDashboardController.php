@@ -9,6 +9,8 @@ class OrgDashboardController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        // Помощнику (staff) дашборд организатора недоступен
+        abort_if(($user->role ?? 'user') === 'staff', 403);
         $orgId = $user->id;
 
         // --- МЕРОПРИЯТИЯ ---

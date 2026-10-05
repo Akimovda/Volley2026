@@ -82,6 +82,26 @@ class StaffController extends Controller
         return back()->with('status', "✅ {$staffUser->first_name} {$staffUser->last_name} назначен помощником.");
     }
 
+    // Включить/выключить права «мастера» (абонементы и купоны) у помощника
+    public function toggleMaster(Request $request, StaffAssignment $assignment)
+    {
+        Gate::authorize('assign-staff');
+
+        $user = $request->user();
+        if (!$user->isAdmin() && (int) $assignment->organizer_id !== (int) $user->id) {
+            abort(403);
+        }
+
+        $assignment->can_manage_subs = !$assignment->can_manage_subs;
+        $assignment->save();
+
+        $name = trim(($assignment->staff->first_name ?? '') . ' ' . ($assignment->staff->last_name ?? ''));
+
+        return back()->with('status', $assignment->can_manage_subs
+            ? "✅ {$name} теперь мастер: может управлять абонементами и купонами."
+            : "✅ У {$name} сняты права мастера.");
+    }
+
     // Снять staff
     public function destroy(Request $request, StaffAssignment $assignment)
     {

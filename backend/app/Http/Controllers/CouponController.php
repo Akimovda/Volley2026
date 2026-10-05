@@ -78,8 +78,10 @@ class CouponController extends Controller
     public function orgIndex(Request $request)
     {
         $user = $request->user();
+        $access = app(\App\Services\EventAccessService::class);
+        $access->ensureCanUseSubs($user);
         $coupons = Coupon::with(['user', 'template'])
-            ->when(!$user->isAdmin(), fn($q) => $q->where('organizer_id', $user->id))
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
             ->orderByDesc('id')
             ->paginate(30);
 

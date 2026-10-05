@@ -3,15 +3,43 @@ namespace App\Http\Controllers;
 
 use App\Models\SubscriptionTemplate;
 use App\Models\Event;
+use App\Models\User;
+use App\Services\EventAccessService;
+use App\Services\StaffLogService;
 use Illuminate\Http\Request;
 
 class SubscriptionTemplateController extends Controller
 {
+    private function access(): EventAccessService
+    {
+        return app(EventAccessService::class);
+    }
+
+    /** Организаторы на выбор в форме создания (если у пользователя их больше одного). */
+    private function organizerChoices(User $user)
+    {
+        $ids = $this->access()->subsOrganizerIds($user);
+        if ($user->isAdmin() || count($ids) < 2) {
+            return collect();
+        }
+        return User::whereIn('id', $ids)->get(['id', 'first_name', 'last_name'])
+            ->sortBy(fn ($u) => (int) $u->id === (int) $user->id ? 0 : 1)->values();
+    }
+
+    /** Запись в журнал помощника, если действие выполнено от имени другого организатора. */
+    private function logForOther(User $user, int $organizerId, string $action, int $entityId, string $text): void
+    {
+        if (!$user->isAdmin() && $organizerId !== (int) $user->id) {
+            app(StaffLogService::class)->log($user, $organizerId, $action, 'subscription_template', $entityId, $text);
+        }
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
+        $this->access()->ensureCanUseSubs($user);
         $templates = SubscriptionTemplate::with('organizer')
-            ->when(!$user->isAdmin(), fn($q) => $q->where('organizer_id', $user->id))
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $this->access()->subsOrganizerIds($user)))
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -21,15 +49,18 @@ class SubscriptionTemplateController extends Controller
     public function create(Request $request)
     {
         $user = $request->user();
-        $events = Event::where('organizer_id', $user->id)
+        $this->access()->ensureCanUseSubs($user);
+        $events = Event::whereIn('organizer_id', $this->access()->subsOrganizerIds($user))
             ->orderByDesc('id')->limit(100)->get();
+        $organizerChoices = $this->organizerChoices($user);
 
-        return view('subscriptions.templates.create', compact('events'));
+        return view('subscriptions.templates.create', compact('events', 'organizerChoices'));
     }
 
     public function store(Request $request)
     {
         $user = $request->user();
+        $this->access()->ensureCanUseSubs($user);
         $data = $request->validate([
             'name'                  => ['required', 'string', 'max:150'],
             'description'           => ['nullable', 'string', 'max:1000'],
@@ -54,12 +85,18 @@ class SubscriptionTemplateController extends Controller
 
         $organizerId = $user->isAdmin()
             ? ($request->input('organizer_id') ?? $user->id)
-            : $user->id;
+            : $this->access()->resolveSubsOrganizerId($user, $request->integer('organizer_id') ?: null);
+
+        // Мероприятия шаблона — только выбранного организатора
+        if (!empty($data['event_ids'])) {
+            $data['event_ids'] = Event::where('organizer_id', $organizerId)
+                ->whereIn('id', $data['event_ids'])->pluck('id')->map(fn ($v) => (int) $v)->all();
+        }
 
         $data['price_minor'] = (int) round(($data['price_rub'] ?? 0) * 100);
         unset($data['price_rub']);
 
-        SubscriptionTemplate::create(array_merge($data, [
+        $created = SubscriptionTemplate::create(array_merge($data, [
             'organizer_id'     => $organizerId,
             'freeze_enabled'   => (bool)($data['freeze_enabled'] ?? false),
             'transfer_enabled' => (bool)($data['transfer_enabled'] ?? false),
@@ -67,6 +104,8 @@ class SubscriptionTemplateController extends Controller
             'sale_enabled'     => (bool)($data['sale_enabled'] ?? false),
             'is_active'        => true,
         ]));
+
+        $this->logForOther($user, (int) $organizerId, 'create_subscription_template', $created->id, "Создал шаблон абонемента: {$created->name}");
 
         return redirect()->route('subscription_templates.index')
             ->with('status', '✅ Шаблон абонемента создан!');
@@ -114,6 +153,8 @@ class SubscriptionTemplateController extends Controller
         $data['price_minor'] = (int) round(($data['price_rub'] ?? 0) * 100);
         unset($data['price_rub']);
 
+        $this->logForOther(auth()->user(), (int) $subscriptionTemplate->organizer_id, 'update_subscription_template', $subscriptionTemplate->id, "Изменил шаблон абонемента: {$subscriptionTemplate->name}");
+
         $subscriptionTemplate->update(array_merge($data, [
             'freeze_enabled'       => (bool)($data['freeze_enabled'] ?? false),
             'transfer_enabled'     => (bool)($data['transfer_enabled'] ?? false),
@@ -129,6 +170,7 @@ class SubscriptionTemplateController extends Controller
     public function destroy(SubscriptionTemplate $subscriptionTemplate)
     {
         $this->authorizeTemplate($subscriptionTemplate);
+        $this->logForOther(auth()->user(), (int) $subscriptionTemplate->organizer_id, 'delete_subscription_template', $subscriptionTemplate->id, "Деактивировал шаблон абонемента: {$subscriptionTemplate->name}");
         $subscriptionTemplate->update(['is_active' => false]);
         return back()->with('status', 'Шаблон деактивирован');
     }
@@ -154,7 +196,7 @@ class SubscriptionTemplateController extends Controller
     private function authorizeTemplate(SubscriptionTemplate $template): void
     {
         $user = auth()->user();
-        if (!$user->isAdmin() && $template->organizer_id !== $user->id) {
+        if (!$this->access()->canManageSubsOf($user, (int) $template->organizer_id)) {
             abort(403);
         }
     }

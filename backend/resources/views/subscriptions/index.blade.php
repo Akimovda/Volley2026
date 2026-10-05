@@ -72,7 +72,7 @@
                     <div class="col-md-4">
                         <label>{{ __('subscriptions.issue_label_template') }}</label>
                         <select name="template_id" required>
-                            @foreach(\App\Models\SubscriptionTemplate::active()->when(!auth()->user()->isAdmin(), fn($q)=>$q->where('organizer_id',auth()->id()))->get() as $t)
+                            @foreach(\App\Models\SubscriptionTemplate::active()->when(!auth()->user()->isAdmin(), fn($q)=>$q->whereIn('organizer_id', app(\App\Services\EventAccessService::class)->subsOrganizerIds(auth()->user())))->get() as $t)
                             <option value="{{ $t->id }}">{{ $t->name }} {{ __('subscriptions.tpl_visits_short', ['n' => $t->visits_total]) }}</option>
                             @endforeach
                         </select>

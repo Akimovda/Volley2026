@@ -38,6 +38,12 @@ class StaffLogService
             'issue_subscription'   => '🎫 Выдал абонемент',
             'extend_subscription'  => '📅 Продлил абонемент',
             'cancel_registration'  => '🚫 Отменил запись',
+            'create_subscription_template' => '🎫 Создал шаблон абонемента',
+            'update_subscription_template' => '🎫 Изменил шаблон абонемента',
+            'delete_subscription_template' => '🎫 Деактивировал шаблон абонемента',
+            'create_coupon_template' => '🎟 Создал шаблон купона',
+            'update_coupon_template' => '🎟 Изменил шаблон купона',
+            'issue_coupon'         => '🎟 Выдал купон',
             default                => $action,
         };
     }

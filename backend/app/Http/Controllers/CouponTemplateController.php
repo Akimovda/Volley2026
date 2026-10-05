@@ -5,17 +5,44 @@ use App\Models\CouponTemplate;
 use App\Models\Event;
 use App\Models\User;
 use App\Services\CouponService;
+use App\Services\EventAccessService;
+use App\Services\StaffLogService;
 use Illuminate\Http\Request;
 
 class CouponTemplateController extends Controller
 {
     public function __construct(private CouponService $service) {}
 
+    private function access(): EventAccessService
+    {
+        return app(EventAccessService::class);
+    }
+
+    /** Организаторы на выбор в форме создания (если их больше одного). */
+    private function organizerChoices(User $user)
+    {
+        $ids = $this->access()->subsOrganizerIds($user);
+        if ($user->isAdmin() || count($ids) < 2) {
+            return collect();
+        }
+        return User::whereIn('id', $ids)->get(['id', 'first_name', 'last_name'])
+            ->sortBy(fn ($u) => (int) $u->id === (int) $user->id ? 0 : 1)->values();
+    }
+
+    /** Запись в журнал помощника, если действие выполнено от имени другого организатора. */
+    private function logForOther(User $user, int $organizerId, string $action, int $entityId, string $text): void
+    {
+        if (!$user->isAdmin() && $organizerId !== (int) $user->id) {
+            app(StaffLogService::class)->log($user, $organizerId, $action, 'coupon_template', $entityId, $text);
+        }
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
+        $this->access()->ensureCanUseSubs($user);
         $templates = CouponTemplate::with('organizer')
-            ->when(!$user->isAdmin(), fn($q) => $q->where('organizer_id', $user->id))
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $this->access()->subsOrganizerIds($user)))
             ->orderByDesc('id')
             ->paginate(20);
 
@@ -25,15 +52,18 @@ class CouponTemplateController extends Controller
     public function create()
     {
         $user = auth()->user();
-        $events = Event::where('organizer_id', $user->id)
+        $this->access()->ensureCanUseSubs($user);
+        $events = Event::whereIn('organizer_id', $this->access()->subsOrganizerIds($user))
             ->orderByDesc('id')->limit(100)->get();
+        $organizerChoices = $this->organizerChoices($user);
 
-        return view('coupons.templates.create', compact('events'));
+        return view('coupons.templates.create', compact('events', 'organizerChoices'));
     }
 
     public function store(Request $request)
     {
         $user = $request->user();
+        $this->access()->ensureCanUseSubs($user);
         $data = $request->validate([
             'name'                => ['required', 'string', 'max:150'],
             'description'         => ['nullable', 'string', 'max:1000'],
@@ -50,13 +80,21 @@ class CouponTemplateController extends Controller
 
         $organizerId = $user->isAdmin()
             ? ($request->input('organizer_id') ?? $user->id)
-            : $user->id;
+            : $this->access()->resolveSubsOrganizerId($user, $request->integer('organizer_id') ?: null);
 
-        CouponTemplate::create(array_merge($data, [
+        // Мероприятия шаблона — только выбранного организатора
+        if (!empty($data['event_ids'])) {
+            $data['event_ids'] = Event::where('organizer_id', $organizerId)
+                ->whereIn('id', $data['event_ids'])->pluck('id')->map(fn ($v) => (int) $v)->all();
+        }
+
+        $created = CouponTemplate::create(array_merge($data, [
             'organizer_id'     => $organizerId,
             'transfer_enabled' => (bool)($data['transfer_enabled'] ?? false),
             'is_active'        => true,
         ]));
+
+        $this->logForOther($user, (int) $organizerId, 'create_coupon_template', $created->id, "Создал шаблон купона: {$created->name}");
 
         return redirect()->route('coupon_templates.index')
             ->with('status', '✅ Шаблон купона создан!');
@@ -88,6 +126,8 @@ class CouponTemplateController extends Controller
             'is_active'           => ['sometimes', 'boolean'],
         ]);
 
+        $this->logForOther(auth()->user(), (int) $couponTemplate->organizer_id, 'update_coupon_template', $couponTemplate->id, "Изменил шаблон купона: {$couponTemplate->name}");
+
         $couponTemplate->update(array_merge($data, [
             'transfer_enabled' => (bool)($data['transfer_enabled'] ?? false),
             'is_active'        => (bool)($data['is_active'] ?? true),
@@ -113,13 +153,15 @@ class CouponTemplateController extends Controller
             auth()->id()
         );
 
+        $this->logForOther(auth()->user(), (int) $couponTemplate->organizer_id, 'issue_coupon', $coupon->id, "Выдал купон {$coupon->code} пользователю #{$data['user_id']}");
+
         return back()->with('status', "✅ Купон {$coupon->code} выдан пользователю #{$data['user_id']}");
     }
 
     private function authorize(CouponTemplate $template): void
     {
         $user = auth()->user();
-        if (!$user->isAdmin() && $template->organizer_id !== $user->id) abort(403);
+        if (!$this->access()->canManageSubsOf($user, (int) $template->organizer_id)) abort(403);
     }
 
     // Массовая выдача купонов

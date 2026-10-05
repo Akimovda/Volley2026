@@ -166,8 +166,12 @@ use App\Services\StaffLogService;
                    }
 
                    // Лог для Staff
-                   if ($user->isStaff()) {
-                       $orgId = $user->getOrganizerIdForStaff();
+                   // (в т.ч. организатор, создавший мероприятие от имени организатора, у которого он помощник)
+                   $logOrgId = $user->isStaff()
+                       ? $user->getOrganizerIdForStaff()
+                       : (((int) $event->organizer_id !== (int) $user->id && !$user->isAdmin()) ? (int) $event->organizer_id : null);
+                   {
+                       $orgId = $logOrgId;
                        if ($orgId) {
                            app(StaffLogService::class)->log(
                                $user, $orgId,
@@ -358,6 +362,21 @@ use App\Services\StaffLogService;
                     ->get();
 			}
 			
+            // Организатор, который одновременно помощник (staff) у других организаторов:
+            // выбор, от чьего имени создавать мероприятие (по умолчанию — от своего).
+            $organizerChoices = collect();
+            if ($role !== 'admin') {
+                $choiceIds = $this->accessService->creatableOrganizerIds($user);
+                if ($role === 'organizer' && count($choiceIds) > 1) {
+                    $organizerChoices = User::query()
+                        ->select('id', 'first_name', 'last_name')
+                        ->whereIn('id', $choiceIds)
+                        ->get()
+                        ->sortBy(fn ($u) => (int) $u->id === (int) $user->id ? 0 : 1)
+                        ->values();
+                }
+            }
+
             // ✅ Prefill from existing event
             $prefill = [];
             $fromId = (int)$request->query('from_event_id', 0);
@@ -402,6 +421,7 @@ use App\Services\StaffLogService;
 			
 			'locations' => $locations,
 			'organizers' => $organizers,
+			'organizerChoices' => $organizerChoices,
 			'canChooseOrganizer' => $role === 'admin',
 			'resolvedOrganizerId' => $organizerId,
 			'resolvedOrganizerLabel' => $role === 'admin'

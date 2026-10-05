@@ -22,6 +22,32 @@
 								</div>
 							</div>
 						</div>
+						@elseif(!empty($organizerChoices) && $organizerChoices->count() > 1)
+						{{-- Организатор, который также помощник у другого организатора --}}
+						<div class="ramka" style="z-index:10">
+							<h2 class="-mt-05">{{ __('events.create_for_whom') }}</h2>
+							<div class="row">
+								<div class="col-md-6">
+									<div class="card">
+										<select name="organizer_id">
+											@foreach($organizerChoices as $org)
+											<option value="{{ $org->id }}"
+											@selected((int) old('organizer_id', $prefill['organizer_id'] ?? auth()->id()) === (int) $org->id)>
+												@if((int) $org->id === (int) auth()->id())
+												{{ __('events.create_for_self') }}
+												@else
+												{{ trim(($org->first_name ?? '') . ' ' . ($org->last_name ?? '')) ?: ('#' . $org->id) }} (#{{ $org->id }})
+												@endif
+											</option>
+											@endforeach
+										</select>
+										<ul class="list f-16 mt-1">
+											<li>{{ __('events.create_for_whom_hint') }}</li>
+										</ul>
+									</div>
+								</div>
+							</div>
+						</div>
 						@else
 						{{--
 						{{ $resolvedOrganizerLabel ?? '—' }}

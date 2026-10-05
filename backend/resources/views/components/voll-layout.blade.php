@@ -434,16 +434,21 @@
 							</nav>
 						</div>
 						<!-- Колонка 3: Дополнительное меню -->
-						@if(in_array(auth()->user()->role, ['organizer', 'admin']))
+						@php
+						$isStaffHelper = auth()->user()->role === 'staff' && auth()->user()->staffAssignment()->exists();
+						$isStaffMaster = $isStaffHelper && (bool) auth()->user()->staffAssignment()->value('can_manage_subs');
+						@endphp
+						@if(in_array(auth()->user()->role, ['organizer', 'admin']) || $isStaffHelper)
 						<div class="menu-column column-secondary">
 							<nav class="menu-nav">
 								<div class="menu-item-title">
 									<span class="menu-text">{{ __('ui.org_menu_title') }}</span>
 								</div>
-								{{-- 1. Панель организатора --}}
+								@if(!$isStaffHelper) {{-- 1. Панель организатора — не для помощника --}}
 								<a href="/org/dashboard" class="menu-item">
 									<span class="menu-text">{{ __('ui.org_dashboard') }}</span>
 								</a>
+								@endif
 								{{-- 2. Панель арендатора — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
 								<a href="{{ route('club.analytics.index') }}" class="menu-item">
@@ -472,6 +477,7 @@
 								<a href="/events/create" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
 								</a>
+								@if(!$isStaffHelper || $isStaffMaster) {{-- абонементы и купоны: организатору и помощнику-мастеру --}}
 								{{-- 8. Абонементы --}}
 								<a href="/subscriptions/templates" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
@@ -486,6 +492,7 @@
 								<a href="{{ route('coupons.org_index') }}" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons_issued') }}</span>
 								</a>
+								@endif
 								{{-- 10. Мои лиги и сезоны --}}
 								<a href="/leagues" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
@@ -494,6 +501,7 @@
 								<a href="/user/profile/notification-channels" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
 								</a>
+								@if(!$isStaffHelper) {{-- помощнику Виджет и Pro не показываем --}}
 								{{-- 12. Виджет на сайт --}}
 								<a href="/profile/widget" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</span>
@@ -502,6 +510,7 @@
 								<a href="/organizer-pro" class="menu-item">
 									<span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
 								</a>
+								@endif
 							</nav>
 						</div>	
 						@if(auth()->user()->role == 'admin')
@@ -542,25 +551,6 @@
 						</div>
 						@endif
 						
-						@endif
-						{{-- Помощник (staff) организатора: только то, к чему у него есть доступ --}}
-						@if(auth()->user()->role === 'staff' && auth()->user()->staffAssignment()->exists())
-						<div class="menu-column column-secondary">
-							<nav class="menu-nav">
-								<div class="menu-item-title">
-									<span class="menu-text">{{ __('ui.org_menu_title') }}</span>
-								</div>
-								<a href="/events/create/event_management" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
-								</a>
-								<a href="/events/registrations/manage" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
-								</a>
-								<a href="/events/create" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
-								</a>
-							</nav>
-						</div>
 						@endif
 					</div>
 					@else
