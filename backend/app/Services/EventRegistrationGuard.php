@@ -304,6 +304,14 @@
 				->when($genderPolicy === 'mixed_limited', fn($q) => $q->with('user:id,gender'))
 				->get();
 
+			// Забаненные (неоплата наличными и т.п.) автозапись пропускает — значит и место
+			// они «занять» не могут, остальных блокировать не должны
+			$bannedWaiters = app(UserRestrictionService::class)
+				->blockKinds($waitlistEntries->pluck('user_id')->all(), (int) $occurrence->event_id);
+			if ($bannedWaiters) {
+				$waitlistEntries = $waitlistEntries->reject(fn ($e) => isset($bannedWaiters[(int) $e->user_id]))->values();
+			}
+
 			// Проверяем: есть ли в очереди хоть один, кто реально может занять
 			// одну из свободных основных позиций (учитывая гендерную политику)
 			$hasBlockingOthers = $waitlistEntries->contains(

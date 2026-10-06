@@ -89,6 +89,11 @@ class AutoBookingSubscriptionJob implements ShouldQueue
                     ->exists();
                 if ($alreadyRegistered) continue;
 
+                if (app(\App\Services\UserRestrictionService::class)->isBlocked((int) $user->id, (int) $event->id)) {
+                    $fail('запись на мероприятия этого организатора для вас ограничена.');
+                    continue;
+                }
+
                 $guard = app(EventRegistrationGuard::class);
                 $result = $guard->check($user, $occurrence, $position ? ['position' => $position] : []);
                 if (!$result->allowed) {
