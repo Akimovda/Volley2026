@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v2_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc;
+        $cacheKey = "widget_events_v3_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -72,6 +72,8 @@ class WidgetEventsService
                     'events.season_id as ev_season_id',
                     'events.is_private',
                     'events.event_photos',
+                    'events.timezone as ev_timezone',
+                    'event_occurrences.timezone as occ_timezone',
                     'events.is_paid',
                     'events.price_minor',
                     'events.price_currency',
@@ -93,8 +95,10 @@ class WidgetEventsService
                 ->get();
 
             $photoUrls = $this->firstPhotoUrls($occurrences);
+            $models = \App\Models\EventOccurrence::with(['event.gameSettings', 'event.organizer'])
+                ->whereIn('id', $occurrences->pluck('occ_id'))->get()->keyBy('id');
 
-            return $occurrences->map(function ($occ) use ($showSlots, $showLoc, $photoUrls) {
+            return $occurrences->map(function ($occ) use ($showSlots, $showLoc, $photoUrls, $models) {
                 $slotsInfo = $this->buildSlotsInfo($occ, $showSlots);
 
                 // Адрес
@@ -106,7 +110,9 @@ class WidgetEventsService
                 $address = $showLoc ? implode(', ', $addressParts) : null;
 
                 // Дата/время
-                $startsAt = \Carbon\Carbon::parse($occ->starts_at, 'UTC');
+                // starts_at хранится в UTC — показываем в поясе мероприятия, как на /events
+                $tz       = (string) ($occ->occ_timezone ?: ($occ->ev_timezone ?: 'Europe/Moscow'));
+                $startsAt = \Carbon\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tz);
                 $endsAt   = $occ->duration_sec
                     ? $startsAt->copy()->addSeconds((int)$occ->duration_sec)
                     : null;
@@ -129,7 +135,7 @@ class WidgetEventsService
 
                 return [
                     'title'      => $occ->title,
-                    'date_long'  => $startsAt->locale('ru')->translatedFormat('d F'),
+                    'date_long'  => $startsAt->locale(app()->getLocale())->translatedFormat('d F'),
                     'time_range' => $startsAt->format('H:i') . ($endsAt ? '–' . $endsAt->format('H:i') : ''),
                     'direction'  => $dir,
                     'address'    => $address,
@@ -139,6 +145,7 @@ class WidgetEventsService
                     'level_scope' => $levelScope,
                     'price'      => $priceLabel,
                     'is_private' => (bool) $occ->is_private,
+                    'extra'      => isset($models[$occ->occ_id]) ? $this->extras($models[$occ->occ_id]) : [],
                     'photo'      => $photoUrls[(int) $occ->event_id]
                         ?? $this->absoluteUrl('/img/' . ($dir === 'beach' ? 'beach.webp' : 'classic.webp')),
                     'url'        => route('events.show', [
@@ -198,6 +205,81 @@ class WidgetEventsService
         ];
     }
 
+    /**
+     * Блоки как на карточке /events: организатор, бейджи (подтип, пол, возраст, оплата, рейтинг), статус, погода.
+     * Подписи — на языке запроса (виджет выставляет локаль до вызова), поэтому локаль входит в ключ кеша.
+     */
+    private function extras(\App\Models\EventOccurrence $occ): array
+    {
+        $event = $occ->event;
+        if (!$event) {
+            return [];
+        }
+        $gs  = $event->gameSettings;
+        $dir = (string) ($event->direction ?? 'classic');
+
+        // Организатор: имя/ник (email на публичной странице не показываем)
+        $organizer = null;
+        if ($org = $event->organizer) {
+            $name = trim(($org->first_name ?? '') . ' ' . ($org->last_name ?? ''));
+            $name = $name !== '' ? $name : trim((string) ($org->name ?? ''));
+            $name = $name !== '' ? $name : (string) ($org->nickname ?? '');
+            if ($name !== '') {
+                $organizer = ['name' => $name, 'url' => url('/user/' . (int) $org->id)];
+            }
+        }
+
+        $badges = [];
+        $subtype = (string) ($gs?->subtype ?? '');
+        if ($subtype !== '') {
+            $badges['subtype'] = $subtype;
+        }
+        $gp = (string) ($gs?->gender_policy ?? '');
+        if (in_array($gp, ['only_male', 'only_female', 'mixed_5050', 'mixed_limited'], true)) {
+            $badges['gender'] = __('events.gender_' . ($gp === 'mixed_5050' ? '5050' : $gp));
+        }
+        $age = (string) ($event->age_policy ?? 'any');
+        if ($age === 'adult') {
+            $badges['age'] = __('events.card_age_adult');
+        } elseif ($age === 'child') {
+            $mn = $event->child_age_min;
+            $mx = $event->child_age_max;
+            $badges['age'] = (!is_null($mn) && !is_null($mx)) ? __('events.card_age_child_range', ['min' => (int) $mn, 'max' => (int) $mx])
+                : (!is_null($mx) ? __('events.card_age_child_max', ['max' => (int) $mx]) : __('events.card_age_child'));
+        }
+        $pm = (string) ($event->payment_method ?? '');
+        if (!empty($event->is_paid) && $pm !== '') {
+            $badges['pay'] = $pm === 'cash' ? __('events.card_pay_cash') : __('events.card_pay_cashless');
+        }
+        if (!empty($event->collect_stats) && !empty($event->stats_rated)) {
+            $badges['rated'] = __('events.card_badge_rated');
+        }
+
+        // Статус (как на карточке): идёт / регистрация открыта; «завершено» в ленте виджета не бывает (только будущие)
+        $now = now('UTC');
+        $start = $occ->starts_at ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC') : null;
+        $end = ($start && $occ->duration_sec) ? $start->copy()->addSeconds((int) $occ->duration_sec) : null;
+        $regStart = $occ->effectiveRegistrationStartsAt();
+        $regEnd = $occ->effectiveRegistrationEndsAt();
+        $status = null;
+        if ($start && $now->gte($start) && !($end && $now->gte($end))) {
+            $status = ['key' => 'live', 'label' => __('events.card_status_live')];
+        } elseif (!empty($event->allow_registration) && $start && $now->lt($start)
+            && !($regStart && $now->lt($regStart)) && !($regEnd && $now->gte($regEnd))) {
+            $status = ['key' => 'open', 'label' => __('events.card_status_open')];
+        }
+
+        $w = app(WeatherService::class)->forOccurrence($occ);
+
+        return [
+            'organizer' => $organizer,
+            'badges'    => $badges,
+            'status'    => $status,
+            'weather'   => $w ? ['icon' => $w['icon'], 'temp' => $w['temp'], 'pop' => (int) $w['pop']] : null,
+            'free'      => empty($event->is_paid),
+        ];
+    }
+
     /** Первое фото каждого мероприятия (event_thumb), один запрос на весь список. */
     private function firstPhotoUrls($occurrences): array
     {
@@ -239,6 +321,13 @@ class WidgetEventsService
             'slots_info' => ['taken' => $taken, 'max' => $max, 'free' => $max - $taken, 'unit' => 'players', 'reserve' => 0],
             'level_min' => $lmin, 'level_max' => $lmax, 'level_scope' => 'standard',
             'price' => $price, 'is_private' => false, 'url' => '#',
+            'extra' => [
+                'organizer' => ['name' => 'Иван Петров', 'url' => '#'],
+                'badges' => ['subtype' => $dir === 'beach' ? '2x2' : '4x2', 'gender' => __('events.gender_5050'), 'pay' => $price ? __('events.card_pay_cash') : null],
+                'status' => ['key' => 'open', 'label' => __('events.card_status_open')],
+                'weather' => $dir === 'beach' ? ['icon' => '⛅', 'temp' => '+17°', 'pop' => 20] : null,
+                'free' => $price === null,
+            ],
             'photo' => $this->absoluteUrl('/img/' . ($dir === 'beach' ? 'beach.webp' : 'classic.webp')),
         ];
 

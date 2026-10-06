@@ -1220,4 +1220,5 @@ return [
     'reg_by_positions_edit_hint' => 'You can change this only while no players are registered for upcoming games.',
     'reg_by_positions_locked'    => 'Cannot change the registration method: players are already registered for upcoming games (:n). Cancel their registrations first.',
     'gender_quota_general_full' => 'No more slots for :gender: :count of :max taken.',
+    'widget_empty' => 'No upcoming events.',
 ];
