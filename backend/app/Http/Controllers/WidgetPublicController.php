@@ -107,7 +107,7 @@ class WidgetPublicController extends Controller
 
     // data-атрибуты контейнера переопределяют серверные настройки
     var q = 'key=' + encodeURIComponent(key);
-    ['layout', 'columns', 'theme', 'accent', 'limit'].forEach(function(n) {
+    ['layout', 'columns', 'theme', 'accent', 'limit', 'lang', 'header'].forEach(function(n) {
         if (container.dataset[n]) q += '&' + n + '=' + encodeURIComponent(container.dataset[n]);
     });
 
@@ -151,7 +151,15 @@ JS;
             (string) $widget->getSetting('color', '#f59e0b')
         );
 
-        return WidgetStyleService::forRender($style, $request->only(['layout', 'columns', 'theme', 'accent']));
+        $style = WidgetStyleService::forRender($style, $request->only(['layout', 'columns', 'theme', 'accent', 'lang', 'header']));
+
+        // Язык виджета: по умолчанию русский, а не по Accept-Language посетителя чужого сайта
+        // (иначе на русском сайте «0 of 16 players»); 'auto' — язык браузера (его уже выставил SetLocale)
+        if (in_array($style['lang'], ['ru', 'en'], true)) {
+            app()->setLocale($style['lang']);
+        }
+
+        return $style;
     }
 
     /** Активен ли Организатор Pro у владельца виджета (ключ и настройки при этом не трогаем) */

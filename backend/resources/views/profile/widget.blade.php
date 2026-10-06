@@ -227,8 +227,8 @@
 }
 #volley-widget::part(card) { box-shadow: 0 4px 20px #0003; }</textarea>
                         <div class="f-13 text-muted" style="margin:.8rem 0 .5rem">Части для <code>::part()</code>: header, cards, card, photo, title, meta, badge, button, empty, footer. Атрибуты контейнера перекрывают серверные настройки:</div>
-                        <textarea readonly rows="2" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-widget" data-layout="wide" data-columns="2" data-theme="dark" data-accent="#A6D920" data-limit="6"&gt;&lt;/div&gt;</textarea>
-                        <div class="f-13 text-muted" style="margin-top:.5rem">data-layout: cards | list | wide; data-theme: light | dark | contrast | custom. Работает с вариантом «JS-скрипт».</div>
+                        <textarea readonly rows="3" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-widget" data-layout="wide" data-columns="2" data-theme="dark" data-accent="#A6D920" data-limit="6" data-lang="ru" data-header="0"&gt;&lt;/div&gt;</textarea>
+                        <div class="f-13 text-muted" style="margin-top:.5rem">data-layout: cards | list | wide; data-theme: light | dark | contrast | custom; data-lang: ru | en | auto; data-header="0" скрывает заголовок. Работает с вариантом «JS-скрипт».</div>
                     </div>
                 </div>
 

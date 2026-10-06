@@ -125,6 +125,9 @@ class OrganizerWidgetController extends Controller
             ? strtolower((string) $request->input('settings.color')) : '#f59e0b';
         $style  = WidgetStyleService::sanitize((array) $request->input('style', []), WidgetStyleService::defaults($color));
         $style  = WidgetStyleService::forRender($style);
+        if (in_array($style['lang'], ['ru', 'en'], true)) {
+            app()->setLocale($style['lang']);
+        }
 
         $widget = OrganizerWidget::where('user_id', $user->id)->first() ?? new OrganizerWidget(['settings' => []]);
         $widget->settings = array_merge((array) $widget->settings, [

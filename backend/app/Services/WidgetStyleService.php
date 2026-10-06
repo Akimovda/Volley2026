@@ -28,6 +28,7 @@ class WidgetStyleService
             'general' => [
                 'layout'         => ['enum', 'cards', ['cards', 'list', 'wide']],
                 'theme'          => ['enum', 'custom', ['custom', 'light', 'dark', 'contrast']],
+                'lang'           => ['enum', 'ru', ['ru', 'en', 'auto']],
                 'columns_max'    => ['int', 3, [1, 4]],
                 'card_min_width' => ['int', 280, [200, 500]],
                 'card_max_width' => ['int', 420, [280, 720]],
@@ -52,6 +53,7 @@ class WidgetStyleService
                 'card_radius'       => ['int', 14, [0, 32]],
                 'card_shadow'       => ['enum', 'none', ['none', 'soft', 'strong']],
                 'card_padding'      => ['int', 14, [8, 28]],
+                'card_order'        => ['enum', 'photo_first', ['photo_first', 'title_first']],
             ],
             'photo' => [
                 'photo_show'  => ['bool', true],
@@ -79,6 +81,19 @@ class WidgetStyleService
                 'price_bg'        => ['color', '#000000'],
                 'price_color'     => ['color', '#ffffff'],
                 'badge_radius'    => ['int', 6, [0, 20]],
+            ],
+            'blocks' => [
+                'show_organizer'  => ['bool', false],
+                'badge_subtype'   => ['bool', false],
+                'badge_gender'    => ['bool', false],
+                'badge_age'       => ['bool', false],
+                'badge_pay'       => ['bool', false],
+                'badge_rated'     => ['bool', false],
+                'badge_status'    => ['bool', false],
+                'show_progress'   => ['bool', false],
+                'progress_color'  => ['color', '#16a34a'],
+                'show_weather'    => ['bool', false],
+                'show_free_label' => ['bool', false],
             ],
             'button' => [
                 'button_show'   => ['bool', true],
@@ -112,6 +127,14 @@ class WidgetStyleService
                 'card_radius' => 22, 'card_border_width' => 0, 'card_shadow' => 'strong',
                 'title_size' => 18, 'button_bg' => '#e7612f', 'button_radius' => 14,
                 'button_layout' => 'inset', 'badge_radius' => 10,
+            ],
+            // Максимально близко к карточке на /events
+            'site' => [
+                'card_order' => 'title_first', 'card_radius' => 16, 'card_shadow' => 'soft', 'card_border_width' => 1,
+                'photo_ratio' => '16:9', 'show_organizer' => true, 'show_progress' => true, 'show_weather' => true,
+                'show_free_label' => true, 'badge_subtype' => true, 'badge_gender' => true, 'badge_age' => true,
+                'badge_pay' => true, 'badge_rated' => true, 'badge_status' => true,
+                'button_layout' => 'inset', 'button_radius' => 12,
             ],
             'minimal' => [
                 'layout' => 'list',
@@ -221,6 +244,8 @@ class WidgetStyleService
             'layout'      => $override['layout'] ?? null,
             'columns_max' => $override['columns'] ?? null,
             'theme'       => $override['theme'] ?? null,
+            'lang'        => $override['lang'] ?? null,
+            'header_show' => isset($override['header']) ? (string) $override['header'] : null,
         ], fn ($v) => $v !== null && $v !== ''), $defaults, false);
         $style = array_replace($style, $ov);
 
@@ -311,6 +336,21 @@ $scope .vw-row .vw-ic{flex-shrink:0}
 $scope .vw-row strong{color:var(--_title-color)}
 $scope .vw-price-inline{display:inline-block;padding:1px 8px;border-radius:{$s['badge_radius']}px;background:{$s['price_bg']}1a;font-weight:600;color:var(--_title-color)}
 $scope .vw-main{display:flex;flex-direction:column;flex:1;min-width:0}
+$scope .vw-head{padding:{$pad}px {$pad}px 8px}
+$scope .vw-body-head{display:block}
+$scope .vw-card.title-first .vw-body-head{display:none}
+$scope .vw-head .vw-title{margin-bottom:6px}
+$scope .vw-head .vw-row{margin-bottom:4px}
+$scope .vw-org a{color:var(--_title-color);font-weight:600}
+$scope .vw-tags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px}
+$scope .vw-tag{display:inline-block;padding:3px 9px;border-radius:{$s['badge_radius']}px;font-size:11px;font-weight:600;background:rgba(127,127,127,.16);color:var(--_title-color)}
+$scope .vw-tag.status-open{background:rgba(16,185,129,.16);color:#10b981}
+$scope .vw-tag.status-live{background:rgba(231,97,46,.16);color:#e7612f}
+$scope .vw-tag.rated{background:rgba(245,158,11,.18);color:#b45309}
+$scope .vw-progress{height:6px;border-radius:3px;background:rgba(127,127,127,.2);margin-top:5px;overflow:hidden}
+$scope .vw-progress>i{display:block;height:100%;border-radius:3px;background:{$s['progress_color']}}
+$scope .vw-seats{display:block;flex:1}
+$scope .vw-badge-weather{left:50%;top:8px;transform:translateX(-50%);font-size:13px;text-transform:none;background:rgba(0,0,0,.45);backdrop-filter:blur(8px);white-space:nowrap}
 $scope .vw-btn{display:block;text-align:center;font-size:14px;font-weight:700;border:2px solid var(--_button-bg);transition:opacity .15s;background:
 CSS;
         $css .= $outline ? 'transparent;color:var(--_button-bg)}' : 'var(--_button-bg);color:var(--_button-color)}';
@@ -337,6 +377,7 @@ CSS;
 
         // Широкая (горизонтальная) карточка: фото слева, текст справа, кнопка справа внизу
         $horizontal = "$scope .vw-card.has-photo{flex-direction:row}"
+            . "$scope .vw-card.title-first .vw-head{display:none}$scope .vw-card.title-first .vw-body-head{display:block}"
             . "$scope .vw-card.has-photo .vw-photo{width:42%;flex-shrink:0;aspect-ratio:auto;min-height:170px}"
             . "$scope .vw-card .vw-btn{align-self:flex-end;margin:6px {$pad}px {$pad}px auto;padding:10px 22px;border-width:2px;border-radius:{$s['button_radius']}px}";
 
