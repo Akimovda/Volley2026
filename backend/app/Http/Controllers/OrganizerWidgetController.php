@@ -124,7 +124,7 @@ class OrganizerWidgetController extends Controller
         $color  = preg_match('/^#[0-9a-f]{6}$/i', (string) $request->input('settings.color'))
             ? strtolower((string) $request->input('settings.color')) : '#f59e0b';
         $style  = WidgetStyleService::sanitize((array) $request->input('style', []), WidgetStyleService::defaults($color));
-        $css    = WidgetStyleService::css($style);
+        $style  = WidgetStyleService::forRender($style);
 
         $widget = OrganizerWidget::where('user_id', $user->id)->first() ?? new OrganizerWidget(['settings' => []]);
         $widget->settings = array_merge((array) $widget->settings, [
@@ -138,7 +138,7 @@ class OrganizerWidgetController extends Controller
             $list = $events->sampleEvents();
         }
 
-        return response()->view('widget.iframe', ['events' => $list, 'style' => $style, 'css' => $css])
+        return response()->view('widget.iframe', ['events' => $list, 'style' => $style])
             ->header('X-Frame-Options', 'SAMEORIGIN');
     }
 }

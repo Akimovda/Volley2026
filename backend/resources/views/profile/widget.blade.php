@@ -214,11 +214,38 @@
                 </div>
                 @endif
 
+                <div class="ramka" style="margin-bottom:2rem">
+                    <div class="card" style="height:auto;margin-bottom:1.6rem">
+                        <div class="f-15 b-600 mb-05">🎛 Подгонка под дизайн вашего сайта</div>
+                        <div class="f-13 text-muted mb-05">CSS-переменные, задайте их на <code>#volley-widget</code> — они перебьют настройки выше:</div>
+                        <textarea readonly rows="7" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">#volley-widget {
+  --vw-accent: #A6D920;        /* заголовок и кнопка */
+  --vw-card-bg: #ffffff;  --vw-card-radius: 14px;
+  --vw-title-color: #1a1a1a;  --vw-meta-color: #666;
+  --vw-button-bg: #A6D920;  --vw-button-color: #fff;
+  --vw-gap: 14px;  --vw-card-min: 280px;  --vw-card-max: 420px;
+}
+#volley-widget::part(card) { box-shadow: 0 4px 20px #0003; }</textarea>
+                        <div class="f-13 text-muted" style="margin:.8rem 0 .5rem">Части для <code>::part()</code>: header, cards, card, photo, title, meta, badge, button, empty, footer. Атрибуты контейнера перекрывают серверные настройки:</div>
+                        <textarea readonly rows="2" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-widget" data-layout="wide" data-columns="2" data-theme="dark" data-accent="#A6D920" data-limit="6"&gt;&lt;/div&gt;</textarea>
+                        <div class="f-13 text-muted" style="margin-top:.5rem">data-layout: cards | list | wide; data-theme: light | dark | contrast | custom. Работает с вариантом «JS-скрипт».</div>
+                    </div>
+                </div>
+
                 {{-- Предпросмотр (по несохранённым значениям формы) --}}
                 <div class="ramka" style="position:sticky;top:12rem">
                     <h3 class="mt-0">{{ __('profile.wst_preview_h') }}</h3>
-                    <iframe id="wst-preview" title="preview" width="100%" height="520" frameborder="0"
-                            style="border-radius:8px;border:1px solid var(--border);background:#f3f4f6"></iframe>
+                    <div class="d-flex gap-1 flex-wrap" style="margin-bottom:1rem;align-items:center">
+                        <span class="f-13 text-muted">{{ __('profile.wst_preview_width') }}:</span>
+                        @foreach([360, 768, 1200] as $pw)
+                            <button type="button" class="btn btn-outline btn-small js-wst-width" data-width="{{ $pw }}">{{ $pw }}</button>
+                        @endforeach
+                        <button type="button" class="btn btn-outline btn-small js-wst-width" data-width="0">{{ __('profile.wst_preview_auto') }}</button>
+                    </div>
+                    <div style="overflow-x:auto">
+                        <iframe id="wst-preview" title="preview" width="100%" height="520" frameborder="0"
+                                style="border-radius:8px;border:1px solid var(--border);background:#f3f4f6;max-width:100%"></iframe>
+                    </div>
                     <div class="f-13 text-muted" style="margin-top:.8rem">{{ __('profile.wst_preview_hint') }}</div>
                 </div>
             </div>
@@ -275,6 +302,14 @@
                 var vals = Object.assign({}, DEFAULTS, {header_color: accent, button_bg: accent}, PRESETS[btn.dataset.preset] || {});
                 Object.keys(vals).forEach(function (k) { setField(k, vals[k]); });
                 refreshPreview();
+            });
+        });
+
+        // Предпросмотр в реальной ширине блока (360 / 768 / 1200 px): container queries смотрят на ширину iframe
+        document.querySelectorAll('.js-wst-width').forEach(function (b) {
+            b.addEventListener('click', function () {
+                var w = parseInt(b.dataset.width, 10);
+                frame.style.width = w ? w + 'px' : '100%';
             });
         });
 
