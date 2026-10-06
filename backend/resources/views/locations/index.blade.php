@@ -349,7 +349,6 @@
 				<div class="f-18 b-500 mb-2">{{ __('locations.login_to_see_map') }}</div>
 				<div class="d-flex gap-1 m-center">
 					<a href="{{ route('login') }}" class="btn">{{ __('locations.btn_login') }}</a>
-					<a href="{{ route('register') }}" class="btn btn-secondary">{{ __('locations.btn_register') }}</a>
 				</div>
 			</div>
 			@endauth
