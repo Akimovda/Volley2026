@@ -55,6 +55,8 @@ class LevelTestController extends Controller
         ]);
 
         $res = $this->service->evaluate($v['discipline'], $v['answers']);
+        $u = $request->user();
+        $this->service->record('web', $u ? trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) : null, $v['discipline'], $v['lang'] ?? 'ru', $res);
 
         return response()->json($res + $this->service->describe($res['level'], $v['lang'] ?? 'ru'));
     }
