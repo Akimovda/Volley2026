@@ -864,6 +864,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::post('/profile/widget/toggle',
 	        [\App\Http\Controllers\OrganizerWidgetController::class, 'toggle'])
 	        ->name('profile.widget.toggle');
+
+	    Route::post('/profile/widget/preview',
+	        [\App\Http\Controllers\OrganizerWidgetController::class, 'preview'])
+	        ->name('profile.widget.preview');
 	});
 
 	// Публичные роуты виджета (без auth, без CSRF)
