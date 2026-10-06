@@ -73,6 +73,11 @@ class PremiumAutoBookingJob implements ShouldQueue
                     continue;
                 }
 
+                if (app(\App\Services\UserRestrictionService::class)->isBlocked((int) $user->id, (int) $event->id)) {
+                    $this->notifyFailed($notificationService, $user, $event, $occurrence, 'запись на мероприятия этого организатора для вас ограничена.');
+                    continue;
+                }
+
                 $result = $guard->check($user, $occurrence, ['position' => $autoBooking->position]);
                 if (!$result->allowed) {
                     $this->notifyFailed($notificationService, $user, $event, $occurrence, implode(' ', $result->errors));

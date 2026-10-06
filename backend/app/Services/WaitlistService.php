@@ -340,6 +340,13 @@ class WaitlistService
                     continue;
                 }
 
+                // Бан (неоплата наличными у организатора, запрет на мероприятие) действует и на автозапись:
+                // игрок остаётся в очереди (бан может быть снят), но место получает следующий
+                if (app(UserRestrictionService::class)->isBlocked((int) $user->id, (int) $event->id)) {
+                    Log::info("Waitlist autoBook skip: user #{$user->id} restricted", ['occurrence' => $occurrence->id]);
+                    continue;
+                }
+
                 // Проверяем любую существующую запись (включая отменённые).
                 // Уникальный constraint (occurrence_id, user_id) не учитывает is_cancelled,
                 // поэтому нельзя делать INSERT если есть даже отменённая запись.
