@@ -35,9 +35,12 @@ class LevelTestBotController extends Controller
             'lang' => ['nullable', 'in:ru,en'],
             'answers' => ['required', 'array', 'size:16'],
             'answers.*' => ['required', 'integer', 'between:0,3'],
+            'source' => ['nullable', 'in:telegram,max'],
+            'nick' => ['nullable', 'string', 'max:120'],
         ]);
 
         $res = $this->service->evaluate($v['discipline'], $v['answers']);
+        $this->service->record($v['source'] ?? 'telegram', $v['nick'] ?? null, $v['discipline'], $v['lang'] ?? 'ru', $res);
 
         return response()->json(['ok' => true] + $res + $this->service->describe($res['level'], $v['lang'] ?? 'ru') + [
             'url' => route('level_test'),

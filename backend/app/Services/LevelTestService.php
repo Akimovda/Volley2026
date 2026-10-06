@@ -146,6 +146,25 @@ class LevelTestService
         ];
     }
 
+    /** Сохраняет итог (без ответов). Сбой записи не должен ломать выдачу результата пользователю. */
+    public function record(string $source, ?string $nickname, string $discipline, ?string $lang, array $res): void
+    {
+        try {
+            $nick = $nickname !== null ? mb_substr(trim($nickname), 0, 120) : null;
+            \App\Models\LevelTestResult::create([
+                'source' => $source,
+                'nickname' => ($nick === null || $nick === '') ? null : $nick,
+                'discipline' => $discipline,
+                'lang' => $lang ?: 'ru',
+                'score' => $res['score'],
+                'level' => $res['level'],
+                'capped' => $res['capped'],
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('level_test_result_save_failed: ' . $e->getMessage());
+        }
+    }
+
     /** Заголовок и описание итога для вывода (в ботах и на сайте). */
     public function describe(string $level, ?string $locale = null): array
     {
