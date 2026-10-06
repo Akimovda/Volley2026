@@ -62,6 +62,18 @@ final class UserNotificationService
                 'read_at'  => null,
             ]);
 
+            // Push — ко ВСЕМ уведомлениям, где есть хоть один внешний канал (раньше каждый вызов перечислял
+            // каналы вручную и ~70 мест забыли 'push', в т.ч. «Требуется оплата» и «Доступ ограничен»).
+            // Списки строго ['in_app'] — намеренно «только внутри сайта», их не трогаем; рассылки (организатора/админа)
+            // выбирают каналы галочками вручную и считают охват — им push не добавляем.
+            // Игрокам без активного токена push отсеет normalizeChannels().
+            $channels = array_values((array) $channels);
+            if (!in_array($type, ['organizer_broadcast', 'admin_broadcast', 'admin_broadcast_test'], true)
+                && array_diff($channels, ['in_app']) !== []
+                && !in_array('push', $channels, true)) {
+                $channels[] = 'push';
+            }
+
             $channels = $this->normalizeChannels($channels, $user);
 
             foreach ($channels as $channel) {
