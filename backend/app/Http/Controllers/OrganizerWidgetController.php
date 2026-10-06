@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\OrganizerWidget;
+use App\Services\WidgetEventsService;
+use App\Services\WidgetStyleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -18,7 +20,19 @@ class OrganizerWidgetController extends Controller
         $widget = OrganizerWidget::where('user_id', $user->id)->first();
         $isPro  = $user->isOrganizerPro();
 
-        return view('profile.widget', compact('widget', 'isPro'));
+        $accent  = (string) ($widget?->getSetting('color', '#f59e0b') ?? '#f59e0b');
+        $style   = WidgetStyleService::resolve(
+            (array) ($widget?->settings['style'] ?? []) + [
+                'show_slots'    => (bool) ($widget?->getSetting('show_slots', true) ?? true),
+                'show_location' => (bool) ($widget?->getSetting('show_location', true) ?? true),
+            ],
+            $accent
+        );
+        $styleGroups = WidgetStyleService::groups();
+        $presets     = WidgetStyleService::presets();
+        $styleDefaults = WidgetStyleService::defaults('#f59e0b');
+
+        return view('profile.widget', compact('widget', 'isPro', 'style', 'styleGroups', 'presets', 'styleDefaults'));
     }
 
     /** Создать или пересоздать виджет */
@@ -37,6 +51,7 @@ class OrganizerWidgetController extends Controller
             'settings.color'  => ['nullable', 'string', 'max:7'],
             'settings.show_slots' => ['nullable', 'boolean'],
             'settings.show_location' => ['nullable', 'boolean'],
+            'style'           => ['nullable', 'array'],
         ]);
 
         $domains = [];
@@ -47,11 +62,19 @@ class OrganizerWidgetController extends Controller
             );
         }
 
+        $color = preg_match('/^#[0-9a-f]{6}$/i', (string) ($data['settings']['color'] ?? ''))
+            ? strtolower($data['settings']['color'])
+            : '#f59e0b';
+
+        $style = WidgetStyleService::sanitize((array) ($data['style'] ?? []), WidgetStyleService::defaults($color));
+
         $settings = [
             'limit'         => (int) ($data['settings']['limit'] ?? 10),
-            'color'         => $data['settings']['color'] ?? '#f59e0b',
-            'show_slots'    => (bool) ($data['settings']['show_slots'] ?? true),
-            'show_location' => (bool) ($data['settings']['show_location'] ?? true),
+            'color'         => $color,
+            // show_* дублируются на верхнем уровне: их читает WidgetEventsService (ключ кеша, адрес, места)
+            'show_slots'    => $style['show_slots'],
+            'show_location' => $style['show_location'],
+            'style'         => $style,
         ];
 
         OrganizerWidget::updateOrCreate(
@@ -90,5 +113,32 @@ class OrganizerWidgetController extends Controller
         $status = $widget->is_active ? '✅ Виджет включён.' : '⏸ Виджет отключён.';
 
         return redirect()->route('profile.widget')->with('status', $status);
+    }
+
+    /** Предпросмотр для формы: рендерит виджет по ещё не сохранённым значениям (без записи в БД) */
+    public function preview(Request $request, WidgetEventsService $events)
+    {
+        $user = $request->user();
+        abort_unless($user->isOrganizerPro(), 403);
+
+        $color  = preg_match('/^#[0-9a-f]{6}$/i', (string) $request->input('settings.color'))
+            ? strtolower((string) $request->input('settings.color')) : '#f59e0b';
+        $style  = WidgetStyleService::sanitize((array) $request->input('style', []), WidgetStyleService::defaults($color));
+        $css    = WidgetStyleService::css($style);
+
+        $widget = OrganizerWidget::where('user_id', $user->id)->first() ?? new OrganizerWidget(['settings' => []]);
+        $widget->settings = array_merge((array) $widget->settings, [
+            'limit'         => max(1, min(50, (int) $request->input('settings.limit', 10))),
+            'show_slots'    => $style['show_slots'],
+            'show_location' => $style['show_location'],
+        ]);
+
+        $list = $events->getEvents($widget, $user->id);
+        if (!$list) {
+            $list = $events->sampleEvents();
+        }
+
+        return response()->view('widget.iframe', ['events' => $list, 'style' => $style, 'css' => $css])
+            ->header('X-Frame-Options', 'SAMEORIGIN');
     }
 }
