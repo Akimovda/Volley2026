@@ -219,7 +219,7 @@
 										
 										
 										
-										<div class="col-md-6" id="game_settings_block" data-hide-if="format=tournament">
+										<div class="col-md-6" id="game_settings_block" data-hide-if="format=tournament|master_class">
 											<div class="card">
 												<div class="row">
 													<div class="col-4">
@@ -322,7 +322,7 @@
 										
 										
 										
-										<div class="col-md-6" id="registration_mode_block" data-hide-if="format=tournament">
+										<div class="col-md-6" id="registration_mode_block" data-hide-if="format=tournament|master_class">
 											<div class="card">
 												<label>{{ __('events.reg_mode_label') }}</label>
 												
@@ -355,6 +355,42 @@
 													<li id="registration_mode_hint_beach" data-show-if="direction=beach">
 														{{ __('events.reg_mode_hint_beach') }}
 													</li>
+												</ul>
+											</div>
+										</div>
+
+										{{-- Мастер-класс: только мин/макс участников (одиночная запись, без команд/амплуа/подтипов) --}}
+										<div class="col-md-6" id="master_class_block" data-show-if="format=master_class">
+											<div class="card">
+												<label>{{ __('events.master_class_participants') }}</label>
+												<div class="row">
+													<div class="col-6">
+														<label>{{ __('events.master_min_label') }}</label>
+														<input type="number"
+														name="master_min_players"
+														id="master_min_players"
+														min="1" max="1000"
+														value="{{ old('master_min_players', $prefill['master_min_players'] ?? 1) }}"
+														class="w-full rounded-lg border-gray-200">
+														@error('master_min_players')
+														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+														@enderror
+													</div>
+													<div class="col-6">
+														<label>{{ __('events.master_max_label') }}</label>
+														<input type="number"
+														name="master_max_players"
+														id="master_max_players"
+														min="1" max="1000"
+														value="{{ old('master_max_players', $prefill['master_max_players'] ?? 20) }}"
+														class="w-full rounded-lg border-gray-200">
+														@error('master_max_players')
+														<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+														@enderror
+													</div>
+												</div>
+												<ul class="list f-16 mt-1">
+													<li>{{ __('events.master_class_hint') }}</li>
 												</ul>
 											</div>
 										</div>
@@ -720,8 +756,8 @@
 										
 										
 										
-										{{-- Game config --}}
-										<div class="col-md-6">
+										{{-- Game config (гендерные ограничения: для мастер-класса не нужны) --}}
+										<div class="col-md-6" id="gender_policy_block" data-hide-if="format=master_class">
 											<div class="card">
 												{{--
 												<div class="text-sm font-semibold text-gray-800">Игровые настройки</div>

@@ -1000,12 +1000,22 @@ if ($role === 'admin') {
             'tournament_individual_reg'           => ['sometimes', 'boolean'],
             'king_beach_min_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
             'king_beach_max_players'              => ['nullable', 'integer', 'min:4', 'max:200'],
+            // Мастер-класс (только для событий формата master_class)
+            'master_min_players'                  => ['nullable', 'integer', 'min:1', 'max:1000'],
+            'master_max_players'                  => ['nullable', 'integer', 'min:1', 'max:1000'],
             'timeline_color' => ['nullable', 'regex:/^#[0-9A-Fa-f]{6}$/'],
 
             'trainer_user_id'   => ['nullable', 'integer', 'exists:users,id'],
             'trainer_user_ids'   => ['nullable', 'array'],
             'trainer_user_ids.*' => ['integer', 'exists:users,id'],
         ]);
+
+        // Мастер-класс: тип нельзя сменить ни НА него, ни С него через редактирование
+        // (другая модель вместимости — один слот 'player', без подтипов/команд/амплуа).
+        $isMasterClass = ($event->format ?? '') === 'master_class';
+        if ($isMasterClass || ($data['format'] ?? null) === 'master_class') {
+            $data['format'] = $event->format;
+        }
 
         // Тренеры серии — обязательны для форматов, где это уже требуется при создании
         // события (EventStoreService), UI-редактор показан для того же набора форматов,
@@ -1076,6 +1086,51 @@ if ($role === 'admin') {
         $staysKingBeach = $event->registration_mode === 'king_beach'
             && empty($data['tournament_individual_reg']);
 
+        if ($isMasterClass) {
+            $mMin = isset($data['master_min_players']) && $data['master_min_players'] !== ''
+                ? (int) $data['master_min_players']
+                : (int) ($event->gameSettings?->min_players ?? 1);
+            $mMax = isset($data['master_max_players']) && $data['master_max_players'] !== ''
+                ? (int) $data['master_max_players']
+                : (int) ($event->gameSettings?->max_players ?? 0);
+
+            $mErrors = [];
+            if ($mMax < 1) {
+                $mErrors['master_max_players'] = __('events.master_max_required');
+            } elseif ($mMax < $mMin) {
+                $mErrors['master_max_players'] = __('events.master_max_lt_min');
+            } else {
+                // Снижать максимум ниже самого заполненного будущего тура нельзя.
+                $maxRegistered = (int) (DB::table('event_registrations as er')
+                    ->join('event_occurrences as o', 'o.id', '=', 'er.occurrence_id')
+                    ->where('er.event_id', $event->id)
+                    ->where('o.starts_at', '>=', now())
+                    ->whereRaw('(o.is_cancelled IS NULL OR o.is_cancelled = false)')
+                    ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                    ->where('er.status', '!=', 'cancelled')
+                    ->groupBy('er.occurrence_id')
+                    ->selectRaw('count(*) as cnt')
+                    ->get()
+                    ->max('cnt') ?? 0);
+                if ($maxRegistered > $mMax) {
+                    $mErrors['master_max_players'] = __('events.king_beach_max_players_below_registered_error', ['count' => $maxRegistered]);
+                }
+            }
+            if (!empty($mErrors)) {
+                throw \Illuminate\Validation\ValidationException::withMessages($mErrors);
+            }
+
+            $data['master_min_players'] = $mMin;
+            $data['master_max_players'] = $mMax;
+            // Игровые поля формы для мастер-класса не применяются
+            foreach (['game_subtype','game_max_players','game_min_players','game_libero_mode','game_gender_policy',
+                      'game_gender_limited_side','game_gender_limited_max','game_gender_limited_positions',
+                      'game_gender_limited_reg_starts_days_before','game_allow_girls','game_girls_max',
+                      'game_reserve_players_max','game_registration_by_positions','teams_count'] as $k) {
+                unset($data[$k]);
+            }
+        }
+
         if ($staysKingBeach) {
             $kbMin = isset($data['king_beach_min_players']) && $data['king_beach_min_players'] !== ''
                 ? (int) $data['king_beach_min_players']
@@ -1133,7 +1188,7 @@ if ($role === 'admin') {
             $data['king_beach_max_players'] = $kbMax;
         }
 
-        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable) {
+        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable, $isMasterClass) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -1364,7 +1419,23 @@ if ($role === 'admin') {
     
             $event->load('gameSettings');
 
-            if ($staysKingBeach) {
+            if ($isMasterClass) {
+                // Мастер-класс: вместимость = master_max_players, один общий слот 'player'
+                // (без GameCalculator — подтип/команды к нему не применимы).
+                $mMin = (int) $data['master_min_players'];
+                $mMax = (int) $data['master_max_players'];
+
+                app(\App\Services\EventRoleSlotService::class)->syncRoleSlots($event, ['player' => $mMax]);
+
+                if ($event->gameSettings) {
+                    $gs = $event->gameSettings;
+                    $gs->min_players = $mMin;
+                    $gs->max_players = $mMax;
+                    $gs->teams_count = 0;
+                    $gs->gender_policy = 'mixed_open';
+                    $gs->save();
+                }
+            } elseif ($staysKingBeach) {
                 // King Beach не считает вместимость как team_size×teams_count (teams_count=0,
                 // нет команд на этапе регистрации) — свои min/max напрямую в EventGameSetting,
                 // один слот 'player'. GameCalculator-пересчёт ниже для этого режима неприменим

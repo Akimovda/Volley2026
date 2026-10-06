@@ -511,6 +511,7 @@
 				'tournament_classic' => __('events.fmt_tournament_classic'),
 				'tournament_beach'   => __('events.fmt_tournament_beach'),
 				'camp'               => __('events.fmt_camp'),
+				'master_class'       => __('events.fmt_master_class'),
 			];
 			$formatDirections = [
 				'coach_student'      => ['beach'],

@@ -35,8 +35,10 @@
 			
             'format' => [
 			'required',
-			'in:game,training,training_game,training_pro_am,coach_student,tournament,camp'
+			'in:game,training,training_game,training_pro_am,coach_student,tournament,camp,master_class'
             ],
+            'master_min_players' => ['nullable','integer','min:1','max:1000'],
+            'master_max_players' => ['nullable','integer','min:1','max:1000'],
             'registration_mode' => [
                 'nullable',
                 'string',
@@ -538,6 +540,18 @@
             $isKingBeach = in_array($format, ['tournament', 'tournament_beach'], true)
                 && $direction === 'beach'
                 && !empty($data['king_beach_reg']);
+
+            if ($format === 'master_class') {
+                // Гендерные ограничения для мастер-класса не применяются (поле формы скрыто, значение игнорируем)
+                $policy = '';
+                $mMin = $data['master_min_players'] ?? null;
+                $mMax = $data['master_max_players'] ?? null;
+                if ($mMax === null || $mMax === '' || (int) $mMax < 1) {
+                    $v->errors()->add('master_max_players', __('events.master_max_required'));
+                } elseif ($mMin !== null && $mMin !== '' && (int) $mMin > (int) $mMax) {
+                    $v->errors()->add('master_max_players', __('events.master_max_lt_min'));
+                }
+            }
 
             // restricted reg start не может быть раньше общего (days_before_restricted <= days_before_general)
             if ($policy === 'mixed_limited') {

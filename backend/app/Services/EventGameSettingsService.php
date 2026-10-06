@@ -245,6 +245,39 @@ class EventGameSettingsService
     {
         $errors = [];
 
+        // Мастер-класс: не привязан к командным схемам/слотам — только мин/макс участников (одиночная запись).
+        if ($format === 'master_class') {
+            $min = (isset($data['master_min_players']) && $data['master_min_players'] !== '') ? (int) $data['master_min_players'] : 1;
+            $max = (isset($data['master_max_players']) && $data['master_max_players'] !== '') ? (int) $data['master_max_players'] : 0;
+
+            if ($max < 1) {
+                $errors['master_max_players'] = [__('events.master_max_required')];
+            } elseif ($max < $min) {
+                $errors['master_max_players'] = [__('events.master_max_lt_min')];
+            }
+
+            $data['game_min_players'] = max(1, $min);
+            $data['game_max_players'] = $max > 0 ? $max : null;
+            // колонка event_game_settings.subtype NOT NULL — технический дефолт, на мастер-класс не влияет
+            $data['game_subtype'] = ($direction === 'beach') ? '2x2' : '4x2';
+            $data['teams_count'] = 0;
+            $data['game_reserve_players_max'] = null;
+            $data['game_registration_by_positions'] = 0;
+            $data['registration_mode'] = 'single';
+
+            return [
+                'data' => $data,
+                'errors' => $errors,
+                'isGameClassic' => false,
+                'isGameBeach' => false,
+                'isTrainingLike' => false,
+                'isMasterClass' => true,
+                'needGameSettings' => true,
+                'minPlayers' => $data['game_min_players'],
+                'maxPlayers' => $data['game_max_players'],
+            ];
+        }
+
         $isGameClassic = ($direction === 'classic' && $format === 'game');
         $isGameBeach = ($direction === 'beach' && $format === 'game');
         $isTrainingLike = in_array($format, ['training','training_game','training_pro_am','camp','coach_student'], true);
@@ -391,7 +424,27 @@ class EventGameSettingsService
             ?int $maxPlayers
         ): array {
             $errors = [];
-        
+
+            // Мастер-класс: гендерные ограничения не применяются вообще.
+            if ($format === 'master_class') {
+                $data['game_gender_policy'] = 'mixed_open';
+                $data['game_gender_limited_side'] = null;
+                $data['game_gender_limited_max'] = null;
+                $data['game_gender_limited_positions'] = null;
+                $data['game_gender_limited_reg_starts_days_before'] = null;
+                $data['game_allow_girls'] = 1;
+                $data['game_girls_max'] = null;
+
+                return [
+                    'data' => $data,
+                    'genderPolicy' => 'mixed_open',
+                    'genderLimitedSide' => null,
+                    'genderLimitedMax' => null,
+                    'genderLimitedPositions' => null,
+                    'errors' => [],
+                ];
+            }
+
             $isClassicPlayableFormat = (
                 $direction === 'classic'
                 && in_array($format, ['game', 'training', 'training_game', 'camp', 'tournament', 'tournament_classic'], true)
@@ -638,6 +691,34 @@ class EventGameSettingsService
             }
 
             EventGameSetting::updateOrCreate(['event_id' => $event->id], $egsPayload);
+
+            return;
+        }
+
+        // Мастер-класс: один общий слот 'player' на весь лимит участников, без команд/амплуа/пола.
+        if (!empty($game['isMasterClass'])) {
+            $minPlayers = (int) ($data['game_min_players'] ?? 1);
+            $maxPlayers = (int) ($data['game_max_players'] ?? $minPlayers);
+
+            $this->roleSlotService->syncRoleSlots($event, ['player' => $maxPlayers]);
+
+            EventGameSetting::updateOrCreate(['event_id' => $event->id], [
+                'subtype'             => ($direction === 'beach') ? '2x2' : '4x2',
+                'libero_mode'         => null,
+                'min_players'         => $minPlayers,
+                'max_players'         => $maxPlayers,
+                'teams_count'         => 0,
+                'allow_girls'         => true,
+                'girls_max'           => null,
+                'positions'           => [],
+                'reserve_players_max' => null,
+                'registration_without_positions' => false,
+                'gender_policy'       => 'mixed_open',
+                'gender_limited_side' => null,
+                'gender_limited_max'  => null,
+                'gender_limited_positions' => null,
+                'gender_limited_reg_starts_days_before' => null,
+            ]);
 
             return;
         }

@@ -380,6 +380,7 @@ if (!function_exists('format_name')) {
             'game'           => 'Игра',
             'training'       => 'Тренировка',
             'training_game'  => 'Тренировка-игра',
+            'master_class'   => 'Мастер-класс',
             'tournament'     => 'Турнир',
             'open'           => 'Открытая игра',
         ];

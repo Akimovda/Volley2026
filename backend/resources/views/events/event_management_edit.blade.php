@@ -263,6 +263,13 @@
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.event_type') }}</label>
+                                @if(($event->format ?? '') === 'master_class')
+                                {{-- Мастер-класс: тип не меняется (другая модель вместимости) --}}
+                                <select id="mgmt_format" disabled>
+                                    <option value="master_class" selected>{{ __('events.fmt_master_class') }}</option>
+                                </select>
+                                <input type="hidden" name="format" value="master_class">
+                                @else
                                 <select name="format" id="mgmt_format">
                                     @foreach([
                                         'game' => __('events.fmt_game'),
@@ -275,6 +282,7 @@
                                         <option value="{{ $k }}" @selected(old('format', $event->format) === $k)>{{ $label }}</option>
                                     @endforeach
                                 </select>
+                                @endif
                             </div>
                         </div>
 
@@ -795,6 +803,31 @@
                                 <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
                                 @enderror
                             </div>
+                        </div>
+                    @elseif(($event->format ?? '') === 'master_class')
+                        {{-- Мастер-класс: только мин/макс участников; запись одиночная, без команд/амплуа/гендерных ограничений --}}
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.master_min_label') }}</label>
+                                <input type="number" name="master_min_players" min="1" max="1000"
+                                    value="{{ old('master_min_players', $event->gameSettings?->min_players ?? 1) }}">
+                                @error('master_min_players')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.master_max_label') }}</label>
+                                <input type="number" name="master_max_players" min="1" max="1000"
+                                    value="{{ old('master_max_players', $event->gameSettings?->max_players ?? 20) }}">
+                                @error('master_max_players')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="f-13" style="opacity:.7">{{ __('events.master_edit_hint') }}</div>
                         </div>
                     @else
                         @php
