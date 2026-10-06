@@ -362,8 +362,8 @@ document.addEventListener("trix-file-accept", function (event) {
 		
 		var direction = dirEl ? String(dirEl.value || '') : '';
 		
-		var allowClassic = { game: 1, training: 1, training_game: 1, tournament: 1, camp: 1 };
-		var allowBeach = { game: 1, training: 1, training_game: 1, coach_student: 1, tournament: 1, camp: 1 };
+		var allowClassic = { game: 1, training: 1, training_game: 1, tournament: 1, camp: 1, master_class: 1 };
+		var allowBeach = { game: 1, training: 1, training_game: 1, coach_student: 1, tournament: 1, camp: 1, master_class: 1 };
 		
 		var opts = fmtEl.querySelectorAll('option');
 		for (var i = 0; i < opts.length; i++) {
@@ -404,7 +404,8 @@ document.addEventListener("trix-file-accept", function (event) {
 		var curOpt = registrationModeEl.querySelector('option[value="' + cur + '"]');
 		var curAllowed = curOpt && !curOpt.disabled && !curOpt.hidden;
 		
-		if (!curAllowed) {
+		// Мастер-класс — всегда одиночная запись
+		if (!curAllowed || (fmtEl && String(fmtEl.value || '') === 'master_class')) {
 			registrationModeEl.value = 'single';
 		}
 	}
@@ -1145,6 +1146,21 @@ document.addEventListener("trix-file-accept", function (event) {
 				}
 
             	return true;
+			}
+			
+			// Мастер-класс: только мин/макс участников (без подтипов/команд/амплуа/гендерных ограничений)
+			if (format === 'master_class') {
+				var mMinEl = document.getElementById('master_min_players');
+				var mMaxEl = document.getElementById('master_max_players');
+				if (!need(mMaxEl && val(mMaxEl) && Number(val(mMaxEl)) >= 1, 'Укажи максимум участников мастер-класса.', mMaxEl)) return false;
+				if (has(mMinEl) && Number(val(mMinEl)) > Number(val(mMaxEl))) {
+					alert('Максимум участников не может быть меньше минимума.');
+					focusEl(mMaxEl);
+					return false;
+				}
+				if (!checkMinMaxPair('classic_level_min', 'classic_level_max', 'Уровень Classic')) return false;
+				if (!checkMinMaxPair('beach_level_min', 'beach_level_max', 'Уровень Beach')) return false;
+				return true;
 			}
 			
 			if (direction === 'classic') {
@@ -2300,7 +2316,8 @@ document.addEventListener("trix-file-accept", function (event) {
 			training_pro_am: 'про-ам тренировка',
 			coach_student: 'тренер+ученик',
 			tournament: 'турнир',
-			camp: 'кемп'
+			camp: 'кемп',
+			master_class: 'мастер-класс'
 		};
 		
 		var fmtLabel = fmtMap[fmt] || fmt;

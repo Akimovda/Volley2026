@@ -634,6 +634,10 @@ use App\Services\StaffLogService;
 				$prefill['game_girls_max'] = $gs->girls_max;
 				$prefill['game_reserve_players_max'] = $gs->reserve_players_max;
 				$prefill['game_registration_by_positions'] = !((bool) ($gs->registration_without_positions ?? false));
+				if (($src->format ?? '') === 'master_class') {
+					$prefill['master_min_players'] = $gs->min_players;
+					$prefill['master_max_players'] = $gs->max_players;
+				}
 			}
 			
 			unset($prefill['starts_at'], $prefill['public_token']);
@@ -695,6 +699,8 @@ use App\Services\StaffLogService;
             'game_subtype',
             'game_min_players',
             'game_max_players',
+            'master_min_players',
+            'master_max_players',
             'game_libero_mode',
             'game_gender_policy',
             'game_gender_limited_side',

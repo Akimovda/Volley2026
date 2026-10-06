@@ -103,6 +103,14 @@ return [
     'fmt_tournament_beach'   => 'Tournament (beach)',
     'fmt_camp'               => 'Camp',
     'fmt_camp_caps'          => 'CAMP',
+    'fmt_master_class'       => 'Master class',
+    'master_class_participants' => 'Master class participants',
+    'master_min_label'       => 'Minimum participants',
+    'master_max_label'       => 'Maximum participants',
+    'master_class_hint'      => 'Individual sign-up only, no teams or positions. The number of participants is not tied to a game format — enter any number.',
+    'master_max_required'    => 'Enter the maximum number of master class participants.',
+    'master_max_lt_min'      => 'Maximum participants cannot be less than the minimum.',
+    'master_edit_hint'       => 'Master class: individual sign-up, participant limit is not tied to teams.',
 
     // Top messages
     'private_link' => 'Private link 🔗:',

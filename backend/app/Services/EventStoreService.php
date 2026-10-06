@@ -142,7 +142,8 @@ class EventStoreService
                 'training_pro_am' => 'про‑ам тренировка',
                 'coach_student' => 'тренер+ученик',
                 'tournament' => 'турнир',
-                'camp' => 'кемп'
+                'camp' => 'кемп',
+                'master_class' => 'мастер-класс'
             ];
 
             $data['title'] = trim($dirLabel.' '.($fmtMap[$fmt] ?? $fmt));
@@ -348,7 +349,7 @@ class EventStoreService
                             ? 'tournament_individual'
                             : ($data['direction'] === 'beach' ? 'team_beach' : 'team_classic'))
                 )
-                : ($data['registration_mode'] ?? 'single');
+                : ($format === 'master_class' ? 'single' : ($data['registration_mode'] ?? 'single'));
 
             $event->organizer_id =
                 $data['organizer_id']

@@ -43,6 +43,7 @@ $formats = [
 'coach_student' => __('events.fmt_coach_student_beach'),
 'tournament' => __('events.fmt_tournament'),
 'camp' => __('events.fmt_camp_caps'),
+'master_class' => __('events.fmt_master_class'),
 ];
 // ✅ Timezones groups приходят из контроллера: $tzGroups + $tzDefault
 $timezoneGroups  = $tzGroups ?? (array) config('event_timezones.groups', []);
@@ -56,7 +57,7 @@ $isAdmin = (auth()->user()?->role ?? null) === 'admin';
 
 $step1Fields = [
 'organizer_id',
-'title','direction','format','registration_mode',
+'title','direction','format','registration_mode','master_min_players','master_max_players',
 'tournament_game_scheme',
 'tournament_team_size_min',
 'tournament_reserve_players_max',

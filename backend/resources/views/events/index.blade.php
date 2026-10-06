@@ -112,6 +112,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
         'tournament_classic' => __('events.fmt_tournament_classic'),
         'tournament_beach'   => __('events.fmt_tournament_beach'),
         'camp'               => __('events.fmt_camp'),
+        'master_class'       => __('events.fmt_master_class'),
     ];
 
     // Связь типа с направлением — тип без явной привязки (game/training/
