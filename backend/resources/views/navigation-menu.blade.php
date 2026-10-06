@@ -152,9 +152,6 @@
                         <a class="text-sm text-gray-600 hover:text-gray-900" href="{{ url('/login') }}">
                             {{ __('Log in') }}
                         </a>
-                        <a class="text-sm text-gray-600 hover:text-gray-900" href="{{ url('/register') }}">
-                            {{ __('Register') }}
-                        </a>
                     </div>
                 @endauth
             </div>
@@ -260,9 +257,6 @@
                 <div class="mt-3 space-y-1 px-4 pb-3">
                     <a class="block text-sm text-gray-600 hover:text-gray-900" href="{{ url('/login') }}">
                         {{ __('Log in') }}
-                    </a>
-                    <a class="block text-sm text-gray-600 hover:text-gray-900" href="{{ url('/register') }}">
-                        {{ __('Register') }}
                     </a>
                 </div>
             </div>

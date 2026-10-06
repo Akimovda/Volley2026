@@ -59,7 +59,7 @@ return [
      | Features
      | ======================================================================= */
     'features' => [
-        Features::registration(),
+        // Features::registration(), // отключено: регистрация только через OAuth (2026-10-06)
         Features::resetPasswords(),
         // Features::emailVerification(),
         Features::updateProfileInformation(),
