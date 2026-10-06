@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class UserPhotoFromProviderService
@@ -27,8 +28,25 @@ class UserPhotoFromProviderService
         }
 
         try {
+            // Яндекс отдаёт заглушку под разными default_avatar_id (не только 0/0-0), и is_avatar_empty
+            // не всегда true — поэтому для его CDN сверяем содержимое файла, а не только URL.
+            $body = null;
+            if (preg_match('#^https?://avatars\.yandex\.net/#i', $avatarUrl)) {
+                $resp = Http::timeout(10)->get($avatarUrl);
+                if (!$resp->successful()) {
+                    return;
+                }
+                $body = $resp->body();
+                if (self::isPlaceholderContent($body)) {
+                    return;
+                }
+            }
+
             // Сохраняем фото в галерею
-            $media = $user->addMediaFromUrl($avatarUrl)
+            $adder = $body !== null
+                ? $user->addMediaFromString($body)->usingFileName(basename(parse_url($avatarUrl, PHP_URL_PATH) ?: 'avatar') . '.' . (['image/jpeg' => 'jpg', 'image/webp' => 'webp', 'image/gif' => 'gif'][(new \finfo(FILEINFO_MIME_TYPE))->buffer($body)] ?? 'png'))
+                : $user->addMediaFromUrl($avatarUrl);
+            $media = $adder
                 ->preservingOriginal()
                 ->toMediaCollection('photos');
             
@@ -56,5 +74,13 @@ class UserPhotoFromProviderService
     {
         // Яндекс: default_avatar_id «0/0-0»
         return (bool) preg_match('#avatars\.yandex\.net/get-yapic/0/0-0(/|$)#', $url);
+    }
+
+    /** md5 заглушки Яндекса (islands-200.png, 42×42, 1536 байт) — то же значение, что в users:cleanup-yandex-default-avatars. */
+    private const PLACEHOLDER_MD5 = 'ba4fdd0fd76496bb792cb8f14067e3bd';
+
+    public static function isPlaceholderContent(string $body): bool
+    {
+        return strlen($body) === 1536 && md5($body) === self::PLACEHOLDER_MD5;
     }
 }
