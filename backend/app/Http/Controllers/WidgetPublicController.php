@@ -34,12 +34,11 @@ class WidgetPublicController extends Controller
                 ->header('Content-Security-Policy', "frame-ancestors *");
         }
 
+        $style  = $this->styleFor($widget, $request);
         $events = $this->events->getEvents($widget, $userId);
-        $style  = $this->styleFor($widget);
-        $css    = WidgetStyleService::css($style);
 
         return response()
-            ->view('widget.iframe', compact('widget', 'events', 'userId', 'style', 'css'))
+            ->view('widget.iframe', compact('widget', 'events', 'userId', 'style'))
             ->header('X-Frame-Options', 'ALLOWALL')
             ->header('Content-Security-Policy', "frame-ancestors *");
     }
@@ -71,15 +70,14 @@ class WidgetPublicController extends Controller
             ], 403)->header('Access-Control-Allow-Origin', '*');
         }
 
+        $style  = $this->styleFor($widget, $request);
         $events = $this->events->getEvents($widget, $widget->user_id);
-        $style  = $this->styleFor($widget);
-        $css    = WidgetStyleService::css($style);
 
         return response()->json([
             'ok'       => true,
             'settings' => $widget->settings,
             'events'   => $events,
-            'html'     => view('widget._content', compact('events', 'style', 'css'))->render(),
+            'html'     => view('widget._content', compact('events', 'style'))->render(),
         ])->header('Access-Control-Allow-Origin', '*');
     }
 
@@ -107,7 +105,13 @@ class WidgetPublicController extends Controller
 
     note('Загрузка...', '#666');
 
-    fetch({$urlJs} + '?key=' + encodeURIComponent(key))
+    // data-атрибуты контейнера переопределяют серверные настройки
+    var q = 'key=' + encodeURIComponent(key);
+    ['layout', 'columns', 'theme', 'accent', 'limit'].forEach(function(n) {
+        if (container.dataset[n]) q += '&' + n + '=' + encodeURIComponent(container.dataset[n]);
+    });
+
+    fetch({$urlJs} + '?' + q)
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.ok) {
@@ -128,15 +132,26 @@ JS;
         ]);
     }
 
-    private function styleFor(OrganizerWidget $widget): array
+    /**
+     * Итоговое оформление. Переопределения из data-атрибутов контейнера (layout, columns, theme, accent, limit)
+     * приходят query-параметрами; limit применяется только в памяти (виджет не сохраняется).
+     */
+    private function styleFor(OrganizerWidget $widget, Request $request): array
     {
-        return WidgetStyleService::resolve(
+        $limit = (int) $request->query('limit', 0);
+        if ($limit > 0) {
+            $widget->settings = array_merge((array) $widget->settings, ['limit' => min(50, $limit)]);
+        }
+
+        $style = WidgetStyleService::resolve(
             (array) ($widget->settings['style'] ?? []) + [
                 'show_slots'    => (bool) $widget->getSetting('show_slots', true),
                 'show_location' => (bool) $widget->getSetting('show_location', true),
             ],
             (string) $widget->getSetting('color', '#f59e0b')
         );
+
+        return WidgetStyleService::forRender($style, $request->only(['layout', 'columns', 'theme', 'accent']));
     }
 
     /** Активен ли Организатор Pro у владельца виджета (ключ и настройки при этом не трогаем) */
