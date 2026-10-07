@@ -32,7 +32,10 @@ class ProfileExtraController extends Controller
 
         $isEditingOther = ((int) $target->id !== (int) $actor->id);
 
-        $mode = ($isAdmin && $isEditingOther) ? 'admin_other'
+        // Своя «пустышка» (аккаунт без входа) — организатор правит как админ: все поля
+        $ownPlaceholder = $isEditingOther && $target->isPlaceholderManagedBy($actor);
+
+        $mode = (($isAdmin || $ownPlaceholder) && $isEditingOther) ? 'admin_other'
             : (($isOrganizer && $isEditingOther) ? 'organizer_other' : 'self');
 
         // --- Allowlist входных полей по режимам ---
@@ -159,7 +162,7 @@ class ProfileExtraController extends Controller
         // =========================
         // 1.5) Групповая валидация: ФИО + телефон — всё или ничего
         // =========================
-        if (in_array('last_name', $allowed, true)) {
+        if (!$ownPlaceholder && in_array('last_name', $allowed, true)) {
             $groupFields = ['last_name', 'first_name', 'phone'];
             $groupLabels = [
                 'last_name'  => 'Фамилия',
@@ -356,6 +359,10 @@ class ProfileExtraController extends Controller
             if ($dupe) {
                 $duplicateWarning = $dupe->id;
             }
+        }
+
+        if ($ownPlaceholder) {
+            return redirect()->route('placeholders.index')->with('status', __('placeholders.saved'));
         }
 
         // Если пришли со страницы завершения профиля — фиксируем первое заполнение и редиректим

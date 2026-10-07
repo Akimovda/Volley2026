@@ -800,6 +800,13 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         ->middleware('no-store-html')
         ->name('profile.complete');
 		
+		// Аккаунты-«пустышки» организатора/админа (контроллер сам проверяет роль)
+		Route::get('/my/placeholders', [\App\Http\Controllers\PlaceholderUserController::class, 'index'])->name('placeholders.index');
+		Route::post('/my/placeholders', [\App\Http\Controllers\PlaceholderUserController::class, 'store'])->middleware('throttle:30,1')->name('placeholders.store');
+		Route::delete('/my/placeholders/{user}', [\App\Http\Controllers\PlaceholderUserController::class, 'destroy'])->name('placeholders.destroy');
+		Route::get('/my/placeholders/{user}/merge', [\App\Http\Controllers\PlaceholderUserController::class, 'mergeForm'])->name('placeholders.merge');
+		Route::post('/my/placeholders/{user}/merge', [\App\Http\Controllers\PlaceholderUserController::class, 'mergeDo'])->name('placeholders.merge.do');
+
 		Route::post('/profile/extra', [\App\Http\Controllers\ProfileExtraController::class, 'update'])
         ->name('profile.extra.update');
 

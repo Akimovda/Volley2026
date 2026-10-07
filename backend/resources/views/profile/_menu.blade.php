@@ -229,6 +229,13 @@
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
+                {{-- Аккаунты-пустышки (не для помощника) --}}
+                @if(!$isStaffHelper)
+                <a href="{{ route('placeholders.index') }}"
+                   class="menu-item {{ $activeMenu === 'placeholders' ? 'active' : '' }}">
+                    <span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
+                </a>
+                @endif
                 {{-- 6. Брони кортов — только для арендодателей кортов --}}
                 @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
                 <a href="{{ route('club.bookings.index') }}"
