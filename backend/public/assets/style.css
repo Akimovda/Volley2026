@@ -7655,3 +7655,10 @@ body.dark .cropper-image-wrapper { background: #1e1e2a; }
 .form-letters .red { color: #d32f2f; text-shadow: 0 0 .5rem rgba(220, 38, 38, .5), 0 0 1.1rem rgba(220, 38, 38, .3); }
 body.dark .form-letters .cs { color: #5ee68c; text-shadow: 0 0 .6rem rgba(94, 230, 140, .75), 0 0 1.4rem rgba(94, 230, 140, .45); }
 body.dark .form-letters .red { color: #ff8f8f; text-shadow: 0 0 .6rem rgba(255, 90, 90, .75), 0 0 1.4rem rgba(255, 90, 90, .45); }
+
+/* Ряд «Схема/формат · Команды · Минимум»: длинная подпись переносится на 2 строки —
+   прижимаем содержимое колонок к низу, чтобы поля ввода стояли в одну линию (узкие экраны) */
+@media (max-width: 600px) {
+	.row.gs-aligned > * { display: flex; flex-direction: column; justify-content: flex-end; }
+	.row.gs-aligned label { line-height: 1.2; }
+}
