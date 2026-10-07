@@ -33,6 +33,7 @@ class AdminAppController extends Controller
             'previewUrl' => url('/events') . '?' . http_build_query(['_bp' => $brand->id, '_bpe' => $exp = time() + 7200, '_bps' => BrandThemeService::previewSig((int) $brand->id, $exp)]),
             'roles' => BrandThemeService::ROLES,
             'roleUsage' => BrandThemeService::roleUsage(),
+            'fontScales' => BrandThemeService::FONT_SCALES,
             'tokenGroups' => config('brand_tokens.groups'),
             'fonts' => config('brand_tokens.fonts'),
         ]);
@@ -53,6 +54,7 @@ class AdminAppController extends Controller
                 $rules["theme.$mode.$key"] = $hex;
             }
         }
+        $rules['theme.font_scale'] = ['nullable', 'integer', Rule::in(BrandThemeService::FONT_SCALES)];
         $rules['theme.font'] = ['nullable', Rule::in(array_keys((array) config('brand_tokens.fonts')))];
         $rules['menu.visible']         = ['nullable', 'array'];
         $rules['menu.visible.*']       = ['string', Rule::in($this->menuCatalogPaths())];
@@ -84,6 +86,10 @@ class AdminAppController extends Controller
         }
         if (!empty($data['theme']['font'])) {
             $theme['font'] = $data['theme']['font'];
+        }
+        $scale = (int) ($data['theme']['font_scale'] ?? 100);
+        if ($scale !== 100) {
+            $theme['font_scale'] = $scale;
         }
         $brand->theme = $theme ?: null;
 
@@ -144,6 +150,11 @@ class AdminAppController extends Controller
         $font = (string) $request->input('theme.font', '');
         if ($font !== '' && config('brand_tokens.fonts.' . $font)) {
             $theme['font'] = $font;
+        }
+
+        $scale = (int) $request->input('theme.font_scale', 100);
+        if ($scale !== 100 && in_array($scale, BrandThemeService::FONT_SCALES, true)) {
+            $theme['font_scale'] = $scale;
         }
 
         $copy = $brand->replicate();
