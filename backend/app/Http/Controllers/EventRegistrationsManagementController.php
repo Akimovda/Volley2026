@@ -578,7 +578,7 @@ class EventRegistrationsManagementController extends Controller
                     'status' => 'confirmed',
                     'occurrence_id' => $occurrenceId ?: null,
                     'updated_at' => now(),
-                ];
+                ] + \App\Models\EventRegistration::autoBookingResetAttributes();
 
                 if (Schema::hasColumn('event_registrations', 'position')) {
                     $upd['position'] = $pos;
@@ -1011,6 +1011,10 @@ class EventRegistrationsManagementController extends Controller
             'status'        => $isCancelled ? 'confirmed' : 'cancelled',
             'updated_at'    => now(),
         ];
+        if ($isCancelled) {
+            // восстановление отменённой записи — маркеры прошлой авто-записи не должны пережить отмену
+            $upd += \App\Models\EventRegistration::autoBookingResetAttributes();
+        }
         if ($newPosition !== null) {
             $upd['position'] = $newPosition;
         }
