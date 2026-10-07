@@ -125,10 +125,12 @@
 						$formatRaw = ($event->format === 'tournament' && $event->tournamentSetting?->game_scheme)
 							? $event->tournamentSetting->game_scheme
 							: $event->gameSettings->subtype;
-						$formatLabel = volley_scheme_label(
-							$formatRaw,
-							(string) ($event->gameSettings->libero_mode ?? '') === 'with_libero'
-						);
+						$formatLabel = $event->format === 'master_class'
+							? __('events.fmt_master_class')
+							: volley_scheme_label(
+								$formatRaw,
+								(string) ($event->gameSettings->libero_mode ?? '') === 'with_libero'
+							);
 						@endphp
 						@if($formatLabel)
 						<div class="event-row">

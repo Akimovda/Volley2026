@@ -91,6 +91,12 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$gsHasLibero        = $gsSubtype === '5x1_libero'
 				|| ($gsSubtype === '5x1' && (string)($gs?->libero_mode ?? '') === 'with_libero');
 			$gsSubtypeLabel     = volley_scheme_label($gsSubtype, false, false);
+			if ($fmt === 'master_class') {
+				// у мастер-класса subtype — технический дефолт (2x2/4x2): показываем тип, без схемы/либеро/тултипа
+				$gsSubtype      = 'master_class';
+				$gsSubtypeLabel = __('events.fmt_master_class');
+				$gsHasLibero    = false;
+			}
 			$teamSizeForTmnt    = ($isTournamentFmt && preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m)) ? (int)$m[1] : 2;
 			if ($isTournamentFmt && $tournamentTeamsMax > 0) {
 				$maxPlayersCard = $tournamentTeamsMax;
@@ -101,6 +107,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			// см. events/_card.blade.php ниже) — только если реально заданы.
 			$subtypeDirKey  = $dir === 'beach' ? 'beach' : 'classic';
 			$subtypeTipText = $gsSubtype !== '' ? __('events.subtype_tooltip.' . $subtypeDirKey . '.' . $gsSubtype) : null;
+			if ($fmt === 'master_class') $subtypeTipText = null;
 			if ($subtypeTipText === 'events.subtype_tooltip.' . $subtypeDirKey . '.' . $gsSubtype) {
 				$subtypeTipText = null; // нет описания для этой схемы — бейдж без тултипа не показываем
 			}
