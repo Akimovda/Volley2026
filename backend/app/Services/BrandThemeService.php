@@ -157,17 +157,93 @@ class BrandThemeService
         return $sel ? implode(',', $sel) . '{display:none!important}' : '';
     }
 
+    /** Роли акцентов: ключ => ключ перевода. Правило style.css относится ровно к одной роли (см. roleOf). */
+    public const ROLES = [
+        'buttons' => 'admin.role_buttons',
+        'links'   => 'admin.role_links',
+        'tabs'    => 'admin.role_tabs',
+        'forms'   => 'admin.role_forms',
+        'frames'  => 'admin.role_frames',
+        'alerts'  => 'admin.role_alerts',
+        'menu'    => 'admin.role_menu',
+        'bg'      => 'admin.role_bg',
+    ];
+
+    /** Ключи ролевых акцентов в теме: primary_buttons, secondary_menu, ... */
+    public static function roleKeys(): array
+    {
+        $out = [];
+        foreach (array_keys(self::ROLES) as $r) {
+            $out[] = 'primary_' . $r;
+            $out[] = 'secondary_' . $r;
+        }
+
+        return $out;
+    }
+
+    /** Роль селектора по именам классов (порядок проверок важен: более узкие — раньше). */
+    public static function roleOf(string $sel): string
+    {
+        return match (true) {
+            (bool) preg_match('/\.(fix-header|menu-|user-status|hamburger)/', $sel) => 'menu',
+            (bool) preg_match('/\.orb-/', $sel) => 'bg',
+            (bool) preg_match('/\.(alert|score-pill)/', $sel) => 'alerts',
+            (bool) preg_match('/\.btn/', $sel) => 'buttons',
+            (bool) preg_match('/\.(tab|tabs|tab-highlight|filter-tab|filter-tabs|seg-|day-chip)\b|\.(tab|filter-tab|seg)-/', $sel) => 'tabs',
+            (bool) preg_match('/\.(form|custom-checkbox|custom-radio|checkbox-item|radio-item|city-|loc-toggle)/', $sel) => 'forms',
+            (bool) preg_match('/\.(ramka|card-ramka)/', $sel) => 'frames',
+            (bool) preg_match('/\.(blink|breadcrumbs)|(^|[\s>+~])a([:.\[\s,]|$)/', $sel) => 'links',
+            default => 'other',
+        };
+    }
+
+    /** Сколько классов style.css красит каждая роль (для подсказки на экране; по правилам с базовыми акцентами). */
+    public static function roleUsage(): array
+    {
+        $file = public_path('assets/style.css');
+
+        return Cache::rememberForever('brand.role.usage.' . @filemtime($file), function () use ($file) {
+            $self = app(self::class);
+            $classes = [];
+            foreach ($self->parseRules((string) @file_get_contents($file)) as $rule) {
+                $b = strtolower($rule['body']);
+                if (!str_contains($b, strtolower(self::BASE['day']['primary'])) && !str_contains($b, strtolower(self::BASE['day']['secondary']))
+                    && !str_contains($b, '41, 103, 186') && !str_contains($b, '231, 97, 47') && !str_contains($b, '41,103,186') && !str_contains($b, '231,97,47')) {
+                    continue;
+                }
+                foreach ($self->splitTopLevel($rule['selector'], ',') as $sel) {
+                    $role = self::roleOf(trim($sel));
+                    if (preg_match_all('/\.([a-z][\w-]*)/i', $sel, $m)) {
+                        foreach ($m[1] as $c) {
+                            $classes[$role][$c] = 1;
+                        }
+                    }
+                }
+            }
+
+            return array_map('count', $classes);
+        });
+    }
+
     private function build(array $theme, string $cssFile): string
     {
-        $maps = [
-            'day'   => $this->colorMap('day', (array) ($theme['day'] ?? [])),
-            'night' => $this->colorMap('night', (array) ($theme['night'] ?? [])),
-        ];
+        // Карты замены цветов: общая и по ролям (роль с пустыми primary_/secondary_ = общая).
+        $mapCache = [];
+        $mapsFor = function (string $mode, string $role) use ($theme, &$mapCache) {
+            $k = $mode . '|' . $role;
+            if (!isset($mapCache[$k])) {
+                $vals = (array) ($theme[$mode] ?? []);
+                foreach (['primary', 'secondary'] as $acc) {
+                    $o = $vals[$acc . '_' . $role] ?? null;
+                    if ($role !== 'other' && $this->validHex($o)) {
+                        $vals[$acc] = $o;
+                    }
+                }
+                $mapCache[$k] = [$this->colorMap($mode, $vals), $this->rgbMap($mode, $vals)];
+            }
 
-        $rgb = [
-            'day'   => $this->rgbMap('day', (array) ($theme['day'] ?? [])),
-            'night' => $this->rgbMap('night', (array) ($theme['night'] ?? [])),
-        ];
+            return $mapCache[$k];
+        };
 
         $out = '';
         foreach ($this->parseRules((string) @file_get_contents($cssFile)) as $rule) {
@@ -180,11 +256,12 @@ class BrandThemeService
                 array_map(fn ($s) => preg_match('/^(html|body|:root|\*)/i', $s) ? null : 'body.dark ' . $s, $light)
             );
 
-            $emit = function (array $sels, string $mode, ?string $vsMode) use ($rule, &$out, $maps, $rgb) {
-                $map = $maps[$mode];
-                if (!$sels || (!$map && !$rgb[$mode])) {
+            $emit = function (array $sels, string $mode, ?string $vsMode, string $role) use ($rule, &$out, $mapsFor) {
+                [$map, $rgb] = $mapsFor($mode, $role);
+                if (!$sels || (!$map && !$rgb)) {
                     return;
                 }
+                [$vsMap, $vsRgb] = $vsMode !== null ? $mapsFor($vsMode, $role) : [[], []];
                 $decls = [];
                 $parts = $this->splitTopLevel($rule['body'], ';');
                 foreach ($parts as $i => $decl) {
@@ -194,12 +271,12 @@ class BrandThemeService
                         && preg_grep('/^\s*background-image\s*:/i', array_slice($parts, $i + 1))) {
                         continue;
                     }
-                    $replaced = $this->applyMap($decl, $map, $rgb[$mode]);
+                    $replaced = $this->applyMap($decl, $map, $rgb);
                     if ($replaced === $decl) {
                         continue;
                     }
                     // ночной override для дневного правила нужен, только если цвет отличается от дневного
-                    if ($vsMode !== null && $this->applyMap($decl, $maps[$vsMode], $rgb[$vsMode]) === $replaced) {
+                    if ($vsMode !== null && $this->applyMap($decl, $vsMap, $vsRgb) === $replaced) {
                         continue;
                     }
                     // `background: #hex` — шорткат, он обнулил бы background-image (иконки .alert-*::before).
@@ -214,9 +291,16 @@ class BrandThemeService
                 $out .= $rule['at'] ? $rule['at'] . '{' . $block . '}' : $block;
             };
 
-            $emit($light, 'day', null);
-            $emit($dark, 'night', null);
-            $emit($lightNight, 'night', 'day');
+            // селекторы одного правила могут быть из разных ролей — эмитим по группам
+            foreach ([[$light, 'day', null], [$dark, 'night', null], [$lightNight, 'night', 'day']] as [$sels, $mode, $vs]) {
+                $groups = [];
+                foreach ($sels as $sel) {
+                    $groups[self::roleOf($sel)][] = $sel;
+                }
+                foreach ($groups as $role => $g) {
+                    $emit($g, $mode, $vs, $role);
+                }
+            }
         }
 
         return $out . $this->surfaceCss($theme);
@@ -427,7 +511,7 @@ class BrandThemeService
      * Разбор CSS в плоский список правил [at => обёртка @media|@supports|'', selector, body].
      * @keyframes/@font-face и прочие at-правила без селекторов пропускаются.
      */
-    private function parseRules(string $css): array
+    public function parseRules(string $css): array
     {
         $css = preg_replace('~/\*.*?\*/~s', '', $css) ?? '';
         $rules = [];
@@ -494,7 +578,7 @@ class BrandThemeService
     }
 
     /** Разделение по символу вне скобок (запятая в rgba()/:not(), ; в url(data:...)). */
-    private function splitTopLevel(string $s, string $sep): array
+    public function splitTopLevel(string $s, string $sep): array
     {
         $parts = [];
         $depth = 0;
