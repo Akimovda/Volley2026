@@ -309,14 +309,7 @@ class EventRegistrationController extends Controller
                 // (или payment_status='subscription' + confirmed_at=null) от старой,
                 // уже отменённой авто-записи тут же попадёт под premium:expire-auto-bookings /
                 // AutoUnconfirmBookingJob и снова выпишет игрока, который только что записался сам.
-                $existing->premium_auto_booking_id = null;
-                $existing->premium_auto_confirm_deadline_at = null;
-                $existing->confirmed_at = null;
-                $existing->subscription_id = null;
-                $existing->subscription_usage_id = null;
-                $existing->auto_booked = false;
-                $existing->coupon_id = null;
-                $existing->coupon_discount_pct = null;
+                $existing->forceFill(EventRegistration::autoBookingResetAttributes());
 
                 $existing->save();
                 $created = true;

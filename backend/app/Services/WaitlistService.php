@@ -448,6 +448,9 @@ class WaitlistService
                 $reg->is_cancelled  = false;
                 $reg->cancelled_at  = null;
                 $reg->position      = $position !== '' ? $position : null;
+                // Реактивация старой строки: маркеры прошлой авто-записи (Premium/абонемент) сбрасываем,
+                // иначе просроченный premium_auto_confirm_deadline_at выпишет игрока через ≤5 минут (баг 2026-10-07, occ 12494)
+                $reg->forceFill(EventRegistration::autoBookingResetAttributes());
                 $reg->auto_booked   = true;
                 $reg->save();
 
