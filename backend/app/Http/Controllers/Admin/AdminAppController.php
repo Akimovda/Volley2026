@@ -31,6 +31,8 @@ class AdminAppController extends Controller
             'groups' => BrandThemeService::BASE,
             'menuGroups' => config('brand_menu.groups'),
             'previewUrl' => url('/events') . '?' . http_build_query(['_bp' => $brand->id, '_bpe' => $exp = time() + 7200, '_bps' => BrandThemeService::previewSig((int) $brand->id, $exp)]),
+            'roles' => BrandThemeService::ROLES,
+            'roleUsage' => BrandThemeService::roleUsage(),
             'tokenGroups' => config('brand_tokens.groups'),
             'fonts' => config('brand_tokens.fonts'),
         ]);
@@ -47,7 +49,7 @@ class AdminAppController extends Controller
             'app_icon'   => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ];
         foreach (['day', 'night'] as $mode) {
-            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
+            foreach (array_merge(BrandThemeService::keys(), BrandThemeService::roleKeys(), array_keys(BrandThemeService::tokens())) as $key) {
                 $rules["theme.$mode.$key"] = $hex;
             }
         }
@@ -73,7 +75,7 @@ class AdminAppController extends Controller
 
         $theme = [];
         foreach (['day', 'night'] as $mode) {
-            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
+            foreach (array_merge(BrandThemeService::keys(), BrandThemeService::roleKeys(), array_keys(BrandThemeService::tokens())) as $key) {
                 $val = strtoupper(trim((string) ($data['theme'][$mode][$key] ?? '')));
                 if ($val !== '') {
                     $theme[$mode][$key] = $val;
@@ -132,7 +134,7 @@ class AdminAppController extends Controller
 
         $theme = [];
         foreach (['day', 'night'] as $mode) {
-            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
+            foreach (array_merge(BrandThemeService::keys(), BrandThemeService::roleKeys(), array_keys(BrandThemeService::tokens())) as $key) {
                 $v = strtoupper(trim((string) $request->input("theme.$mode.$key", '')));
                 if (preg_match('/^#[0-9A-F]{6}$/', $v)) {
                     $theme[$mode][$key] = $v;

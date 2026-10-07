@@ -106,6 +106,35 @@
                 </div>
             @endforeach
 
+            {{-- Акценты по ролям --}}
+            @foreach($modes as $mode => $modeLabel)
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('admin.role_h2') }}: {{ $modeLabel }}</h2>
+                    @if($mode === 'day')<p>{{ __('admin.role_hint') }}</p>@endif
+                    @foreach($roles as $rk => $rlabel)
+                        <h3 style="margin:2rem 0 1rem;">{{ __($rlabel) }} <span style="font-size:1.2rem; font-weight:400; opacity:.6;">· {{ __('admin.role_classes', ['n' => $roleUsage[$rk] ?? 0]) }}</span></h3>
+                        @foreach(['primary' => __('admin.role_primary'), 'secondary' => __('admin.role_secondary')] as $acc => $acclabel)
+                            @php
+                                $fk = $acc . '_' . $rk;
+                                $val = old("theme.$mode.$fk", $brand->theme[$mode][$fk] ?? '');
+                                $def = $themeDefaults[$mode][$acc];
+                            @endphp
+                            <div style="display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; margin-bottom:1.2rem;">
+                                <input type="color" data-color-picker value="{{ $val ?: $def }}"
+                                       style="width:5rem; height:4rem; padding:0.2rem; border:0.1rem solid rgba(0,0,0,.2); border-radius:0.6rem; cursor:pointer;">
+                                <input type="text" name="theme[{{ $mode }}][{{ $fk }}]" value="{{ $val }}"
+                                       placeholder="{{ __('admin.role_as_general') }}" maxlength="7" autocomplete="off"
+                                       data-color-text data-mode="{{ $mode }}" data-key="{{ $fk }}" data-default="{{ $def }}"
+                                       style="width:13rem;">
+                                <button type="button" class="btn btn-small" data-color-reset>{{ __('admin.app_reset') }}</button>
+                                <span style="flex:1; min-width:20rem;">{{ $acclabel }}</span>
+                            </div>
+                        @endforeach
+                    @endforeach
+                    <p style="margin-top:2rem; opacity:.7;">{{ __('admin.role_other_note', ['n' => $roleUsage['other'] ?? 0]) }}</p>
+                </div>
+            @endforeach
+
             {{-- Шрифт --}}
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.tok_font_h2') }}</h2>
