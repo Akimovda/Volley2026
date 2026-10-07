@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v4_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
+        $cacheKey = "widget_events_v5_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -231,7 +231,10 @@ class WidgetEventsService
 
         $badges = [];
         $subtype = (string) ($gs?->subtype ?? '');
-        if ($subtype !== '') {
+        if ((string) ($event->format ?? '') === 'master_class') {
+            // у мастер-класса subtype — технический дефолт (2x2/4x2), показываем тип мероприятия
+            $badges['subtype'] = __('events.fmt_master_class');
+        } elseif ($subtype !== '') {
             $badges['subtype'] = volley_scheme_label($subtype, false, false);
             if ($subtype === '5x1_libero' || ($subtype === '5x1' && (string) ($gs?->libero_mode ?? '') === 'with_libero')) {
                 $badges['libero'] = __('events.card_badge_libero');
