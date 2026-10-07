@@ -221,7 +221,7 @@
 										
 										<div class="col-md-6" id="game_settings_block" data-hide-if="format=tournament|master_class">
 											<div class="card">
-												<div class="row">
+												<div class="row gs-aligned">
 													<div class="col-4">
 														
 														<label>{{ __('events.subtype_label') }}</label>
