@@ -420,3 +420,26 @@ if (! function_exists('level_color')) {
         };
     }
 }
+
+if (! function_exists('volley_scheme_label')) {
+    /**
+     * Обозначение схемы/формата игры: 4x2 → «4-2», 5x1 → «5-1»,
+     * 5x1_libero (или 5x1 при $hasLibero) → «5-1 с либеро» (если $withLiberoWord).
+     * Остальные схемы (2x2, 3x3, 4x4) — как есть, с «×».
+     */
+    function volley_scheme_label(?string $subtype, bool $hasLibero = false, bool $withLiberoWord = true): string
+    {
+        $subtype = trim((string) $subtype);
+        if ($subtype === '') {
+            return '';
+        }
+        $isLibero = $subtype === '5x1_libero' || ($subtype === '5x1' && $hasLibero);
+        $base = match ($subtype) {
+            '4x2' => '4-2',
+            '5x1', '5x1_libero' => '5-1',
+            default => str_replace('x', '×', $subtype),
+        };
+
+        return ($isLibero && $withLiberoWord) ? $base . ' ' . __('events.libero_word') : $base;
+    }
+}

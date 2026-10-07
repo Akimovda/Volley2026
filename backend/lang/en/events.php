@@ -596,7 +596,7 @@ return [
     'mgmt_trainers_title'   => 'Event coaches',
     'mgmt_trainers_hint'    => 'Changes apply to the whole series. Reflected in the coach module (rates, analytics, rating request) starting from the next session — if a specific session overrides its coach separately (on the occurrence edit page), that override is preserved.',
 
-    'subtype_label'         => 'Subtype',
+    'subtype_label'         => 'Scheme/format',
     'teams_label'           => 'Teams',
     'min_label'             => 'Minimum',
     'max_label'             => 'Up to (max)',
@@ -604,6 +604,7 @@ return [
     'reserve_none'          => 'None',
     'libero_mode'           => 'Libero mode',
     'libero_word'           => 'with libero',
+    'card_badge_libero'     => 'Libero',
     'libero_with'           => 'With libero (separate position)',
     'libero_without'        => 'Without libero',
     'players_max_hint'      => 'Maximum',
@@ -960,7 +961,7 @@ return [
 
     'location_section'       => 'Location',
     'game_settings_section'  => 'Game settings',
-    'game_subtype'           => 'Game subtype',
+    'game_subtype'           => 'Scheme/format',
     'team_n'                 => 'Teams',
     'min_players'            => 'Min players',
     'max_players'            => 'Max players',

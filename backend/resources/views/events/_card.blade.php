@@ -88,6 +88,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$isTournamentFmt    = ($fmt === 'tournament');
 			$tournamentTeamsMax = $isTournamentFmt ? (int)($event->tournament_teams_count ?? 0) : 0;
 			$gsSubtype          = (string)($gs?->subtype ?? '');
+			$gsHasLibero        = $gsSubtype === '5x1_libero'
+				|| ($gsSubtype === '5x1' && (string)($gs?->libero_mode ?? '') === 'with_libero');
+			$gsSubtypeLabel     = volley_scheme_label($gsSubtype, false, false);
 			$teamSizeForTmnt    = ($isTournamentFmt && preg_match('/^(\d+)x\d+$/i', $gsSubtype, $m)) ? (int)$m[1] : 2;
 			if ($isTournamentFmt && $tournamentTeamsMax > 0) {
 				$maxPlayersCard = $tournamentTeamsMax;
@@ -513,11 +516,14 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 							@if($gsSubtype !== '')
 								@if($subtypeTipText)
 								<span class="info-tip js-info-tip">
-									<span class="info-tip-trigger badge badge-sm">{{ $gsSubtype }}</span>
+									<span class="info-tip-trigger badge badge-sm">{{ $gsSubtypeLabel }}</span>
 									<span class="info-tip-content">{{ $subtypeTipText }}</span>
 								</span>
 								@else
-								<span class="badge-holder"><span class="badge badge-sm">{{ $gsSubtype }}</span></span>
+								<span class="badge-holder"><span class="badge badge-sm">{{ $gsSubtypeLabel }}</span></span>
+								@endif
+								@if($gsHasLibero)
+								<span class="badge-holder"><span class="badge badge-sm">{{ __('events.card_badge_libero') }}</span></span>
 								@endif
 							@endif
 							@if($genderBadgeLabel)

@@ -122,9 +122,13 @@
 						@php
 						// Для турниров схему берём из tournamentSetting (2x2, 3x3...),
 						// для обычных мероприятий — из gameSettings.subtype (4x2, 5x1...)
-						$formatLabel = ($event->format === 'tournament' && $event->tournamentSetting?->game_scheme)
+						$formatRaw = ($event->format === 'tournament' && $event->tournamentSetting?->game_scheme)
 							? $event->tournamentSetting->game_scheme
 							: $event->gameSettings->subtype;
+						$formatLabel = volley_scheme_label(
+							$formatRaw,
+							(string) ($event->gameSettings->libero_mode ?? '') === 'with_libero'
+						);
 						@endphp
 						@if($formatLabel)
 						<div class="event-row">

@@ -603,7 +603,7 @@ return [
     'mgmt_trainers_title'   => 'Тренеры мероприятия',
     'mgmt_trainers_hint'    => 'Изменения применяются ко всей серии. Учитываются в тренерском модуле (ставки, аналитика, запрос оценки) со следующего тура — если конкретный тур переопределяет тренера отдельно (на странице повтора), override сохраняется.',
 
-    'subtype_label'         => 'Подтип',
+    'subtype_label'         => 'Схема/формат',
     'teams_label'           => 'Команды',
     'min_label'             => 'Минимум',
     'max_label'             => 'До (max)',
@@ -611,6 +611,7 @@ return [
     'reserve_none'          => 'Нет',
     'libero_mode'           => 'Режим либеро',
     'libero_word'           => 'с либеро',
+    'card_badge_libero'     => 'Либеро',
     'libero_with'           => 'С либеро (отдельная позиция)',
     'libero_without'        => 'Без либеро',
     'players_max_hint'      => 'Максимум',
@@ -967,7 +968,7 @@ return [
 
     'location_section'       => 'Локация',
     'game_settings_section'  => 'Игровые настройки',
-    'game_subtype'           => 'Подтип игры',
+    'game_subtype'           => 'Схема/формат',
     'team_n'                 => 'Команды',
     'min_players'            => 'Мин. игроков',
     'max_players'            => 'Макс. игроков',
