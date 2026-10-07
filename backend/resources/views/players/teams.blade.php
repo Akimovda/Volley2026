@@ -21,7 +21,7 @@
 @php
     $isTeamMode = isset($teamRosters);
     $gamesHeads = [];
-    $schemeLabel = fn($v) => $v === '5x1_libero' ? '5x1 ' . __('events.libero_word') : $v;
+    $schemeLabel = fn($v) => volley_scheme_label($v);
 @endphp
 <x-slot name="style">
     <style>

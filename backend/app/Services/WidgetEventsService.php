@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v3_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
+        $cacheKey = "widget_events_v4_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -232,7 +232,10 @@ class WidgetEventsService
         $badges = [];
         $subtype = (string) ($gs?->subtype ?? '');
         if ($subtype !== '') {
-            $badges['subtype'] = $subtype;
+            $badges['subtype'] = volley_scheme_label($subtype, false, false);
+            if ($subtype === '5x1_libero' || ($subtype === '5x1' && (string) ($gs?->libero_mode ?? '') === 'with_libero')) {
+                $badges['libero'] = __('events.card_badge_libero');
+            }
         }
         $gp = (string) ($gs?->gender_policy ?? '');
         if (in_array($gp, ['only_male', 'only_female', 'mixed_5050', 'mixed_limited'], true)) {
@@ -323,7 +326,7 @@ class WidgetEventsService
             'price' => $price, 'is_private' => false, 'url' => '#',
             'extra' => [
                 'organizer' => ['name' => 'Иван Петров', 'url' => '#'],
-                'badges' => ['subtype' => $dir === 'beach' ? '2x2' : '4x2', 'gender' => __('events.gender_5050'), 'pay' => $price ? __('events.card_pay_cash') : null],
+                'badges' => ['subtype' => $dir === 'beach' ? '2×2' : '4-2', 'gender' => __('events.gender_5050'), 'pay' => $price ? __('events.card_pay_cash') : null],
                 'status' => ['key' => 'open', 'label' => __('events.card_status_open')],
                 'weather' => $dir === 'beach' ? ['icon' => '⛅', 'temp' => '+17°', 'pop' => 20] : null,
                 'free' => $price === null,
@@ -333,7 +336,7 @@ class WidgetEventsService
 
         return [
             $mk('Игра на песке', 'beach', '12 октября', '19:00–21:00', 8, 12, '500 ₽', 2, 4),
-            $mk('Классика 4×2', 'classic', '14 октября', '20:00–22:00', 10, 12, null, null, null),
+            $mk('Классика 4-2', 'classic', '14 октября', '20:00–22:00', 10, 12, null, null, null),
             $mk('Вечерняя тренировка', 'classic', '16 октября', '19:30–21:30', 3, 12, '400 ₽', 3, 5),
         ];
     }

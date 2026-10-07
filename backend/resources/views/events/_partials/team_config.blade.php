@@ -18,7 +18,7 @@
 @php
 $subtypeLabels = [
     '2x2' => '2×2', '3x3' => '3×3', '4x4' => '4×4',
-    '4x2' => '4×2', '5x1' => '5×1', '5x1_libero' => '5×1 ' . __('events.libero_word'),
+    '4x2' => '4-2', '5x1' => '5-1', '5x1_libero' => '5-1 ' . __('events.libero_word'),
 ];
 @endphp
 <div class="ramka">

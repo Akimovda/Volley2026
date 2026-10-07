@@ -732,9 +732,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             @php
             $schemeLabels = [
                 '4x4'        => '4×4',
-                '4x2'        => '4×2',
-                '5x1'        => '5×1 ' . __('events.libero_without'),
-                '5x1_libero' => '5×1 ' . __('events.libero_word'),
+                '4x2'        => '4-2',
+                '5x1'        => '5-1 ' . __('events.libero_without'),
+                '5x1_libero' => '5-1 ' . __('events.libero_word'),
                 '2x2'        => '2×2',
                 '3x3'        => '3×3',
             ];

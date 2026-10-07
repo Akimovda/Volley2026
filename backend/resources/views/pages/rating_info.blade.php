@@ -192,7 +192,7 @@
                 <div class="card">
                     <div class="f-14 b-600 mb-2">🏐 Классический волейбол</div>
                     <div class="d-flex gap-1 flex-wrap">
-                        @foreach(['4x4 — мини','4x2 — 6 игр.','5x1 — 6 игр.','5x1+либеро — 7 игр.'] as $s)
+                        @foreach(['4×4 — мини','4-2 — 6 игр.','5-1 — 6 игр.','5-1 с либеро — 7 игр.'] as $s)
                         <span class="f-13 b-600 px-2 py-1" style="background:rgba(16,185,129,.1);border-radius:4px">{{ $s }}</span>
                         @endforeach
                     </div>

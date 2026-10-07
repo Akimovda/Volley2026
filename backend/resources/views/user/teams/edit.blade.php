@@ -87,8 +87,8 @@ if (request()->has('event_id') || session('return_event_id')) {
                         @php $curSubtype = old('subtype', $team->subtype ?? '4x4'); @endphp
                         <optgroup label="Классика">
                             <option value="4x4" @selected($curSubtype==='4x4')>4×4</option>
-                            <option value="4x2" @selected($curSubtype==='4x2')>4×2</option>
-                            <option value="5x1" @selected($curSubtype==='5x1')>5×1</option>
+                            <option value="4x2" @selected($curSubtype==='4x2')>4-2</option>
+                            <option value="5x1" @selected($curSubtype==='5x1')>5-1</option>
                         </optgroup>
                         <optgroup label="Пляж">
                             <option value="2x2" @selected($curSubtype==='2x2')>2×2</option>
