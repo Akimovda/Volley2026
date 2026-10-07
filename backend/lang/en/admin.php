@@ -519,4 +519,7 @@ return [
     'role_alerts' => 'Alerts and pills',
     'role_menu' => 'Menu and header',
     'role_bg' => 'Background orbs',
+    'tok_fscale_h3' => 'Font size',
+    'tok_fscale_hint' => 'Scales the whole app interface (everything in rem: text, spacing, icons). Sizes set in px, such as weekday labels in the day strip, do not change. On narrow screens it follows the standard scale, proportionally.',
+    'tok_fscale_default' => 'standard',
 ];

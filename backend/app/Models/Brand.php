@@ -78,7 +78,7 @@ class Brand extends Model
 
     public function hasTheme(): bool
     {
-        if (!empty($this->theme['font'])) {
+        if (!empty($this->theme['font']) || !empty($this->theme['font_scale'])) {
             return true;
         }
 

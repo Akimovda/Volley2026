@@ -145,6 +145,14 @@
                         <option value="{{ $fk }}" @selected(old('theme.font', $brand->theme['font'] ?? '') === $fk)>{{ $f['label'] }}</option>
                     @endforeach
                 </select>
+
+                <h3 style="margin:2.5rem 0 1rem;">{{ __('admin.tok_fscale_h3') }}</h3>
+                <p>{{ __('admin.tok_fscale_hint') }}</p>
+                <select name="theme[font_scale]">
+                    @foreach($fontScales as $fs)
+                        <option value="{{ $fs }}" @selected((int) old('theme.font_scale', $brand->theme['font_scale'] ?? 100) === $fs)>{{ $fs }}%{{ $fs === 100 ? ' — ' . __('admin.tok_fscale_default') : '' }}</option>
+                    @endforeach
+                </select>
             </div>
 
             {{-- Токены элементов --}}

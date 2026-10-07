@@ -73,7 +73,7 @@ class BrandThemeService
         $cssFile = public_path('assets/style.css');
         $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile) . '|' . @filemtime(__FILE__));
 
-        $make = fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden);
+        $make = fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) . $this->fontScaleCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden);
 
         // Предпросмотр несохранённой темы — без записи в кэш (иначе каждое нажатие клавиши оседало бы навсегда)
         return $cache ? Cache::rememberForever($key, $make) : $make();
@@ -120,6 +120,29 @@ class BrandThemeService
         }
 
         return $out;
+    }
+
+    /** Допустимые значения масштаба шрифта приложения, % от стандартного (100 = как есть, не выводится). */
+    public const FONT_SCALES = [80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130];
+
+    /**
+     * Масштаб шрифта: весь интерфейс в rem, поэтому достаточно умножить корневой размер html.
+     * Брейкпоинты и флюидная шкала для узких экранов повторяют style.css (62.5/58/54/52% и clamp ≤480px).
+     * Размеры, заданные в px (например 12px в ленте дней), не масштабируются.
+     */
+    private function fontScaleCss(array $theme): string
+    {
+        $k = (int) ($theme['font_scale'] ?? 100);
+        if ($k === 100 || !in_array($k, self::FONT_SCALES, true)) {
+            return '';
+        }
+        $m = rtrim(rtrim(number_format($k / 100, 2, '.', ''), '0'), '.');
+
+        return "html{font-size:calc(62.5% * $m)}"
+            . "@media (max-width:1200px){html{font-size:calc(58% * $m)}}"
+            . "@media (max-width:992px){html{font-size:calc(54% * $m)}}"
+            . "@media (max-width:767px){html{font-size:calc(52% * $m)}}"
+            . "@media (max-width:480px){html{font-size:clamp(calc(51% * $m),calc((58% - (430px - 100vw) / 65) * $m),calc(58% * $m))}}";
     }
 
     /** @font-face + font-family для выбранного шрифта бренда (theme.font = ключ из config/brand_tokens.php → fonts). */
