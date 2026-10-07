@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v5_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
+        $cacheKey = "widget_events_v6_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -98,7 +98,7 @@ class WidgetEventsService
             $models = \App\Models\EventOccurrence::with(['event.gameSettings', 'event.organizer'])
                 ->whereIn('id', $occurrences->pluck('occ_id'))->get()->keyBy('id');
 
-            return $occurrences->map(function ($occ) use ($showSlots, $showLoc, $photoUrls, $models) {
+            return $occurrences->map(function ($occ) use ($showSlots, $showLoc, $photoUrls, $models, $userId) {
                 $slotsInfo = $this->buildSlotsInfo($occ, $showSlots);
 
                 // Адрес
@@ -140,6 +140,7 @@ class WidgetEventsService
                     'direction'  => $dir,
                     'address'    => $address,
                     'slots_info' => $slotsInfo,
+                    'organizer_id' => (int) $userId ?: null,
                     'level_min'  => $lvMin,
                     'level_max'  => $lvMax,
                     'level_scope' => $levelScope,

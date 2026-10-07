@@ -258,14 +258,14 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$levelLabel = null;
 			$levelTooltipHtml = null;
 			if ($lvMin !== null || $lvMax !== null) {
-			$minText = $lvMin !== null ? level_name_short($lvMin, $levelScope) : '—';
-			$maxText = $lvMax !== null ? level_name_short($lvMax, $levelScope) : '—';
+			$minText = $lvMin !== null ? level_name_short($lvMin, $levelScope, (int)$event->organizer_id) : '—';
+			$maxText = $lvMax !== null ? level_name_short($lvMax, $levelScope, (int)$event->organizer_id) : '—';
 			$minSpan = $lvMin !== null
-			? "<span class=\"levelmark levelmark--event level-{$lvMin}\">" . e($minText) . "</span>"
+			? "<span class=\"levelmark levelmark--event level-{$lvMin}\" style=\"" . e(level_pill_style($lvMin, (int)$event->organizer_id)) . "\">" . e($minText) . "</span>"
 			: '<span class="levelmark levelmark--event level-minus">—</span>';
 
 			$maxSpan = $lvMax !== null
-			? "<span class=\"levelmark levelmark--event level-{$lvMax}\">" . e($maxText) . "</span>"
+			? "<span class=\"levelmark levelmark--event level-{$lvMax}\" style=\"" . e(level_pill_style($lvMax, (int)$event->organizer_id)) . "\">" . e($maxText) . "</span>"
 			: '<span class="levelmark levelmark--event level-minus">—</span>';
 
 			$levelLabel = '<div class="level-range">' . $minSpan . '<span class="level-range-sep">—</span>' . $maxSpan . '</div>';
@@ -283,9 +283,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			: [];
 			$tooltipRows = [];
 			foreach ($levelsForTooltip as $lv) {
-			$fullName = level_name((int)$lv, $levelScope);
+			$fullName = level_name((int)$lv, $levelScope, (int)$event->organizer_id);
 			$desc = level_tooltip_description((int)$lv, $levelTooltipDir, $levelScope);
-			$row = '<div class="level-tip-row"><span class="levelmark level-' . (int)$lv . '">' . e($fullName) . '</span>';
+			$row = '<div class="level-tip-row"><span class="levelmark level-' . (int)$lv . '" style="' . e(level_pill_style($lv, (int)$event->organizer_id)) . '">' . e($fullName) . '</span>';
 			if ($desc) {
 			$row .= '<div class="level-tip-desc">' . e($desc) . '</div>';
 			}

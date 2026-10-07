@@ -856,6 +856,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    config('jetstream.auth_session'),
 	    'verified',
 	])->group(function () {
+	    Route::post('/profile/levels', [\App\Http\Controllers\LevelSchemeController::class, 'updateOrganizer'])->name('profile.levels.update');
 	    Route::get('/profile/widget',
 	        [\App\Http\Controllers\OrganizerWidgetController::class, 'index'])
 	        ->name('profile.widget');
@@ -975,6 +976,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/apps', [AdminAppController::class, 'index'])->name('apps.index');
         Route::get('/apps/{brand}', [AdminAppController::class, 'edit'])->name('apps.edit');
         Route::post('/apps/{brand}', [AdminAppController::class, 'update'])->name('apps.update');
+        Route::post('/apps/{brand}/levels', [\App\Http\Controllers\LevelSchemeController::class, 'updateBrand'])->name('apps.levels');
 		
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');
         Route::get('/users/{user}', [AdminUserController::class, 'show'])->name('users.show');
