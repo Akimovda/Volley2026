@@ -63,7 +63,7 @@ class BrandThemeService
         return array_keys(self::BASE['day']);
     }
 
-    public function css(Brand $brand): string
+    public function css(Brand $brand, bool $cache = true): string
     {
         $hidden = $brand->menuHidden();
         if (!$brand->hasTheme() && !$hidden) {
@@ -73,7 +73,16 @@ class BrandThemeService
         $cssFile = public_path('assets/style.css');
         $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile) . '|' . @filemtime(__FILE__));
 
-        return Cache::rememberForever($key, fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden));
+        $make = fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden);
+
+        // Предпросмотр несохранённой темы — без записи в кэш (иначе каждое нажатие клавиши оседало бы навсегда)
+        return $cache ? Cache::rememberForever($key, $make) : $make();
+    }
+
+    /** Подпись временной ссылки предпросмотра: бренд + срок (без сессии — DetectBrand работает до StartSession). */
+    public static function previewSig(int $brandId, int $exp): string
+    {
+        return hash_hmac('sha256', "brand-preview|$brandId|$exp", (string) config('app.key'));
     }
 
     /** Ключи токенов (config/brand_tokens.php) => [ [день, ночь] по умолчанию ]. */
