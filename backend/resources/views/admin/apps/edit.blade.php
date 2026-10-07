@@ -104,6 +104,46 @@
                 </div>
             @endforeach
 
+            {{-- Шрифт --}}
+            <div class="ramka">
+                <h2 class="-mt-05">{{ __('admin.tok_font_h2') }}</h2>
+                <p>{{ __('admin.tok_font_hint') }}</p>
+                <select name="theme[font]">
+                    <option value="">{{ __('admin.tok_font_default') }}</option>
+                    @foreach($fonts as $fk => $f)
+                        <option value="{{ $fk }}" @selected(old('theme.font', $brand->theme['font'] ?? '') === $fk)>{{ $f['label'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            {{-- Токены элементов --}}
+            @foreach($modes as $mode => $modeLabel)
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('admin.tok_h2') }}: {{ $modeLabel }}</h2>
+                    @if($mode === 'day')<p>{{ __('admin.tok_hint') }}</p>@endif
+                    @foreach($tokenGroups as $tg)
+                        <h3 style="margin:2.5rem 0 1.5rem;">{{ __($tg['title']) }}</h3>
+                        @foreach($tg['tokens'] as $tkey => [$tlabel, $tdefs])
+                            @php
+                                $fk = 't_' . $tkey;
+                                $val = old("theme.$mode.$fk", $brand->theme[$mode][$fk] ?? '');
+                                $def = $tdefs[$mode === 'day' ? 0 : 1];
+                            @endphp
+                            <div style="display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; margin-bottom:1.2rem;">
+                                <input type="color" data-color-picker value="{{ $val ?: $def }}"
+                                       style="width:5rem; height:4rem; padding:0.2rem; border:0.1rem solid rgba(0,0,0,.2); border-radius:0.6rem; cursor:pointer;">
+                                <input type="text" name="theme[{{ $mode }}][{{ $fk }}]" value="{{ $val }}"
+                                       placeholder="{{ $def }}" maxlength="7" autocomplete="off"
+                                       data-color-text data-mode="{{ $mode }}" data-key="{{ $fk }}" data-default="{{ $def }}"
+                                       style="width:13rem;">
+                                <button type="button" class="btn btn-small" data-color-reset>{{ __('admin.app_reset') }}</button>
+                                <span style="flex:1; min-width:20rem;">{{ __($tlabel) }}</span>
+                            </div>
+                        @endforeach
+                    @endforeach
+                </div>
+            @endforeach
+
             {{-- Предпросмотр --}}
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.app_preview_h2') }}</h2>
@@ -217,6 +257,8 @@
                 </div>
             </div>
         </form>
+
+        @include('levels._scheme_form', ['action' => route('admin.apps.levels', $brand), 'owner' => 'brand', 'ownerId' => $brand->id])
     </div>
 
     <script>
@@ -227,7 +269,7 @@
         function val(mode, key) {
             var el = document.querySelector('[data-color-text][data-mode="' + mode + '"][data-key="' + key + '"]');
             var v = el ? el.value.trim() : '';
-            return hexRe.test(v) ? v : defaults[mode][key];
+            return hexRe.test(v) ? v : ((defaults[mode] || {})[key] || '');
         }
 
         function hx(h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }

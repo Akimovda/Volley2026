@@ -252,6 +252,7 @@
 
         </div>
         </div>
+        @include('levels._scheme_form', ['action' => route('profile.levels.update'), 'owner' => 'organizer', 'ownerId' => auth()->id()])
         @endif {{-- isPro --}}
     </div>
 

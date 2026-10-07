@@ -87,9 +87,9 @@
 
                         @if($style['show_level'] && (!is_null($ev['level_min']) || !is_null($ev['level_max'])))
                         <div class="vw-row">{!! $ic('🎚') !!}<span>
-                            @if(!is_null($ev['level_min']))<span class="vw-lvl l{{ (int) $ev['level_min'] }}">{{ level_name_short($ev['level_min'], $ev['level_scope'] ?? 'standard') }}</span>@endif
+                            @if(!is_null($ev['level_min']))<span class="vw-lvl l{{ (int) $ev['level_min'] }}" style="{{ level_pill_style($ev['level_min'], $ev['organizer_id'] ?? null) }}">{{ level_name_short($ev['level_min'], $ev['level_scope'] ?? 'standard', $ev['organizer_id'] ?? null) }}</span>@endif
                             @if(!is_null($ev['level_min']) && !is_null($ev['level_max']) && $ev['level_min'] != $ev['level_max']) — @endif
-                            @if(!is_null($ev['level_max']) && $ev['level_min'] != $ev['level_max'])<span class="vw-lvl l{{ (int) $ev['level_max'] }}">{{ level_name_short($ev['level_max'], $ev['level_scope'] ?? 'standard') }}</span>@endif
+                            @if(!is_null($ev['level_max']) && $ev['level_min'] != $ev['level_max'])<span class="vw-lvl l{{ (int) $ev['level_max'] }}" style="{{ level_pill_style($ev['level_max'], $ev['organizer_id'] ?? null) }}">{{ level_name_short($ev['level_max'], $ev['level_scope'] ?? 'standard', $ev['organizer_id'] ?? null) }}</span>@endif
                         </span></div>
                         @endif
 

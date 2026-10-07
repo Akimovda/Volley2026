@@ -73,7 +73,59 @@ class BrandThemeService
         $cssFile = public_path('assets/style.css');
         $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile) . '|' . @filemtime(__FILE__));
 
-        return Cache::rememberForever($key, fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) : '') . $this->hiddenMenuCss($hidden));
+        return Cache::rememberForever($key, fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden));
+    }
+
+    /** Ключи токенов (config/brand_tokens.php) => [ [день, ночь] по умолчанию ]. */
+    public static function tokens(): array
+    {
+        $out = [];
+        foreach ((array) config('brand_tokens.groups') as $group) {
+            foreach ($group['tokens'] as $key => [$label, $defaults]) {
+                $out['t_' . $key] = $defaults;
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Токены элементов: одно правило на токен, выводятся ПОСЛЕ общей темы, !important (специфичность style.css местами выше).
+     */
+    private function tokenCss(array $theme): string
+    {
+        $out = '';
+        foreach ((array) config('brand_tokens.groups') as $group) {
+            foreach ($group['tokens'] as $key => [$label, $defaults, $rules]) {
+                foreach (['day' => 'body', 'night' => 'body.dark'] as $mode => $prefix) {
+                    $val = $theme[$mode]['t_' . $key] ?? null;
+                    if (!$this->validHex($val)) {
+                        continue;
+                    }
+                    foreach ($rules as [$sel, $prop]) {
+                        $out .= str_replace('{M}', $prefix, $sel) . '{'
+                            . str_replace(';', '!important;', $prop) . ':' . $val . '!important}';
+                    }
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    /** @font-face + font-family для выбранного шрифта бренда (theme.font = ключ из config/brand_tokens.php → fonts). */
+    private function fontCss(array $theme): string
+    {
+        $font = config('brand_tokens.fonts.' . ($theme['font'] ?? ''));
+        if (!$font) {
+            return '';
+        }
+        $out = '';
+        foreach ($font['files'] as $weight => $file) {
+            $out .= "@font-face{font-family:'{$font['family']}';src:url('{$file}') format('opentype');font-weight:{$weight};font-style:normal;font-display:swap}";
+        }
+
+        return $out . "body,button,input,select,textarea,.btn{font-family:'{$font['family']}','Open Sans',sans-serif}";
     }
 
     /** Скрытие пунктов меню по href (относительный и абсолютный вид — route() отдаёт абсолютный). Только пункты из каталога. */

@@ -78,6 +78,10 @@ class Brand extends Model
 
     public function hasTheme(): bool
     {
+        if (!empty($this->theme['font'])) {
+            return true;
+        }
+
         foreach (['day', 'night'] as $mode) {
             if (!empty(array_filter((array) ($this->theme[$mode] ?? [])))) {
                 return true;

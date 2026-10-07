@@ -30,6 +30,8 @@ class AdminAppController extends Controller
             'brand'  => $brand,
             'groups' => BrandThemeService::BASE,
             'menuGroups' => config('brand_menu.groups'),
+            'tokenGroups' => config('brand_tokens.groups'),
+            'fonts' => config('brand_tokens.fonts'),
         ]);
     }
 
@@ -44,10 +46,11 @@ class AdminAppController extends Controller
             'app_icon'   => ['nullable', 'file', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ];
         foreach (['day', 'night'] as $mode) {
-            foreach (BrandThemeService::keys() as $key) {
+            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
                 $rules["theme.$mode.$key"] = $hex;
             }
         }
+        $rules['theme.font'] = ['nullable', Rule::in(array_keys((array) config('brand_tokens.fonts')))];
         $rules['menu.visible']         = ['nullable', 'array'];
         $rules['menu.visible.*']       = ['string', Rule::in($this->menuCatalogPaths())];
         $rules['menu.links']           = ['nullable', 'array', 'max:' . (int) config('brand_menu.max_links', 15)];
@@ -69,12 +72,15 @@ class AdminAppController extends Controller
 
         $theme = [];
         foreach (['day', 'night'] as $mode) {
-            foreach (BrandThemeService::keys() as $key) {
+            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
                 $val = strtoupper(trim((string) ($data['theme'][$mode][$key] ?? '')));
                 if ($val !== '') {
                     $theme[$mode][$key] = $val;
                 }
             }
+        }
+        if (!empty($data['theme']['font'])) {
+            $theme['font'] = $data['theme']['font'];
         }
         $brand->theme = $theme ?: null;
 

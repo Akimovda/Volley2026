@@ -69,9 +69,13 @@ if (! function_exists('level_terminology_scope_for_event')) {
 }
 
 if (! function_exists('level_name')) {
-    function level_name($level, string $scope = 'standard'): string
+    function level_name($level, string $scope = 'standard', ?int $organizerId = null): string
     {
         $level = (int) $level;
+
+        if ($custom = \App\Services\LevelLabelService::name($level, $organizerId)) {
+            return $custom;
+        }
 
         if ($scope === 'spb') {
             $key = 'events.spb_level_' . $level;
@@ -96,9 +100,12 @@ if (! function_exists('level_name')) {
 }
 
 if (! function_exists('level_name_short')) {
-    function level_name_short($level, string $scope = 'standard'): string
+    function level_name_short($level, string $scope = 'standard', ?int $organizerId = null): string
     {
         $level = (int) $level;
+        if ($custom = \App\Services\LevelLabelService::name($level, $organizerId, true)) {
+            return $custom;
+        }
         $key = $scope === 'spb' ? 'events.spb_level_short_' . $level : 'events.level_short_' . $level;
         $translated = __($key);
         return $translated !== $key ? $translated : (string) $level;
@@ -402,6 +409,14 @@ if (!function_exists('reg_mode_name')) {
             'team'         => 'Команда',
         ];
         return $map[(string)($mode ?? '')] ?? (string)($mode ?? '—');
+    }
+}
+
+if (! function_exists('level_pill_style')) {
+    /** Inline-style своей схемы для пилюли уровня ('' — стандартные цвета style.css). */
+    function level_pill_style($level, ?int $organizerId = null): string
+    {
+        return \App\Services\LevelLabelService::pillStyle((int) $level, $organizerId);
     }
 }
 
