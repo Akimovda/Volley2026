@@ -105,6 +105,7 @@
             'notify_new_events_in_city'   => 'boolean',
             'is_hidden'                   => 'boolean',
             'is_test'                     => 'boolean',
+            'is_placeholder'              => 'boolean',
             'max_notifications_enabled'      => 'boolean',
             'telegram_notifications_enabled' => 'boolean',
             'vk_notifications_enabled'       => 'boolean',
@@ -112,6 +113,18 @@
 			];
 		}
 		
+		/** Пустышка, которой может управлять $actor (создатель или админ). */
+		public function isPlaceholderManagedBy(User $actor): bool
+		{
+			if (!$this->is_placeholder || $this->deleted_at !== null || $this->merged_into_user_id !== null) {
+				return false;
+			}
+			if ($actor->isAdmin()) {
+				return true;
+			}
+			return $actor->isOrganizer() && (int) $this->created_by_user_id === (int) $actor->id;
+		}
+
 		public function notificationsInbox()
 		{
 			return $this->hasMany(\App\Models\UserNotification::class, 'user_id');

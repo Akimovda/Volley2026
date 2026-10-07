@@ -467,6 +467,11 @@
 								<a href="{{ route('organizer.my-events') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
+								@if(!$isStaffHelper)
+								<a href="{{ route('placeholders.index') }}" class="menu-item">
+									<span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
+								</a>
+								@endif
 								{{-- 6. Брони кортов — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
 								<a href="{{ route('club.bookings.index') }}" class="menu-item">

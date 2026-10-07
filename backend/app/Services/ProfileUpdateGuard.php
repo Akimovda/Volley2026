@@ -168,6 +168,9 @@ public static function isUser(User $user): bool
         }
 
         if (self::isOrganizer($actor)) {
+            if ($actor->id !== $target->id && $target->isPlaceholderManagedBy($actor)) {
+                return 'admin_other'; // своя пустышка — полный доступ к полям
+            }
             return $actor->id === $target->id
                 ? 'self'
                 : 'organizer_other';

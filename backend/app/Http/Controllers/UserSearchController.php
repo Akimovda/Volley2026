@@ -72,6 +72,7 @@ class UserSearchController extends Controller
                 'name',
                 'telegram_username',
                 'is_bot',
+                'is_placeholder',
                 'role',
                 'email',
             ])
@@ -144,6 +145,10 @@ class UserSearchController extends Controller
                     $meta[] = $plainName;
                 }
 
+                if (!empty($u->is_placeholder)) {
+                    array_unshift($meta, '👻 ' . __('placeholders.badge'));
+                }
+
                 $metaStr = implode(' • ', array_filter($meta));
 
                 return [
@@ -156,6 +161,7 @@ class UserSearchController extends Controller
                     'meta'             => $metaStr,
                     'sub'              => $metaStr,
                     'is_bot'           => (bool) ($u->is_bot ?? false),
+                    'is_placeholder'   => (bool) ($u->is_placeholder ?? false),
                     'role'             => $isTrusted ? (string) ($u->role ?? 'user') : null,
                 ];
             })

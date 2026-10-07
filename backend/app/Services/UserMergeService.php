@@ -614,8 +614,19 @@ class UserMergeService
                               + $stats['payments'] * 3
                               + ($stats['profile_complete'] ? 5 : 0);
         }
+        // Пустышка — всегда secondary: реальный аккаунт остаётся главным
+        foreach ($users as $u) {
+            if ($u->is_placeholder) {
+                $scores[$u->id] -= 1000000;
+            }
+        }
         arsort($scores);
         return [$statsMap, array_key_first($scores)];
+    }
+
+    public function statsFor(int $userId): array
+    {
+        return $this->userStats($userId);
     }
 
     private function userStats(int $userId): array
