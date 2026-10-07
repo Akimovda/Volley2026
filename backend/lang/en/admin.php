@@ -461,4 +461,5 @@ return [
     'tok_badge_live_text' => '"Live" — text',
     'tok_badge_finished_bg' => '"Finished" — background',
     'tok_badge_finished_text' => '"Finished" — text',
+    'tok_live_hint' => 'The page updates as you edit; logos appear after saving.',
 ];

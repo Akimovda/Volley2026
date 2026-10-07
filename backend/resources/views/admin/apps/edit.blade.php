@@ -73,6 +73,8 @@
             </div>
         @endif
 
+        <div style="display:flex; flex-wrap:wrap; gap:2rem; align-items:flex-start;">
+        <div style="flex:1 1 52rem; min-width:0;">
         <form method="POST" action="{{ route('admin.apps.update', $brand) }}" enctype="multipart/form-data" class="form">
             @csrf
 
@@ -257,6 +259,18 @@
                 </div>
             </div>
         </form>
+        </div>
+        <aside style="flex:0 0 42rem; max-width:100%; position:sticky; top:9rem;">
+            <div class="ramka" style="padding:1.2rem;">
+                <div style="display:flex; gap:1rem; align-items:center; margin-bottom:1rem;">
+                    <button type="button" class="btn btn-small" data-pv-mode="day">{{ __('admin.app_section_day') }}</button>
+                    <button type="button" class="btn btn-small" data-pv-mode="night">{{ __('admin.app_section_night') }}</button>
+                    <span style="font-size:1.2rem; opacity:.7;">{{ __('admin.tok_live_hint') }}</span>
+                </div>
+                <iframe id="live-preview" src="{{ $previewUrl }}" style="width:100%; height:calc(100vh - 20rem); min-height:50rem; border:0.1rem solid rgba(128,128,128,.3); border-radius:1.2rem; background:#fff;"></iframe>
+            </div>
+        </aside>
+        </div>
 
         @include('levels._scheme_form', ['action' => route('admin.apps.levels', $brand), 'owner' => 'brand', 'ownerId' => $brand->id])
     </div>
@@ -367,6 +381,46 @@
 
         document.getElementById('menu-link-add').addEventListener('click', function () { addLinkRow({}); });
         initialLinks.forEach(addLinkRow);
+
+        // --- Живой предпросмотр настоящей страницы ---
+        (function () {
+            var frame = document.getElementById('live-preview');
+            var form = document.querySelector('form.form[action*="/admin/apps/"]');
+            if (!frame || !form) { return; }
+            var mode = 'day', timer = null, seq = 0, css = null;
+            var url = @json(route('admin.apps.preview_css', $brand));
+            var token = document.querySelector('input[name="_token"]').value;
+
+            function apply() {
+                var doc = frame.contentDocument;
+                if (!doc || !doc.body) { return; }
+                if (css !== null) {
+                    var st = doc.getElementById('brand-theme');
+                    if (!st) { st = doc.createElement('style'); st.id = 'brand-theme'; doc.head.appendChild(st); }
+                    st.textContent = css;
+                }
+                doc.body.classList.toggle('dark', mode === 'night');
+                document.querySelectorAll('[data-pv-mode]').forEach(function (b) {
+                    b.style.opacity = b.getAttribute('data-pv-mode') === mode ? '1' : '.55';
+                });
+            }
+            function refresh() {
+                var my = ++seq, p = new URLSearchParams();
+                new FormData(form).forEach(function (v, k) { if (typeof v === 'string' && k.indexOf('theme[') === 0) { p.append(k, v); } });
+                fetch(url, { method: 'POST', headers: { 'X-CSRF-TOKEN': token, 'Accept': 'text/css' }, body: p, credentials: 'same-origin' })
+                    .then(function (r) { return r.text(); })
+                    .then(function (t) { if (my === seq) { css = t; apply(); } });
+            }
+            function later() { clearTimeout(timer); timer = setTimeout(refresh, 350); }
+
+            form.addEventListener('input', later);
+            form.addEventListener('change', later);
+            form.addEventListener('click', function (e) { if (e.target.closest('[data-color-reset]')) { later(); } });
+            document.querySelectorAll('[data-pv-mode]').forEach(function (b) {
+                b.addEventListener('click', function () { mode = b.getAttribute('data-pv-mode'); apply(); });
+            });
+            frame.addEventListener('load', function () { refresh(); });
+        })();
 
         renderPreview();
     })();

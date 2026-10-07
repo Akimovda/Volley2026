@@ -474,4 +474,5 @@ return [
     'tok_badge_live_text' => '«Идёт» — текст',
     'tok_badge_finished_bg' => '«Завершено» — фон',
     'tok_badge_finished_text' => '«Завершено» — текст',
+    'tok_live_hint' => 'Страница обновляется по мере правки; логотипы — после сохранения.',
 ];

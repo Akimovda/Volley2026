@@ -976,6 +976,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/apps', [AdminAppController::class, 'index'])->name('apps.index');
         Route::get('/apps/{brand}', [AdminAppController::class, 'edit'])->name('apps.edit');
         Route::post('/apps/{brand}', [AdminAppController::class, 'update'])->name('apps.update');
+        Route::post('/apps/{brand}/preview-css', [AdminAppController::class, 'previewCss'])->name('apps.preview_css');
         Route::post('/apps/{brand}/levels', [\App\Http\Controllers\LevelSchemeController::class, 'updateBrand'])->name('apps.levels');
 		
         Route::get('/users', [AdminUserController::class, 'index'])->name('users.index');

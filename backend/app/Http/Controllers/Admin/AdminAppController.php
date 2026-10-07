@@ -30,6 +30,7 @@ class AdminAppController extends Controller
             'brand'  => $brand,
             'groups' => BrandThemeService::BASE,
             'menuGroups' => config('brand_menu.groups'),
+            'previewUrl' => url('/events') . '?' . http_build_query(['_bp' => $brand->id, '_bpe' => $exp = time() + 7200, '_bps' => BrandThemeService::previewSig((int) $brand->id, $exp)]),
             'tokenGroups' => config('brand_tokens.groups'),
             'fonts' => config('brand_tokens.fonts'),
         ]);
@@ -122,6 +123,31 @@ class AdminAppController extends Controller
         ]);
 
         return redirect()->route('admin.apps.edit', $brand)->with('status', __('admin.app_saved'));
+    }
+
+    /** CSS несохранённой темы из текущего состояния формы — для живого предпросмотра (ничего не пишет). */
+    public function previewCss(Request $request, Brand $brand)
+    {
+        abort_if($brand->is_default, 404);
+
+        $theme = [];
+        foreach (['day', 'night'] as $mode) {
+            foreach (array_merge(BrandThemeService::keys(), array_keys(BrandThemeService::tokens())) as $key) {
+                $v = strtoupper(trim((string) $request->input("theme.$mode.$key", '')));
+                if (preg_match('/^#[0-9A-F]{6}$/', $v)) {
+                    $theme[$mode][$key] = $v;
+                }
+            }
+        }
+        $font = (string) $request->input('theme.font', '');
+        if ($font !== '' && config('brand_tokens.fonts.' . $font)) {
+            $theme['font'] = $font;
+        }
+
+        $copy = $brand->replicate();
+        $copy->theme = $theme ?: null;
+
+        return response(app(BrandThemeService::class)->css($copy, false), 200, ['Content-Type' => 'text/css; charset=UTF-8']);
     }
 
     private function applyFile(Request $request, Brand $brand, string $input, string $column, string $removeFlag): void
