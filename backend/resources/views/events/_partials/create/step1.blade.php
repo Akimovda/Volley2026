@@ -459,9 +459,9 @@
 													<option value="2x2" @selected((string)$tournamentGameScheme === '2x2')>2x2</option>
 													<option value="3x3" @selected((string)$tournamentGameScheme === '3x3')>3x3</option>
 													<option value="4x4" @selected((string)$tournamentGameScheme === '4x4')>4x4</option>
-													<option value="4x2" @selected((string)$tournamentGameScheme === '4x2')>4x2</option>
-													<option value="5x1" @selected((string)$tournamentGameScheme === '5x1')>5x1</option>
-													<option value="5x1_libero" @selected((string)$tournamentGameScheme === '5x1_libero')>5x1 {{ __('events.libero_word') }}</option>
+													<option value="4x2" @selected((string)$tournamentGameScheme === '4x2')>4-2</option>
+													<option value="5x1" @selected((string)$tournamentGameScheme === '5x1')>5-1</option>
+													<option value="5x1_libero" @selected((string)$tournamentGameScheme === '5x1_libero')>5-1 {{ __('events.libero_word') }}</option>
 												</select>
 												@error('tournament_game_scheme')
 												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
