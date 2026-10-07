@@ -969,7 +969,7 @@ return [
     'wst_f_lang' => 'Widget language (dates, labels, levels)',
     'wst_f_card_order' => 'Order in the card',
     'wst_f_show_organizer' => '“Organizer” row',
-    'wst_f_badge_subtype' => 'Game scheme badge (2×2, 4×2…)',
+    'wst_f_badge_subtype' => 'Game scheme badge (2×2, 4-2…)',
     'wst_f_badge_gender' => 'Gender badge (Mixed 50/50…)',
     'wst_f_badge_age' => 'Age badge',
     'wst_f_badge_pay' => 'Payment badge (cash/cashless)',

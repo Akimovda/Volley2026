@@ -53,7 +53,7 @@ return [
     'rating_info_cr_desc'   => 'Conservative estimate — reflects your level the system is confident about. A new player with no games has rating ≈ 0.',
     'rating_info_tip'       => 'First 20–30 games are most important for calibration',
     'rating_info_formats'   => 'Works for all formats',
-    'rating_info_formats_desc' => 'Beach: 2x2, 3x3, 4x4. Classic: 4x4, 4x2, 5x1, 5x1 with libero. Beach and classic ratings are independent.',
+    'rating_info_formats_desc' => 'Beach: 2×2, 3×3, 4×4. Classic: 4×4, 4-2, 5-1, 5-1 with libero. Beach and classic ratings are independent.',
     'no_data'              => 'No data',
     'search_placeholder'   => 'Search by name...',
     'rank'                 => '#',

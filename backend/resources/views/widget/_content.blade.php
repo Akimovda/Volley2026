@@ -29,9 +29,9 @@
             $showPrice = $style['show_price'] && $priceBadge;
             $weather = ($style['show_weather'] && $withPhoto) ? ($x['weather'] ?? null) : null;
             $tags = [];
-            foreach (['subtype', 'gender', 'age', 'pay', 'rated'] as $k) {
-                if (!empty($style['badge_' . $k]) && !empty($x['badges'][$k])) {
-                    $tags[] = ['cls' => $k === 'rated' ? 'rated' : '', 'text' => $k === 'subtype' ? str_replace('x', '×', $x['badges'][$k]) : $x['badges'][$k]];
+            foreach (['subtype', 'libero', 'gender', 'age', 'pay', 'rated'] as $k) {
+                if (!empty($style['badge_' . ($k === 'libero' ? 'subtype' : $k)]) && !empty($x['badges'][$k])) {
+                    $tags[] = ['cls' => $k === 'rated' ? 'rated' : '', 'text' => $x['badges'][$k]];
                 }
             }
             if ($style['badge_status'] && !empty($x['status'])) {

@@ -37,7 +37,7 @@
            class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{{ __('players.classic') }}</a>
     </div>
     @if(!$isSeasonMode)
-    <div class="f-13 mb-3" style="opacity:.5">{{ $direction === 'beach' ? '2x2 · 3x3 · 4x4' : '4x4 · 4x2 · 5x1 · 5x1+либеро' }}</div>
+    <div class="f-13 mb-3" style="opacity:.5">{{ $direction === 'beach' ? '2×2 · 3×3 · 4×4' : '4×4 · 4-2 · 5-1 · 5-1 ' . __('events.libero_word') }}</div>
     @else
     <div class="mb-3"></div>
     @endif

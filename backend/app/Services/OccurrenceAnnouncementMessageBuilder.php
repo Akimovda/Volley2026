@@ -669,15 +669,15 @@ class OccurrenceAnnouncementMessageBuilder
     }
 
     /**
-     * Метка формата: «4×2», «2×2», «Тренировка» и т.д.
+     * Метка формата: «4-2», «2×2», «Тренировка» и т.д.
      */
     private function formatLabel(string $direction, string $subtype): string
     {
         $subtypeMap = [
             '4x4'        => '4×4',
-            '4x2'        => '4×2',
-            '5x1'        => '5×1',
-            '5x1_libero' => '5×1 с либеро',
+            '4x2'        => '4-2',
+            '5x1'        => '5-1',
+            '5x1_libero' => '5-1 с либеро',
             '2x2'        => '2×2',
             '3x3'        => '3×3',
         ];
