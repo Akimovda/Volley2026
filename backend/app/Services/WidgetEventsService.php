@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v6_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
+        $cacheKey = "widget_events_v7_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -71,6 +71,7 @@ class WidgetEventsService
                     'events.tournament_teams_count as tt_count',
                     'events.season_id as ev_season_id',
                     'events.is_private',
+                    'events.public_token',
                     'events.event_photos',
                     'events.timezone as ev_timezone',
                     'event_occurrences.timezone as occ_timezone',
@@ -149,10 +150,14 @@ class WidgetEventsService
                     'extra'      => isset($models[$occ->occ_id]) ? $this->extras($models[$occ->occ_id]) : [],
                     'photo'      => $photoUrls[(int) $occ->event_id]
                         ?? $this->absoluteUrl('/img/' . ($dir === 'beach' ? 'beach.webp' : 'classic.webp')),
-                    'url'        => route('events.show', [
-                        'event'      => $occ->event_id,
-                        'occurrence' => $occ->occ_id,
-                    ]),
+                    // Приватное мероприятие открывается только по токену (/e/{token}) —
+                    // обычная ссылка events.show даёт 404 всем, кроме организатора.
+                    'url'        => ($occ->is_private && $occ->public_token)
+                        ? route('events.public', ['token' => $occ->public_token, 'occurrence' => $occ->occ_id])
+                        : route('events.show', [
+                            'event'      => $occ->event_id,
+                            'occurrence' => $occ->occ_id,
+                        ]),
                 ];
             })->toArray();
         });
