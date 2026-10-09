@@ -80,9 +80,10 @@
 
             {{-- Цвета --}}
             @foreach($modes as $mode => $modeLabel)
-                <div class="ramka">
+                <div class="ramka" data-mode-panel="{{ $mode }}">
                     <h2 class="-mt-05">{{ __('admin.app_colors_h2') }}: {{ $modeLabel }}</h2>
                     @if($mode === 'day')<p>{{ __('admin.app_hint_empty') }}</p>@endif
+                    <p style="opacity:.7;">{{ __('admin.app_modes_hint') }}</p>
 
                     @foreach([$colorLabels, $menuLabels] as $gi => $labels)
                         @if($gi === 1)<h3 style="margin:2.5rem 0 1.5rem;">{{ __('admin.app_menu_h3') }}</h3>@endif
@@ -103,35 +104,6 @@
                         </div>
                     @endforeach
                     @endforeach
-                </div>
-            @endforeach
-
-            {{-- Акценты по ролям --}}
-            @foreach($modes as $mode => $modeLabel)
-                <div class="ramka">
-                    <h2 class="-mt-05">{{ __('admin.role_h2') }}: {{ $modeLabel }}</h2>
-                    @if($mode === 'day')<p>{{ __('admin.role_hint') }}</p>@endif
-                    @foreach($roles as $rk => $rlabel)
-                        <h3 style="margin:2rem 0 1rem;">{{ __($rlabel) }} <span style="font-size:1.2rem; font-weight:400; opacity:.6;">· {{ __('admin.role_classes', ['n' => $roleUsage[$rk] ?? 0]) }}</span></h3>
-                        @foreach(['primary' => __('admin.role_primary'), 'secondary' => __('admin.role_secondary')] as $acc => $acclabel)
-                            @php
-                                $fk = $acc . '_' . $rk;
-                                $val = old("theme.$mode.$fk", $brand->theme[$mode][$fk] ?? '');
-                                $def = $themeDefaults[$mode][$acc];
-                            @endphp
-                            <div style="display:flex; align-items:center; gap:1.2rem; flex-wrap:wrap; margin-bottom:1.2rem;">
-                                <input type="color" data-color-picker value="{{ $val ?: $def }}"
-                                       style="width:5rem; height:4rem; padding:0.2rem; border:0.1rem solid rgba(0,0,0,.2); border-radius:0.6rem; cursor:pointer;">
-                                <input type="text" name="theme[{{ $mode }}][{{ $fk }}]" value="{{ $val }}"
-                                       placeholder="{{ __('admin.role_as_general') }}" maxlength="7" autocomplete="off"
-                                       data-color-text data-mode="{{ $mode }}" data-key="{{ $fk }}" data-default="{{ $def }}"
-                                       style="width:13rem;">
-                                <button type="button" class="btn btn-small" data-color-reset>{{ __('admin.app_reset') }}</button>
-                                <span style="flex:1; min-width:20rem;">{{ $acclabel }}</span>
-                            </div>
-                        @endforeach
-                    @endforeach
-                    <p style="margin-top:2rem; opacity:.7;">{{ __('admin.role_other_note', ['n' => $roleUsage['other'] ?? 0]) }}</p>
                 </div>
             @endforeach
 
@@ -157,11 +129,12 @@
 
             {{-- Токены элементов --}}
             @foreach($modes as $mode => $modeLabel)
-                <div class="ramka">
+                <div class="ramka" data-mode-panel="{{ $mode }}">
                     <h2 class="-mt-05">{{ __('admin.tok_h2') }}: {{ $modeLabel }}</h2>
-                    @if($mode === 'day')<p>{{ __('admin.tok_hint') }}</p>@endif
+                    <p>{{ __('admin.tok_hint') }}</p>
                     @foreach($tokenGroups as $tg)
-                        <h3 style="margin:2.5rem 0 1.5rem;">{{ __($tg['title']) }}</h3>
+                        <details style="margin-bottom:1rem;">
+                        <summary style="cursor:pointer; font-weight:600; padding:1rem 0;">{{ __($tg['title']) }} <span style="font-weight:400; opacity:.6;">({{ count($tg['tokens']) }})</span></summary>
                         @foreach($tg['tokens'] as $tkey => [$tlabel, $tdefs])
                             @php
                                 $fk = 't_' . $tkey;
@@ -179,44 +152,10 @@
                                 <span style="flex:1; min-width:20rem;">{{ __($tlabel) }}</span>
                             </div>
                         @endforeach
+                        </details>
                     @endforeach
                 </div>
             @endforeach
-
-            {{-- Предпросмотр --}}
-            <div class="ramka">
-                <h2 class="-mt-05">{{ __('admin.app_preview_h2') }}</h2>
-                <div style="display:flex; gap:2rem; flex-wrap:wrap;">
-                    @foreach($modes as $mode => $modeLabel)
-                        <div data-preview="{{ $mode }}" style="flex:1; min-width:26rem; padding:2rem; border-radius:1.2rem;">
-                            <div style="font-size:1.3rem; margin-bottom:1rem; opacity:.7;">{{ $modeLabel }}</div>
-                            <div data-pv="card" style="padding:1.6rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
-                                <p data-pv="text" style="margin-bottom:1rem;">{{ __('admin.app_preview_text') }}</p>
-                                <p style="margin-bottom:1.2rem;"><a href="javascript:void(0)" data-pv="link" style="text-decoration:underline;">{{ __('admin.app_preview_link') }}</a></p>
-                                <div style="display:flex; flex-wrap:wrap; gap:1.2rem;">
-                                    <span data-pv="primary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_primary') }}</span>
-                                    <span data-pv="secondary" style="display:inline-block; padding:0.9rem 1.8rem; border-radius:0.8rem; color:#fff;">{{ __('admin.app_preview_btn_secondary') }}</span>
-                                </div>
-                            </div>
-                            <div style="margin-top:1.4rem; display:flex; flex-direction:column; gap:0.8rem;">
-                                <div data-pv="alert_info" style="padding:0.9rem 1.2rem; border-radius:1rem; border:0.2rem solid;">Info — {{ __('admin.app_preview_alert') }}</div>
-                                <div data-pv="alert_danger" style="padding:0.9rem 1.2rem; border-radius:1rem; border:0.2rem solid;">Danger — {{ __('admin.app_preview_alert') }}</div>
-                                <input type="text" data-pv="input" value="{{ __('admin.app_preview_input') }}" readonly style="padding:0.8rem 1.2rem; border-radius:0.8rem; border:0.1rem solid rgba(128,128,128,.4); width:100%;">
-                            </div>
-                            <div data-pv="menu" style="margin-top:1.4rem; padding:1.2rem 1.4rem; border-radius:1rem; border:0.1rem solid rgba(128,128,128,.25);">
-                                <div data-pv="menu_title" style="font-size:1.2rem; font-weight:600; text-transform:uppercase; margin-bottom:0.6rem;">{{ __('admin.app_preview_menu_title') }}</div>
-                                <div data-pv="menu_text" style="padding:0.5rem 0;">{{ __('admin.app_preview_menu_item') }}</div>
-                                <div style="display:flex; gap:0.8rem; padding:0.5rem 0;">
-                                    <span data-pv="menu_icon" style="width:2.2rem; height:2.2rem; border-radius:50%; display:inline-block;"></span>
-                                    <span data-pv="menu_icon" style="width:2.2rem; height:2.2rem; border-radius:0.4rem; display:inline-block;"></span>
-                                    <span data-pv="menu_icon_hover" style="width:2.2rem; height:2.2rem; border-radius:50%; display:inline-block; opacity:.9;"></span>
-                                </div>
-                                <div data-pv="menu_text" style="padding:0.5rem 0; display:inline-block;">{{ __('admin.app_preview_menu_active') }}<span data-pv="menu_accent" style="display:block; height:0.2rem; margin-top:0.2rem;"></span></div>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
 
             {{-- Пункты меню --}}
             @php
@@ -314,53 +253,7 @@
 
     <script>
     (function () {
-        var defaults = @json($themeDefaults);
         var hexRe = /^#[0-9a-fA-F]{6}$/;
-
-        function val(mode, key) {
-            var el = document.querySelector('[data-color-text][data-mode="' + mode + '"][data-key="' + key + '"]');
-            var v = el ? el.value.trim() : '';
-            return hexRe.test(v) ? v : ((defaults[mode] || {})[key] || '');
-        }
-
-        function hx(h) { return [1, 3, 5].map(function (i) { return parseInt(h.substr(i, 2), 16); }); }
-        function mix(a, b, r) {
-            var x = hx(a), y = hx(b);
-            return 'rgb(' + x.map(function (v, i) { return Math.round(v + (y[i] - v) * r); }).join(',') + ')';
-        }
-        function rgba(h, a) { return 'rgba(' + hx(h).join(',') + ',' + a + ')'; }
-
-        function renderPreview() {
-            ['day', 'night'].forEach(function (mode) {
-                var box = document.querySelector('[data-preview="' + mode + '"]');
-                if (!box) { return; }
-                var bgTo = document.querySelector('[data-color-text][data-mode="' + mode + '"][data-key="bg_page_to"]');
-                var bgFrom = val(mode, 'bg_page'), bgEnd = bgTo ? bgTo.value.trim() : '';
-                box.style.background = hexRe.test(bgEnd) && bgEnd.toLowerCase() !== bgFrom.toLowerCase()
-                    ? 'linear-gradient(160deg,' + bgFrom + ' 0%,' + bgEnd + ' 100%)' : bgFrom;
-                box.style.color = val(mode, 'text');
-                box.querySelector('[data-pv="card"]').style.background = val(mode, 'bg_card');
-                box.querySelector('[data-pv="link"]').style.color = val(mode, 'primary');
-                box.querySelector('[data-pv="primary"]').style.background = val(mode, 'primary');
-                box.querySelector('[data-pv="secondary"]').style.background = val(mode, 'secondary');
-                var night = mode === 'night', pri = val(mode, 'primary'), sec = val(mode, 'secondary');
-                var ai = box.querySelector('[data-pv="alert_info"]'), ad = box.querySelector('[data-pv="alert_danger"]');
-                ai.style.background = rgba(pri, 0.1); ai.style.borderColor = rgba(pri, 0.2);
-                ai.style.color = night ? mix(pri, '#FFFFFF', 0.6) : mix(pri, '#000000', 0.36);
-                ai.style.borderLeft = '1rem solid ' + pri;
-                ad.style.background = rgba(sec, 0.1); ad.style.borderColor = rgba(sec, 0.2);
-                ad.style.color = night ? mix(sec, '#FFFFFF', 0.55) : mix(sec, '#000000', 0.4);
-                ad.style.borderLeft = '1rem solid ' + sec;
-                var inp = box.querySelector('[data-pv="input"]');
-                inp.style.background = night ? val(mode, 'bg_page') : '#fff'; inp.style.color = val(mode, 'text');
-                box.querySelector('[data-pv="menu"]').style.background = val(mode, 'menu_bg');
-                box.querySelector('[data-pv="menu_title"]').style.color = val(mode, 'menu_title');
-                box.querySelectorAll('[data-pv="menu_text"]').forEach(function (el) { el.style.color = val(mode, 'menu_text'); });
-                box.querySelector('[data-pv="menu_accent"]').style.background = val(mode, 'menu_accent');
-                box.querySelectorAll('[data-pv="menu_icon"]').forEach(function (el) { el.style.background = val(mode, 'menu_icon'); });
-                box.querySelector('[data-pv="menu_icon_hover"]').style.background = val(mode, 'menu_icon_hover');
-            });
-        }
 
         document.querySelectorAll('[data-color-text]').forEach(function (txt) {
             var row = txt.parentNode;
@@ -369,16 +262,13 @@
 
             picker.addEventListener('input', function () {
                 txt.value = picker.value.toUpperCase();
-                renderPreview();
             });
             txt.addEventListener('input', function () {
                 if (hexRe.test(txt.value.trim())) { picker.value = txt.value.trim(); }
-                renderPreview();
             });
             reset.addEventListener('click', function () {
                 txt.value = '';
                 picker.value = txt.getAttribute('data-default');
-                renderPreview();
             });
         });
 
@@ -429,7 +319,13 @@
             var token = document.querySelector('input[name="_token"]').value;
 
             function apply() {
+                document.querySelectorAll('[data-mode-panel]').forEach(function (p) {
+                    p.style.display = p.getAttribute('data-mode-panel') === mode ? '' : 'none';
+                });
                 var doc = frame.contentDocument;
+                document.querySelectorAll('[data-pv-mode]').forEach(function (b) {
+                    b.style.opacity = b.getAttribute('data-pv-mode') === mode ? '1' : '.55';
+                });
                 if (!doc || !doc.body) { return; }
                 if (css !== null) {
                     var st = doc.getElementById('brand-theme');
@@ -457,9 +353,9 @@
                 b.addEventListener('click', function () { mode = b.getAttribute('data-pv-mode'); apply(); });
             });
             frame.addEventListener('load', function () { refresh(); });
+            apply();
         })();
 
-        renderPreview();
     })();
     </script>
 </x-voll-layout>
