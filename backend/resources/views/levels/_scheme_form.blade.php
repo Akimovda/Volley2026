@@ -20,10 +20,12 @@
                 <input type="text" name="levels[{{ $l }}][short_ru]" value="{{ old("levels.$l.short_ru", $r['short_ru'] ?? '') }}" placeholder="{{ __('levelscheme.short') }}" maxlength="20" style="width:11rem;">
                 <input type="text" name="levels[{{ $l }}][short_en]" value="{{ old("levels.$l.short_en", $r['short_en'] ?? '') }}" placeholder="{{ __('levelscheme.short_en') }}" maxlength="20" style="width:11rem;">
                 <label style="display:flex; align-items:center; gap:.6rem;">{{ __('levelscheme.pill') }}
-                    <input type="color" name="levels[{{ $l }}][color]" value="{{ $col }}" style="width:5rem; height:4rem; padding:.2rem;">
+                    <input type="color" name="levels[{{ $l }}][color]" value="{{ $col }}" data-hex-picker style="width:5rem; height:4rem; padding:.2rem;">
+                    <input type="text" data-hex-text value="{{ strtoupper($col) }}" placeholder="#RRGGBB" maxlength="7" autocomplete="off" style="width:10rem;">
                 </label>
                 <label style="display:flex; align-items:center; gap:.6rem;">{{ __('levelscheme.text') }}
-                    <input type="color" name="levels[{{ $l }}][text_color]" value="{{ $fg }}" style="width:5rem; height:4rem; padding:.2rem;">
+                    <input type="color" name="levels[{{ $l }}][text_color]" value="{{ $fg }}" data-hex-picker style="width:5rem; height:4rem; padding:.2rem;">
+                    <input type="text" data-hex-text value="{{ strtoupper($fg) }}" placeholder="#RRGGBB" maxlength="7" autocomplete="off" style="width:10rem;">
                 </label>
             </div>
         @endfor
@@ -35,3 +37,19 @@
         </div>
     </form>
 </div>
+
+<script>
+(function () {
+    var re = /^#[0-9a-fA-F]{6}$/;
+    document.querySelectorAll('[data-hex-picker]').forEach(function (pk) {
+        var tx = pk.parentNode.querySelector('[data-hex-text]');
+        pk.addEventListener('input', function () { tx.value = pk.value.toUpperCase(); });
+        tx.addEventListener('input', function () {
+            var v = tx.value.trim();
+            if (v && v[0] !== '#') { v = '#' + v; }
+            if (re.test(v)) { pk.value = v; }
+        });
+        tx.addEventListener('blur', function () { tx.value = pk.value.toUpperCase(); });
+    });
+})();
+</script>
