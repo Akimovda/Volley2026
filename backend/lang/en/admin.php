@@ -363,6 +363,7 @@ return [
     'app_c_primary' => 'Primary accent (links, blue buttons, borders)',
     'app_c_secondary' => 'Secondary accent (main buttons, gradients)',
     'app_c_bg_page' => 'Page background',
+    'app_bg_overlay_hint' => 'The page background is not always fully visible: on desktop a grid and three blurred glows lie on top of it (see "Background glows" below), and the top blocks and footer use their own gradient based on this colour. For a pure colour, set the glows to the same colour as the background. If "gradient end" is filled the background becomes a gradient; clear that field (Reset) for a solid colour. Night background is set separately in the Night tab.',
     'app_c_bg_page_to' => 'Page background — gradient end (empty = solid)',
     'app_c_orb_main' => 'Background glows (two large, desktop)',
     'app_c_orb_center' => 'Center background glow (desktop)',
