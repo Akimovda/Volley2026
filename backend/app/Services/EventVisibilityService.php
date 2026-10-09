@@ -24,9 +24,25 @@ class EventVisibilityService
         return $isPrivate;
     }
 
+    /**
+     * White-label: id бренда текущего запроса (приложение не из основного бренда),
+     * иначе null. Приватные мероприятия бренда видны всем, кто пришёл через его
+     * приложение — они не должны попадать в основное приложение и другие бренды.
+     */
+    public function currentBrandId(): ?int
+    {
+        if (!app()->bound(\App\Models\Brand::class)) return null;
+        $brand = app(\App\Models\Brand::class);
+
+        return ($brand->id && !$brand->is_default) ? (int) $brand->id : null;
+    }
+
     public function canViewPrivateEvent(Event $event, ?User $user): bool
     {
         if (!$this->isPrivateEventRow($event)) return true;
+
+        $brandId = $this->currentBrandId();
+        if ($brandId !== null && (int) ($event->brand_id ?? 0) === $brandId) return true;
             // ✅ Доступ по публичному токену — для незалогиненных
         $requestToken = request()->route('token') ?? request()->query('token');
         if (
@@ -97,7 +113,9 @@ class EventVisibilityService
             }
         }
 
-        $q->where(function ($w) use ($user, $hasIsPrivate, $hasVisibility, $prefix) {
+        $brandId = $this->currentBrandId();
+
+        $q->where(function ($w) use ($user, $hasIsPrivate, $hasVisibility, $prefix, $brandId) {
 
             $w->where(function ($pub) use ($hasIsPrivate, $hasVisibility, $prefix) {
 
@@ -116,6 +134,10 @@ class EventVisibilityService
                 }
 
             });
+
+            if ($brandId !== null && Schema::hasColumn('events', 'brand_id')) {
+                $w->orWhere($prefix.'brand_id', $brandId);
+            }
 
             if ($user) {
 
