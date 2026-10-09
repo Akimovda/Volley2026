@@ -168,6 +168,14 @@ class EventIndexService
                           });
                     });
 
+                    // 2b. White-label: мероприятия бренда текущего приложения (в т.ч. приватные)
+                    $brandId = $this->visibility->currentBrandId();
+                    if ($brandId !== null && \Schema::hasColumn('events', 'brand_id')) {
+                        $outer->orWhere(function ($w) use ($brandId) {
+                            $w->where('brand_id', $brandId)->where('allow_registration', true);
+                        });
+                    }
+
                     // 3. Приватные события по которым был доступ по токену
                     if (!empty($privateAccessEventIds)) {
                         $outer->orWhereIn('id', $privateAccessEventIds);
