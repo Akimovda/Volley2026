@@ -102,6 +102,9 @@
                             <button type="button" class="btn btn-small" data-color-reset>{{ __('admin.app_reset') }}</button>
                             <span style="flex:1; min-width:20rem;">{{ $label }}</span>
                         </div>
+                        @if($gi === 0 && $key === 'bg_page_to')
+                            <p style="opacity:.7; margin:-0.4rem 0 1.2rem;">{{ __('admin.app_bg_overlay_hint') }}</p>
+                        @endif
                     @endforeach
                     @endforeach
                 </div>
