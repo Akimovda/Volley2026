@@ -1008,12 +1008,51 @@
                                     <div class="custom-radio"></div>
                                     <span>{{ __('events.age_policy_child') }}</span>
                                 </label>
+                                <div id="child_age_wrap" class="{{ $agePolicy === 'child' ? '' : 'hidden' }}">
+                                    <div class="row mt-1">
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ __('events.child_age_from') }}</label>
+                                            <input type="number" name="child_age_min" class="form-input" min="6" max="17" step="1"
+                                                value="{{ old('child_age_min', $event->child_age_min ?? 6) }}"
+                                                placeholder="{{ __('events.child_age_min_ph') }}">
+                                            @error('child_age_min')
+                                            <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">{{ __('events.child_age_to') }}</label>
+                                            <input type="number" name="child_age_max" class="form-input" min="6" max="17" step="1"
+                                                value="{{ old('child_age_max', $event->child_age_max ?? 17) }}"
+                                                placeholder="{{ __('events.child_age_max_ph') }}">
+                                            @error('child_age_max')
+                                            <div class="text-danger small mt-1">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+                                    <ul class="list f-16 mt-1 mb-2">
+                                        <li>{{ __('events.child_age_range_hint') }}</li>
+                                    </ul>
+                                </div>
                                 <label class="radio-item">
                                     <input type="radio" name="age_policy" value="any" @checked($agePolicy === 'any')>
                                     <div class="custom-radio"></div>
                                     <span>{{ __('events.age_policy_any') }}</span>
                                 </label>
                             </div>
+                            <script>
+                            (function () {
+                                var wrap = document.getElementById('child_age_wrap');
+                                if (!wrap) return;
+                                function sync() {
+                                    var c = document.querySelector('input[name="age_policy"]:checked');
+                                    wrap.classList.toggle('hidden', !(c && c.value === 'child'));
+                                }
+                                document.querySelectorAll('input[name="age_policy"]').forEach(function (r) {
+                                    r.addEventListener('change', sync);
+                                });
+                                sync();
+                            })();
+                            </script>
                         </div>
 
                     </div>

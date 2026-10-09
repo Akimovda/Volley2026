@@ -930,6 +930,8 @@ if ($role === 'admin') {
             'beach_level_min'          => ['nullable', 'integer', 'min:0', 'max:10'],
             'beach_level_max'          => ['nullable', 'integer', 'min:0', 'max:10'],
             'age_policy'               => ['nullable', 'string', 'in:adult,child,any'],
+            'child_age_min'            => ['nullable', 'integer', 'min:6', 'max:17'],
+            'child_age_max'            => ['nullable', 'integer', 'min:6', 'max:17', 'gte:child_age_min'],
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'reg_starts_hours_before'  => ['nullable', 'integer', 'min:0', 'max:23'],
             // max:87780 = 60 дней 23 часа — верхняя граница дни+часы UI (Турниры/Кемпы)
@@ -1252,6 +1254,13 @@ if ($role === 'admin') {
             }
             if (array_key_exists('age_policy', $data)) {
                 $event->age_policy = $data['age_policy'] ?? 'adult';
+                if ($event->age_policy === 'child') {
+                    $event->child_age_min = (int) ($data['child_age_min'] ?? $event->child_age_min ?? 6);
+                    $event->child_age_max = (int) ($data['child_age_max'] ?? $event->child_age_max ?? 17);
+                } else {
+                    $event->child_age_min = null;
+                    $event->child_age_max = null;
+                }
             }
             $event->is_private        = (bool) ($data['is_private'] ?? false);
             $event->is_paid           = (bool) ($data['is_paid'] ?? false);
@@ -1594,6 +1603,8 @@ if ($role === 'admin') {
                         'cancel_self_until'         => $event->cancel_self_until ?? null,
                         'cancel_self_until_waitlist' => $event->cancel_self_until_waitlist ?? null,
                         'age_policy' => $event->age_policy ?? null,
+                        'child_age_min' => $event->child_age_min ?? null,
+                        'child_age_max' => $event->child_age_max ?? null,
                         'is_snow' => $event->is_snow ?? null,
                     ]
                 );
@@ -1644,6 +1655,8 @@ if ($role === 'admin') {
                         $occ->allow_registration = $event->allow_registration ?? null;
                         $occ->max_players        = $event->gameSettings?->max_players ?? null;
                         $occ->age_policy         = $event->age_policy ?? null;
+                        $occ->child_age_min      = $event->child_age_min ?? null;
+                        $occ->child_age_max      = $event->child_age_max ?? null;
                         $occ->is_snow            = $event->is_snow ?? null;
 
                         if ($allowReg) {
