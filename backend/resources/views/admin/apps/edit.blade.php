@@ -192,21 +192,14 @@
                 <h2 class="-mt-05">{{ __('admin.app_logo_h2') }}</h2>
                     <p>{{ __('admin.app_logo_hint') }}</p>
                     @foreach(['logo_day' => ['app_logo_day', $brand->logo_day_url], 'logo_night' => ['app_logo_night', $brand->logo_night_url]] as $field => [$labelKey, $url])
-                        <div style="margin-bottom:2rem;">
+                        <div class="upl" data-upl style="margin-bottom:2rem;">
                             <div style="font-weight:600; margin-bottom:0.8rem;">{{ __('admin.' . $labelKey) }}</div>
-                            @if($url)
-                                <div style="display:inline-block; padding:1rem; border-radius:1rem; margin-bottom:1rem; background:{{ $field === 'logo_night' ? '#161721' : '#c8dcff' }};">
-                                    <img src="{{ $url }}" alt="" style="max-height:6rem; max-width:24rem; display:block;">
-                                </div>
-                            @endif
-                            <input type="file" name="{{ $field }}" accept=".png,.jpg,.jpeg,.webp,.svg">
-                            @if($url)
-                                <label class="checkbox-item" style="margin-top:0.8rem;">
-                                    <input type="checkbox" name="remove_{{ $field }}" value="1">
-                                    <div class="custom-checkbox"></div>
-                                    <span>{{ __('admin.app_remove') }}</span>
-                                </label>
-                            @endif
+                            <div class="upl-box" data-upl-box style="position:relative; display:{{ $url ? 'inline-block' : 'none' }}; padding:1rem; border-radius:1rem; margin-bottom:1rem; background:{{ $field === 'logo_night' ? '#161721' : '#c8dcff' }};">
+                                <img data-upl-img src="{{ $url }}" alt="" style="max-height:6rem; max-width:24rem; display:block;">
+                                <button type="button" data-upl-del title="{{ __('admin.app_remove') }}" aria-label="{{ __('admin.app_remove') }}" style="position:absolute; top:-0.8rem; right:-0.8rem; width:2.6rem; height:2.6rem; border-radius:50%; border:0; background:#d33; color:#fff; font-size:1.5rem; line-height:1; cursor:pointer; padding:0;">🗑</button>
+                            </div>
+                            <input type="hidden" name="remove_{{ $field }}" value="0" data-upl-remove>
+                            <input type="file" name="{{ $field }}" data-upl-file accept=".png,.jpg,.jpeg,.webp,.svg">
                         </div>
                     @endforeach
             </div>
@@ -215,17 +208,14 @@
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('admin.app_icon_h2') }}</h2>
                 <p>{{ __('admin.app_icon_hint') }}</p>
-                @if($brand->app_icon_url)
-                    <img src="{{ $brand->app_icon_url }}" alt="" style="width:9rem; height:9rem; border-radius:2rem; object-fit:cover; display:block; margin-bottom:1rem;">
-                @endif
-                <input type="file" name="app_icon" accept=".png,.jpg,.jpeg,.webp">
-                @if($brand->app_icon_url)
-                    <label class="checkbox-item" style="margin-top:0.8rem;">
-                        <input type="checkbox" name="remove_app_icon" value="1">
-                        <div class="custom-checkbox"></div>
-                        <span>{{ __('admin.app_remove') }}</span>
-                    </label>
-                @endif
+                <div class="upl" data-upl>
+                    <div class="upl-box" data-upl-box style="position:relative; display:{{ $brand->app_icon_url ? 'inline-block' : 'none' }}; margin-bottom:1rem;">
+                        <img data-upl-img src="{{ $brand->app_icon_url }}" alt="" style="width:9rem; height:9rem; border-radius:2rem; object-fit:cover; display:block;">
+                        <button type="button" data-upl-del title="{{ __('admin.app_remove') }}" aria-label="{{ __('admin.app_remove') }}" style="position:absolute; top:-0.8rem; right:-0.8rem; width:2.6rem; height:2.6rem; border-radius:50%; border:0; background:#d33; color:#fff; font-size:1.5rem; line-height:1; cursor:pointer; padding:0;">🗑</button>
+                    </div>
+                    <input type="hidden" name="remove_app_icon" value="0" data-upl-remove>
+                    <input type="file" name="app_icon" data-upl-file accept=".png,.jpg,.jpeg,.webp">
+                </div>
             </div>
 
             <div class="ramka">
@@ -251,6 +241,28 @@
         @include('levels._scheme_form', ['action' => route('admin.apps.levels', $brand), 'owner' => 'brand', 'ownerId' => $brand->id])
     </div>
 
+    <script>
+    (function () {
+        document.querySelectorAll('[data-upl]').forEach(function (w) {
+            var file = w.querySelector('[data-upl-file]'), box = w.querySelector('[data-upl-box]'),
+                img = w.querySelector('[data-upl-img]'), del = w.querySelector('[data-upl-del]'),
+                rm = w.querySelector('[data-upl-remove]');
+            file.addEventListener('change', function () {
+                var f = file.files && file.files[0];
+                if (!f) { return; }
+                rm.value = '0';
+                img.src = URL.createObjectURL(f);
+                box.style.display = 'inline-block';
+            });
+            del.addEventListener('click', function () {
+                file.value = '';
+                rm.value = '1';
+                img.removeAttribute('src');
+                box.style.display = 'none';
+            });
+        });
+    })();
+    </script>
     <script>
     (function () {
         var hexRe = /^#[0-9a-fA-F]{6}$/;
