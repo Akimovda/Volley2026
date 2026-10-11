@@ -189,7 +189,7 @@
         </div>
         @endif
 
-        <div class="row">
+        <div class="row nch-top-row">
 
             {{-- Левая колонка: подключить системный канал (Telegram / MAX) --}}
             <div class="col-lg-6">
