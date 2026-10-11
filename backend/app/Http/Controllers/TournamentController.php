@@ -133,7 +133,7 @@ class TournamentController extends Controller
         // Команды фильтруются по текущему туру — чтобы не смешивались команды разных туров
         $teams = EventTeam::where('event_id', $event->id)
             ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
-            ->whereIn('status', ['draft', 'submitted', 'approved', 'ready'])
+            ->whereIn('status', ['draft', 'submitted', 'approved', 'ready', 'reserve'])
             ->with('captain')
             ->get();
 
@@ -225,6 +225,14 @@ class TournamentController extends Controller
             }
         }
 
+        // Нелиговый турнир: команды в событийном резерве (reserve_position) — отдельным блоком,
+        // не среди основного состава
+        $eventReserveTeams = collect();
+        if (!$event->season_id) {
+            $eventReserveTeams = $teams->whereNotNull('reserve_position')->sortBy('reserve_position')->values();
+            $teams = $teams->whereNull('reserve_position')->values();
+        }
+
         // Живая укомплектованность для бейджа — предвычислено здесь одним проходом,
         // чтобы не звать сервис в цикле blade (is_complete в БД может быть stale,
         // см. report/roster-gate-recon.md).
@@ -252,7 +260,7 @@ class TournamentController extends Controller
         return view('tournaments.setup', compact(
             'event', 'stages', 'teams', 'pendingApplications',
             'applicationMode', 'userEventPhotos',
-            'seasonData', 'selectedOccurrence', 'leagueTeams',
+            'seasonData', 'selectedOccurrence', 'leagueTeams', 'eventReserveTeams',
             'tiebreakerSets', 'cleanStatsByGroup', 'outsidersByGroup',
             'unassignedPlayers', 'rosterCompleteMap',
             'isIndividualTournament', 'availablePositions'

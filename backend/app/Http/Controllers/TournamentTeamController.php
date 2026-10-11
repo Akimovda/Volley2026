@@ -542,8 +542,19 @@ class TournamentTeamController extends Controller
         // Удаляем членов
         $team->members()->delete();
 
+        // Запоминаем ДО удаления: освободился ли основной слот (нелиговый турнир)
+        $wasMainSlot = $team->reserve_position === null && !$event->season_id && $occurrenceId !== null;
+        $wasReserve  = $team->reserve_position !== null && !$event->season_id && $occurrenceId !== null;
+
         // Удаляем команду
         $team->delete();
+
+        if ($wasMainSlot) {
+            // Предлагаем освободившееся место первой команде из резерва
+            app(TournamentTeamService::class)->fillFromEventReserve((int) $event->id, $occurrenceId);
+        } elseif ($wasReserve) {
+            app(TournamentTeamService::class)->reindexEventReserve((int) $event->id, $occurrenceId);
+        }
 
         $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
@@ -553,6 +564,39 @@ class TournamentTeamController extends Controller
                 'occurrence_id' => $occurrenceId,
             ]))
             ->with('success', "Команда удалена.");
+    }
+
+    /**
+     * Организатор предлагает команде из резерва (нелиговый турнир) свободное место:
+     * капитану уходит уведомление с подтверждением на 2 часа.
+     */
+    public function offerReserveSpot(Request $request, Event $event, EventTeam $team): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        $user = $request->user();
+        abort_unless((int) $event->organizer_id === (int) $user->id || $user->isAdmin(), 403);
+
+        $occurrenceId = $team->occurrence_id ? (int) $team->occurrence_id : null;
+        $back = redirect()->route('tournament.setup', array_filter([
+            'event'         => $event->id,
+            'occurrence_id' => $occurrenceId,
+        ]));
+
+        $service = app(TournamentTeamService::class);
+
+        if ($team->reserve_position === null || $event->season_id || !$occurrenceId) {
+            return $back->with('error', 'Команда не в резерве.');
+        }
+        if ($team->confirmation_token !== null) {
+            return $back->with('error', 'Этой команде место уже предложено.');
+        }
+        if ($service->eventTournamentIsFull($event, $occurrenceId)) {
+            return $back->with('error', 'Свободных мест в основном составе нет.');
+        }
+
+        $service->offerEventReserveSpot($team);
+
+        return $back->with('success', "Команде «{$team->name}» предложено место (подтверждение — 2 часа).");
     }
 
     /**
