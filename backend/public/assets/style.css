@@ -7662,3 +7662,21 @@ body.dark .form-letters .red { color: #ff8f8f; text-shadow: 0 0 .6rem rgba(255, 
 	.row.gs-aligned > * { display: flex; flex-direction: column; justify-content: flex-end; }
 	.row.gs-aligned label { line-height: 1.2; }
 }
+
+/* /user/profile/notification-channels — блоки и бейджи каналов.
+   .badge (без .badge-sm) — круглый индикатор 1.5rem, для текстовых плашек нужен .badge-sm.
+   Bootstrap-подобные text-muted/gap-05/flex-1/pre-line/code-block в проекте не определены —
+   задаём их только внутри страницы (.nch-page), глобально не трогаем. */
+.badge.badge-sm.badge-green { background: rgba(34,139,34,.15); color: #228b22; }
+.badge.badge-sm.badge-yellow { background: rgba(217,160,0,.18); color: #a87900; }
+body.dark .badge.badge-sm.badge-green { color: #6fcf6f; }
+body.dark .badge.badge-sm.badge-yellow { color: #f0c040; }
+.nch-page .text-muted { opacity: .65; }
+.nch-page .gap-05 { gap: .5rem; }
+.nch-page .flex-1 { flex: 1; min-width: 0; }
+.nch-page .pre-line { white-space: pre-line; }
+.nch-page .code-block { display: block; padding: .8rem 1rem; border-radius: .8rem; background: rgba(120,120,128,.15); font-family: monospace; word-break: break-all; }
+.nch-channel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .8rem; flex-wrap: wrap; }
+.nch-badges { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
+.nch-actions { display: flex; align-items: center; gap: .5rem; }
+.nch-page .card.mb-1 { height: auto; margin-bottom: 1.5rem; }
