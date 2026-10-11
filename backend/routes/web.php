@@ -501,6 +501,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 
     Route::post('/events/{event}/teams/{team}/send-to-waitlist', [TournamentTeamController::class, 'sendTeamToWaitlist'])
         ->name('tournamentTeams.sendToWaitlist');
+    Route::post('/events/{event}/teams/{team}/offer-reserve', [TournamentTeamController::class, 'offerReserveSpot'])
+        ->name('tournamentTeams.offerReserveSpot');
 
     Route::post('/events/{event}/teams/{team}/withdraw', [TournamentTeamController::class, 'withdrawTeam'])
         ->name('tournamentTeams.withdraw');

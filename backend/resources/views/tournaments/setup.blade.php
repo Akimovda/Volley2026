@@ -1062,6 +1062,42 @@ $tourNumber = $seasonData
 			</div>
 			@endif
 
+			@if(($eventReserveTeams ?? collect())->isNotEmpty())
+			@php $reserveHasFreeSlot = !app(\App\Services\TournamentTeamService::class)->eventTournamentIsFull($event, (int) ($selectedOccurrence->id ?? 0)); @endphp
+			<h3 class="mt-2 mb-05">⏳ Резерв ({{ $eventReserveTeams->count() }})</h3>
+			<div class="row">
+				@foreach($eventReserveTeams as $team)
+				<div class="col-md-6 col-xl-3">
+					<div class="card" style="opacity:.85;border-style:dashed;height:auto">
+						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
+							{{ $team->name }}
+						</a>
+						@foreach($team->members->load('user') as $m)
+						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
+						@endforeach
+						<div class="mt-1 d-flex between fvc">
+							<div class="mt-05 cd b-600">№{{ $team->reserve_position }} в резерве</div>
+							<div style="display:flex;gap:4px;align-items:center">
+								@if($team->confirmation_token)
+								<span class="alert-warning p-1 pt-05 pb-05">Место предложено до {{ optional($team->confirmation_expires_at)->setTimezone(config('app.timezone'))->format('d.m H:i') }}</span>
+								@elseif($reserveHasFreeSlot)
+								<form method="POST" action="{{ route('tournamentTeams.offerReserveSpot', [$event, $team]) }}">
+									@csrf
+									<button type="submit" class="btn btn-secondary btn-small">Предложить место</button>
+								</form>
+								@endif
+								<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}">
+									@csrf @method('DELETE')
+									<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}"></button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				@endforeach
+			</div>
+			@endif
+
 			@if($incompleteTeams->isNotEmpty())
 			<h3 class="mt-2 mb-05">⏳ Ищут партнёра ({{ $incompleteTeams->count() }})</h3>
 			<div class="row">

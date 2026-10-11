@@ -1994,7 +1994,7 @@ final class TournamentTeamService
             ->where('occurrence_id', $occurrenceId)
             ->whereNotNull('reserve_position')
             ->whereNull('confirmation_token')
-            ->whereIn('status', ['draft', 'submitted'])
+            ->whereIn('status', ['draft', 'submitted', 'reserve'])
             ->orderBy('reserve_position')
             ->limit($available)
             ->get();
