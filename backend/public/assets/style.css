@@ -7680,3 +7680,10 @@ body.dark .badge.badge-sm.badge-yellow { color: #f0c040; }
 .nch-badges { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; min-width: 0; }
 .nch-actions { display: flex; align-items: center; gap: .5rem; }
 .nch-page .card.mb-1 { height: auto; margin-bottom: 1.5rem; }
+/* Ряд «Подключить / Подключённые каналы»: у .row отрицательный нижний margin (-2rem) рассчитан
+   на padding-bottom колонок; а .ramka внутри колонок уже даёт свой margin-bottom:2rem, поэтому
+   следующий за рядом блок наезжал на него на 2rem. Обнуляем оба. */
+.nch-page .nch-top-row { margin-bottom: 0; }
+.nch-page .nch-top-row > * { padding-bottom: 0; }
+/* Карточки-поля внутри форм страницы каналов — без склейки друг с другом и с кнопкой */
+.nch-page form.form > .card { height: auto; margin-bottom: 1.5rem; }
