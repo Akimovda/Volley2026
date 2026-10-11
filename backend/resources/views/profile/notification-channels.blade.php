@@ -17,7 +17,7 @@
         </li>
     </x-slot>
 
-    <div class="container">
+    <div class="container nch-page">
 
         {{-- ======= ИНСТРУКЦИЯ ======= --}}
         <div class="ramka">
@@ -63,7 +63,7 @@
                         <p class="f-14 mb-0">
                             Бот автоматически отметит канал как подтверждённый.
                             Обновите страницу — увидите его в списке с бейджем
-                            <span class="badge badge-green">подтверждён</span>.
+                            <span class="badge badge-sm badge-green">подтверждён</span>.
                         </p>
                     </div>
                 </div>
@@ -189,7 +189,7 @@
         </div>
         @endif
 
-        <div class="row row2">
+        <div class="row">
 
             {{-- Левая колонка: подключить системный канал (Telegram / MAX) --}}
             <div class="col-lg-6">
@@ -232,8 +232,8 @@
                             $isVkOwned = $isWall || $isCommunity;
                         @endphp
                         <div class="card mb-1">
-                            <div class="d-flex between">
-                                <div>
+                            <div class="nch-channel-head">
+                                <div class="nch-badges">
                                     @if($isCommunity)
                                         <span class="b-700 f-16">🔵 VK сообщество</span>
                                     @elseif($isWall)
@@ -242,17 +242,17 @@
                                         <span class="b-700 f-16">{{ strtoupper($channel->platform) }}</span>
                                     @endif
                                     @if($channel->is_verified)
-                                        <span class="badge badge-green ml-05">подтверждён</span>
+                                        <span class="badge badge-sm badge-green">подтверждён</span>
                                     @else
-                                        <span class="badge badge-yellow ml-05">ожидает</span>
+                                        <span class="badge badge-sm badge-yellow">ожидает</span>
                                     @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
-                                        <span class="badge badge-orange ml-05">🤖 свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
+                                        <span class="badge badge-sm badge-orange">🤖 свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
                                     @elseif(!$isVkOwned)
-                                        <span class="badge ml-05">системный</span>
+                                        <span class="badge badge-sm">системный</span>
                                     @endif
                                 </div>
-                                <div class="d-flex gap-05">
+                                <div class="nch-actions">
                                     @if(($channel->bot_type ?? 'system') === 'user')
                                         <button onclick="document.getElementById('upd-{{ $channel->id }}').classList.toggle('d-none')"
                                                 class="btn btn-small btn-secondary">🔑</button>
@@ -372,7 +372,7 @@
                 <a href="{{ route('organizer_pro.index') }}" class="btn">⭐ Подключить Организатор Pro</a>
             </div>
             @else
-            <div class="row row2" id="personal-bot-tabs-wrap">
+            <div class="row" id="personal-bot-tabs-wrap">
                 {{-- Вкладки --}}
                 <div class="col-12 mb-1">
                     <div class="d-flex gap-05">
@@ -474,7 +474,7 @@
                         <tr>
                             <td class="b-700">#{{ $bind->id }}</td>
                             <td>{{ strtoupper($bind->platform) }}</td>
-                            <td><span class="badge">{{ $bind->status }}</span></td>
+                            <td><span class="badge badge-sm">{{ $bind->status }}</span></td>
                             <td class="f-14">{{ $bind->expires_at?->format('d.m.Y H:i') ?? '—' }}</td>
                             <td><code class="f-13">{{ $bind->token }}</code></td>
                         </tr>
