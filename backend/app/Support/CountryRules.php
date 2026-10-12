@@ -46,11 +46,12 @@ class CountryRules
             : '/^\p{L}[\p{L}\p{M} \-\'’.]*$/u';
     }
 
-    public static function nameMessage(?string $country, string $label): string
+    /** $field: first | last | patronym */
+    public static function nameMessage(?string $country, string $field): string
     {
         return self::usesCyrillicNames($country)
-            ? "{$label} должно быть на кириллице (разрешены пробел/дефис)."
-            : "{$label}: допустимы только буквы, пробел, дефис и апостроф.";
+            ? __('profile.err_' . $field . '_cyr')
+            : __('profile.err_name_latin', ['label' => __('profile.cp_lbl_' . ($field === 'patronym' ? 'patronym' : $field))]);
     }
 
     /** Нормализация одного компонента ФИО. Для кириллических стран — вызывающий код делает транслит сам. */
@@ -167,10 +168,21 @@ class CountryRules
         return implode(' ', $words);
     }
 
+    /** Пример мобильного номера страны в международном формате (из libphonenumber), напр. «+995 555 12 34 56». */
+    public static function phoneExample(?string $country): string
+    {
+        $country = self::normalizeCountry($country);
+        try {
+            $util = PhoneNumberUtil::getInstance();
+            $num = $util->getExampleNumberForType($country, \libphonenumber\PhoneNumberType::MOBILE) ?? $util->getExampleNumber($country);
+            return $num ? $util->format($num, PhoneNumberFormat::INTERNATIONAL) : '+' . $util->getCountryCodeForRegion($country);
+        } catch (\Throwable) {
+            return '+';
+        }
+    }
+
     public static function phoneMessage(?string $country): string
     {
-        return self::normalizeCountry($country) === 'RU'
-            ? 'Телефон должен быть в формате +7XXXXXXXXXX (11 цифр после +7).'
-            : 'Укажите корректный номер телефона в международном формате (например, +995 555 12 34 56).';
+        return __('profile.err_phone', ['example' => self::phoneExample($country)]);
     }
 }

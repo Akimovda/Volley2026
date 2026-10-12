@@ -74,6 +74,9 @@
 		$cyrCountries = \App\Support\CountryRules::CYRILLIC_NAME_COUNTRIES;
 		$dialCodes = collect(\App\Support\CountryRules::SUPPORTED)
 			->mapWithKeys(fn ($c) => [$c => '+' . \libphonenumber\PhoneNumberUtil::getInstance()->getCountryCodeForRegion($c)])->all();
+		// Пример номера для placeholder — свой формат у каждой страны
+		$phoneExamples = collect(\App\Support\CountryRules::SUPPORTED)
+			->mapWithKeys(fn ($c) => [$c => \App\Support\CountryRules::phoneExample($c)])->all();
 
 		// Prefill маски телефона на сервере
 		$phoneMaskedPrefill = old('phone_masked');
@@ -605,7 +608,7 @@
 												id="phone_masked"
 												value="{{ $phoneMaskedPrefill }}"
 												class="{{ $errors->has('phone') ? 'input-error' : '' }}"
-												placeholder="{{ $userCountry === 'RU' ? '+7 (___) ___-__-__' : ($dialCodes[$userCountry] ?? '+') . ' …' }}"
+												placeholder="{{ $userCountry === 'RU' ? '+7 (___) ___-__-__' : ($phoneExamples[$userCountry] ?? '+') }}"
 												inputmode="tel"
 												autocomplete="tel"
 												@disabled($lockedPhone)
@@ -1514,6 +1517,7 @@
 							const countrySel = document.getElementById('country_code');
 							const CYR_COUNTRIES = @json($cyrCountries);
 							const DIAL_CODES = @json($dialCodes);
+							const PHONE_EXAMPLES = @json($phoneExamples);
 							const HINT_CYR = @json(__('profile.cp_hint_cyr_name'));
 							const HINT_LATIN = @json(__('profile.cp_hint_latin_name'));
 							function curCountry() { return countrySel ? countrySel.value : @json($userCountry); }
@@ -1644,7 +1648,7 @@
 									const c = curCountry();
 									document.querySelectorAll('[data-name-hint]').forEach(el => { el.textContent = cyrMode() ? HINT_CYR : HINT_LATIN; });
 									if (phoneMasked && !phoneMasked.disabled) {
-										phoneMasked.placeholder = c === 'RU' ? '+7 (___) ___-__-__' : (DIAL_CODES[c] || '+') + ' …';
+										phoneMasked.placeholder = c === 'RU' ? '+7 (___) ___-__-__' : (PHONE_EXAMPLES[c] || DIAL_CODES[c] || '+');
 										if (c !== 'RU' && !phoneMasked.value.trim()) phoneMasked.value = DIAL_CODES[c] || '';
 										phoneE164.value = phoneToE164(phoneMasked.value);
 									}

@@ -574,4 +574,11 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
             ['Play and grow', 'After matches your rating updates automatically. Join leagues and tournaments, track your progress.'],
         ],
     ],
+
+    // Descriptions for cities outside RU/KZ/UZ (scope intl): no Russian ranks or leagues; other levels use the standard texts
+    'lp_intl_classic_4' => 'Stable attack, double block. Usually a single setter (5-1) and first-tempo players. About the level of mid-table and leading teams in amateur leagues. Roles are present. Setter has good technique but can\'t always play first tempo and outside hitters. Libero: 70% reception with a normal pass to the setter.',
+    'lp_intl_classic_5' => 'Tempo and combination play (high sets, "wave" sets, quick crosses). 5-1 system, can deliver the ball to any zone and support any combination. Level of strong amateur-league teams or sports-school/academy graduates. Libero: 80% reception with pass to setter.',
+    'lp_intl_classic_6' => 'Semi-professional level: former pros, current pro beach players, players from top amateur and semi-pro league teams.',
+    'lp_intl_beach_5' => 'Good technique, focus on tactics: cross-court serves, hits past the block, block-out, dinks, blocking (if height allows), good defensive positioning. Often a role specialist or universal. Strong amateur level, regularly places in club tournaments.',
+    'lp_intl_beach_6' => 'Semi-professional level. Plays in major tournaments, high level of technique and tactics, but not on a permanent contract with a pro club.',
 ];

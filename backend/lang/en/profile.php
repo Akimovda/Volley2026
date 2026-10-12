@@ -987,4 +987,13 @@ return [
     'cp_lbl_country'      => 'Country',
     'cp_country_hint'     => 'Your country sets the phone format, name spelling and the list of cities',
     'cp_hint_latin_name'  => 'Letters, space, hyphen; Latin letters are fine, ≥2 chars',
+    'err_first_cyr'   => 'First name must be in Cyrillic (spaces and hyphens allowed).',
+    'err_last_cyr'    => 'Last name must be in Cyrillic (spaces and hyphens allowed).',
+    'err_patronym_cyr'=> 'Patronymic must be in Cyrillic (spaces and hyphens allowed).',
+    'err_name_latin'  => ':label: only letters, spaces, hyphens and apostrophes are allowed.',
+    'err_phone'       => 'Enter a phone number in your country\'s format, for example :example.',
+    'err_phone_any'   => 'Phone must be in international format: +7 (XXX) XXX-XX-XX for Russia, or +country code and number.',
+    'err_group_fill'  => 'Please fill in all fields of the group: Last name, First name and Phone.',
+    'err_cannot_empty'=> 'This field cannot be left empty.',
+    'err_level_age'   => 'This level is not available for your age.',
 ];

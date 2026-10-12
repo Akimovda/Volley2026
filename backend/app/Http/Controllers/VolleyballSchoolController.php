@@ -568,7 +568,7 @@ class VolleyballSchoolController extends Controller
     {
         return function ($attr, $value, $fail) {
             if (!\App\Support\CountryRules::isValidAnyPhone($value)) {
-                $fail('Телефон должен быть в международном формате: +7XXXXXXXXXX для России или +код страны и номер.');
+                $fail(__('profile.err_phone_any'));
             }
         };
     }
