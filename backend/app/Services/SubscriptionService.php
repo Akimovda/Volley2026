@@ -162,6 +162,57 @@ class SubscriptionService
     }
 
     /**
+     * Если у организатора подходит РОВНО одно мероприятие для автозаписи и выбор позиции
+     * не требуется (пляжка, классика «без амплуа») — настроить автозапись сразу при выдаче.
+     * Игрок иначе должен сам зайти в «Мои абонементы» и добавить мероприятие (на проде
+     * 2026-10-12 из 8 держателей шаблона настроил только один). Возвращает событие или null.
+     */
+    private function autoConfigureSingleEvent(Subscription $sub): ?\App\Models\Event
+    {
+        $user = \App\Models\User::find($sub->user_id);
+        if (!$user) {
+            return null;
+        }
+
+        $candidates = $this->autoBookingEventsFor($sub, $user);
+        if ($candidates->count() !== 1 || $candidates->first()['required']) {
+            return null;
+        }
+
+        $event = \App\Models\Event::with('gameSettings')->find($candidates->first()['id']);
+        if (!$event) {
+            return null;
+        }
+
+        $position = app(EventRoleSlotService::class)->mainRoles($event)[0] ?? null;
+
+        $occurrence = $event->occurrences()
+            ->where('starts_at', '>', now())
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->orderBy('starts_at')
+            ->first();
+        if (!$occurrence) {
+            return null;
+        }
+
+        if (!app(\App\Services\EventRegistrationGuard::class)->checkStaticEligibility($user, $occurrence, $position)->allowed) {
+            return null;
+        }
+
+        try {
+            \App\Models\SubscriptionAutoBooking::firstOrCreate(
+                ['subscription_id' => $sub->id, 'event_id' => $event->id],
+                ['user_id' => $user->id, 'position' => $position],
+            );
+        } catch (\Illuminate\Database\QueryException $e) {
+            return null;
+        }
+
+        return $event;
+    }
+
+    /**
      * При получении абонемента с автозаписью — сообщить игроку, что автозапись нужно
      * настроить, и что для классики с амплуа обязательно выбрать позицию (без неё
      * автозапись на это мероприятие не работает). Во все каналы, включая push.
@@ -172,6 +223,25 @@ class SubscriptionService
         try {
             $sub->loadMissing('template');
             if (!$sub->template || !$sub->template->auto_booking_enabled) {
+                return;
+            }
+
+            $autoEvent = $this->autoConfigureSingleEvent($sub);
+            if ($autoEvent) {
+                $this->notificationService->create(
+                    userId: (int) $sub->user_id,
+                    type: 'subscription_auto_booking_hint',
+                    title: '🎫 Абонемент: автозапись настроена',
+                    body: "По абонементу «{$sub->template->name}» автозапись уже настроена на мероприятие «{$autoEvent->title}»: "
+                        . 'вы будете записаны автоматически в момент открытия регистрации на каждый тур. '
+                        . 'Отключить или изменить можно в «Мои абонементы».',
+                    payload: [
+                        'subscription_id' => $sub->id,
+                        'button_text'     => 'Мои абонементы',
+                        'button_url'      => route('subscriptions.my'),
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
+                );
                 return;
             }
 
