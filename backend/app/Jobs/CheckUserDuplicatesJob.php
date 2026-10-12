@@ -41,14 +41,13 @@ class CheckUserDuplicatesJob implements ShouldQueue
         }
 
         $url    = config('app.url') . '/admin/users/duplicates';
-        $lines[] = "\n<a href=\"{$url}\">Открыть в панели</a>";
 
-        $this->sendTelegram(implode("\n", $lines));
+        $this->sendTelegram(implode("\n", $lines), $url);
 
         Log::info("[CheckUserDuplicatesJob] Найдено {$total} групп дублей (red={$red}, yellow={$yellow}).");
     }
 
-    private function sendTelegram(string $text): void
+    private function sendTelegram(string $text, string $url): void
     {
         $token  = config('services.telegram.bot_token');
         $chatId = config('services.telegram.admin_chat_id');
@@ -64,6 +63,9 @@ class CheckUserDuplicatesJob implements ShouldQueue
                 'text'                     => $text,
                 'parse_mode'               => 'HTML',
                 'disable_web_page_preview' => true,
+                'reply_markup'             => [
+                    'inline_keyboard' => [[['text' => '👥 Открыть в панели', 'url' => $url]]],
+                ],
             ])->throw();
         } catch (\Throwable $e) {
             $body = $e instanceof RequestException ? ' | ответ: ' . $e->response->body() : '';
