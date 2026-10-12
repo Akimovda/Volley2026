@@ -6,6 +6,20 @@
             <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary">{{ __('subscriptions.org_btn_templates') }}</a>
         </div>
     </x-slot>
+    <x-slot name="style">
+    <style>
+        .sub-st{font-weight:600;white-space:nowrap}
+        .sub-st--active{color:#1e9e3e}
+        .sub-st--ending{color:#e7812f}
+        .sub-st--cancelled{color:#d93636}
+        .sub-st--frozen{color:#2967BA}
+        .sub-st--expired,.sub-st--exhausted{opacity:.5}
+        body.dark .sub-st--active{color:#5ee68c}
+        body.dark .sub-st--ending{color:#FFB171}
+        body.dark .sub-st--cancelled{color:#ff7b7b}
+        body.dark .sub-st--frozen{color:#8db6ff}
+    </style>
+    </x-slot>
     <div class="container">
     <div class="row">
         <div class="col-lg-4 col-xl-3 order-2 d-none d-lg-block">
@@ -36,8 +50,8 @@
                         <label>{{ __('subscriptions.col_status') }}</label>
                         <select name="status">
                             <option value="">{{ __('subscriptions.flt_all') }}</option>
-                            @foreach(['active','frozen','expired','exhausted','cancelled'] as $st)
-                                <option value="{{ $st }}" @selected($filters['status']===$st)>{{ __('subscriptions.status_'.$st) }}</option>
+                            @foreach(['active','ending','frozen','expired','exhausted','cancelled'] as $st)
+                                <option value="{{ $st }}" @selected($filters['status']===$st)>{{ __('subscriptions.st_'.$st) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -79,12 +93,7 @@
                             <td>{{ $sub->template->name }}</td>
                             <td>{{ $sub->visits_remaining }} / {{ $sub->visits_total }}</td>
                             <td>
-                                @if($sub->status==='active') <span class="cs">{{ __('subscriptions.status_active') }}</span>
-                                @elseif($sub->status==='frozen') <span class="cd">{{ __('subscriptions.status_frozen') }}</span>
-                                @elseif($sub->status==='expired') <span style="opacity:.5">{{ __('subscriptions.status_expired') }}</span>
-                                @elseif($sub->status==='exhausted') <span style="opacity:.5">{{ __('subscriptions.status_exhausted') }}</span>
-                                @elseif($sub->status==='cancelled') <span class="cd">{{ __('subscriptions.status_cancelled') }}</span>
-                                @else {{ $sub->status }} @endif
+                                @php $ds = $sub->displayStatus(); @endphp<span class="sub-st sub-st--{{ $ds }}">{{ __('subscriptions.st_'.$ds) }}</span>
                             </td>
                             <td>{{ $sub->expires_at ? $sub->expires_at->format('d.m.Y') : '∞' }}</td>
                             <td class="nowrap">

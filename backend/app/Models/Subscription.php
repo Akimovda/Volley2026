@@ -8,6 +8,9 @@ use Carbon\Carbon;
 
 class Subscription extends Model
 {
+    /** Активный абонемент с таким или меньшим остатком (но > 0) считается «заканчивающимся». */
+    public const ENDING_VISITS = 2;
+
     protected $fillable = [
         'user_id', 'template_id', 'organizer_id',
         'starts_at', 'expires_at',
@@ -38,6 +41,15 @@ class Subscription extends Model
     public function isFrozen(): bool   { return $this->status === 'frozen'; }
     public function isExpired(): bool  { return $this->status === 'expired'; }
     public function isExhausted(): bool { return $this->status === 'exhausted'; }
+
+    /** Статус для отображения организатору: active → ending при малом остатке. */
+    public function displayStatus(): string
+    {
+        if ($this->status === 'active' && $this->visits_remaining > 0 && $this->visits_remaining <= self::ENDING_VISITS) {
+            return 'ending';
+        }
+        return $this->status;
+    }
 
     public function hasVisitsLeft(): bool
     {
