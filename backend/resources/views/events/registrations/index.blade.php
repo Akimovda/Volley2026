@@ -964,16 +964,8 @@ $logPositionDetail = function ($log) {
 						cb.addEventListener('change', updateLinks);
 					});
 					
-					// Android WebView не обрабатывает Content-Disposition: attachment —
-					// открываем через системный браузер (Chrome), который умеет скачивать файлы
-					if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
-						[lPdf, lTxt].forEach(function(link) {
-							link.addEventListener('click', function(e) {
-								e.preventDefault();
-								window.open(this.href, '_system');
-							});
-						});
-					}
+					// В приложении файл сохраняется через общий обработчик (script.js, [data-file-download])
+					[lPdf, lTxt].forEach(function(link) { link.setAttribute('data-file-download', ''); });
 				})();
 				
 				// --- Лист ожидания: toggle формы добавления ---

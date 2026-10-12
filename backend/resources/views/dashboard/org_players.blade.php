@@ -95,8 +95,8 @@
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <h2 class="-mt-05">👥 Вся ваша аудитория</h2>
                 <div class="d-flex gap-1 flex-wrap">
-                    <a href="#" id="audience-export-pdf" class="btn btn-sm btn-secondary" target="_blank">📄 PDF</a>
-                    <a href="#" id="audience-export-csv" class="btn btn-sm btn-secondary" target="_blank">📊 Excel (CSV)</a>
+                    <a href="#" id="audience-export-pdf" data-file-download class="btn btn-sm btn-secondary" target="_blank">📄 PDF</a>
+                    <a href="#" id="audience-export-csv" data-file-download class="btn btn-sm btn-secondary" target="_blank">📊 Excel (CSV)</a>
                 </div>
             </div>
 

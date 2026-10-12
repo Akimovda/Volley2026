@@ -1354,3 +1354,82 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 		io.observe(card);
 	});
 })();
+
+/* ---------------------------------------------------------------------------
+ * Скачивание файлов (PDF/Excel/TXT/CSV) в нативных приложениях.
+ * Ссылка с атрибутом data-file-download: в браузере работает как обычно, в приложении
+ * (html.is-app / Capacitor) файл скачивается и отдаётся в системное «Поделиться / Сохранить в Файлы»
+ * вместо открытия в WebView без кнопок «назад»/«сохранить».
+ * Нет Web Share для файлов (часть Android WebView) → открываем через системный браузер, он скачивает сам.
+ * ------------------------------------------------------------------------- */
+(function () {
+	function inApp() {
+		return document.documentElement.classList.contains('is-app') || !!window.Capacitor;
+	}
+	function isAndroid() {
+		return window.Capacitor && window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android';
+	}
+	function fileNameFrom(resp, url) {
+		var cd = resp.headers.get('Content-Disposition') || '';
+		var m = /filename\*=UTF-8''([^;]+)/i.exec(cd) || /filename="?([^";]+)"?/i.exec(cd);
+		if (m) { try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; } }
+		var ct = (resp.headers.get('Content-Type') || '').toLowerCase();
+		var ext = ct.indexOf('pdf') >= 0 ? 'pdf' : ct.indexOf('spreadsheetml') >= 0 ? 'xlsx' : ct.indexOf('csv') >= 0 ? 'csv' : ct.indexOf('text/plain') >= 0 ? 'txt' : 'bin';
+		return 'report-' + Date.now() + '.' + ext;
+	}
+	function fallbackOpen(url) {
+		if (isAndroid()) { window.open(url, '_system'); } else { window.location.href = url; }
+	}
+	function shareFile(file) {
+		return navigator.share({ files: [file], title: file.name });
+	}
+	function say(opts) {
+		if (window.swal) { return window.swal(opts); }
+		return Promise.resolve(window.confirm(opts.text || opts.title) ? true : null);
+	}
+
+	document.addEventListener('click', function (e) {
+		var link = e.target.closest && e.target.closest('a[data-file-download]');
+		if (!link || !inApp()) return;
+		var url = link.href;
+		if (!url || url.slice(-1) === '#') return;
+		e.preventDefault();
+		e.stopImmediatePropagation();
+		if (link.getAttribute('aria-busy') === 'true') return;
+
+		var canFiles = typeof navigator.canShare === 'function' && typeof navigator.share === 'function';
+		if (!canFiles && !(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Share)) {
+			fallbackOpen(url);
+			return;
+		}
+
+		link.setAttribute('aria-busy', 'true');
+		link.style.opacity = '.6';
+		fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+			.then(function (resp) {
+				if (!resp.ok) throw new Error('HTTP ' + resp.status);
+				return resp.blob().then(function (blob) { return { blob: blob, name: fileNameFrom(resp, url) }; });
+			})
+			.then(function (r) {
+				var file = new File([r.blob], r.name, { type: r.blob.type || 'application/octet-stream' });
+				if (!canFiles || !navigator.canShare({ files: [file] })) { fallbackOpen(url); return; }
+				return shareFile(file).catch(function (err) {
+					if (err && err.name === 'AbortError') return; // пользователь закрыл окно — не ошибка
+					// Активация жеста истекла после загрузки — просим нажать ещё раз (жест нужен для share)
+					return say({
+						title: file.name,
+						text: document.documentElement.lang === 'en' ? 'The file is ready.' : 'Файл готов.',
+						icon: 'success',
+						buttons: { cancel: { text: document.documentElement.lang === 'en' ? 'Close' : 'Закрыть', value: null }, ok: { text: document.documentElement.lang === 'en' ? 'Save / Share' : 'Сохранить', value: true } }
+					}).then(function (v) {
+						if (v) return shareFile(file).catch(function () { fallbackOpen(url); });
+					});
+				});
+			})
+			.catch(function () { fallbackOpen(url); })
+			.then(function () {
+				link.removeAttribute('aria-busy');
+				link.style.opacity = '';
+			});
+	}, true);
+})();

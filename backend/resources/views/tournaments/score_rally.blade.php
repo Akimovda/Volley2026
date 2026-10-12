@@ -237,7 +237,7 @@
 				{{ __('tournaments.btn_back') }}
 			</a>
 			@if($match->isCompleted())
-			<a href="{{ route('tournament.matches.pdf_stats', $match) }}" class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
+			<a href="{{ route('tournament.matches.pdf_stats', $match) }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
 				📊 PDF
 			</a>
 			@endif
