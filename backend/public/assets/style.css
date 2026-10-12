@@ -7687,3 +7687,14 @@ body.dark .badge.badge-sm.badge-yellow { color: #f0c040; }
 .nch-page .nch-top-row > * { padding-bottom: 0; }
 /* Карточки-поля внутри форм страницы каналов — без склейки друг с другом и с кнопкой */
 .nch-page form.form > .card { height: auto; margin-bottom: 1.5rem; }
+
+/* Меню в шапке (пользователь/организатор/админ): плотнее вертикальные отступы между пунктами (2026-10-12).
+   Специфичность выше, чем у `header .menu-item` (mobile) и `.fix-header-menu .menu-item` (desktop). */
+.fix-header-menu .menu-nav .menu-item,
+.fix-header-menu .menu-nav .menu-item-title {
+	padding-top: 0.3rem;
+	padding-bottom: 0.3rem;
+}
+.fix-header-menu .menu-nav .menu-item::after {
+	bottom: 0.1rem;
+}
