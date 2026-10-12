@@ -30,6 +30,7 @@ final class PlaceholderUserService
             'last_name'          => $last,
             'gender'             => $data['gender'] ?? null,
             'phone'              => $data['phone'] ?? null,
+            'country_code'       => \App\Support\CountryRules::normalizeCountry($data['country_code'] ?? $actor->country_code),
             // email NOT NULL + unique; войти нельзя — нет провайдеров, пароль случайный
             'email'              => 'placeholder-' . Str::uuid() . '@placeholder.local',
             'password'           => Hash::make(Str::random(40)),
@@ -92,7 +93,26 @@ final class PlaceholderUserService
             })
             ->orderBy('id')
             ->limit(20)
-            ->get();
+            ->get()
+            ->concat($this->suggestByLooseName($placeholder))
+            ->unique('id')
+            ->values();
+    }
+
+    /** Совпадение ФИО в другом алфавите/порядке («Иван Петров» ↔ «Ivan Petrov»). */
+    private function suggestByLooseName(User $placeholder)
+    {
+        $key = \App\Support\CountryRules::looseNameKey($placeholder->first_name, $placeholder->last_name);
+        if ($key === '' || !str_contains($key, ' ')) {
+            return collect();
+        }
+
+        return $this->realUsers()
+            ->whereRaw("TRIM(COALESCE(first_name,'')) != '' AND TRIM(COALESCE(last_name,'')) != ''")
+            ->select(['id', 'first_name', 'last_name'])
+            ->get()
+            ->filter(fn ($u) => \App\Support\CountryRules::looseNameKey($u->first_name, $u->last_name) === $key)
+            ->pipe(fn ($c) => $c->isEmpty() ? $c : User::whereIn('id', $c->pluck('id'))->limit(10)->get());
     }
 
     public function searchRealUsers(string $q)

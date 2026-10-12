@@ -600,6 +600,53 @@ class UserMergeService
             ];
         }
 
+        // 4. То же ФИО в другом алфавите или порядке слов («Иван Петров» / «Ivan Petrov»): иностранцы пишут латиницей,
+        //    а у части старых пользователей латиница уже переведена в кириллицу. Ключ нестрогий — только подсказка админу.
+        $rows = DB::table('users')
+            ->select(['id', 'first_name', 'last_name'])
+            ->where('is_bot', false)
+            ->whereNull('deleted_at')
+            ->whereNull('merged_into_user_id')
+            ->whereRaw("TRIM(COALESCE(first_name,'')) != '' AND TRIM(COALESCE(last_name,'')) != ''")
+            ->when(!empty($seenIds), fn ($q) => $q->whereNotIn('id', array_keys($seenIds)))
+            ->get();
+
+        $byKey = [];
+        foreach ($rows as $r) {
+            $key = \App\Support\CountryRules::looseNameKey($r->first_name, $r->last_name);
+            if ($key !== '' && str_contains($key, ' ')) {
+                $byKey[$key][] = (int) $r->id;
+            }
+        }
+
+        foreach ($byKey as $ids) {
+            if (count($ids) < 2) continue;
+
+            $users = User::whereIn('id', $ids)->orderBy('id')->get();
+            foreach ($ids as $id) {
+                $seenIds[$id] = true;
+            }
+
+            [$statsMap, $recommendedPrimaryId] = $this->buildGroupStats($users);
+
+            $conflictsMap = [];
+            foreach ($users as $u) {
+                if ($u->id !== $recommendedPrimaryId) {
+                    $conflictsMap[$u->id] = $this->upcomingConflicts($recommendedPrimaryId, $u->id);
+                }
+            }
+
+            $result[] = [
+                'level'               => 'yellow',
+                'label'               => 'Имя + Фамилия (латиница/кириллица)',
+                'phone'               => null,
+                'users'               => $users,
+                'stats'               => $statsMap,
+                'recommended_primary' => $recommendedPrimaryId,
+                'conflicts'           => $conflictsMap,
+            ];
+        }
+
         return $result;
     }
 

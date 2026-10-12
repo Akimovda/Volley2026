@@ -1543,7 +1543,9 @@ document.addEventListener("trix-file-accept", function (event) {
 		// Терминология уровней (см. app/helpers.php level_terminology_scope_for_region()
 		// на сервере — те же 2 значения региона, единая точка правды продублирована
 		// здесь намеренно, т.к. смена города происходит без перезагрузки страницы).
-		function levelScopeForRegion(region) {
+		function levelScopeForRegion(region, country) {
+			country = String(country || '').toUpperCase();
+			if (country && ['RU', 'KZ', 'UZ'].indexOf(country) === -1) return 'intl';
 			return (region === 'Санкт-Петербург' || region === 'Ленинградская область') ? 'spb' : 'standard';
 		}
 
@@ -1775,7 +1777,7 @@ document.addEventListener("trix-file-accept", function (event) {
 
 			// Терминология уровней на step1 — по географии только что выбранного
 			// города (после выбора локации/города география важнее города организатора).
-			relabelLevelSelects(id ? levelScopeForRegion(region) : (cityWrap.getAttribute('data-organizer-level-scope') || 'standard'));
+			relabelLevelSelects(id ? levelScopeForRegion(region, countryCode) : (cityWrap.getAttribute('data-organizer-level-scope') || 'standard'));
 
 			if (cityInput) {
 				let displayName = name;

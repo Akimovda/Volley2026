@@ -25,8 +25,13 @@ if (! function_exists('level_terminology_scope_for_region')) {
      * иначе 'standard'. Используется и для Eloquent City, и для построчных
      * SQL-выборок (например виджет), где модели City нет.
      */
-    function level_terminology_scope_for_region(?string $region): string
+    function level_terminology_scope_for_region(?string $region, ?string $country = null): string
     {
+        // Зарубежные города (вне RU/KZ/UZ) — нейтральные названия без российских разрядов (КМС/МС)
+        if ($intl = \App\Support\CountryRules::levelScopeForCountry($country)) {
+            return $intl;
+        }
+
         $region = trim((string) $region);
 
         return in_array($region, ['Санкт-Петербург', 'Ленинградская область'], true)
@@ -42,7 +47,7 @@ if (! function_exists('level_terminology_scope_for_city')) {
             return 'standard';
         }
 
-        return level_terminology_scope_for_region($city->region);
+        return level_terminology_scope_for_region($city->region, $city->country_code);
     }
 }
 
@@ -77,6 +82,14 @@ if (! function_exists('level_name')) {
             return $custom;
         }
 
+        if ($scope === 'intl') {
+            $key = 'events.intl_level_' . $level;
+            $translated = __($key);
+            if ($translated !== $key) {
+                return $translated;
+            }
+        }
+
         if ($scope === 'spb') {
             $key = 'events.spb_level_' . $level;
             $translated = __($key);
@@ -106,7 +119,11 @@ if (! function_exists('level_name_short')) {
         if ($custom = \App\Services\LevelLabelService::name($level, $organizerId, true)) {
             return $custom;
         }
-        $key = $scope === 'spb' ? 'events.spb_level_short_' . $level : 'events.level_short_' . $level;
+        $key = match ($scope) {
+            'spb'   => 'events.spb_level_short_' . $level,
+            'intl'  => 'events.intl_level_short_' . $level,
+            default => 'events.level_short_' . $level,
+        };
         $translated = __($key);
         return $translated !== $key ? $translated : (string) $level;
     }
@@ -121,8 +138,8 @@ if (! function_exists('level_filter_label')) {
     {
         $level = (int) $level;
 
-        if ($scope === 'spb') {
-            return level_name($level, 'spb');
+        if ($scope === 'spb' || $scope === 'intl') {
+            return level_name($level, $scope);
         }
 
         $key = 'events.filter_level_' . $level;

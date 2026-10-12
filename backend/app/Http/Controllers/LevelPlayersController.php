@@ -14,7 +14,7 @@ class LevelPlayersController extends Controller
 {
     public function __invoke(Request $request)
     {
-        $scope = in_array($request->query('scope'), ['spb', 'standard'], true) ? $request->query('scope') : null;
+        $scope = in_array($request->query('scope'), ['spb', 'standard', 'intl'], true) ? $request->query('scope') : null;
 
         if ($request->boolean('embed')) {
             return view('pages.level_players_embed', [

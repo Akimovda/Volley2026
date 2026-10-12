@@ -57,7 +57,10 @@ $organizers = $isAdmin
 				const phoneE164   = document.getElementById('phone_e164_school');
 				
 				function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
+				// Зарубежный номер (+код не 7) — оставляем как ввели, без маски +7; сервер проверит
+				function isForeign(raw) { const t = String(raw || '').trim(); return t.startsWith('+') && !t.startsWith('+7'); }
 				function toE164Ru(raw) {
+					if (isForeign(raw)) return '+' + digitsOnly(raw);
 					let d = digitsOnly(raw);
 					if (d.length === 11 && d.startsWith('8')) d = '7' + d.slice(1);
 					if (d.length === 11 && d.startsWith('7')) return '+7' + d.slice(1);
@@ -65,6 +68,7 @@ $organizers = $isAdmin
 					return d ? '+' + d : '';
 				}
 				function formatMask(raw) {
+					if (isForeign(raw)) return String(raw).trim();
 					let d = digitsOnly(raw);
 					if (d.startsWith('7') || d.startsWith('8')) d = d.slice(1);
 					d = d.slice(0, 10);
@@ -264,7 +268,7 @@ $organizers = $isAdmin
 										inputmode="tel">
 										<input type="hidden" name="phone" id="phone_e164_school"
 										value="{{ old('phone') }}">
-										<ul class="list f-16 mt-1"><li>Формат: +7 (999) 000-00-00</li></ul>
+										<ul class="list f-16 mt-1"><li>Формат: +7 (999) 000-00-00 или международный (+995 555 12 34 56)</li></ul>
 										@error('phone')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
 									</div>
 								</div>
