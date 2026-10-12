@@ -102,6 +102,9 @@ document.addEventListener('DOMContentLoaded', function() {
 		const u = new URL(url, window.location.origin);
 		u.searchParams.set('q', q || '');
 		u.searchParams.set('limit', '30');
+		// На странице профиля есть селектор страны — ищем только в ней
+		const countrySel = document.getElementById('country_code');
+		if (countrySel && countrySel.value) u.searchParams.set('country', countrySel.value);
 		
 		const r = await fetch(u.toString(), {
 			headers: { 'Accept': 'application/json' },
@@ -166,6 +169,16 @@ document.addEventListener('DOMContentLoaded', function() {
 		return groups;
 	}
 	
+	// Смена страны сбрасывает выбранный город (он принадлежит другой стране)
+	const countrySelect = document.getElementById('country_code');
+	if (countrySelect && cityInput && cityId && !cityInput.disabled) {
+		countrySelect.addEventListener('change', () => {
+			cityId.value = '';
+			cityInput.value = '';
+			hideDropdown();
+		});
+	}
+
 	if (cityWrap && cityInput && cityId && dd && results) {
 		if (cityInput.disabled) {
 			cityInput.classList.add('city-search-input--disabled');

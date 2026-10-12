@@ -984,4 +984,7 @@ return [
     'wst_v_ru' => 'Русский',
     'wst_v_en' => 'English',
     'wst_v_auto' => 'Visitor’s browser language',
+    'cp_lbl_country'      => 'Country',
+    'cp_country_hint'     => 'Your country sets the phone format, name spelling and the list of cities',
+    'cp_hint_latin_name'  => 'Letters, space, hyphen; Latin letters are fine, ≥2 chars',
 ];

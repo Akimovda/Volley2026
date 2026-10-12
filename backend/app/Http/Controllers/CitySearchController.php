@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\City;
+use App\Support\CountryRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -24,9 +25,14 @@ class CitySearchController extends Controller
         // ILIKE в Postgres — ок
         $like = '%' . str_replace(['%', '_'], ['\%', '\_'], $q) . '%';
 
+        // Необязательный фильтр по стране (селектор страны в профиле); без него — все поддерживаемые страны,
+        // но RU/KZ/UZ в выдаче выше остальных — для привычных запросов результат прежний.
+        $country = strtoupper(trim((string) $request->query('country', '')));
+        $countries = in_array($country, CountryRules::SUPPORTED, true) ? [$country] : CountryRules::SUPPORTED;
+
         $items = DB::table('cities')
             ->select(['id', 'name', 'region', 'country_code', 'population'])
-            ->whereIn('country_code', ['RU', 'KZ', 'UZ'])
+            ->whereIn('country_code', $countries)
 
             // Убираем районы Москвы (оставляем только "Москва")
             // Т.е. region='Moscow' допустим только если name='Москва'
@@ -44,6 +50,7 @@ class CitySearchController extends Controller
 
             // “релевантность”: сначала точные совпадения (без регистра), потом популярные, потом алфавит
             ->orderByRaw("CASE WHEN lower(name) = lower(?) THEN 0 ELSE 1 END", [$q])
+            ->orderByRaw("CASE WHEN country_code IN ('RU','KZ','UZ') THEN 0 ELSE 1 END")
             ->orderByRaw("population DESC NULLS LAST")
             ->orderBy('country_code')
             ->orderByRaw("region NULLS LAST")
