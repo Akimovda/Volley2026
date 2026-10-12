@@ -367,6 +367,23 @@ class SubscriptionService
     }
 
     /**
+     * Отменить абонемент организатором (необратимо; визиты не возвращаются).
+     * Отменённый абонемент не попадает ни в одну выборку «active», автозаписи по нему снимаются.
+     */
+    public function cancel(Subscription $subscription, ?string $reason = null): void
+    {
+        DB::transaction(function () use ($subscription, $reason) {
+            $subscription->update(['status' => 'cancelled', 'frozen_at' => null, 'frozen_until' => null]);
+            $subscription->autoBookings()->delete();
+
+            SubscriptionCouponLog::write('subscription', $subscription->id, 'cancelled', [
+                'visits_remaining' => $subscription->visits_remaining,
+                'reason'           => $reason,
+            ]);
+        });
+    }
+
+    /**
      * Деактивировать просроченные абонементы
      */
     public function expireOldSubscriptions(): int

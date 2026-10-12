@@ -19,12 +19,182 @@ class SubscriptionController extends Controller
         $user = $request->user();
         $access = app(\App\Services\EventAccessService::class);
         $access->ensureCanUseSubs($user);
-        $subs = Subscription::with(['user', 'template'])
-            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
-            ->orderByDesc('id')
-            ->paginate(30);
 
-        return view('subscriptions.index', compact('subs'));
+        $filters = $this->filters($request);
+        $subs = $this->filteredQuery($user, $filters)
+            ->with(['user', 'template'])
+            ->orderByDesc('id')
+            ->paginate(30)
+            ->withQueryString();
+
+        $templates = SubscriptionTemplate::query()
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
+            ->orderBy('name')->get(['id', 'name']);
+
+        return view('subscriptions.index', compact('subs', 'filters', 'templates'));
+    }
+
+    private const STATUSES = ['active', 'frozen', 'expired', 'exhausted', 'cancelled'];
+
+    private function filters(Request $request): array
+    {
+        $status = (string) $request->query('status', '');
+        return [
+            'q'        => trim((string) $request->query('q', '')),
+            'status'   => in_array($status, self::STATUSES, true) ? $status : '',
+            'template' => (int) $request->query('template', 0),
+        ];
+    }
+
+    private function filteredQuery($user, array $f)
+    {
+        $access = app(\App\Services\EventAccessService::class);
+
+        return Subscription::query()
+            ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
+            ->when($f['status'] !== '', fn($q) => $q->where('status', $f['status']))
+            ->when($f['template'] > 0, fn($q) => $q->where('template_id', $f['template']))
+            ->when($f['q'] !== '', function ($q) use ($f) {
+                $term   = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $f['q']);
+                $like   = '%' . $term . '%';
+                $digits = preg_replace('/\D+/', '', $f['q']);
+                $q->where(function ($w) use ($like, $digits, $f) {
+                    $w->whereHas('user', function ($u) use ($like, $digits) {
+                        $u->where(function ($x) use ($like, $digits) {
+                            $x->where('first_name', 'ilike', $like)
+                              ->orWhere('last_name', 'ilike', $like)
+                              ->orWhere('patronymic', 'ilike', $like)
+                              ->orWhere('email', 'ilike', $like)
+                              ->orWhereRaw("(coalesce(last_name,'') || ' ' || coalesce(first_name,'')) ilike ?", [$like])
+                              ->orWhereRaw("(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) ilike ?", [$like]);
+                            if (strlen($digits) >= 3) {
+                                $x->orWhereRaw("regexp_replace(coalesce(phone,''), '\\D', '', 'g') like ?", ['%' . $digits . '%']);
+                            }
+                        });
+                    })->orWhereHas('template', fn($t) => $t->where('name', 'ilike', $like));
+                    if (ctype_digit(ltrim($f['q'], '#'))) {
+                        $w->orWhere('id', (int) ltrim($f['q'], '#'));
+                    }
+                });
+            });
+    }
+
+    /** Строки отчёта: ФИО, телефон, продления, повторные покупки. */
+    private function reportRows($user, array $f): array
+    {
+        $subs = $this->filteredQuery($user, $f)->with(['user', 'template'])->orderBy('id')->get();
+        if ($subs->isEmpty()) return [];
+
+        $extended = \App\Models\SubscriptionCouponLog::query()
+            ->where('entity_type', 'subscription')->where('action', 'extended')
+            ->whereIn('entity_id', $subs->pluck('id'))
+            ->selectRaw('entity_id, count(*) as c')->groupBy('entity_id')
+            ->pluck('c', 'entity_id');
+
+        // Покупки игрока по тому же шаблону (по всей базе организатора, а не только по фильтру)
+        $userIds = $subs->pluck('user_id')->unique();
+        $all = Subscription::whereIn('user_id', $userIds)
+            ->whereIn('template_id', $subs->pluck('template_id')->unique())
+            ->get(['id', 'user_id', 'template_id', 'organizer_id'])
+            ->groupBy(fn($s) => $s->organizer_id . ':' . $s->user_id . ':' . $s->template_id);
+
+        $labels = [
+            'active' => __('subscriptions.status_active'), 'frozen' => __('subscriptions.status_frozen'),
+            'expired' => __('subscriptions.status_expired'), 'exhausted' => __('subscriptions.status_exhausted'),
+            'cancelled' => __('subscriptions.status_cancelled'),
+        ];
+        $strip = fn($t) => trim(preg_replace('/^[^\p{L}\p{N}]+/u', '', $t));
+
+        return $subs->map(function ($s) use ($extended, $all, $labels, $strip) {
+            $u = $s->user;
+            $group = $all->get($s->organizer_id . ':' . $s->user_id . ':' . $s->template_id, collect())->pluck('id')->sort()->values();
+            $n = $group->search($s->id);
+            $total = max(1, $group->count());
+            return [
+                'id'         => $s->id,
+                'name'       => $u ? (trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '') . ' ' . ($u->patronymic ?? '')) ?: ($u->email ?? '#' . $s->user_id)) : '#' . $s->user_id,
+                'phone'      => $u?->formatted_phone ?: ($u->phone ?? ''),
+                'template'   => $s->template->name ?? '',
+                'visits'     => $s->visits_remaining . ' / ' . $s->visits_total,
+                'status'     => $strip($labels[$s->status] ?? $s->status),
+                'starts'     => $s->starts_at?->format('d.m.Y') ?? '',
+                'expires'    => $s->expires_at?->format('d.m.Y') ?? '∞',
+                'extended'   => (int) ($extended[$s->id] ?? 0),
+                'purchase_n' => $n === false ? 1 : $n + 1,
+                'repeat'     => $total - 1,
+            ];
+        })->all();
+    }
+
+    private function reportHeaders(): array
+    {
+        return ['ID', __('subscriptions.col_player'), __('subscriptions.rep_phone'), __('subscriptions.col_template'),
+            __('subscriptions.col_visits'), __('subscriptions.col_status'), __('subscriptions.rep_starts'),
+            __('subscriptions.col_expires'), __('subscriptions.rep_extended'), __('subscriptions.rep_purchase_n'),
+            __('subscriptions.rep_repeat')];
+    }
+
+    // GET /subscriptions/export/pdf
+    public function exportPdf(Request $request)
+    {
+        $user = $request->user();
+        app(\App\Services\EventAccessService::class)->ensureCanUseSubs($user);
+        $f = $this->filters($request);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('subscriptions.report_pdf', [
+            'rows'    => $this->reportRows($user, $f),
+            'headers' => $this->reportHeaders(),
+            'filters' => $this->filterSummary($f),
+            'brand'   => $user->brand,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('subscriptions-' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    // GET /subscriptions/export/xlsx
+    public function exportXlsx(Request $request)
+    {
+        $user = $request->user();
+        app(\App\Services\EventAccessService::class)->ensureCanUseSubs($user);
+        $rows = $this->reportRows($user, $this->filters($request));
+
+        $data = [$this->reportHeaders()];
+        foreach ($rows as $r) {
+            $data[] = array_values($r);
+        }
+        $path = \App\Support\SimpleXlsx::write($data, 'Абонементы');
+
+        return response()->download($path, 'subscriptions-' . now()->format('Ymd_His') . '.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ])->deleteFileAfterSend(true);
+    }
+
+    private function filterSummary(array $f): string
+    {
+        $parts = [];
+        if ($f['q'] !== '') $parts[] = __('subscriptions.flt_q') . ': ' . $f['q'];
+        if ($f['status'] !== '') $parts[] = __('subscriptions.col_status') . ': ' . trim(preg_replace('/^[^\p{L}\p{N}]+/u', '', __('subscriptions.status_' . $f['status'])));
+        if ($f['template'] > 0) $parts[] = __('subscriptions.col_template') . ': ' . (SubscriptionTemplate::find($f['template'])->name ?? $f['template']);
+        return $parts ? implode('; ', $parts) : __('subscriptions.rep_no_filters');
+    }
+
+    // Отменить абонемент (организатор/мастер-помощник/админ)
+    public function cancel(Request $request, Subscription $subscription)
+    {
+        $this->authorizeSubscription($subscription);
+
+        if (!in_array($subscription->status, ['active', 'frozen'], true)) {
+            return back()->with('error', __('subscriptions.sub_cancel_not_allowed'));
+        }
+
+        $this->service->cancel($subscription);
+
+        $authUser = $request->user();
+        if (!$authUser->isAdmin() && (int) $subscription->organizer_id !== (int) $authUser->id) {
+            app(StaffLogService::class)->log($authUser, (int) $subscription->organizer_id, 'cancel_subscription', 'subscription', $subscription->id, "Отменил абонемент #{$subscription->id}");
+        }
+
+        return back()->with('status', __('subscriptions.sub_cancel_done', ['id' => $subscription->id]));
     }
 
     // Мои абонементы (для игрока)

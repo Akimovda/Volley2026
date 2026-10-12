@@ -1649,6 +1649,12 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     // Выданные абонементы
     Route::get('/subscriptions', [\App\Http\Controllers\SubscriptionController::class, 'index'])
         ->name('subscriptions.index');
+    Route::get('/subscriptions/export/pdf', [\App\Http\Controllers\SubscriptionController::class, 'exportPdf'])
+        ->name('subscriptions.export_pdf');
+    Route::get('/subscriptions/export/xlsx', [\App\Http\Controllers\SubscriptionController::class, 'exportXlsx'])
+        ->name('subscriptions.export_xlsx');
+    Route::post('/subscriptions/{subscription}/cancel', [\App\Http\Controllers\SubscriptionController::class, 'cancel'])
+        ->name('subscriptions.cancel');
     Route::get('/subscriptions/my', [\App\Http\Controllers\SubscriptionController::class, 'my'])
         ->name('subscriptions.my');
     Route::post('/subscriptions/issue', [\App\Http\Controllers\SubscriptionController::class, 'issue'])
