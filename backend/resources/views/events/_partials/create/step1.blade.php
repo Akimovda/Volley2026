@@ -961,6 +961,7 @@
 										window.__levelTerminologyNames = {
 											standard: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'standard')])),
 											spb: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'spb')])),
+											intl: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'intl')])),
 										};
 										</script>
 

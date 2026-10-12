@@ -1880,6 +1880,7 @@
         window.__levelTerminologyNames = {
             standard: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'standard')])),
             spb: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'spb')])),
+            intl: @json(collect(range(1, 7))->mapWithKeys(fn ($l) => [$l => level_name($l, 'intl')])),
         };
         </script>
 
@@ -2138,7 +2139,9 @@
                 // ответа поиска городов — тот схлопывает регион в null, если
                 // совпадает с именем города (ровно случай Санкт-Петербурга), лучше
                 // сырое region из ajax.cities.meta (см. CityMetaController).
-                function levelScopeForRegion(region) {
+                function levelScopeForRegion(region, country) {
+                    country = String(country || '').toUpperCase();
+                    if (country && ['RU', 'KZ', 'UZ'].indexOf(country) === -1) return 'intl';
                     return (region === 'Санкт-Петербург' || region === 'Ленинградская область') ? 'spb' : 'standard';
                 }
                 function relabelLevelSelects(scope) {
@@ -2242,7 +2245,7 @@
                         if (!data || !data.ok) return;
                         if (tzHidden && data.timezone) tzHidden.value = data.timezone;
                         if (tzLabel) tzLabel.textContent = data.timezone || '';
-                        relabelLevelSelects(levelScopeForRegion(data.region));
+                        relabelLevelSelects(levelScopeForRegion(data.region, data.country));
                         // syncRemind находится в DOMContentLoaded, не глобальна — hint обновится при следующем изменении remind полей
                     });
                 }

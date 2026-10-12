@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\CountryRules;
 use App\Services\PlaceholderUserService;
 use Illuminate\Http\Request;
 
@@ -43,20 +44,30 @@ class PlaceholderUserController extends Controller
     {
         $actor = $this->actor($request);
 
+        // Правила ФИО/телефона — по стране организатора (RU/KZ/UZ — как раньше: кириллица и +7)
+        $country = CountryRules::normalizeCountry($actor->country_code);
+        $cyr     = CountryRules::usesCyrillicNames($country);
+
         $request->merge([
-            'phone' => $this->normalizePhone($request->input('phone')),
+            'phone'      => CountryRules::normalizePhone($request->input('phone'), $country),
+            'last_name'  => $cyr ? $request->input('last_name')  : CountryRules::normalizeLatinName($request->input('last_name')),
+            'first_name' => $cyr ? $request->input('first_name') : CountryRules::normalizeLatinName($request->input('first_name')),
         ]);
 
         $data = $request->validate([
-            'last_name'  => ['required', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u'],
-            'first_name' => ['required', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u'],
+            'last_name'  => ['required', 'string', 'min:2', 'max:255', 'regex:' . CountryRules::nameRegex($country)],
+            'first_name' => ['required', 'string', 'min:2', 'max:255', 'regex:' . CountryRules::nameRegex($country)],
             'gender'     => ['required', 'in:m,f'],
-            'phone'      => ['nullable', 'string', 'regex:/^\+7\d{10}$/'],
+            'phone'      => ['nullable', 'string', function ($attr, $value, $fail) use ($country) {
+                if (!CountryRules::isValidPhone($value, $country)) {
+                    $fail($country === 'RU' ? __('placeholders.err_phone') : CountryRules::phoneMessage($country));
+                }
+            }],
         ], [
-            'last_name.regex'  => __('placeholders.err_cyr'),
-            'first_name.regex' => __('placeholders.err_cyr'),
-            'phone.regex'      => __('placeholders.err_phone'),
+            'last_name.regex'  => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, __('placeholders.last_name')),
+            'first_name.regex' => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, __('placeholders.first_name')),
         ]);
+        $data['country_code'] = $country;
 
         $user = $this->service->create($actor, $data);
 
@@ -125,15 +136,4 @@ class PlaceholderUserController extends Controller
         return redirect()->route('placeholders.index')->with('status', $msg);
     }
 
-    private function normalizePhone(?string $raw): ?string
-    {
-        $digits = preg_replace('/\D+/', '', (string) $raw);
-        if ($digits === '') {
-            return null;
-        }
-        if (strlen($digits) === 11 && in_array($digits[0], ['7', '8'], true)) {
-            $digits = substr($digits, 1);
-        }
-        return '+7' . $digits;
-    }
 }

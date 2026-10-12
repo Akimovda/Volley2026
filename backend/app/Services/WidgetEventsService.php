@@ -31,7 +31,7 @@ class WidgetEventsService
         $showSlots  = (bool) $widget->getSetting('show_slots', true);
         $showLoc    = (bool) $widget->getSetting('show_location', true);
 
-        $cacheKey = "widget_events_v7_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
+        $cacheKey = "widget_events_v8_{$userId}_{$limit}_" . (int) $showSlots . (int) $showLoc . '_' . app()->getLocale();
 
         return Cache::remember($cacheKey, 120, function () use ($userId, $limit, $showSlots, $showLoc) {
             // Живой COUNT вместо event_occurrence_stats (кеш устаревает и покрывает
@@ -87,6 +87,7 @@ class WidgetEventsService
                     'locations.address as location_address',
                     'cities.name as city_name',
                     'cities.region as city_region',
+                    'cities.country_code as city_country',
                     'egs.max_players as egs_max_players',
                     'egs.reserve_players_max as egs_reserve_players_max',
                     'egs.teams_count as egs_teams_count',
@@ -122,7 +123,7 @@ class WidgetEventsService
                 $dir = $occ->direction ?? 'classic';
                 $lvMin = $dir === 'beach' ? $occ->beach_level_min : $occ->classic_level_min;
                 $lvMax = $dir === 'beach' ? $occ->beach_level_max : $occ->classic_level_max;
-                $levelScope = level_terminology_scope_for_region($occ->city_region ?? null);
+                $levelScope = level_terminology_scope_for_region($occ->city_region ?? null, $occ->city_country ?? null);
 
                 // Цена
                 $priceLabel = null;

@@ -316,6 +316,7 @@ class VolleyballSchoolController extends Controller
     {
         $user = $request->user();
 
+        $this->normalizeSchoolPhone($request);
         $data = $request->validate([
             'name'           => ['required', 'string', 'max:100'],
             'slug'           => ['required', 'string', 'max:60', 'alpha_dash', 'unique:volleyball_schools,slug'],
@@ -323,7 +324,7 @@ class VolleyballSchoolController extends Controller
             'description'    => ['nullable', 'string', 'max:5000'],
             'city_id'        => ['nullable', 'integer', 'exists:cities,id'],
             'city_name'      => ['nullable', 'string', 'max:100'],
-            'phone'          => ['nullable', 'string', 'max:20', 'regex:/^\+7\d{10}$/'],
+            'phone'          => ['nullable', 'string', 'max:20', $this->schoolPhoneRule()],
             'email'          => ['nullable', 'email', 'max:100'],
             'website'    => ['nullable', 'url', 'max:200'],
             'vk_url'     => ['nullable', 'url', 'max:200'],
@@ -335,7 +336,6 @@ class VolleyballSchoolController extends Controller
             'cover_media_ids'   => ['nullable', 'array', 'max:5'],
             'cover_media_ids.*' => ['integer'],
         ], [
-            'phone.regex' => 'Телефон должен быть в формате +7XXXXXXXXXX.',
             'slug.alpha_dash' => 'Slug может содержать только латиницу, цифры и дефис.',
             'slug.unique' => 'Этот URL уже занят, выберите другой.',
         ]);
@@ -422,6 +422,7 @@ class VolleyballSchoolController extends Controller
             ? VolleyballSchool::findOrFail($request->input('school_id', 0))
             : VolleyballSchool::where('organizer_id', $user->id)->firstOrFail();
 
+        $this->normalizeSchoolPhone($request);
         $data = $request->validate([
             'school_id'      => ['nullable', 'integer'],
             'name'           => ['required', 'string', 'max:100'],
@@ -429,7 +430,7 @@ class VolleyballSchoolController extends Controller
             'description'    => ['nullable', 'string', 'max:5000'],
             'city_id'        => ['nullable', 'integer', 'exists:cities,id'],
             'city_name'      => ['nullable', 'string', 'max:100'],
-            'phone'          => ['nullable', 'string', 'max:20', 'regex:/^\+7\d{10}$/'],
+            'phone'          => ['nullable', 'string', 'max:20', $this->schoolPhoneRule()],
             'email'          => ['nullable', 'email', 'max:100'],
             'website'    => ['nullable', 'url', 'max:200'],
             'vk_url'     => ['nullable', 'url', 'max:200'],
@@ -441,7 +442,6 @@ class VolleyballSchoolController extends Controller
             'cover_media_ids.*' => ['integer'],
             'is_published'   => ['sometimes', 'boolean'],
         ], [
-            'phone.regex' => 'Телефон должен быть в формате +7XXXXXXXXXX.',
         ]);
 
         if ($request->has('cover_gallery_submitted')) {
@@ -550,5 +550,26 @@ class VolleyballSchoolController extends Controller
         $school->delete();
         return redirect()->route('volleyball_school.index')
             ->with('status', 'Школа «'.$school->name.'» удалена.');
+    }
+
+    /** Телефон школы: страна — по городу школы, иначе по стране организатора; приводим к E.164. */
+    private function normalizeSchoolPhone(Request $request): void
+    {
+        if (!$request->has('phone')) return;
+        $country = null;
+        if ($request->filled('city_id')) {
+            $country = \App\Models\City::query()->whereKey((int) $request->input('city_id'))->value('country_code');
+        }
+        $country = \App\Support\CountryRules::normalizeCountry($country ?: optional($request->user())->country_code);
+        $request->merge(['phone' => \App\Support\CountryRules::normalizePhone($request->input('phone'), $country)]);
+    }
+
+    private function schoolPhoneRule(): \Closure
+    {
+        return function ($attr, $value, $fail) {
+            if (!\App\Support\CountryRules::isValidAnyPhone($value)) {
+                $fail('Телефон должен быть в международном формате: +7XXXXXXXXXX для России или +код страны и номер.');
+            }
+        };
     }
 }

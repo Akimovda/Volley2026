@@ -1226,6 +1226,7 @@
 							const levelNamesByScope = {
 								standard: @json(collect(range(1, 7))->mapWithKeys(fn($l) => [$l => level_name($l, 'standard')])->all()),
 								spb: @json(collect(range(1, 7))->mapWithKeys(fn($l) => [$l => level_name($l, 'spb')])->all()),
+								intl: @json(collect(range(1, 7))->mapWithKeys(fn($l) => [$l => level_name($l, 'intl')])->all()),
 							};
 							document.addEventListener('city:selected', function (e) {
 								const names = levelNamesByScope[(e.detail && e.detail.scope) || 'standard'] || levelNamesByScope.standard;

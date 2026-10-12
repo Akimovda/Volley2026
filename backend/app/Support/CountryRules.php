@@ -133,6 +133,40 @@ class CountryRules
         }
     }
 
+    /** Для телефонов организаций (школа): +7 — строго 10 цифр, остальные — любой валидный международный номер. */
+    public static function isValidAnyPhone(?string $e164): bool
+    {
+        if ($e164 === null || $e164 === '') return true;
+        if (str_starts_with($e164, '+7')) return (bool) preg_match('/^\+7\d{10}$/', $e164);
+        return self::isValidPhone($e164, 'US'); // не-RU: проверка libphonenumber (регион не используется — номер в формате +код)
+    }
+
+    /** Терминология уровней: 'intl' для стран вне RU/KZ/UZ (без российских разрядов), иначе null — решает регион. */
+    public static function levelScopeForCountry(?string $country): ?string
+    {
+        $country = strtoupper(trim((string) $country));
+        if ($country === '' || in_array($country, self::CYRILLIC_NAME_COUNTRIES, true)) {
+            return null;
+        }
+        return 'intl';
+    }
+
+    /**
+     * Ключ для поиска дублей по ФИО независимо от алфавита и порядка слов:
+     * «Иван Петров» / «Ivan Petrov» / «Petrov Ivan» дают один ключ. Нестрогий (для подсказки админу).
+     */
+    public static function looseNameKey(?string $first, ?string $last): string
+    {
+        $s = \Illuminate\Support\Str::ascii(mb_strtolower(trim((string) $first . ' ' . (string) $last)));
+        $words = preg_split('/[^a-z]+/', strtolower($s), -1, PREG_SPLIT_NO_EMPTY);
+        $words = array_map(function ($w) {
+            $w = strtr($w, ['kh' => 'h', 'zh' => 'z', 'sh' => 's', 'ch' => 'c', 'ts' => 'c', 'ph' => 'f', 'x' => 'ks', 'w' => 'v', 'y' => 'i', 'j' => 'i', 'q' => 'k']);
+            return preg_replace('/(.)\1+/', '$1', $w);
+        }, $words);
+        sort($words);
+        return implode(' ', $words);
+    }
+
     public static function phoneMessage(?string $country): string
     {
         return self::normalizeCountry($country) === 'RU'

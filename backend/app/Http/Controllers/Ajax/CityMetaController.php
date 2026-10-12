@@ -16,7 +16,7 @@ class CityMetaController extends Controller
             return response()->json(['ok' => false]);
         }
 
-        $city = City::query()->select(['id', 'timezone', 'region'])->find($cityId);
+        $city = City::query()->select(['id', 'timezone', 'region', 'country_code'])->find($cityId);
         if (!$city) {
             return response()->json(['ok' => false]);
         }
@@ -30,6 +30,7 @@ class CityMetaController extends Controller
             // равно name). level_terminology_scope_for_region() на фронте сравнивает
             // с "Санкт-Петербург"/"Ленинградская область" напрямую — нужен настоящий region.
             'region' => (string) ($city->region ?? ''),
+            'country' => (string) ($city->country_code ?? ''),
         ]);
     }
 }
