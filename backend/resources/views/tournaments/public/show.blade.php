@@ -98,10 +98,10 @@
 				<a href="{{ route('tournament.tv', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" target="_blank" class="btn btn-secondary">
 					📺 TV Mode
 				</a>
-				<a href="{{ route('tournament.pdf.schedule', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" class="btn btn-secondary">
+				<a href="{{ route('tournament.pdf.schedule', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" data-file-download class="btn btn-secondary">
 					📄 {{ __('tournaments.pub_pdf_schedule_short') }}
 				</a>
-				<a href="{{ route('tournament.pdf.results', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" class="btn btn-secondary">
+				<a href="{{ route('tournament.pdf.results', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" data-file-download class="btn btn-secondary">
 					📊 {{ __('tournaments.pub_pdf_results_short') }}
 				</a>
 				@auth
@@ -924,15 +924,10 @@
 			})();
 			@endif
 
-			// Android WebView не скачивает файлы по Content-Disposition: attachment
-			if (window.Capacitor && window.Capacitor.getPlatform() === 'android') {
-				document.querySelectorAll('a[href*="/pdf/"]').forEach(function(link) {
-					link.addEventListener('click', function(e) {
-						e.preventDefault();
-						window.open(this.href, '_system');
-					});
-				});
-			}
+			// В приложении файл скачивается/сохраняется через общий обработчик (script.js, [data-file-download])
+			document.querySelectorAll('a[href*="/pdf/"]').forEach(function(link) {
+				link.setAttribute('data-file-download', '');
+			});
 		</script>
 	</x-slot>
 	

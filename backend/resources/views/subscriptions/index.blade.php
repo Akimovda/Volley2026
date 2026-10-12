@@ -71,8 +71,8 @@
                         <a href="{{ route('subscriptions.index') }}" class="btn btn-outline btn-small">{{ __('subscriptions.flt_reset') }}</a>
                     @endif
                     @php $exportQs = array_filter($filters); @endphp
-                    <a href="{{ route('subscriptions.export_xlsx', $exportQs) }}" class="btn btn-outline btn-small">{{ __('subscriptions.export_xlsx') }}</a>
-                    <a href="{{ route('subscriptions.export_pdf', $exportQs) }}" class="btn btn-outline btn-small">{{ __('subscriptions.export_pdf') }}</a>
+                    <a href="{{ route('subscriptions.export_xlsx', $exportQs) }}" data-file-download class="btn btn-outline btn-small">{{ __('subscriptions.export_xlsx') }}</a>
+                    <a href="{{ route('subscriptions.export_pdf', $exportQs) }}" data-file-download class="btn btn-outline btn-small">{{ __('subscriptions.export_pdf') }}</a>
                 </div>
             </form>
         </div>
