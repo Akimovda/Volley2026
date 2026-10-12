@@ -22,6 +22,46 @@
         @if(session('status'))
             <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
         @endif
+        @if(session('error'))
+            <div class="ramka"><div class="alert alert-danger">{{ session('error') }}</div></div>
+        @endif
+        <div class="ramka">
+            <form method="GET" action="{{ route('subscriptions.index') }}" class="form">
+                <div class="row">
+                    <div class="col-md-4">
+                        <label>{{ __('subscriptions.flt_q') }}</label>
+                        <input type="text" name="q" value="{{ $filters['q'] }}" placeholder="{{ __('subscriptions.flt_q_ph') }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label>{{ __('subscriptions.col_status') }}</label>
+                        <select name="status">
+                            <option value="">{{ __('subscriptions.flt_all') }}</option>
+                            @foreach(['active','frozen','expired','exhausted','cancelled'] as $st)
+                                <option value="{{ $st }}" @selected($filters['status']===$st)>{{ __('subscriptions.status_'.$st) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label>{{ __('subscriptions.col_template') }}</label>
+                        <select name="template">
+                            <option value="0">{{ __('subscriptions.flt_all') }}</option>
+                            @foreach($templates as $t)
+                                <option value="{{ $t->id }}" @selected($filters['template']===$t->id)>{{ $t->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="d-flex gap-1 mt-2" style="flex-wrap:wrap">
+                    <button type="submit" class="btn btn-outline btn-small">{{ __('subscriptions.flt_apply') }}</button>
+                    @if($filters['q']!=='' || $filters['status']!=='' || $filters['template']>0)
+                        <a href="{{ route('subscriptions.index') }}" class="btn btn-outline btn-small">{{ __('subscriptions.flt_reset') }}</a>
+                    @endif
+                    @php $exportQs = array_filter($filters); @endphp
+                    <a href="{{ route('subscriptions.export_xlsx', $exportQs) }}" class="btn btn-outline btn-small">{{ __('subscriptions.export_xlsx') }}</a>
+                    <a href="{{ route('subscriptions.export_pdf', $exportQs) }}" class="btn btn-outline btn-small">{{ __('subscriptions.export_pdf') }}</a>
+                </div>
+            </form>
+        </div>
         <div class="ramka">
             @if($subs->isEmpty())
                 <div class="alert alert-info">{{ __('subscriptions.org_empty') }}</div>
@@ -35,7 +75,7 @@
                         @foreach($subs as $sub)
                         <tr>
                             <td>#{{ $sub->id }}</td>
-                            <td><a href="{{ route('users.show', $sub->user_id) }}">{{ $sub->user->name ?? '#'.$sub->user_id }}</a></td>
+                            <td><a href="{{ route('users.show', $sub->user_id) }}">{{ $sub->user->name ?? '#'.$sub->user_id }}</a>@if($sub->user?->phone)<br><span class="f-14" style="opacity:.7">{{ $sub->user->formatted_phone ?: $sub->user->phone }}</span>@endif</td>
                             <td>{{ $sub->template->name }}</td>
                             <td>{{ $sub->visits_remaining }} / {{ $sub->visits_total }}</td>
                             <td>
@@ -43,6 +83,7 @@
                                 @elseif($sub->status==='frozen') <span class="cd">{{ __('subscriptions.status_frozen') }}</span>
                                 @elseif($sub->status==='expired') <span style="opacity:.5">{{ __('subscriptions.status_expired') }}</span>
                                 @elseif($sub->status==='exhausted') <span style="opacity:.5">{{ __('subscriptions.status_exhausted') }}</span>
+                                @elseif($sub->status==='cancelled') <span class="cd">{{ __('subscriptions.status_cancelled') }}</span>
                                 @else {{ $sub->status }} @endif
                             </td>
                             <td>{{ $sub->expires_at ? $sub->expires_at->format('d.m.Y') : '∞' }}</td>
@@ -53,6 +94,12 @@
                                     <input type="hidden" name="days" value="30">
                                     <button class="btn btn-small btn-alert" data-title="{{ __('subscriptions.sub_extend_title') }}" data-confirm-text="{{ __('subscriptions.sub_extend_yes') }}" data-cancel-text="{{ __('subscriptions.cancel') }}">{{ __('subscriptions.sub_extend_30') }}</button>
                                 </form>
+                                @if(in_array($sub->status, ['active','frozen'], true))
+                                <form method="POST" action="{{ route('subscriptions.cancel', $sub) }}" class="d-inline">
+                                    @csrf
+                                    <button class="btn btn-danger btn-svg icon-stop btn-alert" title="{{ __('subscriptions.sub_cancel') }}" data-title="{{ __('subscriptions.sub_cancel_title') }}" data-confirm-text="{{ __('subscriptions.sub_cancel_yes') }}" data-cancel-text="{{ __('subscriptions.cancel') }}"></button>
+                                </form>
+                                @endif
                             </td>
                         </tr>
                         @endforeach
