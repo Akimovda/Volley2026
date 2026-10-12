@@ -46,6 +46,7 @@
         'phone',
         'birth_date',
         'city_id',
+        'country_code',
         'timezone',
         'gender',
         'height_cm',
@@ -522,6 +523,16 @@ public function getNameAttribute($value): string
     public function getFormattedPhoneAttribute(): string
 		{
 			if (!$this->phone) return '';
+
+			// Зарубежные номера (E.164 не с +7) — международный формат через libphonenumber
+			if (str_starts_with($this->phone, '+') && !str_starts_with($this->phone, '+7')) {
+				try {
+					$util = \libphonenumber\PhoneNumberUtil::getInstance();
+					return $util->format($util->parse($this->phone, null), \libphonenumber\PhoneNumberFormat::INTERNATIONAL);
+				} catch (\Throwable $e) {
+					return $this->phone;
+				}
+			}
 			
 			$phone = preg_replace('/[^0-9]/', '', $this->phone);
 			

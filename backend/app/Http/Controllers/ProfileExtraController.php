@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Support\CountryRules;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -46,7 +47,7 @@ class ProfileExtraController extends Controller
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'phone_masked',
                 'birth_date',
-                'city_id',
+                'city_id', 'country_code',
                 'classic_level', 'beach_level',
                 'gender', 'height_cm', 'hide_age',
                 'classic_primary_position', 'classic_extra_positions',
@@ -64,7 +65,7 @@ class ProfileExtraController extends Controller
                 'first_name', 'last_name', 'patronymic',
                 'phone', 'phone_masked',
                 'birth_date',
-                'city_id',
+                'city_id', 'country_code',
                 'classic_level', 'beach_level',
                 'gender', 'height_cm', 'hide_age',
                 'classic_primary_position', 'classic_extra_positions',
@@ -94,9 +95,22 @@ class ProfileExtraController extends Controller
         // =========================
         $normalized = [];
 
+        // Страна — ось правил ФИО/телефона. После завершения анкеты self-пользователь её не меняет.
+        $countryLocked = $mode === 'self' && !$isAdmin && !$isOrganizer && !is_null($target->profile_completed_at);
+        $country = CountryRules::normalizeCountry(
+            (!$countryLocked && in_array('country_code', $allowed, true) && $request->filled('country_code'))
+                ? $request->input('country_code')
+                : $target->country_code
+        );
+        if (in_array('country_code', $allowed, true) && !$countryLocked) {
+            $normalized['country_code'] = $country;
+        }
+
         foreach (['first_name', 'last_name', 'patronymic'] as $k) {
             if (in_array($k, $allowed, true) && $request->has($k)) {
-                $normalized[$k] = $this->normalizeCyrName($request->input($k));
+                $normalized[$k] = CountryRules::usesCyrillicNames($country)
+                    ? $this->normalizeCyrName($request->input($k))
+                    : CountryRules::normalizeLatinName($request->input($k));
             }
         }
 
@@ -105,7 +119,7 @@ class ProfileExtraController extends Controller
             if (empty($rawPhone)) {
                 $rawPhone = $request->input('phone_masked');
             }
-            $normalized['phone'] = $this->normalizeRuPhoneToE164($rawPhone);
+            $normalized['phone'] = CountryRules::normalizePhone($rawPhone, $country);
         }
 
         if (!empty($normalized)) {
@@ -123,11 +137,16 @@ class ProfileExtraController extends Controller
             }
         };
 
-        $addRuleIfAllowed('first_name',   ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
-        $addRuleIfAllowed('last_name',    ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
-        $addRuleIfAllowed('patronymic',   ['nullable', 'string', 'min:2', 'max:255', 'regex:/^[А-Яа-яЁё \-\'’]+$/u']);
+        $addRuleIfAllowed('first_name',   ['nullable', 'string', 'min:2', 'max:255', 'regex:' . CountryRules::nameRegex($country)]);
+        $addRuleIfAllowed('last_name',    ['nullable', 'string', 'min:2', 'max:255', 'regex:' . CountryRules::nameRegex($country)]);
+        $addRuleIfAllowed('patronymic',   ['nullable', 'string', 'min:2', 'max:255', 'regex:' . CountryRules::nameRegex($country)]);
 
-        $addRuleIfAllowed('phone',        ['nullable', 'string', 'regex:/^\+7\d{10}$/']);
+        $addRuleIfAllowed('phone',        ['nullable', 'string', function ($attr, $value, $fail) use ($country) {
+            if (!CountryRules::isValidPhone($value, $country)) {
+                $fail(CountryRules::phoneMessage($country));
+            }
+        }]);
+        $addRuleIfAllowed('country_code', ['nullable', 'string', 'in:' . implode(',', CountryRules::SUPPORTED)]);
         $addRuleIfAllowed('phone_masked', ['nullable', 'string', 'max:50']);
 
         $addRuleIfAllowed('birth_date',   ['nullable', 'date']);
@@ -151,10 +170,9 @@ class ProfileExtraController extends Controller
         $addRuleIfAllowed('beach_mode', ['nullable', 'in:2,4,universal']);
 
         $messages = [
-            'first_name.regex' => 'Имя должно быть на кириллице (разрешены пробел/дефис).',
-            'last_name.regex'  => 'Фамилия должна быть на кириллице (разрешены пробел/дефис).',
-            'patronymic.regex' => 'Отчество должно быть на кириллице (разрешены пробел/дефис).',
-            'phone.regex'      => 'Телефон должен быть в формате +7XXXXXXXXXX (11 цифр после +7).',
+            'first_name.regex' => CountryRules::nameMessage($country, 'Имя'),
+            'last_name.regex'  => CountryRules::nameMessage($country, 'Фамилия'),
+            'patronymic.regex' => CountryRules::nameMessage($country, 'Отчество'),
         ];
 
         $data = $request->validate($rules, $messages);
@@ -194,7 +212,7 @@ class ProfileExtraController extends Controller
         if ($mode === 'self' && !$isAdmin && !$isOrganizer && !is_null($target->profile_completed_at)) {
             $protected = [
                 'first_name', 'last_name', 'patronymic',
-                'phone', 'birth_date', 'city_id',
+                'phone', 'birth_date', 'city_id', 'country_code',
                 'classic_level', 'beach_level', 'gender',
             ];
 
@@ -280,7 +298,7 @@ class ProfileExtraController extends Controller
             // 5.1 users
             $userFill = array_intersect_key($data, array_flip([
                 'first_name', 'last_name', 'patronymic',
-                'phone', 'birth_date', 'city_id',
+                'phone', 'birth_date', 'city_id', 'country_code',
                 'classic_level', 'beach_level',
                 'gender', 'height_cm', 'hide_age',
             ]));
@@ -484,29 +502,4 @@ class ProfileExtraController extends Controller
         return $out;
     }
 
-    // =========================================================
-    // Helpers: Телефон
-    // =========================================================
-    private function normalizeRuPhoneToE164(?string $raw): ?string
-    {
-        if ($raw === null) return null;
-
-        $digits = preg_replace('/\D+/', '', (string) $raw);
-        if ($digits === '') return null;
-
-        if (strlen($digits) === 11 && str_starts_with($digits, '8')) {
-            $digits = '7' . substr($digits, 1);
-        }
-
-        if (strlen($digits) === 11 && str_starts_with($digits, '7')) {
-            return '+7' . substr($digits, 1);
-        }
-
-        if (strlen($digits) === 10) {
-            return '+7' . $digits;
-        }
-
-        // любой другой случай — вернём "+..." (валидатор отфейлит)
-        return '+' . $digits;
-    }
 }

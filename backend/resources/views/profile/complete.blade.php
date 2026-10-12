@@ -65,11 +65,23 @@
 		$age = $birthForAge ? \Carbon\Carbon::parse($birthForAge)->age : null;
 		$levels = ($age !== null && $age < 18) ? [1,2,4] : [1,2,3,4,5,6,7];
 		
+		// Страна — ось правил ФИО/телефона/города
+		$userCountry = \App\Support\CountryRules::normalizeCountry(old('country_code', $user?->country_code));
+		$countryOptions = collect(\App\Support\CountryRules::SUPPORTED)
+			->mapWithKeys(fn ($c) => [$c => __('countries.' . $c)])
+			->sort()->all();
+		// RU/KZ/UZ — ФИО кириллицей; остальные — любые буквы
+		$cyrCountries = \App\Support\CountryRules::CYRILLIC_NAME_COUNTRIES;
+		$dialCodes = collect(\App\Support\CountryRules::SUPPORTED)
+			->mapWithKeys(fn ($c) => [$c => '+' . \libphonenumber\PhoneNumberUtil::getInstance()->getCountryCodeForRegion($c)])->all();
+
 		// Prefill маски телефона на сервере
 		$phoneMaskedPrefill = old('phone_masked');
 		if ($phoneMaskedPrefill === null) {
 		$p = old('phone', $user?->phone);
-			if (is_string($p) && preg_match('/^\+7\d{10}$/', $p)) {
+			if (is_string($p) && $userCountry !== 'RU' && $p !== '') {
+			$phoneMaskedPrefill = $p;
+			} elseif (is_string($p) && preg_match('/^\+7\d{10}$/', $p)) {
 			$phoneMaskedPrefill = '+7 (' . substr($p, 2, 3) . ') ' . substr($p, 5, 3) . '-' . substr($p, 8, 2) . '-' . substr($p, 10, 2);
 			} else {
 			$phoneMaskedPrefill = '';
@@ -482,6 +494,26 @@
 									
 									<h2 class="-mt-05">{{ __('profile.cp_sec_personal') }}</h2>
 									<div class="row">
+										{{-- -------- Страна -------- --}}
+										@php $lockedCountry = !$canEditProtected && !is_null($user?->profile_completed_at); @endphp
+										@if(!$organizerLimitedView)
+										<div class="col-sm-6">
+											<div class="card">
+												<label>
+													<div>{{ __('profile.cp_lbl_country') }}</div>
+													<div class="f-16 b-500">{{ __('profile.cp_country_hint') }}</div>
+												</label>
+												<select name="country_code" id="country_code" @disabled($lockedCountry)>
+													@foreach($countryOptions as $cc => $cname)
+													<option value="{{ $cc }}" @selected($userCountry === $cc)>{{ $cname }}</option>
+													@endforeach
+												</select>
+												@if($lockedCountry)
+												<ul class="list f-16 mt-1"><li>{{ $lockHint }}</li></ul>
+												@endif
+											</div>
+										</div>
+										@endif
 										{{-- -------- Фамилия -------- --}}
 										@php $lockedLast = !$canEditProtected && $filled($user?->last_name); @endphp
 										@if(!$organizerLimitedView)
@@ -501,7 +533,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('last_name')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
+													<li data-name-hint>{{ in_array($userCountry, $cyrCountries, true) ? __('profile.cp_hint_cyr_name') : __('profile.cp_hint_latin_name') }}</li>
 													@if($lockedLast)<li>{{ $lockHint }}</li>@endif
 												</ul>
 											</div>
@@ -527,7 +559,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('first_name')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
+													<li data-name-hint>{{ in_array($userCountry, $cyrCountries, true) ? __('profile.cp_hint_cyr_name') : __('profile.cp_hint_latin_name') }}</li>
 													@if($lockedFirst)<li>{{ $lockHint }}</li>@endif
 												</ul>												
 											</div>
@@ -553,7 +585,7 @@
 												>
 												<ul class="list f-16 mt-1">
 													@error('patronymic')<li class="red b-600">{{ $message }}</li>@enderror
-													<li>{{ __('profile.cp_hint_cyr_name') }}</li>
+													<li data-name-hint>{{ in_array($userCountry, $cyrCountries, true) ? __('profile.cp_hint_cyr_name') : __('profile.cp_hint_latin_name') }}</li>
 													@if($lockedPat)<li>{{ $lockHint }}</li>@endif
 												</ul>													
 											</div>
@@ -573,7 +605,7 @@
 												id="phone_masked"
 												value="{{ $phoneMaskedPrefill }}"
 												class="{{ $errors->has('phone') ? 'input-error' : '' }}"
-												placeholder="+7 (___) ___-__-__"
+												placeholder="{{ $userCountry === 'RU' ? '+7 (___) ___-__-__' : ($dialCodes[$userCountry] ?? '+') . ' …' }}"
 												inputmode="tel"
 												autocomplete="tel"
 												@disabled($lockedPhone)
@@ -1477,6 +1509,34 @@
 								return out;
 							}
 							
+							// Страна: RU/KZ/UZ — прежние правила (кириллица, маска +7 только для RU), остальные — латиница/любые буквы
+							const countrySel = document.getElementById('country_code');
+							const CYR_COUNTRIES = @json($cyrCountries);
+							const DIAL_CODES = @json($dialCodes);
+							const HINT_CYR = @json(__('profile.cp_hint_cyr_name'));
+							const HINT_LATIN = @json(__('profile.cp_hint_latin_name'));
+							function curCountry() { return countrySel ? countrySel.value : @json($userCountry); }
+							function cyrMode() { return CYR_COUNTRIES.indexOf(curCountry()) !== -1; }
+
+							function normalizeLatinName(input) {
+								let s = String(input || '').trim().replace(/\s+/g, ' ').replace(/’/g, "'").replace(/-{2,}/g, '-');
+								s = s.replace(/[^\p{L}\p{M} \-'.]/gu, '');
+								return s.split(/(\s+|-|')/).map(part => {
+									if (!part || /^(\s+|-|')$/.test(part)) return part;
+									if (part === part.toLowerCase() || part === part.toUpperCase()) {
+										return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+									}
+									return part;
+								}).join('');
+							}
+							function isValidLatinName(value) {
+								const v = String(value || '').trim();
+								if (!v) return true;
+								return v.length >= 2 && /^\p{L}[\p{L}\p{M} \-'’.]*$/u.test(v);
+							}
+							function normalizeName(v) { return cyrMode() ? normalizeCyrName(v) : normalizeLatinName(v); }
+							function isValidName(v) { return cyrMode() ? isValidCyrName(v) : isValidLatinName(v); }
+
 							function normalizeCyrName(input) {
 								let s = String(input || '').trim();
 								if (!s) return s;
@@ -1541,13 +1601,13 @@
 								
 								inp.addEventListener('blur', () => {
 									if (inp.disabled) return;
-									inp.value = normalizeCyrName(inp.value);
-									setInvalid(inp, !isValidCyrName(inp.value));
+									inp.value = normalizeName(inp.value);
+									setInvalid(inp, !isValidName(inp.value));
 								});
 								
 								inp.addEventListener('input', () => {
 									if (inp.disabled) return;
-									if (/[A-Za-z]/.test(inp.value)) {
+									if (cyrMode() && /[A-Za-z]/.test(inp.value)) {
 										inp.value = normalizeCyrName(inp.value);
 									}
 								});
@@ -1557,16 +1617,37 @@
 							const phoneMasked = document.getElementById('phone_masked');
 							const phoneE164 = document.getElementById('phone_e164');
 							
+							function phoneToE164(raw) {
+								if (curCountry() === 'RU') return toE164Ru(raw);
+								const t = String(raw || '').trim();
+								const d = digitsOnly(t);
+								if (!d) return '';
+								return t.startsWith('+') ? '+' + d : t; // национальный номер — сервер разберёт по стране
+							}
+
 							if (phoneMasked && phoneE164) {
 								phoneMasked.addEventListener('input', () => {
 									if (phoneMasked.disabled) return;
-									phoneE164.value = toE164Ru(phoneMasked.value);
+									phoneE164.value = phoneToE164(phoneMasked.value);
 								});
 								
 								phoneMasked.addEventListener('blur', () => {
 									if (phoneMasked.disabled) return;
-									phoneE164.value = toE164Ru(phoneMasked.value);
-									phoneMasked.value = formatMaskFromDigits(phoneMasked.value);
+									phoneE164.value = phoneToE164(phoneMasked.value);
+									if (curCountry() === 'RU') phoneMasked.value = formatMaskFromDigits(phoneMasked.value);
+								});
+							}
+
+							if (countrySel) {
+								countrySel.addEventListener('change', () => {
+									const c = curCountry();
+									document.querySelectorAll('[data-name-hint]').forEach(el => { el.textContent = cyrMode() ? HINT_CYR : HINT_LATIN; });
+									if (phoneMasked && !phoneMasked.disabled) {
+										phoneMasked.placeholder = c === 'RU' ? '+7 (___) ___-__-__' : (DIAL_CODES[c] || '+') + ' …';
+										if (c !== 'RU' && !phoneMasked.value.trim()) phoneMasked.value = DIAL_CODES[c] || '';
+										phoneE164.value = phoneToE164(phoneMasked.value);
+									}
+									nameInputs.forEach(inp => { if (!inp.disabled && inp.value) { inp.value = normalizeName(inp.value); setInvalid(inp, !isValidName(inp.value)); } });
 								});
 							}
 							
@@ -1589,16 +1670,18 @@
 								// Names
 								nameInputs.forEach((inp) => {
 									if (inp.disabled) return;
-									inp.value = normalizeCyrName(inp.value);
-									const bad = !isValidCyrName(inp.value);
+									inp.value = normalizeName(inp.value);
+									const bad = !isValidName(inp.value);
 									setInvalid(inp, bad);
 									ok = ok && !bad;
 								});
 								
 								// Phone
 								if (phoneMasked && !phoneMasked.disabled && phoneE164) {
-									phoneE164.value = toE164Ru(phoneMasked.value);
-									const bad = !!phoneE164.value && !phoneRe.test((phoneE164.value || '').trim());
+									phoneE164.value = phoneToE164(phoneMasked.value);
+									const bad = curCountry() === 'RU'
+										? (!!phoneE164.value && !phoneRe.test((phoneE164.value || '').trim()))
+										: (!!phoneE164.value && digitsOnly(phoneE164.value).length < 7);
 									setInvalid(phoneMasked, bad);
 									ok = ok && !bad;
 								}
