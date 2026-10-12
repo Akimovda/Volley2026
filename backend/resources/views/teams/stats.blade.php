@@ -164,7 +164,7 @@
     {{-- Кнопка Excel --}}
     @if($team->event)
         <div class="mt-4">
-            <a href="{{ route('tournament.excel.results', $team->event) }}" class="btn btn-outline-success">
+            <a href="{{ route('tournament.excel.results', $team->event) }}" data-file-download class="btn btn-outline-success">
                 {{ __('profile.team_stats_btn_csv') }}
             </a>
         </div>
