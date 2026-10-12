@@ -170,9 +170,9 @@ class ProfileExtraController extends Controller
         $addRuleIfAllowed('beach_mode', ['nullable', 'in:2,4,universal']);
 
         $messages = [
-            'first_name.regex' => CountryRules::nameMessage($country, 'Имя'),
-            'last_name.regex'  => CountryRules::nameMessage($country, 'Фамилия'),
-            'patronymic.regex' => CountryRules::nameMessage($country, 'Отчество'),
+            'first_name.regex' => CountryRules::nameMessage($country, 'first'),
+            'last_name.regex'  => CountryRules::nameMessage($country, 'last'),
+            'patronymic.regex' => CountryRules::nameMessage($country, 'patronym'),
         ];
 
         $data = $request->validate($rules, $messages);
@@ -183,9 +183,9 @@ class ProfileExtraController extends Controller
         if (!$ownPlaceholder && in_array('last_name', $allowed, true)) {
             $groupFields = ['last_name', 'first_name', 'phone'];
             $groupLabels = [
-                'last_name'  => 'Фамилия',
-                'first_name' => 'Имя',
-                'phone'      => 'Телефон',
+                'last_name'  => __('profile.cp_lbl_last'),
+                'first_name' => __('profile.cp_lbl_first'),
+                'phone'      => __('profile.cp_lbl_phone'),
             ];
             $effective = [];
             foreach ($groupFields as $f) {
@@ -198,7 +198,7 @@ class ProfileExtraController extends Controller
                 $errs = [];
                 foreach ($groupFields as $f) {
                     if (!$effective[$f]) {
-                        $errs[$f] = "Заполните все поля группы: Фамилия, Имя и Телефон.";
+                        $errs[$f] = __('profile.err_group_fill');
                     }
                 }
                 return back()->withErrors($errs)->withInput();
@@ -237,7 +237,7 @@ class ProfileExtraController extends Controller
                     && !$this->filled($data[$field])
                     && $this->filled($target->$field)
                 ) {
-                    $errs[$field] = 'Это поле нельзя оставить пустым.';
+                    $errs[$field] = __('profile.err_cannot_empty');
                 }
             }
             if (!empty($errs)) {
@@ -258,7 +258,7 @@ class ProfileExtraController extends Controller
                 if (array_key_exists($lvl, $data) && !is_null($data[$lvl])) {
                     if (!in_array((int) $data[$lvl], $allowedLevels, true)) {
                         return back()
-                            ->withErrors([$lvl => 'Недопустимый уровень для вашего возраста.'])
+                            ->withErrors([$lvl => __('profile.err_level_age')])
                             ->withInput();
                     }
                 }

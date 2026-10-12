@@ -26,7 +26,7 @@ return [
     'created'           => 'Placeholder created. Fill in the rest of the profile.',
     'deleted'           => 'Placeholder deleted.',
     'err_cyr'           => 'Cyrillic letters, space and hyphen only.',
-    'err_phone'         => 'Phone format: +7XXXXXXXXXX.',
+    'err_phone'         => 'Enter the phone in your country\'s format.',
     'err_has_history'   => 'Cannot delete: the placeholder has registrations or teams.',
     'err_merge'         => 'Could not merge the accounts.',
     'merged'            => 'Accounts merged. Registrations moved: :n.',

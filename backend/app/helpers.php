@@ -161,6 +161,15 @@ if (! function_exists('level_tooltip_description')) {
             return level_spb_description($level, $direction);
         }
 
+        // intl: свои тексты там, где в стандартных российские разряды/лиги (4–6 классика, 5–6 пляж)
+        if ($scope === 'intl') {
+            $key = 'pages.lp_intl_' . $direction . '_' . $level;
+            $translated = __($key);
+            if ($translated !== $key) {
+                return $translated;
+            }
+        }
+
         $key = 'pages.lp_adult_' . $direction . '_' . $level;
         $translated = __($key);
         return $translated !== $key ? $translated : null;

@@ -53,31 +53,31 @@
 												<tbody>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-1">1 - {{ level_name(1, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(1, 'classic') : null) ?? __('pages.lp_adult_classic_1') }}</td>
+														<td>{{ level_tooltip_description(1, 'classic', $levelScope) ?? __('pages.lp_adult_classic_1') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-2">2 - {{ level_name(2, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(2, 'classic') : null) ?? __('pages.lp_adult_classic_2') }}</td>
+														<td>{{ level_tooltip_description(2, 'classic', $levelScope) ?? __('pages.lp_adult_classic_2') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-3">3 - {{ level_name(3, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(3, 'classic') : null) ?? __('pages.lp_adult_classic_3') }}</td>
+														<td>{{ level_tooltip_description(3, 'classic', $levelScope) ?? __('pages.lp_adult_classic_3') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-4">4 - {{ level_name(4, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(4, 'classic') : null) ?? __('pages.lp_adult_classic_4') }}</td>
+														<td>{{ level_tooltip_description(4, 'classic', $levelScope) ?? __('pages.lp_adult_classic_4') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-5">5 - {{ level_name(5, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(5, 'classic') : null) ?? __('pages.lp_adult_classic_5') }}</td>
+														<td>{{ level_tooltip_description(5, 'classic', $levelScope) ?? __('pages.lp_adult_classic_5') }}</td>
 													</tr>
 													<tr class="level-pro">
 														<td><div class="text-center"><strong class="levelmark level-6">6 - {{ level_name(6, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(6, 'classic') : null) ?? __('pages.lp_adult_classic_6') }}</td>
+														<td>{{ level_tooltip_description(6, 'classic', $levelScope) ?? __('pages.lp_adult_classic_6') }}</td>
 													</tr>
 													<tr class="level-pro">
 														<td><div class="text-center"><strong class="levelmark level-7">7 - {{ level_name(7, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(7, 'classic') : null) ?? __('pages.lp_adult_classic_7') }}</td>
+														<td>{{ level_tooltip_description(7, 'classic', $levelScope) ?? __('pages.lp_adult_classic_7') }}</td>
 													</tr>
 													<tr class="level-banned">
 														<td>
@@ -140,31 +140,31 @@
 												<tbody>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-1">1 - {{ level_name(1, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(1, 'beach') : null) ?? __('pages.lp_adult_beach_1') }}</td>
+														<td>{{ level_tooltip_description(1, 'beach', $levelScope) ?? __('pages.lp_adult_beach_1') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-2">2 - {{ level_name(2, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(2, 'beach') : null) ?? __('pages.lp_adult_beach_2') }}</td>
+														<td>{{ level_tooltip_description(2, 'beach', $levelScope) ?? __('pages.lp_adult_beach_2') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-3">3 - {{ level_name(3, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(3, 'beach') : null) ?? __('pages.lp_adult_beach_3') }}</td>
+														<td>{{ level_tooltip_description(3, 'beach', $levelScope) ?? __('pages.lp_adult_beach_3') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-4">4 - {{ level_name(4, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(4, 'beach') : null) ?? __('pages.lp_adult_beach_4') }}</td>
+														<td>{{ level_tooltip_description(4, 'beach', $levelScope) ?? __('pages.lp_adult_beach_4') }}</td>
 													</tr>
 													<tr>
 														<td><div class="text-center"><strong class="levelmark level-5">5 - {{ level_name(5, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(5, 'beach') : null) ?? __('pages.lp_adult_beach_5') }}</td>
+														<td>{{ level_tooltip_description(5, 'beach', $levelScope) ?? __('pages.lp_adult_beach_5') }}</td>
 													</tr>
 													<tr class="level-pro">
 														<td><div class="text-center"><strong class="levelmark level-6">6 - {{ level_name(6, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(6, 'beach') : null) ?? __('pages.lp_adult_beach_6') }}</td>
+														<td>{{ level_tooltip_description(6, 'beach', $levelScope) ?? __('pages.lp_adult_beach_6') }}</td>
 													</tr>
 													<tr class="level-pro">
 														<td><div class="text-center"><strong class="levelmark level-7">7 - {{ level_name(7, $levelScope) }}</strong></div></td>
-														<td>{{ ($levelScope === 'spb' ? level_spb_description(7, 'beach') : null) ?? __('pages.lp_adult_beach_7') }}</td>
+														<td>{{ level_tooltip_description(7, 'beach', $levelScope) ?? __('pages.lp_adult_beach_7') }}</td>
 													</tr>
 												</tbody>
 											</table>

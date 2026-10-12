@@ -60,12 +60,12 @@ class PlaceholderUserController extends Controller
             'gender'     => ['required', 'in:m,f'],
             'phone'      => ['nullable', 'string', function ($attr, $value, $fail) use ($country) {
                 if (!CountryRules::isValidPhone($value, $country)) {
-                    $fail($country === 'RU' ? __('placeholders.err_phone') : CountryRules::phoneMessage($country));
+                    $fail(CountryRules::phoneMessage($country));
                 }
             }],
         ], [
-            'last_name.regex'  => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, __('placeholders.last_name')),
-            'first_name.regex' => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, __('placeholders.first_name')),
+            'last_name.regex'  => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, 'last'),
+            'first_name.regex' => $cyr ? __('placeholders.err_cyr') : CountryRules::nameMessage($country, 'first'),
         ]);
         $data['country_code'] = $country;
 
