@@ -270,4 +270,12 @@ return [
     'rep_filters'            => 'Filters',
     'rep_total'              => 'Subscriptions in report',
     'rep_note'               => 'Purchase # is the sequence number of the player buying this template; repeat purchases is how many times the player bought this template besides the first time.',
+
+    // === Statuses without emoji (organizer list, reports) ===
+    'st_active'    => 'Active',
+    'st_ending'    => 'Ending soon',
+    'st_frozen'    => 'Frozen',
+    'st_expired'   => 'Expired',
+    'st_exhausted' => 'Exhausted',
+    'st_cancelled' => 'Cancelled',
 ];

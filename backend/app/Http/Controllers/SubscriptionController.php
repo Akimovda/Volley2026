@@ -34,7 +34,7 @@ class SubscriptionController extends Controller
         return view('subscriptions.index', compact('subs', 'filters', 'templates'));
     }
 
-    private const STATUSES = ['active', 'frozen', 'expired', 'exhausted', 'cancelled'];
+    private const STATUSES = ['active', 'ending', 'frozen', 'expired', 'exhausted', 'cancelled'];
 
     private function filters(Request $request): array
     {
@@ -52,7 +52,9 @@ class SubscriptionController extends Controller
 
         return Subscription::query()
             ->when(!$user->isAdmin(), fn($q) => $q->whereIn('organizer_id', $access->subsOrganizerIds($user)))
-            ->when($f['status'] !== '', fn($q) => $q->where('status', $f['status']))
+            ->when($f['status'] === 'ending', fn($q) => $q->where('status', 'active')->whereBetween('visits_remaining', [1, Subscription::ENDING_VISITS]))
+            ->when($f['status'] === 'active', fn($q) => $q->where('status', 'active')->where('visits_remaining', '>', Subscription::ENDING_VISITS))
+            ->when(!in_array($f['status'], ['', 'ending', 'active'], true), fn($q) => $q->where('status', $f['status']))
             ->when($f['template'] > 0, fn($q) => $q->where('template_id', $f['template']))
             ->when($f['q'] !== '', function ($q) use ($f) {
                 $term   = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $f['q']);
@@ -98,14 +100,7 @@ class SubscriptionController extends Controller
             ->get(['id', 'user_id', 'template_id', 'organizer_id'])
             ->groupBy(fn($s) => $s->organizer_id . ':' . $s->user_id . ':' . $s->template_id);
 
-        $labels = [
-            'active' => __('subscriptions.status_active'), 'frozen' => __('subscriptions.status_frozen'),
-            'expired' => __('subscriptions.status_expired'), 'exhausted' => __('subscriptions.status_exhausted'),
-            'cancelled' => __('subscriptions.status_cancelled'),
-        ];
-        $strip = fn($t) => trim(preg_replace('/^[^\p{L}\p{N}]+/u', '', $t));
-
-        return $subs->map(function ($s) use ($extended, $all, $labels, $strip) {
+        return $subs->map(function ($s) use ($extended, $all) {
             $u = $s->user;
             $group = $all->get($s->organizer_id . ':' . $s->user_id . ':' . $s->template_id, collect())->pluck('id')->sort()->values();
             $n = $group->search($s->id);
@@ -116,7 +111,7 @@ class SubscriptionController extends Controller
                 'phone'      => $u?->formatted_phone ?: ($u->phone ?? ''),
                 'template'   => $s->template->name ?? '',
                 'visits'     => $s->visits_remaining . ' / ' . $s->visits_total,
-                'status'     => $strip($labels[$s->status] ?? $s->status),
+                'status'     => __('subscriptions.st_' . $s->displayStatus()),
                 'starts'     => $s->starts_at?->format('d.m.Y') ?? '',
                 'expires'    => $s->expires_at?->format('d.m.Y') ?? '∞',
                 'extended'   => (int) ($extended[$s->id] ?? 0),
@@ -173,7 +168,7 @@ class SubscriptionController extends Controller
     {
         $parts = [];
         if ($f['q'] !== '') $parts[] = __('subscriptions.flt_q') . ': ' . $f['q'];
-        if ($f['status'] !== '') $parts[] = __('subscriptions.col_status') . ': ' . trim(preg_replace('/^[^\p{L}\p{N}]+/u', '', __('subscriptions.status_' . $f['status'])));
+        if ($f['status'] !== '') $parts[] = __('subscriptions.col_status') . ': ' . __('subscriptions.st_' . $f['status']);
         if ($f['template'] > 0) $parts[] = __('subscriptions.col_template') . ': ' . (SubscriptionTemplate::find($f['template'])->name ?? $f['template']);
         return $parts ? implode('; ', $parts) : __('subscriptions.rep_no_filters');
     }
