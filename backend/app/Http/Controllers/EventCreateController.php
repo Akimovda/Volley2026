@@ -614,6 +614,23 @@ use App\Services\StaffLogService;
                 $prefill['price_amount'] = number_format(((int)$src->price_minor) / 100, 2, '.', '');
             }
 			
+			// Окно начала регистрации и раннее окно для владельцев абонементов — сдвиги от старта источника
+			if ($src->starts_at && $src->registration_starts_at) {
+				$srcStart = \Carbon\Carbon::parse($src->starts_at, 'UTC')->timestamp;
+				$regSec = $srcStart - \Carbon\Carbon::parse($src->registration_starts_at, 'UTC')->timestamp;
+				if ($regSec > 0) {
+					$prefill['reg_starts_d'] = min(90, intdiv($regSec, 86400));
+					$prefill['reg_starts_h'] = intdiv($regSec % 86400, 3600);
+				}
+				if ($src->subscription_registration_starts_at) {
+					$subSec = $srcStart - \Carbon\Carbon::parse($src->subscription_registration_starts_at, 'UTC')->timestamp;
+					if ($subSec > max($regSec, 0)) {
+						$prefill['sub_reg_starts_d'] = min(90, intdiv($subSec, 86400));
+						$prefill['sub_reg_starts_h'] = intdiv($subSec % 86400, 3600);
+					}
+				}
+			}
+
 			// ✅ нормализуем trainer в один ключ
 			if (empty($prefill['trainer_user_id']) && !empty($prefill['trainer_id'])) {
 				$prefill['trainer_user_id'] = $prefill['trainer_id'];

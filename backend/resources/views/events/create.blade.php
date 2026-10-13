@@ -174,8 +174,8 @@ if ($initialStep < 1 || $initialStep > 3) {
 	
 	
     // ✅ registration offsets defaults — read from named select fields (reg_ends_h/m, cancel_lock_h/m)
-    $oldRegStartsDaysBefore = (int) old('reg_starts_d', old('reg_starts_days_before', 3));
-    $oldRegStartsHoursBefore = (int) old('reg_starts_h', 0);
+    $oldRegStartsDaysBefore = (int) old('reg_starts_d', old('reg_starts_days_before', $prefill['reg_starts_d'] ?? 3));
+    $oldRegStartsHoursBefore = (int) old('reg_starts_h', $prefill['reg_starts_h'] ?? 0);
 
     if (old('reg_ends_h') !== null || old('reg_ends_m') !== null) {
         $regEndsHours   = max(0, (int) old('reg_ends_h', 0));

@@ -313,8 +313,8 @@ if (hiddenH) hiddenH.value = h;
 											<div class="col-sm-4" id="sub_reg_starts_box">
 												<label>{{ __('events.sub_reg_starts_label') }}</label>
 												@php
-													$oldSubD = (int) old('sub_reg_starts_d', $oldRegStartsDaysBefore);
-													$oldSubH = (int) old('sub_reg_starts_h', $oldRegStartsHoursBefore ?? 0);
+													$oldSubD = (int) old('sub_reg_starts_d', $prefill['sub_reg_starts_d'] ?? $oldRegStartsDaysBefore);
+													$oldSubH = (int) old('sub_reg_starts_h', $prefill['sub_reg_starts_h'] ?? ($oldRegStartsHoursBefore ?? 0));
 												@endphp
 												<div class="d-flex" style="gap:.5rem;align-items:center">
 												<select id="sub_reg_starts_days_sel" name="sub_reg_starts_d" style="width:auto">
