@@ -42,6 +42,10 @@ class AutoBookingSubscriptionJob implements ShouldQueue
         $occurrence = EventOccurrence::with('event')->find($this->occurrenceId);
         if (!$occurrence || !$occurrence->event || $occurrence->isCancelled()) return;
 
+        // Раннее окно для владельцев абонементов — автозапись по абонементу отключена (приоритет в записи
+        // отдан владельцам абонементов, они записываются сами после уведомления)
+        if ($occurrence->effectiveSubscriptionRegistrationStartsAt() !== null) return;
+
         $event = $occurrence->event;
         $slotService = app(EventRoleSlotService::class);
         $needsPosition = $slotService->requiresPositionChoice($event);

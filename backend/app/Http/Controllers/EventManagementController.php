@@ -476,6 +476,7 @@ if ($role === 'admin') {
         $occStart = \Carbon\Carbon::parse($occurrence->starts_at, 'UTC');
 
         $regStarts = null;
+        $subRegStarts = null;
         $regEnds   = null;
         $cancelTil = null;
 
@@ -485,6 +486,12 @@ if ($role === 'admin') {
             $endMin    = max(1, (int)round($evStart->diffInMinutes(\Carbon\Carbon::parse($event->registration_ends_at, 'UTC'), false) * -1));
             $regStarts = $occStart->copy()->subSeconds($secBefore);
             $regEnds   = $occStart->copy()->subMinutes($endMin);
+            if ($event->subscription_registration_starts_at) {
+                $subSec = $evStart->timestamp - \Carbon\Carbon::parse($event->subscription_registration_starts_at, 'UTC')->timestamp;
+                if ($subSec > $secBefore) {
+                    $subRegStarts = $occStart->copy()->subSeconds($subSec);
+                }
+            }
         }
 
         if ($event->starts_at && $event->cancel_self_until) {
@@ -519,6 +526,7 @@ if ($role === 'admin') {
         $occurrence->refund_partial_pct  = null;
         $occurrence->trainer_user_id     = null;
         $occurrence->registration_starts_at = $regStarts;
+        $occurrence->subscription_registration_starts_at = $subRegStarts;
         $occurrence->registration_ends_at   = $regEnds;
         $occurrence->cancel_self_until      = $cancelTil;
         $occurrence->is_individually_edited = false;
@@ -676,6 +684,8 @@ if ($role === 'admin') {
             'allow_registration'               => 'sometimes|boolean',
             'reg_starts_days_before'           => 'nullable|integer|min:0|max:365',
             'reg_starts_hours_before'          => 'nullable|integer|min:0|max:23',
+            'sub_reg_starts_days_before'       => 'nullable|integer|min:0|max:365',
+            'sub_reg_starts_hours_before'      => 'nullable|integer|min:0|max:23',
             'reg_ends_minutes_before'          => 'nullable|integer|min:0|max:10080',
             'cancel_lock_minutes_before'          => 'nullable|integer|min:0|max:10080',
             'cancel_lock_waitlist_minutes_before' => 'nullable|integer|min:0|max:10080',
@@ -828,6 +838,14 @@ if ($role === 'admin') {
             $regStartsDaysBefore = (int) $data['reg_starts_days_before'];
             $regStartsHoursBefore = (int) ($data['reg_starts_hours_before'] ?? 0);
             $occurrence->registration_starts_at = $startsUtc->copy()->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
+
+            // Раннее окно абонементов: только раньше общего старта, иначе сбрасываем
+            $subD = (int) ($data['sub_reg_starts_days_before'] ?? 0);
+            $subH = (int) ($data['sub_reg_starts_hours_before'] ?? 0);
+            $occurrence->subscription_registration_starts_at =
+                ($subD * 24 + $subH) > ($regStartsDaysBefore * 24 + $regStartsHoursBefore)
+                    ? $startsUtc->copy()->subDays($subD)->subHours($subH)
+                    : null;
         }
 
         if (isset($data['reg_ends_minutes_before'])) {
@@ -934,6 +952,8 @@ if ($role === 'admin') {
             'child_age_max'            => ['nullable', 'integer', 'min:6', 'max:17', 'gte:child_age_min'],
             'reg_starts_days_before'   => ['nullable', 'integer', 'min:0', 'max:365'],
             'reg_starts_hours_before'  => ['nullable', 'integer', 'min:0', 'max:23'],
+            'sub_reg_starts_days_before'  => ['nullable', 'integer', 'min:0', 'max:365'],
+            'sub_reg_starts_hours_before' => ['nullable', 'integer', 'min:0', 'max:23'],
             // max:87780 = 60 дней 23 часа — верхняя граница дни+часы UI (Турниры/Кемпы)
             'reg_ends_minutes_before'  => ['nullable', 'integer', 'min:0', 'max:87780'],
             'cancel_lock_minutes_before'          => ['nullable', 'integer', 'min:0', 'max:87780'],
@@ -1206,6 +1226,10 @@ if ($role === 'admin') {
             $allowReg = (bool) ($data['allow_registration'] ?? false);
             $daysBefore = (int) ($data['reg_starts_days_before'] ?? 3);
             $hoursBefore = (int) ($data['reg_starts_hours_before'] ?? 0);
+            // Раннее окно абонементов: только раньше общего старта (больше часов «до начала»), иначе — нет
+            $subDays  = (int) ($data['sub_reg_starts_days_before'] ?? 0);
+            $subHours = (int) ($data['sub_reg_starts_hours_before'] ?? 0);
+            $hasSubEarly = ($subDays * 24 + $subHours) > ($daysBefore * 24 + $hoursBefore);
             $endsMinBefore = (int) ($data['reg_ends_minutes_before'] ?? 15);
             $cancelMinBefore = (int) ($data['cancel_lock_minutes_before'] ?? 60);
             $cancelWaitlistMinBefore = isset($data['cancel_lock_waitlist_minutes_before']) && (int)$data['cancel_lock_waitlist_minutes_before'] > 0
@@ -1311,6 +1335,9 @@ if ($role === 'admin') {
 
             if ($allowReg) {
                 $event->registration_starts_at = $startsUtc->copy()->subDays($daysBefore)->subHours($hoursBefore);
+                $event->subscription_registration_starts_at = $hasSubEarly
+                    ? $startsUtc->copy()->subDays($subDays)->subHours($subHours)
+                    : null;
                 $event->registration_ends_at = $startsUtc->copy()->subMinutes($endsMinBefore);
                 $event->cancel_self_until = $startsUtc->copy()->subMinutes($cancelMinBefore);
                 $event->cancel_self_until_waitlist = $cancelWaitlistMinBefore !== null
@@ -1318,6 +1345,7 @@ if ($role === 'admin') {
                     : null;
             } else {
                 $event->registration_starts_at = null;
+                $event->subscription_registration_starts_at = null;
                 $event->registration_ends_at = null;
                 $event->cancel_self_until = null;
                 $event->cancel_self_until_waitlist = null;
@@ -1599,6 +1627,7 @@ if ($role === 'admin') {
                         'allow_registration' => $event->allow_registration ?? null,
                         'max_players' => $event->gameSettings?->max_players ?? null,
                         'registration_starts_at' => $event->registration_starts_at ?? null,
+                        'subscription_registration_starts_at' => $event->subscription_registration_starts_at ?? null,
                         'registration_ends_at' => $event->registration_ends_at ?? null,
                         'cancel_self_until'         => $event->cancel_self_until ?? null,
                         'cancel_self_until_waitlist' => $event->cancel_self_until_waitlist ?? null,
@@ -1661,6 +1690,9 @@ if ($role === 'admin') {
 
                         if ($allowReg) {
                             $occ->registration_starts_at = $occStart->copy()->subDays($daysBefore)->subHours($hoursBefore);
+                            $occ->subscription_registration_starts_at = $hasSubEarly
+                                ? $occStart->copy()->subDays($subDays)->subHours($subHours)
+                                : null;
                             $occ->registration_ends_at   = $occStart->copy()->subMinutes($endsMinBefore);
 
                             // Если рассчитанный дедлайн отмены уже в прошлом — не блокируем выход
@@ -1675,6 +1707,7 @@ if ($role === 'admin') {
                                 : null;
                         } else {
                             $occ->registration_starts_at     = null;
+                            $occ->subscription_registration_starts_at = null;
                             $occ->registration_ends_at       = null;
                             $occ->cancel_self_until          = null;
                             $occ->cancel_self_until_waitlist = null;

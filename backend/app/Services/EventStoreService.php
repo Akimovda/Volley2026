@@ -297,6 +297,7 @@ class EventStoreService
         );
 
         $data['registration_starts_at'] = $windows['regStartsUtc'];
+        $data['subscription_registration_starts_at'] = $windows['subRegStartsUtc'] ?? null;
         $data['registration_ends_at'] = $windows['regEndsUtc'];
         $data['cancel_self_until'] = $windows['cancelUntilUtc'];
         $data['cancel_self_until_waitlist'] = $windows['cancelUntilWaitlistUtc'];
@@ -370,6 +371,7 @@ class EventStoreService
             $event->allow_registration = $allowReg;
 
             $event->registration_starts_at = $data['registration_starts_at'] ?? null;
+            $event->subscription_registration_starts_at = $data['subscription_registration_starts_at'] ?? null;
             $event->registration_ends_at = $data['registration_ends_at'] ?? null;
             $event->cancel_self_until = $data['cancel_self_until'] ?? null;
             $event->cancel_self_until_waitlist = $data['cancel_self_until_waitlist'] ?? null;

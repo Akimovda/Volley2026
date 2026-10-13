@@ -215,6 +215,7 @@ if ($endType === 'until') {
 		): array {
 			
 			$regStartsUtc = null;
+			$subRegStartsUtc = null;
 			$regEndsUtc = null;
 			$cancelUntilUtc = null;
 			$cancelUntilWaitlistUtc = null;
@@ -222,6 +223,7 @@ if ($endType === 'until') {
 			if (!$startsUtc || !$allowReg) {
 				return compact(
                 'regStartsUtc',
+                'subRegStartsUtc',
                 'regEndsUtc',
                 'cancelUntilUtc',
                 'cancelUntilWaitlistUtc'
@@ -264,6 +266,19 @@ if ($endType === 'until') {
 			}
 
 			$regStartsUtc = $startsUtc->subDays($regStartsDaysBefore)->subHours($regStartsHoursBefore);
+
+			// Раннее окно для владельцев абонементов: не раньше-заданного нельзя — только РАНЬШЕ общего старта
+			// (больше времени «до начала»). Равно общему → раннего окна нет (NULL).
+			if (array_key_exists('sub_reg_starts_d', $data) || array_key_exists('sub_reg_starts_h', $data)) {
+				$subD = (int)($data['sub_reg_starts_d'] ?? 0);
+				$subH = (int)($data['sub_reg_starts_h'] ?? 0);
+			} else {
+				$subD = (int)($data['sub_reg_starts_days_before'] ?? 0);
+				$subH = (int)($data['sub_reg_starts_hours_before'] ?? 0);
+			}
+			if (($subD * 24 + $subH) > ($regStartsDaysBefore * 24 + $regStartsHoursBefore)) {
+				$subRegStartsUtc = $startsUtc->subDays($subD)->subHours($subH);
+			}
 			$regEndsUtc = $startsUtc->subMinutes($regEndsMinutesBefore);
 			$cancelUntilUtc = $startsUtc->subMinutes($cancelLockMinutesBefore);
 			$cancelUntilWaitlistUtc = $cancelLockWaitlistMinutesBefore !== null
@@ -272,6 +287,7 @@ if ($endType === 'until') {
 
 			return compact(
             'regStartsUtc',
+            'subRegStartsUtc',
             'regEndsUtc',
             'cancelUntilUtc',
             'cancelUntilWaitlistUtc'
@@ -318,6 +334,7 @@ if ($endType === 'until') {
 			
 			foreach ([
             'registration_starts_at',
+            'subscription_registration_starts_at',
             'registration_ends_at',
             'cancel_self_until',
             'cancel_self_until_waitlist',

@@ -61,7 +61,9 @@ class PremiumAutoBookingJob implements ShouldQueue
                 // абонемент с авто-записью, его обрабатывает AutoBookingSubscriptionJob —
                 // Premium-автозапись здесь не участвует, независимо от порядка
                 // выполнения обеих команд в один и тот же тик планировщика.
-                if ($subscriptionService->hasUsableAutoBookingSubscription($user->id, $event->id)) {
+                // (если у тура раннее окно для абонементов — абонементная автозапись отключена, уступать нечему)
+                if ($occurrence->effectiveSubscriptionRegistrationStartsAt() === null
+                    && $subscriptionService->hasUsableAutoBookingSubscription($user->id, $event->id)) {
                     continue;
                 }
 

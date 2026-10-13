@@ -39,7 +39,10 @@ class RunAutoBooking extends Command
                         ->whereBetween('created_at', [$from, $to]);
                   });
             })
-            ->get();
+            ->get()
+            // раннее окно для владельцев абонементов → автозапись по абонементу отключена
+            ->filter(fn ($o) => $o->effectiveSubscriptionRegistrationStartsAt() === null)
+            ->values();
 
         foreach ($occurrences as $occ) {
             AutoBookingSubscriptionJob::dispatch($occ->id);
