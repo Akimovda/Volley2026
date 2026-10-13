@@ -185,6 +185,8 @@
 - Telegram prod: /opt/volleyplay-telegram-bot/bot.py (порт 8094)
 - MAX dev: /opt/volley-max-bot/bot.py (порт 8091)
 - VK dev: /opt/vk-bot/bot/index.php (PHP)
+- **Код Telegram/MAX ботов — в отдельном приватном репозитории `git@github.com:Akimovda/VolleyBot.git`** (локально `/home/appuser/volley-bots`, 2026-10-13): `telegram/`, `max/`, один код для dev и prod (различия только в `.env`, шаблоны — `.env.example`). Правки — в репозитории, затем `./deploy.sh <telegram|max> <dev|prod>` (копирует в `/opt/*`, нужен sudo; рестарт sudo-командой вручную); прямые правки в `/opt/*` перезапишутся. VK-боты (PHP) в репозиторий НЕ включены — dev и prod расходятся, нужна сверка. При первой раскатке `deploy.sh telegram dev`/`max dev` dev получит фичи prod (ник в результатах теста, ссылка на группу после антиспама).
+- **Антиспам: приглашение (2026-10-13)** — фото-сообщение (`antispam/notice.jpg`) с подписью; по истечении 10 минут `_as_snap()` правкой подписи «рассыпает» текст в точки (4 кадра ×1.2с, 💨), затем удаляет и только потом кикает. Для эфемерных — `editEphemeralMessageMedia` (подпись фото другим методом не проверена; при отказе Telegram — просто удаление без анимации), для форумов — `editMessageCaption`. **Вживую не проверено** — смотреть в логе `ANTISPAM NOTICE PHOTO FAIL`/`ANTISPAM SNAP ERROR`. Сетевые сбои `api.telegram.org` (Max retries exceeded) периодически теряют приглашение/сообщение о кике.
 
 ## MAX API — редактирование сообщений с фото
 - PUT /messages удаляет фото если не передать photo_id обратно в attachments
