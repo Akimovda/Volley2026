@@ -95,6 +95,11 @@ Schedule::command('subscriptions:auto-booking')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Ранняя запись для владельцев абонементов: уведомление об открытии окна
+Schedule::command('subscriptions:notify-early-registration')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 // Автозапись Premium на выбранные мероприятия при открытии регистрации
 Schedule::command('premium:auto-booking')
     ->everyFiveMinutes()

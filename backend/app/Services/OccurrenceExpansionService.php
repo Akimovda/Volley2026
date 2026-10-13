@@ -56,6 +56,8 @@ final class OccurrenceExpansionService
         $cancelMinBefore           = 60;
         $cancelWaitlistMinBefore   = null;
 
+        $subSecBefore = null;
+
         $eventStartUtc = CarbonImmutable::parse($event->starts_at, 'UTC');
         $refUniq = "event:{$event->id}:" . $eventStartUtc->format('YmdHis');
         $refOcc = EventOccurrence::where('event_id', $event->id)
@@ -74,6 +76,13 @@ final class OccurrenceExpansionService
                 $refCancelWaitlist = CarbonImmutable::parse($refOcc->cancel_self_until_waitlist, 'UTC');
                 $cancelWaitlistMinBefore = max(1, (int) round(($eventStartUtc->timestamp - $refCancelWaitlist->timestamp) / 60));
             }
+        }
+
+        // Раннее окно для владельцев абонементов — тот же сдвиг от старта, что у reference-тура
+        if ($refOcc && $refOcc->subscription_registration_starts_at) {
+            $refSub = CarbonImmutable::parse($refOcc->subscription_registration_starts_at, 'UTC');
+            $secs   = $eventStartUtc->timestamp - $refSub->timestamp;
+            $subSecBefore = $secs > $regStartsSecBefore ? $secs : null;
         }
 
         // snapshot max_players
@@ -121,6 +130,7 @@ final class OccurrenceExpansionService
                 occStartUtc: $occStartUtc,
                 durationSec: $durationSec,
                 regStartsSecBefore: $regStartsSecBefore,
+                subSecBefore: $subSecBefore,
                 endsMinBefore: $endsMinBefore,
                 cancelMinBefore: $cancelMinBefore,
                 cancelWaitlistMinBefore: $cancelWaitlistMinBefore,
@@ -153,6 +163,7 @@ final class OccurrenceExpansionService
         CarbonImmutable $occStartUtc,
         int $durationSec,
         int $regStartsSecBefore,
+        ?int $subSecBefore,
         int $endsMinBefore,
         int $cancelMinBefore,
         ?int $cancelWaitlistMinBefore,
@@ -166,6 +177,7 @@ final class OccurrenceExpansionService
 
         // ---- registration windows ----
         $regStarts       = null;
+        $subRegStarts    = null;
         $regEnds         = null;
         $cancelTil       = null;
         $cancelTilWaitlist = null;
@@ -189,6 +201,13 @@ final class OccurrenceExpansionService
 
             if ($cancelTil->greaterThanOrEqualTo($occStartUtc)) {
                 $cancelTil = $occStartUtc->subMinutes(60);
+            }
+
+            if ($subSecBefore !== null) {
+                $cand = $occStartUtc->subSeconds($subSecBefore);
+                if ($cand->lessThan($regStarts)) {
+                    $subRegStarts = $cand;
+                }
             }
         }
 
@@ -219,6 +238,7 @@ final class OccurrenceExpansionService
                 'max_players' => $maxPlayersSnapshot,
                 'duration_sec' => $durationSec,
                 'registration_starts_at'    => $allowReg ? $regStarts : null,
+                'subscription_registration_starts_at' => $allowReg ? $subRegStarts : null,
                 'registration_ends_at'      => $allowReg ? $regEnds   : null,
                 'cancel_self_until'         => $allowReg ? $cancelTil : null,
                 'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,
@@ -244,6 +264,7 @@ final class OccurrenceExpansionService
             'allow_registration' => $allowReg,
             'max_players' => $maxPlayersSnapshot,
             'registration_starts_at'    => $allowReg ? $regStarts : null,
+            'subscription_registration_starts_at' => $allowReg ? $subRegStarts : null,
             'registration_ends_at'      => $allowReg ? $regEnds   : null,
             'cancel_self_until'         => $allowReg ? $cancelTil : null,
             'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,

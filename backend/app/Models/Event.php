@@ -57,6 +57,7 @@ class Event extends Model implements HasMedia
 
         // registration windows
         'registration_starts_at',
+        'subscription_registration_starts_at',
         'registration_ends_at',
         'cancel_self_until',
         'cancel_self_until_waitlist',
@@ -105,6 +106,7 @@ class Event extends Model implements HasMedia
         'duration_sec' => 'integer',
 
         'registration_starts_at' => 'datetime',
+        'subscription_registration_starts_at' => 'datetime',
         'registration_ends_at' => 'datetime',
         'cancel_self_until' => 'datetime',
         'cancel_self_until_waitlist' => 'datetime',

@@ -19,6 +19,15 @@
             $regStartsHoursSaved = (int) floor(($diffSec % 86400) / 3600);
         }
     }
+    $subRegDaysSaved  = $regStartsDaysSaved;
+    $subRegHoursSaved = $regStartsHoursSaved;
+    if ($evStartsAt && $event->subscription_registration_starts_at) {
+        $subDiffSec = $evStartsAt->timestamp - \Carbon\Carbon::parse($event->subscription_registration_starts_at, 'UTC')->timestamp;
+        if ($subDiffSec > 0) {
+            $subRegDaysSaved  = (int) floor($subDiffSec / 86400);
+            $subRegHoursSaved = (int) floor(($subDiffSec % 86400) / 3600);
+        }
+    }
     if ($evStartsAt && $event->registration_ends_at) {
         $regEndsMinSaved = (int) abs($evStartsAt->diffInMinutes(\Carbon\Carbon::parse($event->registration_ends_at, 'UTC')));
     }
@@ -1096,6 +1105,25 @@
                                     </select>
                                 </div>
                                 <small id="mgmt_reg_starts_hint" style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem"></small>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.sub_reg_starts_days') }}</label>
+                                <div class="d-flex" style="gap:.5rem;align-items:center">
+                                    <select name="sub_reg_starts_days_before" id="mgmt_sub_reg_starts_d" style="width:auto">
+                                        @for($d = 0; $d <= 90; $d++)
+                                            <option value="{{ $d }}" @selected((old('sub_reg_starts_days_before', $subRegDaysSaved)) == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+                                        @endfor
+                                    </select>
+                                    <select name="sub_reg_starts_hours_before" id="mgmt_sub_reg_starts_h" style="width:auto">
+                                        @for($h = 0; $h <= 23; $h++)
+                                            <option value="{{ $h }}" @selected((old('sub_reg_starts_hours_before', $subRegHoursSaved)) == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+                                        @endfor
+                                    </select>
+                                </div>
+                                <small id="mgmt_sub_reg_starts_hint" style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem">{{ __('events.sub_reg_starts_default') }}</small>
                             </div>
                         </div>
 
@@ -2348,6 +2376,20 @@
                     } catch(e) { hint.textContent = ''; }
                 }
                 $(document).on('change', '#mgmt_reg_starts_d, #mgmt_reg_starts_h', mgmtUpdateRegHint);
+
+                // «Начало рег. абонементов» нельзя поставить позже общего старта регистрации
+                function mgmtClampSubReg() {
+                    var gD = document.getElementById('mgmt_reg_starts_d'), gH = document.getElementById('mgmt_reg_starts_h');
+                    var sD = document.getElementById('mgmt_sub_reg_starts_d'), sH = document.getElementById('mgmt_sub_reg_starts_h');
+                    if (!gD || !gH || !sD || !sH) return;
+                    var g = (parseInt(gD.value,10)||0) * 24 + (parseInt(gH.value,10)||0);
+                    var s = (parseInt(sD.value,10)||0) * 24 + (parseInt(sH.value,10)||0);
+                    if (s < g) {
+                        sD.value = gD.value; sH.value = gH.value;
+                        if (window.customSelect) { window.customSelect.update('mgmt_sub_reg_starts_d'); window.customSelect.update('mgmt_sub_reg_starts_h'); }
+                    }
+                }
+                $(document).on('change', '#mgmt_reg_starts_d, #mgmt_reg_starts_h, #mgmt_sub_reg_starts_d, #mgmt_sub_reg_starts_h', mgmtClampSubReg);
                 $(document).on('input', 'input[name="starts_at"]', mgmtUpdateRegHint);
                 mgmtUpdateRegHint();
             })();

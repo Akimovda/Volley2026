@@ -310,6 +310,62 @@ if (hiddenH) hiddenH.value = h;
 												});
 												</script>
 											</div>
+											<div class="col-sm-4" id="sub_reg_starts_box">
+												<label>{{ __('events.sub_reg_starts_label') }}</label>
+												@php
+													$oldSubD = (int) old('sub_reg_starts_d', $oldRegStartsDaysBefore);
+													$oldSubH = (int) old('sub_reg_starts_h', $oldRegStartsHoursBefore ?? 0);
+												@endphp
+												<div class="d-flex" style="gap:.5rem;align-items:center">
+												<select id="sub_reg_starts_days_sel" name="sub_reg_starts_d" style="width:auto">
+													@for ($d = 0; $d <= 90; $d++)
+														<option value="{{ $d }}" @selected($oldSubD == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+													@endfor
+												</select>
+												<select id="sub_reg_starts_hours_sel" name="sub_reg_starts_h" style="width:auto">
+													@for ($h = 0; $h <= 23; $h++)
+														<option value="{{ $h }}" @selected($oldSubH == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+													@endfor
+												</select>
+												</div>
+												<ul class="list f-16 mt-1">
+													<li>{{ __('events.until_event_start') }}</li>
+													<li>{{ __('events.sub_reg_starts_default') }}</li>
+												</ul>
+												<div id="sub_reg_starts_hint" class="f-13 mt-1 b-600" style="color:var(--green)"></div>
+												<script>
+												document.addEventListener('DOMContentLoaded', function() {
+													var gD = document.getElementById('reg_starts_days_sel');
+													var gH = document.getElementById('reg_starts_hours_sel');
+													var sD = document.getElementById('sub_reg_starts_days_sel');
+													var sH = document.getElementById('sub_reg_starts_hours_sel');
+													var hint = document.getElementById('sub_reg_starts_hint');
+													if (!gD || !gH || !sD || !sH) return;
+													var touched = (parseInt(sD.value||0)*24 + parseInt(sH.value||0)) !== (parseInt(gD.value||0)*24 + parseInt(gH.value||0));
+													function total(d, h) { return parseInt(d.value||0)*24 + parseInt(h.value||0); }
+													function setSel(sel, v) {
+														sel.value = String(v);
+														if (window.customSelect && sel.id) window.customSelect.update(sel.id);
+													}
+													function clamp(fromGeneral) {
+														var g = total(gD, gH);
+														// пока не трогали — «Начало рег. абонементов» следует за общим стартом; раньше общего нельзя только в сторону «позже»
+														if ((fromGeneral && !touched) || total(sD, sH) < g) {
+															setSel(sD, parseInt(gD.value||0));
+															setSel(sH, parseInt(gH.value||0));
+														}
+														var early = total(sD, sH) > g;
+														hint.textContent = early ? @json(__('events.sub_reg_starts_early_hint')) : '';
+													}
+													gD.addEventListener('change', function() { clamp(true); });
+													gH.addEventListener('change', function() { clamp(true); });
+													sD.addEventListener('change', function() { touched = true; clamp(false); });
+													sH.addEventListener('change', function() { touched = true; clamp(false); });
+													clamp(false);
+												});
+												</script>
+											</div>
+
 											<div class="col-sm-4">
 												<label>{{ __('events.reg_ends_label') }}</label>
 												<input type="hidden" name="reg_ends_minutes_before" id="reg_ends_minutes_before" value="{{ $oldRegEndsMinutesBefore }}">

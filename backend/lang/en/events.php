@@ -746,6 +746,11 @@ return [
     'duration_hint_min'   => 'Minutes — fine-tune the duration',
 
     'reg_window_title'    => 'Registration window',
+    'sub_reg_starts_label'   => 'Subscription registration opens',
+    'sub_reg_starts_days'    => 'Subscription reg. opens (days before)',
+    'occ_sub_reg_starts_days' => 'Subscription reg. opens (days before)',
+    'sub_reg_starts_default' => 'Defaults to the general registration start. Can only be set earlier: holders of a subscription for this event can sign up before everyone else. If earlier, subscription auto-booking is turned off for this event, and the player is notified and signs up manually.',
+    'sub_reg_starts_early_hint' => 'Subscription holders will be able to sign up before everyone else (subscription auto-booking is off).',
     'reg_starts_label'    => 'Registration opens',
     'reg_ends_label'      => 'Registration closes',
     'cancel_lock_label'   => 'Cancellation lock',

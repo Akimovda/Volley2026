@@ -742,6 +742,23 @@
 			|--------------------------------------------------------------------------
 		*/
 
+		/**
+		 * Раннее окно для владельцев абонементов: до общего старта регистрации записаться
+		 * может игрок с действующим абонементом на это мероприятие (если раннее окно уже открыто).
+		 */
+		private function hasEarlySubscriptionAccess(?User $user, EventOccurrence $occurrence, Carbon $nowUtc): bool
+		{
+			if (!$user) {
+				return false;
+			}
+			$early = $occurrence->effectiveSubscriptionRegistrationStartsAt();
+			if (!$early || $nowUtc->lessThan($early)) {
+				return false;
+			}
+			return app(\App\Services\SubscriptionService::class)
+				->findActiveForEvent((int) $user->id, (int) $occurrence->event_id) !== null;
+		}
+
 		private function checkAuthAndWindow(
 			?User $user,
 			EventOccurrence $occurrence,
@@ -774,6 +791,7 @@
 				$nowUtc->lessThan(
 					Carbon::parse($occurrence->registration_starts_at, 'UTC')
 				)
+				&& !$this->hasEarlySubscriptionAccess($user, $occurrence, $nowUtc)
 			) {
 				$result->errors[] = 'Регистрация ещё не началась.';
 			}

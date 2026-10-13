@@ -25,6 +25,18 @@
         $regStartsHours = (int) floor(($regStartsDiffSec % 86400) / 3600);
     }
 
+    $subRegDays  = $regStartsDays;
+    $subRegHours = $regStartsHours;
+    $subRegAt = $occurrence->subscription_registration_starts_at ?? $event->subscription_registration_starts_at;
+    $subRegBase = $occStarts ?: ($event->starts_at ? \Carbon\Carbon::parse($event->starts_at) : null);
+    if ($subRegAt && $subRegBase) {
+        $subDiffSec = $subRegBase->timestamp - \Carbon\Carbon::parse($subRegAt)->timestamp;
+        if ($subDiffSec > 0) {
+            $subRegDays  = (int) floor($subDiffSec / 86400);
+            $subRegHours = (int) floor(($subDiffSec % 86400) / 3600);
+        }
+    }
+
     if ($occStarts && $occurrence->registration_ends_at) {
         $regEndsMin = (int) \Carbon\Carbon::parse($occurrence->registration_ends_at)->diffInMinutes($occStarts);
     } elseif ($event->starts_at && $event->registration_ends_at) {

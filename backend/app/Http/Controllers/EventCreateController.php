@@ -726,6 +726,7 @@ use App\Services\StaffLogService;
             'recurrence_months',
             'recurrence_rule',
             'reg_starts_days_before',
+            'sub_reg_starts_days_before',
             'reg_ends_minutes_before',
             'cancel_lock_minutes_before',
             'cancel_lock_waitlist_minutes_before',

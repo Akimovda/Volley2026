@@ -57,6 +57,24 @@
         </div>
         <div class="col-md-3">
             <div class="card">
+                <label>{{ __('events.occ_sub_reg_starts_days') }}</label>
+                <div class="d-flex" style="gap:.5rem">
+                    <select name="sub_reg_starts_days_before" style="width:auto">
+                        @for($d = 0; $d <= 90; $d++)
+                            <option value="{{ $d }}" @selected(old('sub_reg_starts_days_before', $subRegDays ?? $regStartsDays) == $d)>{{ $d }} {{ __('events.dur_d_short') }}</option>
+                        @endfor
+                    </select>
+                    <select name="sub_reg_starts_hours_before" style="width:auto">
+                        @for($h = 0; $h <= 23; $h++)
+                            <option value="{{ $h }}" @selected(old('sub_reg_starts_hours_before', $subRegHours ?? 0) == $h)>{{ $h }} {{ __('events.dur_h_short') }}</option>
+                        @endfor
+                    </select>
+                </div>
+                <small style="display:block;margin-top:.4rem;color:#6b7280;font-size:1.3rem">{{ __('events.sub_reg_starts_default') }}</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
                 <label>{{ __('events.occ_reg_ends_label') }}</label>
                 <input type="hidden" name="reg_ends_minutes_before" id="occ_reg_ends_min" value="{{ old('reg_ends_minutes_before', $regEndsMin) }}">
                 <div class="d-flex" style="gap:.5rem">

@@ -35,6 +35,8 @@ class EventOccurrence extends Model
         'beach_level_max',
 
         'registration_starts_at',
+        'subscription_registration_starts_at',
+        'subscription_reg_notified_at',
         'registration_ends_at',
         'cancel_self_until',
         'cancel_self_until_waitlist',
@@ -90,6 +92,8 @@ class EventOccurrence extends Model
 
         // registration windows (UTC)
         'registration_starts_at' => 'datetime',
+        'subscription_registration_starts_at' => 'datetime',
+        'subscription_reg_notified_at' => 'datetime',
         'registration_ends_at' => 'datetime',
         'cancel_self_until' => 'datetime',
         'cancel_self_until_waitlist' => 'datetime',
@@ -277,6 +281,22 @@ class EventOccurrence extends Model
     {
         return $this->registration_starts_at
             ?? $this->event?->registration_starts_at;
+    }
+
+    /**
+     * Раннее окно записи для владельцев абонементов. null — раннего окна нет
+     * (не задано или не раньше общего старта регистрации).
+     */
+    public function effectiveSubscriptionRegistrationStartsAt(): ?Carbon
+    {
+        $early   = $this->subscription_registration_starts_at
+            ?? $this->event?->subscription_registration_starts_at;
+        $general = $this->effectiveRegistrationStartsAt();
+
+        if (!$early || !$general || !$early->lt($general)) {
+            return null;
+        }
+        return $early;
     }
 
     public function effectiveRegistrationEndsAt(): ?Carbon
