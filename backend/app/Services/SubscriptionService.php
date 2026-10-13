@@ -104,6 +104,37 @@ class SubscriptionService
     }
 
     /**
+     * У мероприятия есть будущий тур с ранним окном записи для владельцев абонементов —
+     * автозапись по абонементу на такие туры отключена (игрок записывается сам после уведомления).
+     */
+    public function eventHasEarlySubscriptionWindow(\App\Models\Event $event): bool
+    {
+        return \App\Models\EventOccurrence::with('event')
+            ->where('event_id', $event->id)
+            ->where('starts_at', '>', now())
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->get()
+            ->contains(fn ($o) => $o->effectiveSubscriptionRegistrationStartsAt() !== null);
+    }
+
+    /**
+     * Мероприятия организатора абонемента (с учётом event_ids шаблона), на которые действует
+     * ранняя запись по абонементам — для них автозапись не работает.
+     */
+    private function earlyWindowEventsFor(Subscription $sub): \Illuminate\Support\Collection
+    {
+        $sub->loadMissing('template');
+        $q = \App\Models\Event::query()
+            ->where('organizer_id', $sub->organizer_id)
+            ->where('allow_registration', true);
+        if (!empty($sub->template?->event_ids)) {
+            $q->whereIn('id', $sub->template->event_ids);
+        }
+        return $q->get()->filter(fn ($e) => $this->eventHasEarlySubscriptionWindow($e))->values();
+    }
+
+    /**
      * Мероприятия, на которые игрок может настроить автозапись по этому абонементу:
      * мероприятия организатора абонемента (с учётом event_ids шаблона), индивидуальная
      * запись, есть будущий тур, ещё не настроенные. Для классики с амплуа отдаёт позиции
@@ -146,7 +177,10 @@ class SubscriptionService
 
         $slotService = app(EventRoleSlotService::class);
 
-        return $query->orderByDesc('id')->limit(50)->get()->map(function ($event) use ($slotService) {
+        // Мероприятия с ранним окном для абонементов: автозапись не работает — не предлагаем настраивать
+        return $query->orderByDesc('id')->limit(50)->get()
+            ->reject(fn ($event) => $this->eventHasEarlySubscriptionWindow($event))
+            ->map(function ($event) use ($slotService) {
             $required = $slotService->requiresPositionChoice($event);
             return [
                 'id'        => $event->id,
@@ -226,6 +260,12 @@ class SubscriptionService
                 return;
             }
 
+            // Мероприятия с ранней записью по абонементам: автозапись там не работает, придёт уведомление
+            $earlyNote = $this->earlyWindowEventsFor($sub)->isNotEmpty()
+                ? ' На мероприятия, где для владельцев абонементов открыта ранняя запись, автозапись не работает: '
+                  . 'когда запись откроется, вы получите уведомление и запишетесь сами.'
+                : '';
+
             $autoEvent = $this->autoConfigureSingleEvent($sub);
             if ($autoEvent) {
                 $this->notificationService->create(
@@ -234,7 +274,25 @@ class SubscriptionService
                     title: '🎫 Абонемент: автозапись настроена',
                     body: "По абонементу «{$sub->template->name}» автозапись уже настроена на мероприятие «{$autoEvent->title}»: "
                         . 'вы будете записаны автоматически в момент открытия регистрации на каждый тур. '
-                        . 'Отключить или изменить можно в «Мои абонементы».',
+                        . 'Отключить или изменить можно в «Мои абонементы».' . $earlyNote,
+                    payload: [
+                        'subscription_id' => $sub->id,
+                        'button_text'     => 'Мои абонементы',
+                        'button_url'      => route('subscriptions.my'),
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max', 'push'],
+                );
+                return;
+            }
+
+            // Настраивать автозапись не на что, но есть мероприятия с ранней записью — сообщаем только про неё
+            if ($earlyNote !== '' && $this->autoBookingEventsFor($sub, \App\Models\User::find($sub->user_id))->isEmpty()) {
+                $this->notificationService->create(
+                    userId: (int) $sub->user_id,
+                    type: 'subscription_auto_booking_hint',
+                    title: '🎫 Абонемент: ранняя запись',
+                    body: "По абонементу «{$sub->template->name}» на мероприятия организатора открыта ранняя запись для владельцев абонементов. "
+                        . 'Когда запись откроется, вы получите уведомление и сможете записаться первым — автозапись для этого не нужна.',
                     payload: [
                         'subscription_id' => $sub->id,
                         'button_text'     => 'Мои абонементы',
@@ -260,7 +318,8 @@ class SubscriptionService
                     . ($needsPosition
                         ? ' Для классического волейбола с записью по амплуа нужно обязательно выбрать позицию, на которую вас будут записывать, '
                           . '— без выбранной позиции автозапись на это мероприятие не сработает.'
-                        : ''),
+                        : '')
+                    . $earlyNote,
                 payload: [
                     'subscription_id' => $sub->id,
                     'button_text'     => 'Настроить автозапись',
