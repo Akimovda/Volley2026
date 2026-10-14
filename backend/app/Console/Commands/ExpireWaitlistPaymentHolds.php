@@ -48,9 +48,17 @@ class ExpireWaitlistPaymentHolds extends Command
                 // Онлайн-платёж мог пройти, а вебхук ещё не дошёл — сверяемся с ЮKassa до выписки
                 if ($candidate->method === 'yoomoney' && $candidate->yoomoney_payment_id) {
                     $settings = PaymentSetting::where('organizer_id', $candidate->organizer_id)->first();
-                    if ($settings && $yookassa->verifyPayment($candidate->yoomoney_payment_id, $settings) === 'succeeded') {
-                        $payments->markPaid($candidate);
-                        continue;
+                    if ($settings) {
+                        $status = $yookassa->verifyPayment($candidate->yoomoney_payment_id, $settings);
+                        if ($status === 'succeeded') {
+                            $payments->markPaid($candidate);
+                            continue;
+                        }
+                        if ($status === null) {
+                            // ЮKassa не ответила — не знаем, оплатил ли игрок; не выписываем, повторим через минуту
+                            Log::warning('ExpireWaitlistPaymentHolds: статус ЮKassa неизвестен, откладываем', ['payment_id' => $candidate->id]);
+                            continue;
+                        }
                     }
                 }
 
