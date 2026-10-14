@@ -185,7 +185,8 @@
                             @if($economy)
                             <div class="f-13" style="color:#4caf50;">{{ $economy }}</div>
                             @endif
-                            <form method="POST" action="{{ route('premium.renew') }}" class="form mt-1">
+                            @php $payChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                            <form method="POST" action="{{ route('premium.renew') }}" class="form mt-1" @if($payChoices) data-pay-choices="{{ json_encode($payChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
                                 @csrf
                                 <input type="hidden" name="plan" value="{{ $plan }}">
                                 <button class="btn btn-secondary" style="width:100%;">Продлить</button>
@@ -209,7 +210,7 @@
                         'year'    => '1 год — ' . $priceYear . '₽',
                     } }}
                 </div>
-                @if($platformPayment && $platformPayment->method === 'yoomoney' && $pending->payment)
+                @if($pending->payment && $pending->payment->method === 'yoomoney')
                 <div class="f-15 mb-2">Оплатите картой или СБП — Premium включится автоматически сразу после оплаты.</div>
                 @if(($pending->payment->fee_minor + $pending->payment->tax_minor) > 0)
                 <div class="f-14 mb-2" style="opacity:.7">К оплате: <strong>{{ number_format($pending->payment->amount_minor/100, 2, '.', ' ') }} ₽</strong> (с учётом комиссии и налогов {{ number_format(($pending->payment->fee_minor + $pending->payment->tax_minor)/100, 2, '.', ' ') }} ₽)</div>
@@ -221,9 +222,9 @@
                 @elseif($platformPayment && !$pending->payment?->user_confirmed)
                 <div class="f-15 mb-2">
                     Переведите оплату:
-                    @if($platformPayment->method === 'tbank_link' && $platformPayment->tbank_link)
+                    @if($pending->payment?->method === 'tbank_link' && $platformPayment->tbank_link)
                     <a href="{{ $platformPayment->tbank_link }}" target="_blank" class="btn btn-secondary">🏦 Открыть Т-Банк</a>
-                    @elseif($platformPayment->method === 'sber_link' && $platformPayment->sber_link)
+                    @elseif($pending->payment?->method === 'sber_link' && $platformPayment->sber_link)
                     <a href="{{ $platformPayment->sber_link }}" target="_blank" class="btn btn-secondary">💚 Открыть Сбер</a>
                     @endif
                 </div>
@@ -288,7 +289,8 @@
                     <div class="plan-price">{{ $priceHalf }}₽</div>
                     <div class="plan-economy"></div>
                     @auth
-                    <form method="POST" action="{{ route('premium.pay') }}">
+                    @php $payChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                    <form method="POST" action="{{ route('premium.pay') }}" @if($payChoices) data-pay-choices="{{ json_encode($payChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
                         @csrf
                         <input type="hidden" name="plan" value="half">
                         <button class="btn w-100" style="background:#f5c842;color:#333;font-weight:700;">
@@ -306,7 +308,8 @@
                     <div class="plan-price">{{ $priceYear }}₽</div>
                     <div class="plan-economy">{{ $yearSaving ? 'Выгода ' . $yearSaving . '%' : '' }}</div>
                     @auth
-                    <form method="POST" action="{{ route('premium.pay') }}">
+                    @php $payChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                    <form method="POST" action="{{ route('premium.pay') }}" @if($payChoices) data-pay-choices="{{ json_encode($payChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
                         @csrf
                         <input type="hidden" name="plan" value="year">
                         <button class="btn w-100">Подключить</button>

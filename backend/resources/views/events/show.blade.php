@@ -278,7 +278,9 @@ $hasCoords =
 					@php
 					$isOwner = auth()->check() && auth()->id() === (int)($event->organizer_id ?? 0);
 					$adStatus = $event->ad_payment_status ?? null;
-					$adMethod = $platPaySettings?->method ?? null;
+					$adOffered = $platPaySettings?->offeredMethods() ?? [];
+					// Несколько способов: до выбора организатором способа нет; после — сохранённый в мероприятии
+					$adMethod = $event->ad_payment_method ?: (count($adOffered) >= 2 ? null : ($platPaySettings?->method ?? null));
 					$adPrice  = $event->ad_price_rub ?? 0;
 					$adExpires = $event->ad_payment_expires_at;
 					@endphp
@@ -295,6 +297,12 @@ $hasCoords =
 							@endif
 						</div>
 						
+						@if(!$adMethod && count($adOffered) >= 2)
+						<form method="POST" action="{{ route('ads.pay.method', $event) }}" data-pay-choices="{{ json_encode(\App\Support\PaymentMethods::forJs($adOffered), JSON_UNESCAPED_UNICODE) }}">
+							@csrf
+							<button type="submit" class="btn w-100 mb-1">Выбрать способ оплаты</button>
+						</form>
+						@endif
 						@if($adMethod === 'tbank_link' && $platPaySettings?->tbank_link)
 						<a href="{{ $platPaySettings->tbank_link }}" target="_blank" class="btn w-100 mb-1">
 							{{ __('events.show_ad_pay_tbank') }}

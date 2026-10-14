@@ -1814,6 +1814,8 @@ Route::middleware(['web', 'auth'])->group(function () {
         ->whereNumber('payment')->name('payments.online.choose');
     Route::post('/payments/{payment}/online', [\App\Http\Controllers\OnlinePaymentController::class, 'start'])
         ->whereNumber('payment')->name('payments.online.start');
+    Route::post('/events/{event}/ad-method', [\App\Http\Controllers\OnlinePaymentController::class, 'adMethod'])
+        ->whereNumber('event')->name('ads.pay.method');
     Route::get('/events/{event}/ad-pay', [\App\Http\Controllers\OnlinePaymentController::class, 'adChoose'])
         ->whereNumber('event')->name('ads.pay.choose');
     Route::post('/events/{event}/ad-pay', [\App\Http\Controllers\OnlinePaymentController::class, 'adStart'])

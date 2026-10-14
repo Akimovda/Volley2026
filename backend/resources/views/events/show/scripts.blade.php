@@ -403,6 +403,19 @@ function initJoinForms() {
         if (!form.matches('form[data-ajax-join]')) return;
         e.preventDefault();
 
+        // Несколько способов оплаты: сначала спрашиваем способ (до записи — закрыл попап, записи нет)
+        if (form.dataset.payChoices && !form.querySelector('input[name="payment_method"]')) {
+            let choices = [];
+            try { choices = JSON.parse(form.dataset.payChoices); } catch (err) {}
+            if (choices.length) {
+                const method = await window.askPaymentMethod(choices);
+                if (!method) return;
+                const hidden = document.createElement('input');
+                hidden.type = 'hidden'; hidden.name = 'payment_method'; hidden.value = method;
+                form.appendChild(hidden);
+            }
+        }
+
         const btn = form.querySelector('button[type="submit"]');
         if (btn) { btn.disabled = true; btn.textContent = '⏳...'; }
 

@@ -22,6 +22,8 @@ class AdminPlatformPaymentController extends Controller
             'sber_link'         => 'nullable|url',
             'yoomoney_shop_id'  => 'nullable|string',
             'yoomoney_secret_key' => 'nullable|string',
+            'offer_methods'       => 'nullable|array',
+            'offer_methods.*'     => 'in:tbank_link,sber_link,yoomoney',
             'yookassa_vat_code' => 'nullable|integer|between:1,12',
             'yookassa_tax_system_code' => 'nullable|integer|between:1,6',
         ] + \App\Support\PaymentPricing::rules('sub_') + \App\Support\PaymentPricing::rules('ad_'));
@@ -37,6 +39,8 @@ class AdminPlatformPaymentController extends Controller
             $settings->yoomoney_secret_key = encrypt($request->yoomoney_secret_key);
         }
 
+        $settings->offer_choice              = $request->boolean('offer_choice');
+        $settings->offer_methods             = array_values($request->input('offer_methods', []));
         $settings->yookassa_receipt_enabled  = $request->boolean('yookassa_receipt_enabled');
         $settings->yookassa_vat_code         = (int) $request->input('yookassa_vat_code', 1) ?: 1;
         $settings->yookassa_tax_system_code  = $request->filled('yookassa_tax_system_code') ? (int) $request->yookassa_tax_system_code : null;

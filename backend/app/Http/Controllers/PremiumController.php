@@ -86,14 +86,16 @@ class PremiumController extends Controller
         ]);
 
         // Создаём платёж
-        $priced = $platformPayment->method === 'yoomoney'
+        $method = $platformPayment->resolveMethod($request->input('payment_method'));
+
+        $priced = $method === 'yoomoney'
             ? \App\Support\PaymentPricing::apply(PremiumSubscription::planPriceMinor($plan), $platformPayment, 'sub_')
             : ['total' => PremiumSubscription::planPriceMinor($plan), 'fee' => 0, 'tax' => 0];
 
         $payment = Payment::create([
             'user_id'      => $user->id,
             'organizer_id' => null,
-            'method'       => $platformPayment->method,
+            'method'       => $method,
             'status'       => 'pending',
             'amount_minor' => $priced['total'],
             'fee_minor'    => $priced['fee'],
@@ -104,7 +106,7 @@ class PremiumController extends Controller
 
         $sub->update(['payment_id' => $payment->id]);
 
-        if ($platformPayment->method === 'yoomoney') {
+        if ($method === 'yoomoney') {
             return app(PlatformPaymentController::class)->pay($request, $payment);
         }
 
@@ -133,14 +135,16 @@ class PremiumController extends Controller
             'expires_at' => now()->addDays(PremiumSubscription::planDays($plan)),
         ]);
 
-        $priced = $platformPayment->method === 'yoomoney'
+        $method = $platformPayment->resolveMethod($request->input('payment_method'));
+
+        $priced = $method === 'yoomoney'
             ? \App\Support\PaymentPricing::apply(PremiumSubscription::planPriceMinor($plan), $platformPayment, 'sub_')
             : ['total' => PremiumSubscription::planPriceMinor($plan), 'fee' => 0, 'tax' => 0];
 
         $payment = Payment::create([
             'user_id'      => $user->id,
             'organizer_id' => null,
-            'method'       => $platformPayment->method,
+            'method'       => $method,
             'status'       => 'pending',
             'amount_minor' => $priced['total'],
             'fee_minor'    => $priced['fee'],
@@ -151,7 +155,7 @@ class PremiumController extends Controller
 
         $sub->update(['payment_id' => $payment->id]);
 
-        if ($platformPayment->method === 'yoomoney') {
+        if ($method === 'yoomoney') {
             return app(PlatformPaymentController::class)->pay($request, $payment);
         }
 

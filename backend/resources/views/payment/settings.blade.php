@@ -177,6 +177,12 @@
                 </div>
             </div>
 
+            {{-- Выбор способа оплаты игроком --}}
+            <div class="ramka">
+                <h2 class="-mt-05">🔀 Несколько способов оплаты</h2>
+                @include('payment._offer_choice', ['s' => $settings, 'withCash' => true, 'available' => $settings->availableMethods()])
+            </div>
+
             {{-- Чек ЮKassa --}}
             <div class="ramka">
                 <h2 class="-mt-05">🧾 Чек в платеже ЮKassa</h2>

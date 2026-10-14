@@ -198,6 +198,23 @@ class EventRegistrationController extends Controller
 
         $position       = $request->input('position');
         $subscriptionId = $request->input('subscription_id');
+
+        // Организатор предлагает несколько способов оплаты: игрок обязан выбрать один из них
+        // (способ мероприятия на время этого запроса подменяется выбранным, в БД не сохраняется).
+        if ($event->is_paid && (int) $event->price_minor > 0 && !$subscriptionId && (int) $user->id !== (int) $event->organizer_id) {
+            $offered = \App\Models\PaymentSetting::offeredFor((int) $event->organizer_id);
+            if ($offered) {
+                $chosen = (string) $request->input('payment_method');
+                if (!in_array($chosen, $offered, true)) {
+                    $msg = 'Выберите способ оплаты.';
+                    if ($request->ajax() || $request->wantsJson()) {
+                        return response()->json(['ok' => false, 'message' => $msg], 422);
+                    }
+                    return redirect()->route('events.show', ['event' => (int) $event->id, 'occurrence' => (int) $occurrence->id])->with('error', $msg);
+                }
+                $event->payment_method = $chosen;
+            }
+        }
         $couponCode     = $request->input('coupon_code');
 
         try {

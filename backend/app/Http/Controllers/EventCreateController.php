@@ -137,6 +137,12 @@ use App\Services\StaffLogService;
                            $event->save();
                            \App\Jobs\ExpireAdEventJob::dispatch($event->id)->delay(now()->addHours(2));
 
+                           // Несколько способов оплаты: организатор выберет способ на странице мероприятия (попап).
+                           if (count($platSettings?->offeredMethods() ?? []) >= 2) {
+                               return redirect()->route('events.show', $event)
+                                   ->with('success', '🎉 Ваше рекламное мероприятие создано! Выберите способ оплаты ниже.');
+                           }
+
                            $platMethod = $platSettings?->method ?? 'tbank_link';
 
                            if ($platMethod === 'yoomoney' && \App\Support\PaymentPricing::needsChoice($platSettings, 'ad_')) {

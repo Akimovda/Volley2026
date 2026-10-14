@@ -121,7 +121,7 @@
         <div class="ramka">
             <div class="card mb-1" style="border:0.2rem solid #f5c842">
                 <div class="f-17 b-600 mb-1">⏳ Заявка на «{{ \App\Models\OrganizerSubscription::planLabel($pending->plan) }}» — {{ number_format((float) $pending->amount_rub, 0, '.', ' ') }} ₽</div>
-                @if($platformPayment && $platformPayment->method === 'yoomoney' && $pendingPayment)
+                @if($pendingPayment && $pendingPayment->method === 'yoomoney')
                 <div class="f-15 mb-1" style="opacity:.75">Оплатите картой или СБП — подписка включится автоматически сразу после оплаты.</div>
                 @if(($pendingPayment->fee_minor + $pendingPayment->tax_minor) > 0)
                 <div class="f-14 mb-1" style="opacity:.7">К оплате: <strong>{{ number_format($pendingPayment->amount_minor/100, 2, '.', ' ') }} ₽</strong> (с учётом комиссии и налогов {{ number_format(($pendingPayment->fee_minor + $pendingPayment->tax_minor)/100, 2, '.', ' ') }} ₽)</div>
@@ -135,11 +135,11 @@
                     Переведите оплату и нажмите «Я оплатил» — после проверки мы активируем подписку
                     @if($active) (срок прибавится к текущему) @endif.
                 </div>
-                @if($platformPayment)
+                @if($platformPayment && $pendingPayment)
                 <div class="mb-1">
-                    @if($platformPayment->method === 'tbank_link' && $platformPayment->tbank_link)
+                    @if($pendingPayment->method === 'tbank_link' && $platformPayment->tbank_link)
                     <a href="{{ $platformPayment->tbank_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">🏦 Открыть Т-Банк</a>
-                    @elseif($platformPayment->method === 'sber_link' && $platformPayment->sber_link)
+                    @elseif($pendingPayment->method === 'sber_link' && $platformPayment->sber_link)
                     <a href="{{ $platformPayment->sber_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">💚 Открыть Сбер</a>
                     @endif
                 </div>
@@ -255,7 +255,8 @@
                                     ✅ Текущий тариф
                                 </button>
                             @else
-                                <form method="POST" action="{{ $plan['price'] === 0 ? route('organizer_pro.activate') : route('organizer_pro.pay') }}">
+                                @php $payChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                                <form method="POST" action="{{ $plan['price'] === 0 ? route('organizer_pro.activate') : route('organizer_pro.pay') }}" @if($plan['price'] !== 0 && $payChoices) data-pay-choices="{{ json_encode($payChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
                                     @csrf
                                     <input type="hidden" name="plan" value="{{ $planKey }}">
                                     <button type="submit"

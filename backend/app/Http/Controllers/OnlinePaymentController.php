@@ -111,6 +111,39 @@ class OnlinePaymentController extends Controller
         return redirect()->away($payment['payment_url']);
     }
 
+    /** Организатор выбрал способ оплаты рекламы (когда у платформы включён выбор). */
+    public function adMethod(Request $request, Event $event)
+    {
+        abort_if((int) $event->organizer_id !== (int) $request->user()->id || $event->ad_payment_status !== 'pending', 403);
+
+        $settings = PlatformPaymentSetting::first();
+        $method   = (string) $request->input('payment_method');
+        abort_unless($settings && in_array($method, $settings->offeredMethods(), true), 422);
+
+        $event->update(['ad_payment_method' => $method]);
+
+        if ($method === 'yoomoney') {
+            if (Pricing::needsChoice($settings, 'ad_')) {
+                $url = route('ads.pay.choose', $event);
+                $event->update(['ad_yookassa_payment_url' => $url]);
+                return redirect()->away($url);
+            }
+            try {
+                $payment = $this->yookassa->createAdPayment($event);
+                $event->update([
+                    'ad_yookassa_payment_id'  => $payment['payment_id'],
+                    'ad_yookassa_payment_url' => $payment['payment_url'],
+                ]);
+                return redirect()->away($payment['payment_url']);
+            } catch (\Throwable $e) {
+                Log::error('OnlinePaymentController::adMethod', ['event_id' => $event->id, 'error' => $e->getMessage()]);
+                return redirect()->route('events.show', $event)->with('error', 'Не удалось создать платёж. Попробуйте позже.');
+            }
+        }
+
+        return redirect()->route('events.show', $event);
+    }
+
     // ───────── helpers ─────────
 
     /** @return array{0: object, 1: string, 2: int} настройки, префикс, базовая сумма в минорных единицах */
@@ -137,7 +170,7 @@ class OnlinePaymentController extends Controller
         abort_if((int) $event->organizer_id !== (int) $request->user()->id || $event->ad_payment_status !== 'pending', 403);
 
         $settings = PlatformPaymentSetting::first();
-        abort_unless($settings && $settings->method === 'yoomoney' && Pricing::needsChoice($settings, 'ad_'), 404);
+        abort_unless($settings && ($event->ad_payment_method ?: $settings->method) === 'yoomoney' && Pricing::needsChoice($settings, 'ad_'), 404);
 
         return $settings;
     }

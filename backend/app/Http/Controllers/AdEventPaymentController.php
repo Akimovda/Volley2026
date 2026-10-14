@@ -46,7 +46,7 @@ class AdEventPaymentController extends Controller
     public static function recordTransaction(Event $event, User $organizer): void
     {
         try {
-            $platMethod = \App\Models\PlatformPaymentSetting::first()?->method ?? 'yoomoney';
+            $platMethod = $event->ad_payment_method ?: (\App\Models\PlatformPaymentSetting::first()?->method ?? 'yoomoney');
 
             \App\Models\Payment::create([
                 'user_id'            => $organizer->id,

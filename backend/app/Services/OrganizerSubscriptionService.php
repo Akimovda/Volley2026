@@ -80,9 +80,9 @@ class OrganizerSubscriptionService
      *
      * @return array{0: OrganizerSubscription, 1: \App\Models\Payment, 2: bool} [подписка, платёж, новая ли заявка]
      */
-    public function createPending(User $user, string $plan): array
+    public function createPending(User $user, string $plan, ?string $chosenMethod = null): array
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $plan) {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $plan, $chosenMethod) {
             $existing = OrganizerSubscription::query()
                 ->where('user_id', $user->id)->where('status', 'pending')->lockForUpdate()->get();
 
@@ -102,14 +102,16 @@ class OrganizerSubscriptionService
             $price    = $this->priceRub($plan);
             $settings = \App\Models\PlatformPaymentSetting::first();
 
-            $priced = $settings?->method === 'yoomoney'
+            $method = $settings ? $settings->resolveMethod($chosenMethod) : 'manual';
+
+            $priced = $method === 'yoomoney'
                 ? \App\Support\PaymentPricing::apply($price * 100, $settings, 'sub_')
                 : ['total' => $price * 100, 'fee' => 0, 'tax' => 0];
 
             $payment = \App\Models\Payment::create([
                 'user_id'      => $user->id,
                 'organizer_id' => null,
-                'method'       => $settings?->method ?? 'manual',
+                'method'       => $method,
                 'status'       => 'pending',
                 'amount_minor' => $priced['total'],
                 'fee_minor'    => $priced['fee'],
@@ -124,7 +126,7 @@ class OrganizerSubscriptionService
                 'status'         => 'pending',
                 'starts_at'      => now(),
                 'expires_at'     => now()->addDays(OrganizerSubscription::planDays($plan)),
-                'payment_method' => $settings?->method ?? 'manual',
+                'payment_method' => $method,
                 'payment_id'     => $payment->id,
                 'amount_rub'     => $price,
             ]);
