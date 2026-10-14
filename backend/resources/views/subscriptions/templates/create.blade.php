@@ -133,12 +133,12 @@
             <div class="ramka">
                 <h2 class="-mt-05">{{ __('subscriptions.tpl_section_rules') }}</h2>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-md-6 mb-2">
                         <label>{{ __('subscriptions.tpl_label_cancel_hours') }}</label>
                         <input type="number" name="cancel_hours_before" value="{{ old('cancel_hours_before', 0) }}" min="0">
                         <ul class="list f-13 mt-1"><li>{{ __('subscriptions.tpl_hint_cancel_zero') }}</li></ul>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-12">
                         <label class="checkbox-item mb-1">
                             <input type="hidden" name="transfer_enabled" value="0">
                             <input type="checkbox" name="transfer_enabled" value="1" @checked(old('transfer_enabled'))>
