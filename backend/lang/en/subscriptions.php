@@ -139,6 +139,8 @@ return [
     'tpl_transfer_short'      => '🔄 Transfer allowed',
     'tpl_auto_booking'        => 'Allow auto-booking',
     'tpl_auto_booking_short'  => 'Auto-booking',
+    'tpl_auto_booking_warn_title' => 'Subscription auto-booking',
+    'tpl_auto_booking_warn'   => 'We recommend using registration priority for subscriptions instead: when seats are limited and many subscriptions are issued, event seats will fill up instantly! See the event creation or event editing section, “Subscription registration start”!',
 
     'tpl_section_freeze'      => 'Freeze',
     'tpl_freeze_enabled'      => 'Allow freezing the subscription',

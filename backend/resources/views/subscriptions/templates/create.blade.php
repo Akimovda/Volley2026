@@ -151,6 +151,7 @@
                             <div class="custom-checkbox"></div>
                             <span>{{ __('subscriptions.tpl_auto_booking') }}</span>
                         </label>
+                        <div class="alert alert-warning" id="auto_booking_hint" style="{{ old('auto_booking_enabled') ? '' : 'display:none' }}">{{ __('subscriptions.tpl_auto_booking_warn') }}</div>
                     </div>
                 </div>
             </div>
@@ -188,6 +189,16 @@
 
     <x-slot name="script">
     <script>
+    @php $autoWarnTitle = __('subscriptions.tpl_auto_booking_warn_title'); $autoWarnText = __('subscriptions.tpl_auto_booking_warn'); @endphp
+    document.querySelectorAll('input[type=checkbox][name=auto_booking_enabled]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            const hint = document.getElementById('auto_booking_hint');
+            if (hint) hint.style.display = this.checked ? '' : 'none';
+            if (this.checked && typeof swal === 'function') {
+                swal({ title: @json($autoWarnTitle), text: @json($autoWarnText), icon: 'warning', button: 'OK' });
+            }
+        });
+    });
     document.getElementById('freeze_enabled')?.addEventListener('change', function() {
         const show = this.checked;
         document.getElementById('freeze_fields').style.display = show ? '' : 'none';
