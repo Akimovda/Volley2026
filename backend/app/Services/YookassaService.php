@@ -212,6 +212,35 @@ class YookassaService
     }
 
     /**
+     * Платёж за участие в мероприятии по ключам ОРГАНИЗАТОРА (payment_settings). Чеки формирует ЮKassa.
+     * Сохраняет id платежа и ссылку оплаты в payments; подтверждает вебхук PaymentController::yoomoneyWebhook.
+     */
+    public function createEventPayment(\App\Models\Payment $payment, Event $event, PaymentSetting $settings, string $returnUrl): string
+    {
+        $client = $this->makeClientFor($settings);
+
+        $response = $client->createPayment([
+            'amount'       => [
+                'value'    => number_format($payment->amount_minor / 100, 2, '.', ''),
+                'currency' => 'RUB',
+            ],
+            'confirmation' => ['type' => 'redirect', 'return_url' => $returnUrl],
+            'capture'      => true,
+            'description'  => mb_substr('Участие: ' . $event->title, 0, 128),
+            'metadata'     => ['type' => 'event_registration', 'payment_id' => $payment->id],
+        ], 'event-pay-' . $payment->id . '-' . Str::random(8));
+
+        $url = $response->getConfirmation()->getConfirmationUrl();
+
+        $payment->update([
+            'yoomoney_payment_id'       => $response->getId(),
+            'yoomoney_confirmation_url' => $url,
+        ]);
+
+        return $url;
+    }
+
+    /**
      * Статус платежа платформы напрямую у ЮKassa (вебхуку и редиректу доверять нельзя).
      */
     public function verifyPlatformPayment(string $yooPaymentId): ?string
