@@ -22,9 +22,13 @@ class PlatformPaymentSetting extends Model
         'organizer_pro_year_rub',
         'premium_half_rub',
         'premium_year_rub',
+        'yookassa_receipt_enabled',
+        'yookassa_vat_code',
+        'yookassa_tax_system_code',
     ];
 
     protected $casts = [
         'yoomoney_verified' => 'boolean',
+        'yookassa_receipt_enabled' => 'boolean',
     ];
 }

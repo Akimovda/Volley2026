@@ -95,6 +95,24 @@ class PaymentService
                 : null,
         ]);
 
+        // Онлайн-оплата: реальный платёж ЮKassa по ключам организатора (ссылка — в yoomoney_confirmation_url,
+        // кнопку «Оплатить» рисует events/show/players.blade.php). Сбой не должен ронять запись на мероприятие.
+        if ($method === 'yoomoney' && !$isOrganizerSelf && $amountMinor > 0 && $settings?->isYoomoneyReady()) {
+            try {
+                $this->yookassa->createEventPayment(
+                    $payment,
+                    $event,
+                    $settings,
+                    route('events.show', $event->id) . '?occurrence=' . $occurrence->id,
+                );
+            } catch (\Throwable $e) {
+                Log::error('PaymentService: createEventPayment failed', [
+                    'payment_id' => $payment->id,
+                    'error'      => $e->getMessage(),
+                ]);
+            }
+        }
+
         // Обновляем регистрацию
         $registration->update([
             'payment_status'   => $isOrganizerSelf ? 'paid' : 'pending',

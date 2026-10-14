@@ -124,6 +124,10 @@ class OrganizerProController extends Controller
                 ->with('status', 'Ваша оплата уже отправлена на проверку — администратор подтвердит её в ближайшее время.');
         }
 
+        if (PlatformPaymentSetting::first()?->method === 'yoomoney') {
+            return app(PlatformPaymentController::class)->pay($request, $payment);
+        }
+
         return redirect()->route('organizer_pro.index')->with('payment_pending', $payment->id);
     }
 

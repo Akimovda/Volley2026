@@ -97,6 +97,10 @@ class PremiumController extends Controller
 
         $sub->update(['payment_id' => $payment->id]);
 
+        if ($platformPayment->method === 'yoomoney') {
+            return app(PlatformPaymentController::class)->pay($request, $payment);
+        }
+
         return back()->with('payment_pending', $payment->id);
     }
 
@@ -132,6 +136,10 @@ class PremiumController extends Controller
         ]);
 
         $sub->update(['payment_id' => $payment->id]);
+
+        if ($platformPayment->method === 'yoomoney') {
+            return app(PlatformPaymentController::class)->pay($request, $payment);
+        }
 
         return back()->with('payment_pending', $payment->id);
     }

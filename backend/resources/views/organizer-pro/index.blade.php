@@ -121,7 +121,13 @@
         <div class="ramka">
             <div class="card mb-1" style="border:0.2rem solid #f5c842">
                 <div class="f-17 b-600 mb-1">⏳ Заявка на «{{ \App\Models\OrganizerSubscription::planLabel($pending->plan) }}» — {{ number_format((float) $pending->amount_rub, 0, '.', ' ') }} ₽</div>
-                @if($pendingPayment && !$pendingPayment->user_confirmed)
+                @if($platformPayment && $platformPayment->method === 'yoomoney' && $pendingPayment)
+                <div class="f-15 mb-1" style="opacity:.75">Оплатите картой или СБП — подписка включится автоматически сразу после оплаты.</div>
+                <form method="POST" action="{{ route('platform.payment.pay', $pendingPayment->id) }}">
+                    @csrf
+                    <button class="btn">💳 Оплатить</button>
+                </form>
+                @elseif($pendingPayment && !$pendingPayment->user_confirmed)
                 <div class="f-15 mb-1" style="opacity:.75">
                     Переведите оплату и нажмите «Я оплатил» — после проверки мы активируем подписку
                     @if($active) (срок прибавится к текущему) @endif.

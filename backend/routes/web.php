@@ -1807,6 +1807,13 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
         Route::get('/staff/logs', [\App\Http\Controllers\StaffController::class, 'logs'])->name('staff.logs');
     });
 
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/payments/platform/{payment}/pay', [\App\Http\Controllers\PlatformPaymentController::class, 'pay'])
+        ->whereNumber('payment')->name('platform.payment.pay');
+    Route::get('/payments/platform/{payment}/return', [\App\Http\Controllers\PlatformPaymentController::class, 'back'])
+        ->whereNumber('payment')->name('platform.payment.return');
+});
+
 // ЮKassa webhook (без auth, без CSRF — исключён в bootstrap/app.php)
 Route::post('/yookassa/webhook', [YookassaWebhookController::class, 'handle'])
     ->name('yookassa.webhook');

@@ -44,6 +44,14 @@ class PaymentController extends Controller
             return response()->json(['ok' => true]);
         }
 
+        // Платёж платформы (Организатор Pro / Premium) — без organizer_id, ключи платформы.
+        if ($payment->organizer_id === null) {
+            if ($this->yookassa->verifyPlatformPayment($yooPaymentId) === 'succeeded') {
+                app(\App\Services\PlatformPaymentService::class)->settle($payment);
+            }
+            return response()->json(['ok' => true]);
+        }
+
         $settings = PaymentSetting::where('organizer_id', $payment->organizer_id)->first();
         if (!$settings) {
             Log::warning("YooMoney webhook: no payment_settings for organizer {$payment->organizer_id}");

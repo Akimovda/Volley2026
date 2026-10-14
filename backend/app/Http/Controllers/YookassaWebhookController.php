@@ -16,10 +16,19 @@ class YookassaWebhookController extends Controller
 
     public function handle(Request $request): Response
     {
-        $eventId = $this->yookassa->handleWebhook($request->getContent());
+        $body = $request->getContent();
+
+        $platformPayment = $this->yookassa->platformPaymentFromWebhook($body);
+        if ($platformPayment) {
+            app(\App\Services\PlatformPaymentService::class)->settle($platformPayment);
+            return response('ok', 200);
+        }
+
+        $eventId = $this->yookassa->handleWebhook($body);
 
         if ($eventId === null) {
-            return response('ok', 200);
+            // Не реклама и не Pro/Premium — платёж за мероприятие/бронь (ключи организатора).
+            return app(PaymentController::class)->yoomoneyWebhook($request);
         }
 
         $event = Event::find($eventId);

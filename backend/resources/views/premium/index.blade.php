@@ -209,7 +209,13 @@
                         'year'    => '1 год — ' . $priceYear . '₽',
                     } }}
                 </div>
-                @if($platformPayment && !$pending->payment?->user_confirmed)
+                @if($platformPayment && $platformPayment->method === 'yoomoney' && $pending->payment)
+                <div class="f-15 mb-2">Оплатите картой или СБП — Premium включится автоматически сразу после оплаты.</div>
+                <form method="POST" action="{{ route('platform.payment.pay', $pending->payment_id) }}">
+                    @csrf
+                    <button class="btn">💳 Оплатить</button>
+                </form>
+                @elseif($platformPayment && !$pending->payment?->user_confirmed)
                 <div class="f-15 mb-2">
                     Переведите оплату:
                     @if($platformPayment->method === 'tbank_link' && $platformPayment->tbank_link)
