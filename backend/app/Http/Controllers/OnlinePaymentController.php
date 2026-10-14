@@ -33,6 +33,7 @@ class OnlinePaymentController extends Controller
             'title'   => $this->title($payment),
             'base'    => $base,
             'options' => $this->options($base, $settings, $prefix),
+            'taxPercent' => $this->taxPercent($settings, $prefix),
             'action'  => route('payments.online.start', $payment),
         ]);
     }
@@ -83,6 +84,7 @@ class OnlinePaymentController extends Controller
             'title'   => 'Рекламное мероприятие #' . $event->id,
             'base'    => (int) $event->ad_price_rub * 100,
             'options' => $this->options((int) $event->ad_price_rub * 100, $settings, 'ad_'),
+            'taxPercent' => $this->taxPercent($settings, 'ad_'),
             'action'  => route('ads.pay.start', $event),
         ]);
     }
@@ -146,9 +148,15 @@ class OnlinePaymentController extends Controller
         $out = [];
         foreach (Pricing::methodPercents($settings, $prefix) as $method => $percent) {
             $priced = Pricing::apply($base, $settings, $prefix, $method);
-            $out[$method] = ['label' => Pricing::METHODS[$method], 'percent' => $percent, 'fee' => $priced['fee'], 'total' => $priced['total']];
+            $out[$method] = ['label' => Pricing::METHODS[$method], 'percent' => $percent, 'fee' => $priced['fee'], 'tax' => $priced['tax'], 'total' => $priced['total']];
         }
         return $out;
+    }
+
+    /** Налог «сверху», % (0 — налог не добавляется к цене). */
+    private function taxPercent(?object $settings, string $prefix): float
+    {
+        return ($settings->{$prefix . 'tax_mode'} ?? 'included') === 'on_top' ? (float) ($settings->{$prefix . 'tax_percent'} ?? 0) : 0.0;
     }
 
     private function title(Payment $payment): string

@@ -11,7 +11,7 @@
         <div class="ramka">
             <div class="f-17 b-600 mb-1">{{ $title }}</div>
             <div class="f-15 mb-2" style="opacity:.7">
-                Стоимость: {{ number_format($base / 100, 2, '.', ' ') }} ₽. Комиссия платёжной системы зависит от способа оплаты и добавляется к стоимости.
+                Стоимость: {{ number_format($base / 100, 2, '.', ' ') }} ₽. Комиссия платёжной системы зависит от способа оплаты{{ $taxPercent > 0 ? ', налог — ' . rtrim(rtrim(number_format($taxPercent, 2, '.', ''), '0'), '.') . '%' : '' }}; {{ $taxPercent > 0 ? 'оба добавляются' : 'она добавляется' }} к стоимости.
             </div>
 
             <form method="POST" action="{{ $action }}" class="form">
@@ -23,7 +23,7 @@
                     <span>
                         <strong>{{ $o['label'] }}</strong> —
                         {{ number_format($o['total'] / 100, 2, '.', ' ') }} ₽
-                        <span style="opacity:.6">(комиссия {{ rtrim(rtrim(number_format($o['percent'], 2, '.', ''), '0'), '.') }}% — {{ number_format($o['fee'] / 100, 2, '.', ' ') }} ₽)</span>
+                        <span style="opacity:.6">(комиссия {{ rtrim(rtrim(number_format($o['percent'], 2, '.', ''), '0'), '.') }}% — {{ number_format($o['fee'] / 100, 2, '.', ' ') }} ₽@if($o['tax'] > 0); налог {{ rtrim(rtrim(number_format($taxPercent, 2, '.', ''), '0'), '.') }}% — {{ number_format($o['tax'] / 100, 2, '.', ' ') }} ₽@endif)</span>
                     </span>
                 </label>
                 @endforeach
