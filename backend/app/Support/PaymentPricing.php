@@ -20,6 +20,16 @@ class PaymentPricing
         'yoo_money'    => 'ЮMoney',
     ];
 
+    /** Системы налогообложения → подпись и типовая ставка (подставляется в поле «Налог, %», остаётся редактируемой). */
+    public const TAX_SYSTEMS = [
+        'usn_income'          => ['УСН «Доходы»', 6],
+        'usn_income_expense'  => ['УСН «Доходы минус расходы»', 15],
+        'ausn_income'         => ['АУСН «Доходы»', 8],
+        'ausn_income_expense' => ['АУСН «Доходы минус расходы» (не менее 3% от доходов)', 20],
+        'npd'                 => ['НПД (самозанятый)', 6],
+        'osn'                 => ['ОСН', 0],
+    ];
+
     /** Тариф ЮKassa (оператор + агрегатор): карты/кошельки 2,8+1 %, СБП 0,7+1,5 %. Минимумы/максимумы не учитываются. */
     public const DEFAULT_FEE = ['bank_card' => 3.8, 'sbp' => 2.2, 'sberbank' => 3.8, 'tinkoff_bank' => 3.8, 'yoo_money' => 3.8];
 
@@ -76,6 +86,7 @@ class PaymentPricing
             $prefix . 'fee_mode'    => ['nullable', 'in:included,on_top'],
             $prefix . 'tax_percent' => ['nullable', 'numeric', 'min:0', 'max:50'],
             $prefix . 'tax_mode'    => ['nullable', 'in:included,on_top'],
+            $prefix . 'tax_system'  => ['nullable', 'in:' . implode(',', array_keys(self::TAX_SYSTEMS))],
         ];
         foreach (self::METHODS as $k => $_) {
             $r[$prefix . 'fee_m_' . $k] = ['nullable', 'numeric', 'min:0', 'max:50'];
@@ -99,6 +110,7 @@ class PaymentPricing
             $prefix . 'fee_mode'    => ($data[$prefix . 'fee_mode'] ?? 'included') === 'on_top' ? 'on_top' : 'included',
             $prefix . 'tax_percent' => round((float) ($data[$prefix . 'tax_percent'] ?? 0), 2),
             $prefix . 'tax_mode'    => ($data[$prefix . 'tax_mode'] ?? 'included') === 'on_top' ? 'on_top' : 'included',
+            $prefix . 'tax_system'  => isset(self::TAX_SYSTEMS[$data[$prefix . 'tax_system'] ?? '']) ? $data[$prefix . 'tax_system'] : null,
         ];
     }
 }

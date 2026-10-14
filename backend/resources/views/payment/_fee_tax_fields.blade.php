@@ -31,8 +31,17 @@
 </div>
 <div class="col-md-6">
     <div class="card">
-        <label class="b-600">Налог, %</label>
-        <input type="number" name="{{ $p }}tax_percent" min="0" max="50" step="0.01"
+        @php $taxSys = old($p . 'tax_system', $s->{$p . 'tax_system'} ?? ''); @endphp
+        <label class="b-600">Система налогообложения</label>
+        <select name="{{ $p }}tax_system" id="{{ $p }}tax_system">
+            <option value="">Не выбрана (ставка вручную)</option>
+            @foreach(\App\Support\PaymentPricing::TAX_SYSTEMS as $key => [$label, $rate])
+            <option value="{{ $key }}" data-rate="{{ $rate }}" @selected($taxSys === $key)>{{ $label }}{{ $rate ? ' — ' . $rate . '%' : '' }}</option>
+            @endforeach
+        </select>
+        <div class="f-14 mt-05" style="opacity:.6">При выборе подставляется типовая ставка, её можно изменить. Для АУСН «Доходы минус расходы» минимум 3% от доходов не рассчитывается — ставка применяется к цене.</div>
+        <label class="b-600 mt-1">Налог, %</label>
+        <input type="number" id="{{ $p }}tax_percent" name="{{ $p }}tax_percent" min="0" max="50" step="0.01"
                value="{{ old($p . 'tax_percent', $s->{$p . 'tax_percent'} ?? 0) }}" placeholder="Например 6">
         <label class="radio-item mt-1">
             <input type="radio" name="{{ $p }}tax_mode" value="included" @checked($taxMode !== 'on_top')>
@@ -47,3 +56,14 @@
         @error($p . 'tax_percent')<div class="text-xs text-red-600 mt-1">{{ $message }}</div>@enderror
     </div>
 </div>
+<script>
+(function () {
+    var sel = document.getElementById(@json($p . 'tax_system'));
+    var pct = document.getElementById(@json($p . 'tax_percent'));
+    if (!sel || !pct) return;
+    sel.addEventListener('change', function () {
+        var o = sel.options[sel.selectedIndex];
+        if (o && o.dataset.rate) pct.value = o.dataset.rate;
+    });
+})();
+</script>
