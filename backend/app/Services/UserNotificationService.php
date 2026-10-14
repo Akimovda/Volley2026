@@ -199,6 +199,55 @@ final class UserNotificationService
         );
     }
 
+    /** Автозапись из листа ожидания на платное мероприятие: нужно оплатить за N минут, иначе выпишут. */
+    public function createWaitlistPaymentRequiredNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        int $minutes,
+        string $amountText,
+        string $payUrl
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_payment_required',
+            title: '⏳ Оплатите место за ' . $minutes . ' минут',
+            body: "Вы записаны из резерва на мероприятие «{$eventTitle}». Мероприятие платное — к оплате {$amountText}.\n"
+                . "Оплатите в течение {$minutes} минут, иначе запись будет отменена и место получит следующий в очереди.",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+                'button_text'   => 'Перейти к оплате',
+                'button_url'    => $payUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
+    public function createWaitlistPaymentExpiredNotification(
+        int $userId,
+        int $eventId,
+        ?int $occurrenceId,
+        string $eventTitle,
+        int $minutes
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'waitlist_payment_expired',
+            title: '❌ Запись отменена: не оплачено вовремя',
+            body: "Вы не оплатили мероприятие «{$eventTitle}» в течение {$minutes} минут, поэтому запись из резерва отменена, место передано следующему игроку.\n"
+                . "Вы можете снова записаться в лист ожидания.",
+            payload: [
+                'event_id'      => $eventId,
+                'occurrence_id' => $occurrenceId,
+                'event_title'   => $eventTitle,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createWaitlistRemovedByOrganizerNotification(
         int $userId,
         int $eventId,

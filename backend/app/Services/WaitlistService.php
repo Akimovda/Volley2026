@@ -468,6 +468,19 @@ class WaitlistService
                         $reg->payment_id     = $payment->id;
                         $reg->save();
                     }
+
+                    // Окно оплаты для игрока из листа ожидания (наличные оплачиваются на месте — без окна):
+                    // не оплатил за N минут — payments:expire-waitlist-holds выпишет и освободит место.
+                    if ($payment->status === 'pending' && $payment->method !== 'cash' && (int) $user->id !== (int) $event->organizer_id) {
+                        $holdMin = (int) config('waitlist.payment_hold_minutes', 30);
+                        $payment->update([
+                            'expires_at'    => now()->addMinutes($holdMin),
+                            'yoomoney_meta' => array_merge($payment->yoomoney_meta ?? [], ['waitlist_hold' => true]),
+                        ]);
+                        $reg->payment_expires_at = $payment->expires_at;
+                        $reg->save();
+                        $waitlistPayment = $payment->fresh();
+                    }
                 }
 
                 // EventRegistrationObserver::created() сам удалит entry,
@@ -493,6 +506,23 @@ class WaitlistService
                     eventTitle: $event->title,
                     position: $position
                 );
+
+                // Платное мероприятие: отдельное уведомление «оплатите за N минут» со ссылкой на оплату
+                if (!empty($waitlistPayment)) {
+                    $eventUrl = route('events.show', ['event' => (int) $event->id, 'occurrence' => (int) $occurrence->id]);
+                    $payUrl = $waitlistPayment->method === 'yoomoney'
+                        ? ($waitlistPayment->yoomoney_confirmation_url ?: route('payments.online.choose', $waitlistPayment->id))
+                        : $eventUrl;
+                    app(UserNotificationService::class)->createWaitlistPaymentRequiredNotification(
+                        userId: $user->id,
+                        eventId: $event->id,
+                        occurrenceId: $occurrence->id,
+                        eventTitle: $event->title,
+                        minutes: (int) config('waitlist.payment_hold_minutes', 30),
+                        amountText: number_format($waitlistPayment->amount_minor / 100, 2, '.', ' ') . ' ₽',
+                        payUrl: $payUrl,
+                    );
+                }
 
                 // Уведомление организатору об авто-записи из листа ожидания
                 \App\Jobs\NotifyOrganizerRegistrationJob::dispatch(

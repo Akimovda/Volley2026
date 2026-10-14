@@ -19,7 +19,7 @@ class TournamentPaymentService
      * Создать платёж при подаче заявки команды (режим team).
      * Капитан оплачивает за всю команду.
      */
-    public function createTeamPayment(EventTeam $team): ?Payment
+    public function createTeamPayment(EventTeam $team, ?string $chosenMethod = null): ?Payment
     {
         $event = $team->event;
         $settings = $this->getSettings($event);
@@ -33,9 +33,10 @@ class TournamentPaymentService
             return null;
         }
 
-        $method    = $event->payment_method ?? 'cash';
+        $method    = $this->resolveMethod($event, $chosenMethod);
         $orgSettings = PaymentSetting::where('organizer_id', $event->organizer_id)->first();
         $holdMin   = $orgSettings?->payment_hold_minutes ?? 15;
+        $priced    = $this->price($amountMinor, $method, $orgSettings);
 
         $payment = Payment::create([
             'user_id'       => $team->captain_user_id,
@@ -43,13 +44,18 @@ class TournamentPaymentService
             'event_id'      => $event->id,
             'team_id'       => $team->id,
             'method'        => $method,
-            'status'        => $method === 'cash' ? 'pending' : 'pending',
-            'amount_minor'  => $amountMinor,
+            'status'        => 'pending',
+            'amount_minor'  => $priced['total'],
+            'fee_minor'     => $priced['fee'],
+            'tax_minor'     => $priced['tax'],
+            'yoomoney_meta' => ['base_minor' => $amountMinor],
             'currency'      => $event->price_currency ?? 'RUB',
             'expires_at'    => in_array($method, ['yoomoney'])
                 ? now()->addMinutes($holdMin)
                 : null,
         ]);
+
+        $this->startOnline($payment, $event, $orgSettings, $team);
 
         $team->update([
             'payment_status' => $method === 'cash' ? 'pending' : 'pending',
@@ -64,7 +70,7 @@ class TournamentPaymentService
     /**
      * Создать индивидуальный платёж для участника (режим per_player).
      */
-    public function createMemberPayment(EventTeamMember $member): ?Payment
+    public function createMemberPayment(EventTeamMember $member, ?string $chosenMethod = null): ?Payment
     {
         $team  = $member->team ?? EventTeam::find($member->event_team_id);
         $event = $team->event;
@@ -84,9 +90,10 @@ class TournamentPaymentService
             return Payment::find($member->payment_id);
         }
 
-        $method    = $event->payment_method ?? 'cash';
+        $method    = $this->resolveMethod($event, $chosenMethod);
         $orgSettings = PaymentSetting::where('organizer_id', $event->organizer_id)->first();
         $holdMin   = $orgSettings?->payment_hold_minutes ?? 15;
+        $priced    = $this->price($amountMinor, $method, $orgSettings);
 
         $payment = Payment::create([
             'user_id'        => $member->user_id,
@@ -96,12 +103,17 @@ class TournamentPaymentService
             'team_member_id' => $member->id,
             'method'         => $method,
             'status'         => 'pending',
-            'amount_minor'   => $amountMinor,
+            'amount_minor'   => $priced['total'],
+            'fee_minor'      => $priced['fee'],
+            'tax_minor'      => $priced['tax'],
+            'yoomoney_meta'  => ['base_minor' => $amountMinor],
             'currency'       => $event->price_currency ?? 'RUB',
             'expires_at'     => in_array($method, ['yoomoney'])
                 ? now()->addMinutes($holdMin)
                 : null,
         ]);
+
+        $this->startOnline($payment, $event, $orgSettings, $team);
 
         $member->update([
             'payment_status' => 'pending',
@@ -111,6 +123,125 @@ class TournamentPaymentService
         Log::info("TournamentPayment: member #{$member->id} (user #{$member->user_id}) payment created");
 
         return $payment;
+    }
+
+    /**
+     * Создать платежи при подаче заявки: «за команду» — один платёж капитана; «каждый сам» — по платежу
+     * на каждого подтверждённого участника (капитану — выбранный им способ, остальным — способ мероприятия;
+     * свой способ участник может сменить кнопкой «Оплатить»). Не бросает исключений — заявка важнее платежа.
+     */
+    public function ensurePayments(EventTeam $team, ?string $chosenMethod = null): void
+    {
+        try {
+            $settings = $this->getSettings($team->event);
+            if (!$settings || !$settings->isPaymentRequired()) {
+                return;
+            }
+
+            if ($settings->isTeamPayment()) {
+                $existing = $team->payment_id ? Payment::find($team->payment_id) : null;
+                if (!$existing || $existing->status === 'cancelled') {
+                    $this->createTeamPayment($team, $chosenMethod);
+                }
+                return;
+            }
+
+            $members = EventTeamMember::where('event_team_id', $team->id)
+                ->where('confirmation_status', 'confirmed')
+                ->get();
+            foreach ($members as $member) {
+                $this->createMemberPayment(
+                    $member,
+                    (int) $member->user_id === (int) $team->captain_user_id ? $chosenMethod : null
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::error('TournamentPayment: ensurePayments failed', ['team_id' => $team->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** Платёж, который должен оплатить пользователь за эту команду (капитан — командный; игрок — свой). */
+    public function paymentFor(EventTeam $team, User $user): ?Payment
+    {
+        $settings = $this->getSettings($team->event);
+        if (!$settings || !$settings->isPaymentRequired()) {
+            return null;
+        }
+        if ($settings->isTeamPayment()) {
+            return (int) $team->captain_user_id === (int) $user->id && $team->payment_id ? Payment::find($team->payment_id) : null;
+        }
+        $member = EventTeamMember::where('event_team_id', $team->id)->where('user_id', $user->id)->first();
+        return $member?->payment_id ? Payment::find($member->payment_id) : null;
+    }
+
+    /**
+     * Сменить способ неоплаченного платежа (игрок выбрал в попапе) и, для онлайн-способа, создать платёж ЮKassa.
+     * Нельзя после «Я оплатил» и после оплаты.
+     */
+    public function applyMethod(Payment $payment, string $method): Payment
+    {
+        if ($payment->status !== 'pending' || $payment->user_confirmed) {
+            throw new DomainException('Платёж уже нельзя изменить.');
+        }
+        $event       = Event::findOrFail($payment->event_id);
+        $orgSettings = PaymentSetting::where('organizer_id', $event->organizer_id)->first();
+        $offered     = $orgSettings?->offeredMethods() ?? [];
+        if ($method !== $payment->method && !in_array($method, $offered, true)) {
+            throw new DomainException('Этот способ оплаты недоступен.');
+        }
+
+        $base   = (int) ($payment->yoomoney_meta['base_minor'] ?? $payment->amount_minor - $payment->fee_minor - $payment->tax_minor);
+        $priced = $this->price($base, $method, $orgSettings);
+
+        $payment->update([
+            'method'                    => $method,
+            'amount_minor'              => $priced['total'],
+            'fee_minor'                 => $priced['fee'],
+            'tax_minor'                 => $priced['tax'],
+            'yoomoney_payment_id'       => null,
+            'yoomoney_confirmation_url' => null,
+        ]);
+
+        $this->startOnline($payment->fresh(), $event, $orgSettings, $payment->team_id ? EventTeam::find($payment->team_id) : null);
+
+        return $payment->fresh();
+    }
+
+    /** Способ платежа: выбранный (если организатор предлагает выбор и значение допустимо) либо способ мероприятия. */
+    private function resolveMethod(Event $event, ?string $chosen): string
+    {
+        $offered = PaymentSetting::offeredFor((int) $event->organizer_id);
+        if ($chosen && in_array($chosen, $offered, true)) {
+            return $chosen;
+        }
+        return $event->payment_method ?? 'cash';
+    }
+
+    /** Налог/комиссия «сверху» — только для онлайн-оплаты (комиссия откладывается, если игрок выбирает способ ЮKassa позже). */
+    private function price(int $baseMinor, string $method, ?PaymentSetting $orgSettings): array
+    {
+        if ($method !== 'yoomoney') {
+            return ['total' => $baseMinor, 'fee' => 0, 'tax' => 0];
+        }
+        return \App\Support\PaymentPricing::apply($baseMinor, $orgSettings);
+    }
+
+    /** Онлайн-способ: создать платёж ЮKassa (если комиссия «сверху» не требует отдельного выбора способа ЮKassa). Сбой логируется. */
+    private function startOnline(Payment $payment, Event $event, ?PaymentSetting $orgSettings, ?EventTeam $team): void
+    {
+        if ($payment->method !== 'yoomoney' || !$orgSettings?->isYoomoneyReady() || \App\Support\PaymentPricing::needsChoice($orgSettings)) {
+            return;
+        }
+        try {
+            app(YookassaService::class)->createEventPayment(
+                $payment,
+                $event,
+                $orgSettings,
+                $team ? route('tournamentTeams.show', [$event, $team]) : route('events.show', $event->id),
+            );
+        } catch (\Throwable $e) {
+            Log::error('TournamentPayment: createEventPayment failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
+        }
     }
 
     /**

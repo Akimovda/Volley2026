@@ -480,6 +480,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
         ->name('tournamentTeams.addMemberByOrganizer');
 
 		// Подача заявки команды на турнир (поддерживает allow_incomplete=1 для early-submit)
+		Route::post('/events/{event}/teams/{team}/pay', [TournamentTeamController::class, 'pay'])
+        ->name('tournamentTeams.pay');
 		Route::post('/events/{event}/teams/{team}/submit', [TournamentTeamController::class, 'submitApplication'])
         ->name('tournamentTeams.submit');
 

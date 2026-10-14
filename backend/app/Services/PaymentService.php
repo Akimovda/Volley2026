@@ -157,6 +157,11 @@ class PaymentService
                     ->where('status', CourtBooking::STATUS_PENDING)
                     ->update(['status' => CourtBooking::STATUS_PAID, 'expires_at' => null]);
             }
+
+            // Командный/индивидуальный платёж турнира — обновить статус команды/участника
+            if ($payment->team_id) {
+                app(TournamentPaymentService::class)->handleYoomoneyPaid($payment);
+            }
         });
     }
 

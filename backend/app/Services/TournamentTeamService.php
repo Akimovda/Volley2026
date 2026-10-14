@@ -757,7 +757,7 @@ final class TournamentTeamService
         });
     }
     
-    public function submitApplication(EventTeam $team, User $submittedBy, bool $allowIncomplete = false): EventTeamApplication
+    public function submitApplication(EventTeam $team, User $submittedBy, bool $allowIncomplete = false, ?string $paymentMethod = null): EventTeamApplication
     {
         $application = DB::transaction(function () use ($team, $submittedBy, $allowIncomplete) {
             $team = $team->fresh(['members.user', 'event.tournamentSetting', 'event.gameSettings']);
@@ -841,6 +841,9 @@ final class TournamentTeamService
 
             return $application;
         });
+
+        // Платежи за участие (если турнир платный) — способ, выбранный капитаном при подаче заявки
+        app(TournamentPaymentService::class)->ensurePayments($team->fresh(), $paymentMethod);
 
         // Уведомление организатору (после коммита транзакции).
         // - 'pending'    — обычная заявка с полным составом, ждёт одобрения

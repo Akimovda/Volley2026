@@ -488,8 +488,21 @@ class TournamentTeamController extends Controller
 
         $allowIncomplete = (bool) $request->input('allow_incomplete', false);
 
+        // Платный турнир и несколько способов оплаты: капитан обязан выбрать способ при подаче заявки
+        $paymentMethod = null;
+        $tSettings = \App\Models\EventTournamentSetting::where('event_id', $event->id)->first();
+        if ($tSettings?->isPaymentRequired() && (int) $event->price_minor > 0) {
+            $offered = \App\Models\PaymentSetting::offeredFor((int) $event->organizer_id);
+            if ($offered) {
+                $paymentMethod = (string) $request->input('payment_method');
+                if (!in_array($paymentMethod, $offered, true)) {
+                    return back()->withErrors(['application' => 'Выберите способ оплаты.']);
+                }
+            }
+        }
+
         try {
-            $service->submitApplication($team, $request->user(), $allowIncomplete);
+            $service->submitApplication($team, $request->user(), $allowIncomplete, $paymentMethod);
 
             return back()->with('success', 'Заявка на турнир подана ✅');
         } catch (DomainException $e) {
@@ -497,6 +510,48 @@ class TournamentTeamController extends Controller
                 'application' => $e->getMessage(),
             ]);
         }
+    }
+
+    /** Оплата участия: игрок выбрал способ (или нажал «Оплатить») — создаём/переключаем платёж и ведём на оплату. */
+    public function pay(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        \App\Services\TournamentPaymentService $payments
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        $user = $request->user();
+
+        $payment = $payments->paymentFor($team, $user);
+        if (!$payment) {
+            $payments->ensurePayments($team->fresh());
+            $payment = $payments->paymentFor($team->fresh(), $user);
+        }
+        abort_unless($payment && (int) $payment->user_id === (int) $user->id, 403);
+
+        $offered = \App\Models\PaymentSetting::offeredFor((int) $event->organizer_id);
+        $method  = (string) $request->input('payment_method', $payment->method);
+        if ($offered && $request->filled('payment_method') && !in_array($method, $offered, true)) {
+            return back()->withErrors(['application' => 'Выберите способ оплаты.']);
+        }
+
+        try {
+            if ($method !== $payment->method || !$payment->yoomoney_confirmation_url) {
+                $payment = $payments->applyMethod($payment, $method);
+            }
+        } catch (DomainException $e) {
+            return back()->withErrors(['application' => $e->getMessage()]);
+        }
+
+        if ($payment->method === 'yoomoney') {
+            if ($payment->yoomoney_confirmation_url) {
+                return redirect()->away($payment->yoomoney_confirmation_url);
+            }
+            // комиссия «сверху» — игрок выберет способ ЮKassa на нашей странице
+            return redirect()->route('payments.online.choose', $payment);
+        }
+
+        return back()->with('success', 'Способ оплаты выбран ✅');
     }
 
     public function revokeApplication(

@@ -111,6 +111,11 @@ Schedule::command('premium:expire-auto-bookings')
     ->withoutOverlapping();
 
 // Бан у организатора за неоплату наличными в течение 12 часов после отметки на /profile/transactions/{event}
+// Игрок из листа ожидания на платном мероприятии не оплатил за отведённое время — выписываем
+Schedule::command('payments:expire-waitlist-holds')
+    ->everyMinute()
+    ->withoutOverlapping();
+
 Schedule::command('payments:ban-unpaid-cash')
     ->everyFiveMinutes()
     ->withoutOverlapping();
