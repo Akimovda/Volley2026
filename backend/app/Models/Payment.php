@@ -13,6 +13,7 @@ class Payment extends Model
         'user_confirmed', 'org_confirmed', 'user_confirmed_at', 'org_confirmed_at',
         'cash_ban_deadline_at', 'cash_banned_at',
         'team_id', 'team_member_id', 'court_booking_id',
+        'fee_minor', 'tax_minor',
         'refund_amount_minor', 'refund_reason', 'refunded_at',
     ];
 

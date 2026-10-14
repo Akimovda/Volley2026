@@ -86,12 +86,19 @@ class PremiumController extends Controller
         ]);
 
         // Создаём платёж
+        $priced = $platformPayment->method === 'yoomoney'
+            ? \App\Support\PaymentPricing::apply(PremiumSubscription::planPriceMinor($plan), $platformPayment, 'sub_')
+            : ['total' => PremiumSubscription::planPriceMinor($plan), 'fee' => 0, 'tax' => 0];
+
         $payment = Payment::create([
             'user_id'      => $user->id,
             'organizer_id' => null,
             'method'       => $platformPayment->method,
             'status'       => 'pending',
-            'amount_minor' => PremiumSubscription::planPriceMinor($plan),
+            'amount_minor' => $priced['total'],
+            'fee_minor'    => $priced['fee'],
+            'tax_minor'    => $priced['tax'],
+            'yoomoney_meta' => ['base_minor' => PremiumSubscription::planPriceMinor($plan)],
             'currency'     => 'RUB',
         ]);
 
@@ -126,12 +133,19 @@ class PremiumController extends Controller
             'expires_at' => now()->addDays(PremiumSubscription::planDays($plan)),
         ]);
 
+        $priced = $platformPayment->method === 'yoomoney'
+            ? \App\Support\PaymentPricing::apply(PremiumSubscription::planPriceMinor($plan), $platformPayment, 'sub_')
+            : ['total' => PremiumSubscription::planPriceMinor($plan), 'fee' => 0, 'tax' => 0];
+
         $payment = Payment::create([
             'user_id'      => $user->id,
             'organizer_id' => null,
             'method'       => $platformPayment->method,
             'status'       => 'pending',
-            'amount_minor' => PremiumSubscription::planPriceMinor($plan),
+            'amount_minor' => $priced['total'],
+            'fee_minor'    => $priced['fee'],
+            'tax_minor'    => $priced['tax'],
+            'yoomoney_meta' => ['base_minor' => PremiumSubscription::planPriceMinor($plan)],
             'currency'     => 'RUB',
         ]);
 

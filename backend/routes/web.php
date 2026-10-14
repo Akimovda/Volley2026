@@ -1810,6 +1810,14 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/payments/platform/{payment}/pay', [\App\Http\Controllers\PlatformPaymentController::class, 'pay'])
         ->whereNumber('payment')->name('platform.payment.pay');
+    Route::get('/payments/{payment}/online', [\App\Http\Controllers\OnlinePaymentController::class, 'choose'])
+        ->whereNumber('payment')->name('payments.online.choose');
+    Route::post('/payments/{payment}/online', [\App\Http\Controllers\OnlinePaymentController::class, 'start'])
+        ->whereNumber('payment')->name('payments.online.start');
+    Route::get('/events/{event}/ad-pay', [\App\Http\Controllers\OnlinePaymentController::class, 'adChoose'])
+        ->whereNumber('event')->name('ads.pay.choose');
+    Route::post('/events/{event}/ad-pay', [\App\Http\Controllers\OnlinePaymentController::class, 'adStart'])
+        ->whereNumber('event')->name('ads.pay.start');
     Route::get('/payments/platform/{payment}/return', [\App\Http\Controllers\PlatformPaymentController::class, 'back'])
         ->whereNumber('payment')->name('platform.payment.return');
 });

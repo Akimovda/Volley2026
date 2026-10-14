@@ -102,12 +102,19 @@ class OrganizerSubscriptionService
             $price    = $this->priceRub($plan);
             $settings = \App\Models\PlatformPaymentSetting::first();
 
+            $priced = $settings?->method === 'yoomoney'
+                ? \App\Support\PaymentPricing::apply($price * 100, $settings, 'sub_')
+                : ['total' => $price * 100, 'fee' => 0, 'tax' => 0];
+
             $payment = \App\Models\Payment::create([
                 'user_id'      => $user->id,
                 'organizer_id' => null,
                 'method'       => $settings?->method ?? 'manual',
                 'status'       => 'pending',
-                'amount_minor' => $price * 100,
+                'amount_minor' => $priced['total'],
+                'fee_minor'    => $priced['fee'],
+                'tax_minor'    => $priced['tax'],
+                'yoomoney_meta' => ['base_minor' => $price * 100],
                 'currency'     => 'RUB',
             ]);
 
