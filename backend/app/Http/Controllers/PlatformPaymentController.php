@@ -28,8 +28,31 @@ class PlatformPaymentController extends Controller
 
         $back = $type === 'org_pro' ? route('organizer_pro.index') : route('premium.index');
 
+        // Игрок выбрал в попапе другой способ (когда у платформы включён выбор) — переключаем неоплаченный платёж
+        $settings = PlatformPaymentSetting::first();
+        $chosen   = (string) $request->input('payment_method');
+        if ($chosen !== '' && $chosen !== $payment->method && !$payment->user_confirmed
+            && $settings && in_array($chosen, $settings->offeredMethods(), true)) {
+            $base   = (int) ($payment->yoomoney_meta['base_minor'] ?? $payment->amount_minor - $payment->fee_minor - $payment->tax_minor);
+            $priced = $chosen === 'yoomoney'
+                ? \App\Support\PaymentPricing::apply($base, $settings, 'sub_')
+                : ['total' => $base, 'fee' => 0, 'tax' => 0];
+            $payment->update([
+                'method'                    => $chosen,
+                'amount_minor'              => $priced['total'],
+                'fee_minor'                 => $priced['fee'],
+                'tax_minor'                 => $priced['tax'],
+                'yoomoney_payment_id'       => null,
+                'yoomoney_confirmation_url' => null,
+            ]);
+            \App\Models\OrganizerSubscription::where('payment_id', $payment->id)->update(['payment_method' => $chosen]);
+            $payment = $payment->fresh();
+        }
+
         if ($payment->method !== 'yoomoney') {
-            return redirect($back)->with('error', 'Онлайн-оплата сейчас недоступна.');
+            return $chosen !== ''
+                ? redirect($back)->with('status', 'Способ оплаты выбран. Выполните перевод и нажмите «Я оплатил».')
+                : redirect($back)->with('error', 'Онлайн-оплата сейчас недоступна.');
         }
 
         if (\App\Support\PaymentPricing::needsChoice(PlatformPaymentSetting::first(), 'sub_')) {

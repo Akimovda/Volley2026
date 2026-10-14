@@ -126,7 +126,8 @@
                 @if(($pendingPayment->fee_minor + $pendingPayment->tax_minor) > 0)
                 <div class="f-14 mb-1" style="opacity:.7">К оплате: <strong>{{ number_format($pendingPayment->amount_minor/100, 2, '.', ' ') }} ₽</strong> (с учётом комиссии и налогов {{ number_format(($pendingPayment->fee_minor + $pendingPayment->tax_minor)/100, 2, '.', ' ') }} ₽)</div>
                 @endif
-                <form method="POST" action="{{ route('platform.payment.pay', $pendingPayment->id) }}">
+@php $pcChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                <form method="POST" action="{{ route('platform.payment.pay', $pendingPayment->id) }}" @if($pcChoices) data-pay-choices="{{ json_encode($pcChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
                     @csrf
                     <button class="btn">💳 Оплатить</button>
                 </form>
@@ -148,6 +149,13 @@
                     @csrf
                     <button class="btn">✅ Я оплатил</button>
                 </form>
+@php $pcChoices = \App\Support\PaymentMethods::forJs(\App\Models\PlatformPaymentSetting::first()?->offeredMethods() ?? []); @endphp
+                @if($pcChoices && !$pendingPayment->user_confirmed)
+                <form method="POST" action="{{ route('platform.payment.pay', $pendingPayment->id) }}" class="mt-1" data-pay-choices="{{ json_encode($pcChoices, JSON_UNESCAPED_UNICODE) }}">
+                    @csrf
+                    <button type="submit" class="btn btn-secondary btn-small">Сменить способ оплаты</button>
+                </form>
+                @endif
                 @else
                 <div class="f-16 b-600 cs">✅ Оплата отмечена вами — ожидаем проверки администратором</div>
                 @endif
