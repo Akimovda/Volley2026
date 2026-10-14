@@ -177,6 +177,12 @@
                 </div>
             </div>
 
+            {{-- Чек ЮKassa --}}
+            <div class="ramka">
+                <h2 class="-mt-05">🧾 Чек в платеже ЮKassa</h2>
+                @include('payment._receipt_fields', ['s' => $settings])
+            </div>
+
             {{-- Комиссии и налоги --}}
             <div class="ramka">
                 <h2 class="-mt-05">🧮 Комиссия и налог при онлайн-оплате</h2>
