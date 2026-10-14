@@ -211,6 +211,9 @@
                 </div>
                 @if($platformPayment && $platformPayment->method === 'yoomoney' && $pending->payment)
                 <div class="f-15 mb-2">Оплатите картой или СБП — Premium включится автоматически сразу после оплаты.</div>
+                @if(($pending->payment->fee_minor + $pending->payment->tax_minor) > 0)
+                <div class="f-14 mb-2" style="opacity:.7">К оплате: <strong>{{ number_format($pending->payment->amount_minor/100, 2, '.', ' ') }} ₽</strong> (с учётом комиссии и налогов {{ number_format(($pending->payment->fee_minor + $pending->payment->tax_minor)/100, 2, '.', ' ') }} ₽)</div>
+                @endif
                 <form method="POST" action="{{ route('platform.payment.pay', $pending->payment_id) }}">
                     @csrf
                     <button class="btn">💳 Оплатить</button>

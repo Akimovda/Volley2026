@@ -13,6 +13,7 @@ class PaymentSetting extends Model
         'refund_hours_full', 'refund_hours_partial', 'refund_partial_pct',
         'refund_no_quorum_full', 'payment_hold_minutes',
         'payment_for_rentals',
+        'fee_percent', 'fee_mode', 'tax_percent', 'tax_mode', 'fee_methods',
     ];
 
     protected $casts = [
@@ -20,6 +21,7 @@ class PaymentSetting extends Model
         'yoomoney_verified'   => 'boolean',
         'refund_no_quorum_full' => 'boolean',
         'payment_for_rentals' => 'boolean',
+        'fee_methods'         => 'array',
     ];
 
     public function organizer()

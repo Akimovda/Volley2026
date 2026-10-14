@@ -33,7 +33,10 @@ class PaymentSettingsController extends Controller
             'refund_no_quorum_full'=> ['sometimes', 'boolean'],
             'payment_hold_minutes' => ['required', 'integer', 'min:5', 'max:120'],
             'payment_for_rentals'  => ['sometimes', 'boolean'],
-        ]);
+        ] + \App\Support\PaymentPricing::rules());
+
+        $pricing = \App\Support\PaymentPricing::fromRequest($data);
+        $data = array_diff_key($data, array_flip(array_map(fn ($k) => 'fee_m_' . $k, array_keys(\App\Support\PaymentPricing::METHODS))));
 
         $yooEnabled = (bool)($data['yoomoney_enabled'] ?? false);
         $yooVerified = $yooEnabled
@@ -46,7 +49,7 @@ class PaymentSettingsController extends Controller
                 'yoomoney_enabled'  => $yooEnabled,
                 'yoomoney_verified' => $yooVerified,
                 'payment_for_rentals' => $canUseForRentals && (bool)($data['payment_for_rentals'] ?? false),
-            ])
+            ], $pricing)
         );
 
         return back()->with('status', '✅ Настройки оплаты сохранены!');

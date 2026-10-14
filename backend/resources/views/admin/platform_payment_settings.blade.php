@@ -116,6 +116,22 @@
             </div>
 
             <div class="ramka">
+                <h2 class="-mt-05">🧮 Комиссия и налог — Premium и Организатор Pro</h2>
+                <div class="f-14 mb-1" style="opacity:.7">Только для онлайн-оплаты через ЮKassa. «Сверху» — плательщик платит цену тарифа + надбавку (оба процента считаются от цены).</div>
+                <div class="row">
+                    @include('payment._fee_tax_fields', ['s' => $settings, 'p' => 'sub_'])
+                </div>
+            </div>
+
+            <div class="ramka">
+                <h2 class="-mt-05">🧮 Комиссия и налог — реклама</h2>
+                <div class="f-14 mb-1" style="opacity:.7">Для оплаты рекламных мероприятий через ЮKassa.</div>
+                <div class="row">
+                    @include('payment._fee_tax_fields', ['s' => $settings, 'p' => 'ad_'])
+                </div>
+            </div>
+
+            <div class="ramka">
                 <h2 class="-mt-05">📣 Рекламные мероприятия</h2>
                 <div class="row">
                     <div class="col-md-4">

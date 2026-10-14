@@ -32,6 +32,10 @@ class PlatformPaymentController extends Controller
             return redirect($back)->with('error', 'Онлайн-оплата сейчас недоступна.');
         }
 
+        if (\App\Support\PaymentPricing::needsChoice(PlatformPaymentSetting::first(), 'sub_')) {
+            return redirect()->route('payments.online.choose', $payment);
+        }
+
         try {
             $description = $type === 'org_pro' ? 'Организатор Pro' : 'Premium';
             $url = $this->yookassa->createPlatformPayment(

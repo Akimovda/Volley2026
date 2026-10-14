@@ -24,7 +24,7 @@ class AdminPlatformPaymentController extends Controller
             'yoomoney_secret_key' => 'nullable|string',
             'yookassa_vat_code' => 'nullable|integer|between:1,12',
             'yookassa_tax_system_code' => 'nullable|integer|between:1,6',
-        ]);
+        ] + \App\Support\PaymentPricing::rules('sub_') + \App\Support\PaymentPricing::rules('ad_'));
 
         $settings = PlatformPaymentSetting::first() ?? new PlatformPaymentSetting();
 
@@ -40,6 +40,8 @@ class AdminPlatformPaymentController extends Controller
         $settings->yookassa_receipt_enabled  = $request->boolean('yookassa_receipt_enabled');
         $settings->yookassa_vat_code         = (int) $request->input('yookassa_vat_code', 1) ?: 1;
         $settings->yookassa_tax_system_code  = $request->filled('yookassa_tax_system_code') ? (int) $request->yookassa_tax_system_code : null;
+
+        $settings->fill(\App\Support\PaymentPricing::fromRequest($request->all(), 'sub_') + \App\Support\PaymentPricing::fromRequest($request->all(), 'ad_'));
 
         $settings->ad_event_price_rub        = (int) $request->input('ad_event_price_rub', 0);
         $settings->payment_admin_id            = (int) $request->input('payment_admin_id', 1);

@@ -139,6 +139,13 @@ use App\Services\StaffLogService;
 
                            $platMethod = $platSettings?->method ?? 'tbank_link';
 
+                           if ($platMethod === 'yoomoney' && \App\Support\PaymentPricing::needsChoice($platSettings, 'ad_')) {
+                               // Комиссия «сверху» зависит от способа оплаты — способ выбирается на нашей странице.
+                               $chooseUrl = route('ads.pay.choose', $event);
+                               $event->update(['ad_yookassa_payment_url' => $chooseUrl]);
+                               return redirect()->away($chooseUrl);
+                           }
+
                            if ($platMethod === 'yoomoney') {
                                try {
                                    $payment = app(\App\Services\YookassaService::class)->createAdPayment($event);

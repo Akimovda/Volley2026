@@ -69,6 +69,16 @@ class PaymentService
         // платёж сразу считается подтверждённым, независимо от способа оплаты.
         $isOrganizerSelf = $organizerId > 0 && $userId === $organizerId;
 
+        // Комиссия/налог «сверху» (настройки организатора) — только для онлайн-оплаты.
+        $feeMinor = $taxMinor = 0;
+        if ($method === 'yoomoney' && !$isOrganizerSelf && $amountMinor > 0) {
+            $baseMinor   = $amountMinor;
+            $priced      = \App\Support\PaymentPricing::apply($amountMinor, $settings);
+            $amountMinor = $priced['total'];
+            $feeMinor    = $priced['fee'];
+            $taxMinor    = $priced['tax'];
+        }
+
         // Повторный вызов для той же регистрации (cancel+rejoin реактивирует старую
         // строку и снова создаёт платёж) иначе оставляет старый Payment осиротевшим
         // в status=pending навсегда — его не видно на /profile/transactions/{event}
@@ -87,6 +97,9 @@ class PaymentService
             'method'          => $method,
             'status'          => $isOrganizerSelf ? 'paid' : 'pending',
             'amount_minor'    => $amountMinor,
+            'fee_minor'       => $feeMinor,
+            'tax_minor'       => $taxMinor,
+            'yoomoney_meta'   => isset($baseMinor) ? ['base_minor' => $baseMinor] : null,
             'currency'        => $event->price_currency ?? 'RUB',
             'org_confirmed'    => $isOrganizerSelf,
             'org_confirmed_at' => $isOrganizerSelf ? now() : null,
@@ -97,7 +110,8 @@ class PaymentService
 
         // Онлайн-оплата: реальный платёж ЮKassa по ключам организатора (ссылка — в yoomoney_confirmation_url,
         // кнопку «Оплатить» рисует events/show/players.blade.php). Сбой не должен ронять запись на мероприятие.
-        if ($method === 'yoomoney' && !$isOrganizerSelf && $amountMinor > 0 && $settings?->isYoomoneyReady()) {
+        if ($method === 'yoomoney' && !$isOrganizerSelf && $amountMinor > 0 && $settings?->isYoomoneyReady()
+            && !\App\Support\PaymentPricing::needsChoice($settings)) {
             try {
                 $this->yookassa->createEventPayment(
                     $payment,

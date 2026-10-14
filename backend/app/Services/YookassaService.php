@@ -136,14 +136,16 @@ class YookassaService
         ];
     }
 
-    public function createAdPayment(Event $event): array
+    public function createAdPayment(Event $event, ?string $method = null): array
     {
         $client         = $this->makeClient();
         $idempotenceKey = 'ad-event-' . $event->id . '-' . Str::random(8);
 
-        $response = $client->createPayment([
+        $total = \App\Support\PaymentPricing::apply((int) $event->ad_price_rub * 100, PlatformPaymentSetting::first(), 'ad_', $method)['total'];
+
+        $params = [
             'amount' => [
-                'value'    => number_format((float) $event->ad_price_rub, 2, '.', ''),
+                'value'    => number_format($total / 100, 2, '.', ''),
                 'currency' => 'RUB',
             ],
             'confirmation' => [
@@ -156,127 +158,17 @@ class YookassaService
                 'event_id' => $event->id,
                 'type'     => 'ad_event',
             ],
-        ], $idempotenceKey);
+        ];
+        if ($method) {
+            $params['payment_method_data'] = ['type' => $method];
+        }
+
+        $response = $client->createPayment($params, $idempotenceKey);
 
         return [
             'payment_id'  => $response->getId(),
             'payment_url' => $response->getConfirmation()->getConfirmationUrl(),
         ];
-    }
-
-    /**
-     * Платёж платформы (Организатор Pro / Premium) через ЮKassa по ключам из platform_payment_settings.
-     * Сохраняет id платежа и ссылку оплаты в payments; metadata.type = org_pro | premium.
-     */
-    public function createPlatformPayment(\App\Models\Payment $payment, string $type, string $description, string $returnUrl, ?string $email = null): string
-    {
-        $client = $this->makeClient();
-        $settings = PlatformPaymentSetting::first();
-        $value = number_format($payment->amount_minor / 100, 2, '.', '');
-
-        $params = [
-            'amount'       => ['value' => $value, 'currency' => 'RUB'],
-            'confirmation' => ['type' => 'redirect', 'return_url' => $returnUrl],
-            'capture'      => true,
-            'description'  => $description,
-            'metadata'     => ['type' => $type, 'payment_id' => $payment->id],
-        ];
-
-        if ($settings?->yookassa_receipt_enabled) {
-            $receipt = [
-                'customer' => ['email' => $email ?: 'no-reply@volleyplay.club'],
-                'items'    => [[
-                    'description' => mb_substr($description, 0, 128),
-                    'quantity'    => '1.00',
-                    'amount'      => ['value' => $value, 'currency' => 'RUB'],
-                    'vat_code'    => (int) ($settings->yookassa_vat_code ?: 1),
-                    'payment_mode'    => 'full_payment',
-                    'payment_subject' => 'service',
-                ]],
-            ];
-            if ($settings->yookassa_tax_system_code) {
-                $receipt['tax_system_code'] = (int) $settings->yookassa_tax_system_code;
-            }
-            $params['receipt'] = $receipt;
-        }
-
-        $response = $client->createPayment($params, 'platform-' . $payment->id . '-' . Str::random(8));
-        $url = $response->getConfirmation()->getConfirmationUrl();
-
-        $payment->update([
-            'yoomoney_payment_id'       => $response->getId(),
-            'yoomoney_confirmation_url' => $url,
-        ]);
-
-        return $url;
-    }
-
-    /**
-     * Платёж за участие в мероприятии по ключам ОРГАНИЗАТОРА (payment_settings). Чеки формирует ЮKassa.
-     * Сохраняет id платежа и ссылку оплаты в payments; подтверждает вебхук PaymentController::yoomoneyWebhook.
-     */
-    public function createEventPayment(\App\Models\Payment $payment, Event $event, PaymentSetting $settings, string $returnUrl): string
-    {
-        $client = $this->makeClientFor($settings);
-
-        $response = $client->createPayment([
-            'amount'       => [
-                'value'    => number_format($payment->amount_minor / 100, 2, '.', ''),
-                'currency' => 'RUB',
-            ],
-            'confirmation' => ['type' => 'redirect', 'return_url' => $returnUrl],
-            'capture'      => true,
-            'description'  => mb_substr('Участие: ' . $event->title, 0, 128),
-            'metadata'     => ['type' => 'event_registration', 'payment_id' => $payment->id],
-        ], 'event-pay-' . $payment->id . '-' . Str::random(8));
-
-        $url = $response->getConfirmation()->getConfirmationUrl();
-
-        $payment->update([
-            'yoomoney_payment_id'       => $response->getId(),
-            'yoomoney_confirmation_url' => $url,
-        ]);
-
-        return $url;
-    }
-
-    /**
-     * Статус платежа платформы напрямую у ЮKassa (вебхуку и редиректу доверять нельзя).
-     */
-    public function verifyPlatformPayment(string $yooPaymentId): ?string
-    {
-        try {
-            return $this->makeClient()->getPaymentInfo($yooPaymentId)?->getStatus();
-        } catch (\Throwable $e) {
-            Log::error('YookassaService::verifyPlatformPayment', ['error' => $e->getMessage(), 'payment_id' => $yooPaymentId]);
-            return null;
-        }
-    }
-
-    /**
-     * Для payment_succeeded по Pro/Premium: проверяет платёж в ЮKassa и возвращает наш Payment (или null).
-     */
-    public function platformPaymentFromWebhook(string $rawBody): ?\App\Models\Payment
-    {
-        try {
-            $data = json_decode($rawBody, true);
-            if (($data['event'] ?? '') !== NotificationEventType::PAYMENT_SUCCEEDED) {
-                return null;
-            }
-            $object   = (new NotificationSucceeded($data))->getObject();
-            $metadata = $object->getMetadata();
-            if (!in_array($metadata['type'] ?? '', ['org_pro', 'premium'], true) || empty($metadata['payment_id'])) {
-                return null;
-            }
-            $payment = \App\Models\Payment::find((int) $metadata['payment_id']);
-            if (!$payment || $payment->yoomoney_payment_id !== $object->getId()) {
-                return null;
-            }
-            return $this->verifyPlatformPayment($object->getId()) === 'succeeded' ? $payment : null;
-        } catch (\Throwable $e) {
-            Log::error('YookassaService::platformPaymentFromWebhook', ['error' => $e->getMessage()]);
-            return null;
-        }
     }
 
     public function handleWebhook(string $rawBody): ?int

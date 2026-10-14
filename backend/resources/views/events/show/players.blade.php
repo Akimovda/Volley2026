@@ -304,7 +304,13 @@
 		@else
 		<div class="alert alert-info mt-1">{{ __('events.sp_pay_awaiting_admin') }}</div>
 		@endif
+	    @elseif($myPayment->method === 'yoomoney' && !$myPayment->yoomoney_confirmation_url)
+		<div class="alert alert-warning mt-1">{{ __('events.sp_pay_pending') }} <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong></div>
+		<a href="{{ route('payments.online.choose', $myPayment->id) }}" class="btn w-100 mt-1">{{ __('events.sp_pay_btn_yoomoney') }}</a>
 	    @elseif($myPayment->method === 'yoomoney' && $myPayment->yoomoney_confirmation_url)
+		@if(($myPayment->fee_minor + $myPayment->tax_minor) > 0)
+		<div class="f-14 mt-1" style="opacity:.7">{{ number_format(($myPayment->amount_minor - $myPayment->fee_minor - $myPayment->tax_minor)/100, 2) }} ₽ + {{ number_format(($myPayment->fee_minor + $myPayment->tax_minor)/100, 2) }} ₽ (комиссия и налоги) = <strong>{{ number_format($myPayment->amount_minor/100, 2) }} ₽</strong></div>
+		@endif
 		<div class="alert alert-warning mt-1">{{ __('events.sp_pay_seat_reserved', ['time' => $myPayment->expires_at?->format('H:i')]) }}</div>
 		<a href="{{ $myPayment->yoomoney_confirmation_url }}" target="_blank" class="btn w-100 mt-1">{{ __('events.sp_pay_btn_yoomoney') }}</a>
 	    @endif
