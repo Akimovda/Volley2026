@@ -159,6 +159,25 @@ class YookassaService
                 'type'     => 'ad_event',
             ],
         ];
+        $settings = PlatformPaymentSetting::first();
+        if ($settings?->yookassa_receipt_enabled) {
+            $value   = number_format($total / 100, 2, '.', '');
+            $receipt = [
+                'customer' => ['email' => $event->organizer?->email ?: 'no-reply@volleyplay.club'],
+                'items'    => [[
+                    'description'     => mb_substr('Рекламное мероприятие #' . $event->id, 0, 128),
+                    'quantity'        => '1.00',
+                    'amount'          => ['value' => $value, 'currency' => 'RUB'],
+                    'vat_code'        => (int) ($settings->yookassa_vat_code ?: 1),
+                    'payment_mode'    => 'full_payment',
+                    'payment_subject' => 'service',
+                ]],
+            ];
+            if ($settings->yookassa_tax_system_code) {
+                $receipt['tax_system_code'] = (int) $settings->yookassa_tax_system_code;
+            }
+            $params['receipt'] = $receipt;
+        }
         if ($method) {
             $params['payment_method_data'] = ['type' => $method];
         }
