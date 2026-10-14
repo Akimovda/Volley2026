@@ -33,6 +33,9 @@ class PaymentSettingsController extends Controller
             'refund_no_quorum_full'=> ['sometimes', 'boolean'],
             'payment_hold_minutes' => ['required', 'integer', 'min:5', 'max:120'],
             'payment_for_rentals'  => ['sometimes', 'boolean'],
+            'yookassa_receipt_enabled' => ['sometimes', 'boolean'],
+            'yookassa_vat_code'    => ['nullable', 'integer', 'between:1,12'],
+            'yookassa_tax_system_code' => ['nullable', 'integer', 'between:1,6'],
         ] + \App\Support\PaymentPricing::rules());
 
         $pricing = \App\Support\PaymentPricing::fromRequest($data);
@@ -47,6 +50,9 @@ class PaymentSettingsController extends Controller
             ['organizer_id' => $user->id],
             array_merge($data, [
                 'yoomoney_enabled'  => $yooEnabled,
+                'yookassa_receipt_enabled' => (bool) ($data['yookassa_receipt_enabled'] ?? false),
+                'yookassa_vat_code' => (int) ($data['yookassa_vat_code'] ?? 1) ?: 1,
+                'yookassa_tax_system_code' => !empty($data['yookassa_tax_system_code']) ? (int) $data['yookassa_tax_system_code'] : null,
                 'yoomoney_verified' => $yooVerified,
                 'payment_for_rentals' => $canUseForRentals && (bool)($data['payment_for_rentals'] ?? false),
             ], $pricing)

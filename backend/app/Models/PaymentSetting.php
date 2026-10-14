@@ -13,7 +13,7 @@ class PaymentSetting extends Model
         'refund_hours_full', 'refund_hours_partial', 'refund_partial_pct',
         'refund_no_quorum_full', 'payment_hold_minutes',
         'payment_for_rentals',
-        'fee_percent', 'fee_mode', 'tax_percent', 'tax_mode', 'fee_methods', 'tax_system',
+        'fee_percent', 'fee_mode', 'tax_percent', 'tax_mode', 'fee_methods', 'tax_system', 'yookassa_receipt_enabled', 'yookassa_vat_code', 'yookassa_tax_system_code',
     ];
 
     protected $casts = [
@@ -22,6 +22,7 @@ class PaymentSetting extends Model
         'refund_no_quorum_full' => 'boolean',
         'payment_for_rentals' => 'boolean',
         'fee_methods'         => 'array',
+        'yookassa_receipt_enabled' => 'boolean',
     ];
 
     public function organizer()

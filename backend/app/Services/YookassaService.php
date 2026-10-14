@@ -260,6 +260,27 @@ class YookassaService
             'description'  => mb_substr('Участие: ' . $event->title, 0, 128),
             'metadata'     => ['type' => 'event_registration', 'payment_id' => $payment->id],
         ];
+
+        // Чек — по настройкам ОРГАНИЗАТОРА (его магазин ЮKassa может требовать receipt в каждом платеже).
+        if ($settings->yookassa_receipt_enabled) {
+            $value   = number_format($payment->amount_minor / 100, 2, '.', '');
+            $receipt = [
+                'customer' => ['email' => $payment->user?->email ?: 'no-reply@volleyplay.club'],
+                'items'    => [[
+                    'description'     => mb_substr('Участие: ' . $event->title, 0, 128),
+                    'quantity'        => '1.00',
+                    'amount'          => ['value' => $value, 'currency' => 'RUB'],
+                    'vat_code'        => (int) ($settings->yookassa_vat_code ?: 1),
+                    'payment_mode'    => 'full_payment',
+                    'payment_subject' => 'service',
+                ]],
+            ];
+            if ($settings->yookassa_tax_system_code) {
+                $receipt['tax_system_code'] = (int) $settings->yookassa_tax_system_code;
+            }
+            $params['receipt'] = $receipt;
+        }
+
         if ($method) {
             $params['payment_method_data'] = ['type' => $method];
         }
