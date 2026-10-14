@@ -1433,3 +1433,38 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 			});
 	}, true);
 })();
+
+/*
+|--------------------------------------------------------------------------
+| Выбор способа оплаты (попап). Формы с data-pay-choices='[{"key","label"},...]'
+| перед отправкой спрашивают способ и добавляют hidden payment_method.
+| AJAX-запись на мероприятие (data-ajax-join) вызывает window.askPaymentMethod сама.
+|--------------------------------------------------------------------------
+*/
+(function () {
+	window.askPaymentMethod = function (choices, title) {
+		return new Promise(function (resolve) {
+			var buttons = { cancel: { text: 'Отмена', value: null } };
+			choices.forEach(function (c) { buttons[c.key] = { text: c.label, value: c.key }; });
+			swal({ title: title || 'Выберите способ оплаты', buttons: buttons }).then(function (v) {
+				resolve(v || null);
+			});
+		});
+	};
+
+	document.addEventListener('submit', function (e) {
+		var f = e.target;
+		if (!f || !f.matches || !f.matches('form[data-pay-choices]') || f.hasAttribute('data-ajax-join')) return;
+		if (f.querySelector('input[name="payment_method"]')) return;
+		e.preventDefault();
+		var choices;
+		try { choices = JSON.parse(f.getAttribute('data-pay-choices')); } catch (err) { f.submit(); return; }
+		window.askPaymentMethod(choices).then(function (method) {
+			if (!method) return;
+			var input = document.createElement('input');
+			input.type = 'hidden'; input.name = 'payment_method'; input.value = method;
+			f.appendChild(input);
+			f.submit();
+		});
+	}, true);
+})();

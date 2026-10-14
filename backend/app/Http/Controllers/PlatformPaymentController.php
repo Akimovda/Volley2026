@@ -28,7 +28,7 @@ class PlatformPaymentController extends Controller
 
         $back = $type === 'org_pro' ? route('organizer_pro.index') : route('premium.index');
 
-        if (PlatformPaymentSetting::first()?->method !== 'yoomoney') {
+        if ($payment->method !== 'yoomoney') {
             return redirect($back)->with('error', 'Онлайн-оплата сейчас недоступна.');
         }
 

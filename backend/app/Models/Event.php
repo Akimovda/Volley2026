@@ -82,6 +82,7 @@ class Event extends Model implements HasMedia
 
         // Рекламные мероприятия
         'ad_payment_status',
+        'ad_payment_method',
         'ad_payment_expires_at',
         'ad_price_rub',
         'ad_yookassa_payment_id',

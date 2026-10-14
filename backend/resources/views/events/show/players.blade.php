@@ -596,7 +596,14 @@
 		$free = (int)($pos['free'] ?? 0);
 		@endphp
 
-		<form method="POST" action="{{ $joinAction }}" data-ajax-join>
+		@php
+		// Несколько способов оплаты у организатора → попап выбора перед записью (не для организатора и не по абонементу)
+		$payChoices = [];
+		if ($event->is_paid && (int) $event->price_minor > 0 && empty($activeSubscription) && (int) auth()->id() !== (int) $event->organizer_id) {
+			$payChoices = \App\Support\PaymentMethods::forJs(\App\Models\PaymentSetting::offeredFor((int) $event->organizer_id));
+		}
+		@endphp
+		<form method="POST" action="{{ $joinAction }}" data-ajax-join @if($payChoices) data-pay-choices="{{ json_encode($payChoices, JSON_UNESCAPED_UNICODE) }}" @endif>
 			@csrf
 			<input type="hidden" name="position" value="{{ $key }}">
 			@if(!empty($activeSubscription))

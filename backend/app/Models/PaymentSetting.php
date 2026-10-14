@@ -13,7 +13,7 @@ class PaymentSetting extends Model
         'refund_hours_full', 'refund_hours_partial', 'refund_partial_pct',
         'refund_no_quorum_full', 'payment_hold_minutes',
         'payment_for_rentals',
-        'fee_percent', 'fee_mode', 'tax_percent', 'tax_mode', 'fee_methods', 'tax_system', 'yookassa_receipt_enabled', 'yookassa_vat_code', 'yookassa_tax_system_code',
+        'fee_percent', 'fee_mode', 'tax_percent', 'tax_mode', 'fee_methods', 'tax_system', 'yookassa_receipt_enabled', 'yookassa_vat_code', 'yookassa_tax_system_code', 'offer_choice', 'offer_methods',
     ];
 
     protected $casts = [
@@ -23,6 +23,8 @@ class PaymentSetting extends Model
         'payment_for_rentals' => 'boolean',
         'fee_methods'         => 'array',
         'yookassa_receipt_enabled' => 'boolean',
+        'offer_choice'        => 'boolean',
+        'offer_methods'       => 'array',
     ];
 
     public function organizer()
@@ -51,6 +53,17 @@ class PaymentSetting extends Model
         if (!empty($this->sber_link))    $methods[] = 'sber_link';
         if ($this->yoomoney_verified)    $methods[] = 'yoomoney';
         return $methods;
+    }
+
+    /** Способы, предлагаемые игроку на выбор при записи (≥2), иначе [] — тогда действует способ мероприятия. */
+    public function offeredMethods(): array
+    {
+        return \App\Support\PaymentMethods::offered((bool) $this->offer_choice, $this->offer_methods, $this->availableMethods());
+    }
+
+    public static function offeredFor(int $organizerId): array
+    {
+        return static::where('organizer_id', $organizerId)->first()?->offeredMethods() ?? [];
     }
 
     public static function availableMethodsFor(int $organizerId): array

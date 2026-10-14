@@ -85,6 +85,11 @@
             </div>
 
             <div class="ramka">
+                <h2 class="-mt-05">🔀 Несколько способов оплаты (Pro, Premium, реклама)</h2>
+                @include('payment._offer_choice', ['s' => $settings, 'withCash' => false, 'available' => $settings->availableMethods()])
+            </div>
+
+            <div class="ramka">
                 <h2 class="-mt-05">🧾 Чек в платеже ЮKassa</h2>
                 @include('payment._receipt_fields', ['s' => $settings])
             </div>

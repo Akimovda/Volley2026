@@ -117,14 +117,14 @@ class OrganizerProController extends Controller
             return back()->withErrors(['plan' => 'Оплата временно недоступна. Попробуйте позже.']);
         }
 
-        [$sub, $payment, $created] = $this->service->createPending($user, $data['plan']);
+        [$sub, $payment, $created] = $this->service->createPending($user, $data['plan'], $request->input('payment_method'));
 
         if (!$created) {
             return redirect()->route('organizer_pro.index')
                 ->with('status', 'Ваша оплата уже отправлена на проверку — администратор подтвердит её в ближайшее время.');
         }
 
-        if (PlatformPaymentSetting::first()?->method === 'yoomoney') {
+        if ($payment->method === 'yoomoney') {
             return app(PlatformPaymentController::class)->pay($request, $payment);
         }
 
