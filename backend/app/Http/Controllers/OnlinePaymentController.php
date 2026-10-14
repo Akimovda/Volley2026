@@ -61,10 +61,10 @@ class OnlinePaymentController extends Controller
                 );
             } else {
                 $event = Event::findOrFail($payment->event_id);
-                $url   = $this->yookassa->createEventPayment(
-                    $payment, $event, $settings,
-                    route('events.show', $event->id) . '?occurrence=' . $payment->occurrence_id, $method,
-                );
+                $back  = $payment->team_id
+                    ? route('tournamentTeams.show', [$event, $payment->team_id])
+                    : route('events.show', $event->id) . '?occurrence=' . $payment->occurrence_id;
+                $url   = $this->yookassa->createEventPayment($payment, $event, $settings, $back, $method);
             }
         } catch (\Throwable $e) {
             Log::error('OnlinePaymentController::start', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);

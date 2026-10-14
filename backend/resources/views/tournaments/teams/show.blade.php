@@ -547,24 +547,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         @elseif($payInfo['team_status'] === 'link_pending')
                             <div class="alert alert-warning f-18">⏳ Ожидает подтверждения организатором</div>
                         @elseif($canManage)
-                            @if($payInfo['method'] === 'cash')
-                                <div class="alert alert-info f-18">💵 Оплата наличными</div>
-                            @else
-                                @if($team->payment_id)
-                                    <form method="POST" action="{{ route('payments.user_confirm', $team->payment_id) }}">
-                                        @csrf
-                                        <button type="submit" class="btn btn-warning"
-                                                onclick="return confirm('Подтверждаете что перевод выполнен?')">
-                                            Я оплатил
-                                        </button>
-                                    </form>
-                                    @if($event->payment_link)
-                                        <a href="{{ $event->payment_link }}" target="_blank" class="btn btn-outline-primary mt-1">
-                                            Перейти к оплате →
-                                        </a>
-                                    @endif
-                                @endif
-                            @endif
+                            @include('tournaments.teams._pay_controls', ['payment' => $team->payment_id ? \App\Models\Payment::find($team->payment_id) : null])
                         @else
                             <div class="f-18">Ожидаем оплату от капитана</div>
                         @endif
@@ -594,17 +577,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                                 @php
                                                     $memberModel = \App\Models\EventTeamMember::find($pm['id']);
                                                 @endphp
-                                                @if($memberModel && $memberModel->payment_id)
-                                                    <form method="POST" action="{{ route('payments.user_confirm', $memberModel->payment_id) }}" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-warning btn-sm py-0"
-                                                                onclick="return confirm('Подтверждаете что перевод выполнен?')">
-                                                            Я оплатил
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <span class="badge bg-danger">Не оплачено</span>
-                                                @endif
+                                                @include('tournaments.teams._pay_controls', ['payment' => $memberModel && $memberModel->payment_id ? \App\Models\Payment::find($memberModel->payment_id) : null])
                                             @else
                                                 <span class="badge bg-danger">Не оплачено</span>
                                             @endif
@@ -646,8 +619,12 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             <div class="f-16 mb-2">Если состав готов — подайте заявку на турнир.</div>
 
             @if($team->is_complete && $team->status === 'ready')
+                @php
+                    $subChoices = ($settings?->isPaymentRequired() && (int) $event->price_minor > 0)
+                        ? \App\Support\PaymentMethods::forJs(\App\Models\PaymentSetting::offeredFor((int) $event->organizer_id)) : [];
+                @endphp
                 <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
-                      onsubmit="return confirm('Подать заявку команды на турнир?')">
+                      @if($subChoices) data-pay-choices="{{ json_encode($subChoices, JSON_UNESCAPED_UNICODE) }}" @else onsubmit="return confirm('Подать заявку команды на турнир?')" @endif>
                     @csrf
                     <button type="submit" class="btn">{{ __('events.tapp_submit_btn') }}</button>
                 </form>
@@ -663,7 +640,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 @if($canEarlySubmit)
                     <div class="f-16 mb-1">{{ __('events.tapp_submit_early_warn') }}</div>
                     <form method="POST" action="{{ route('tournamentTeams.submit',[$event,$team]) }}"
-                          onsubmit="return confirm(@json(__('events.tapp_submit_early_btn') . '?'))">
+                          @if($subChoices ?? []) data-pay-choices="{{ json_encode($subChoices, JSON_UNESCAPED_UNICODE) }}" @else onsubmit="return confirm(@json(__('events.tapp_submit_early_btn') . '?'))" @endif>
                         @csrf
                         <input type="hidden" name="allow_incomplete" value="1">
                         <button type="submit" class="btn btn-secondary">{{ __('events.tapp_submit_early_btn') }}</button>
