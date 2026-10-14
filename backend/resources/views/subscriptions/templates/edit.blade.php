@@ -175,6 +175,7 @@
                                 <div class="custom-checkbox"></div>
                                 <span>{{ __('subscriptions.tpl_auto_booking_short') }}</span>
                             </label>
+                            <div class="alert alert-warning mt-1" id="auto_booking_hint" style="{{ old('auto_booking_enabled', $subscriptionTemplate->auto_booking_enabled) ? '' : 'display:none' }}">{{ __('subscriptions.tpl_auto_booking_warn') }}</div>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -217,6 +218,16 @@
 
     <x-slot name="script">
     <script>
+    @php $autoWarnTitle = __('subscriptions.tpl_auto_booking_warn_title'); $autoWarnText = __('subscriptions.tpl_auto_booking_warn'); @endphp
+    document.querySelectorAll('input[type=checkbox][name=auto_booking_enabled]').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            const hint = document.getElementById('auto_booking_hint');
+            if (hint) hint.style.display = this.checked ? '' : 'none';
+            if (this.checked && typeof swal === 'function') {
+                swal({ title: @json($autoWarnTitle), text: @json($autoWarnText), icon: 'warning', button: 'OK' });
+            }
+        });
+    });
     document.getElementById('freeze_toggle')?.addEventListener('change', function() {
         document.getElementById('freeze_fields').style.display = this.checked ? '' : 'none';
         document.getElementById('freeze_fields2').style.display = this.checked ? '' : 'none';
