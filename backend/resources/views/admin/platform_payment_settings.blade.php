@@ -85,6 +85,37 @@
             </div>
 
             <div class="ramka">
+                <h2 class="-mt-05">🧾 Чек в платеже ЮKassa</h2>
+                <div class="card">
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="yookassa_receipt_enabled" value="1" @checked(old('yookassa_receipt_enabled', $settings->yookassa_receipt_enabled))>
+                        <div class="custom-checkbox"></div>
+                        <span>Передавать данные чека (receipt) в платеже</span>
+                    </label>
+                    <div class="f-14 mt-05 mb-1" style="opacity:.6">Выключено — чеки формирует ЮKassa. Включайте, только если ЮKassa отклоняет платёж без receipt.</div>
+                    @php
+                        $vatOptions = [1 => 'Без НДС', 2 => 'НДС 0%', 3 => 'НДС 10%', 4 => 'НДС 20%', 7 => 'НДС 5%', 8 => 'НДС 7%', 11 => 'НДС 22%'];
+                        $taxOptions = [1 => 'ОСН', 2 => 'УСН доход', 3 => 'УСН доход − расход', 5 => 'ЕСХН', 6 => 'Патент'];
+                        $vatSel = (int) old('yookassa_vat_code', $settings->yookassa_vat_code ?? 1);
+                        $taxSel = old('yookassa_tax_system_code', $settings->yookassa_tax_system_code);
+                    @endphp
+                    <label>Ставка НДС</label>
+                    <select name="yookassa_vat_code">
+                        @foreach($vatOptions as $code => $label)
+                        <option value="{{ $code }}" @selected($vatSel === $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    <label class="mt-1">Система налогообложения</label>
+                    <select name="yookassa_tax_system_code">
+                        <option value="">Не передавать (АУСН, НПД/самозанятый, задана в кабинете ЮKassa)</option>
+                        @foreach($taxOptions as $code => $label)
+                        <option value="{{ $code }}" @selected((string) $taxSel === (string) $code)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="ramka">
                 <h2 class="-mt-05">📣 Рекламные мероприятия</h2>
                 <div class="row">
                     <div class="col-md-4">
