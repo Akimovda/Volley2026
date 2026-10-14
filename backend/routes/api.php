@@ -22,7 +22,7 @@ Route::post('/integrations/max/complete-personal-bind', [MaxBindWebhookControlle
 Route::get(
     '/occurrences/{occurrence}/participants',
     [OccurrenceParticipantsController::class, 'index']
-)->middleware('throttle:30,1');
+)->whereNumber('occurrence')->middleware('throttle:30,1');
 
 Route::post('/integrations/channels/complete-bind', [\App\Http\Controllers\Api\ChannelBindWebhookController::class, 'complete']);
 Route::post('/integrations/vk/complete-notify-bind', [VkNotifyWebhookController::class, 'complete']);
@@ -37,7 +37,7 @@ Route::get('/occurrences/{occurrence}/stats', function (string $occurrence) {
     return response()->json([
         'registered_total' => $count,
     ]);
-});
+})->whereNumber('occurrence');
 Route::get('/app/level-scheme', [\App\Http\Controllers\LevelSchemeController::class, 'api'])->middleware('throttle:120,1');
 Route::post('/integrations/level-test/questions', [\App\Http\Controllers\Api\LevelTestBotController::class, 'questions'])->middleware('throttle:120,1');
 Route::post('/integrations/level-test/score', [\App\Http\Controllers\Api\LevelTestBotController::class, 'score'])->middleware('throttle:120,1');
