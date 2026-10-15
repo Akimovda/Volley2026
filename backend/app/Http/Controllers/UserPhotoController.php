@@ -101,7 +101,13 @@ class UserPhotoController extends Controller
             $photoType  = $request->input('photo_type', 'photos');
             $orgOrAdmin = auth()->user()?->isAdmin() || auth()->user()?->isOrganizer();
 
-            if (in_array($photoType, ['event_photos', 'tournament_photos', 'school_logo', 'school_cover']) && !$orgOrAdmin) {
+            // Помощник организатора (staff с привязкой) может грузить фото мероприятий/турниров
+            // (создаёт мероприятия от имени организатора), но не логотипы/обложки школы.
+            $isStaffHelper = in_array($photoType, ['event_photos', 'tournament_photos'], true)
+                && auth()->user()?->isStaff()
+                && auth()->user()->staffAssignment()->exists();
+
+            if (in_array($photoType, ['event_photos', 'tournament_photos', 'school_logo', 'school_cover']) && !$orgOrAdmin && !$isStaffHelper) {
                 return response()->json(['success' => false, 'error' => 'Нет прав для загрузки этого типа фото'], 403);
             }
 
