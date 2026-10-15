@@ -102,6 +102,60 @@ class PublishOccurrenceAnnouncementService
                     continue;
                 }
 
+                // Тема (message_thread_id) изменилась с момента отправки → редактирование не
+                // переносит сообщение между темами (Bot API не умеет), поэтому удаляем старое
+                // и отправляем заново в актуальную тему. Для старых записей без сохранённой
+                // темы (ключа нет в meta) ничего не делаем — неизвестно, где они лежат.
+                $recMeta = (array) ($record->meta ?? []);
+                if (
+                    $channel->platform === 'telegram'
+                    && array_key_exists('message_thread_id', $recMeta)
+                    && (int) ($recMeta['message_thread_id'] ?? 0) !== (int) ($threadId ?: 0)
+                ) {
+                    try {
+                        if (!empty($record->external_message_id) && $publisher->supportsDelete()) {
+                            try {
+                                $publisher->delete((string) $channel->chat_id, (string) $record->external_message_id);
+                            } catch (\Throwable $e) {
+                                Log::warning('PublishOccurrenceAnnouncement: delete before thread resend failed', [
+                                    'channel' => $channel->platform,
+                                    'error'   => $e->getMessage(),
+                                ]);
+                            }
+                        }
+
+                        $result = $publisher->send((string) $channel->chat_id, $message);
+
+                        $record->update([
+                            'external_chat_id'    => $result['external_chat_id'] ?? (string) $channel->chat_id,
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'last_payload_hash'   => $hash,
+                            'sent_at'             => now(),
+                            'last_synced_at'      => now(),
+                            'meta'                => array_merge(
+                                ['message_kind' => $messageKind],
+                                (array) ($result['meta'] ?? []),
+                                ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
+                            ),
+                        ]);
+
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'send', [
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'reason'              => 'thread_changed',
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::warning('PublishOccurrenceAnnouncement: thread resend failed', [
+                            'channel' => $channel->platform,
+                            'error'   => $e->getMessage(),
+                        ]);
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                            'action' => 'thread_resend',
+                            'error'  => $e->getMessage(),
+                        ]);
+                    }
+                    continue;
+                }
+
                 // Текст не изменился → ничего делать не нужно
                 if ($record->last_payload_hash === $hash) {
                     $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
@@ -182,7 +236,7 @@ class PublishOccurrenceAnnouncementService
                 $newMeta = array_merge(
                     ['message_kind' => $messageKind],
                     (array) ($result['meta'] ?? []),
-                    ['raw' => $result['raw'] ?? []],
+                    ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
                 );
 
                 $record->fill([
