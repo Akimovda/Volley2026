@@ -542,6 +542,8 @@ return [
     'create_step_short_of'  => 'of 3',
     'create_pill_1'         => 'Event setup',
     'create_pill_2'         => 'Location, time and registration limits',
+    'create_saving'         => 'Saving...',
+    'create_save_stuck'     => 'Could not save: the server did not respond. Check your connection and press Save again — your data is still on the page.',
     'create_pill_3'         => 'Visibility, description, etc.',
 
     'create_inapp_warn'     => '⚠️ <b>You\'re using an in-app browser</b> — some features may not work.<br>To create an event, open the page in a <b>regular browser</b> (Safari, Chrome).',

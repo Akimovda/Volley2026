@@ -677,16 +677,48 @@ document.addEventListener('DOMContentLoaded', function() {
 (function () {
     var form = document.querySelector('form[action*="events"]');
     if (!form) return;
+    var SAVE_TIMEOUT_MS = 45000; // дольше запрос обычно не живёт: nginx отдаёт 504 через 30 с
+    var timer = null;
+    var txtSaving = @json(__('events.create_saving'));
+    var txtStuck  = @json(__('events.create_save_stuck'));
+
+    function unlock(btn) {
+        clearTimeout(timer);
+        btn.disabled = false;
+        btn.dataset.submitted = 'false';
+        if (btn.dataset.origText) btn.textContent = btn.dataset.origText;
+    }
+
     form.addEventListener('submit', function (e) {
         var btn = form.querySelector('button[type="submit"]');
         if (!btn) return;
+        // валидация шага могла отменить отправку — кнопку не блокируем
+        if (e.defaultPrevented) return;
         if (btn.dataset.submitted === 'true') {
             e.preventDefault();
             return;
         }
+        btn.dataset.origText = btn.textContent;
         btn.dataset.submitted = 'true';
         btn.disabled = true;
-        btn.textContent = 'Сохранение...';
+        btn.textContent = txtSaving;
+
+        // Если ответа нет слишком долго (обрыв сети, зависший WebView) — не оставляем
+        // человека с вечным «Сохранение...»: данные формы на странице целы, можно повторить.
+        timer = setTimeout(function () {
+            unlock(btn);
+            if (window.swal) {
+                swal({ text: txtStuck, icon: 'warning' });
+            } else {
+                alert(txtStuck);
+            }
+        }, SAVE_TIMEOUT_MS);
+    });
+
+    // Возврат на страницу из bfcache (кнопка «назад») — иначе кнопка остаётся заблокированной
+    window.addEventListener('pageshow', function (ev) {
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn && ev.persisted && btn.dataset.submitted === 'true') unlock(btn);
     });
 })();
 </script>
