@@ -48,6 +48,19 @@ class VolleyballSchoolController extends Controller
 
         $todayUtc = CarbonImmutable::now('UTC')->startOfDay();
 
+        // Приватные мероприятия школы видят только админ, сам организатор школы и его
+        // помощники (staff) — остальным (в т.ч. гостям) они скрыты, как и раньше.
+        $viewer = auth()->user();
+        $canSeePrivate = $viewer && (
+            $viewer->isAdmin()
+            || (int) $viewer->id === (int) $school->organizer_id
+            || app(\App\Services\EventVisibilityService::class)
+                ->isStaffOfOrganizer((int) $viewer->id, (int) $school->organizer_id)
+        );
+        $publicOnly = fn($w) => $canSeePrivate
+            ? $w
+            : $w->where(fn($x) => $x->whereNull('is_private')->orWhere('is_private', false));
+
         // Фильтр по типу/уровню мероприятия — та же логика, что на /events
         $fFormat = trim((string) request('format', ''));
         $levelRaw = request('level');
@@ -78,7 +91,7 @@ class VolleyballSchoolController extends Controller
             $schoolHasAnyUpcomingEvents = EventOccurrence::query()
                 ->whereHas('event', fn($q) => $q
                     ->where('organizer_id', $school->organizer_id)
-                    ->where(fn($w) => $w->whereNull('is_private')->orWhere('is_private', false))
+                    ->tap($publicOnly)
                 )
                 ->whereNull('cancelled_at')
                 ->where(fn($q) => $q->whereNull('is_cancelled')->orWhere('is_cancelled', false))
@@ -90,9 +103,9 @@ class VolleyballSchoolController extends Controller
         $windowStart = $today;
         if (Schema::hasTable('event_occurrences')) {
             $baseOccQuery = EventOccurrence::query()
-                ->whereHas('event', function ($q) use ($school, $fFormat, $fLevel, $filterDirection) {
+                ->whereHas('event', function ($q) use ($school, $fFormat, $fLevel, $filterDirection, $publicOnly) {
                     $q->where('organizer_id', $school->organizer_id)
-                        ->where(fn($w) => $w->whereNull('is_private')->orWhere('is_private', false));
+                        ->tap($publicOnly);
 
                     if ($fFormat !== '') {
                         $q->where('format', $fFormat);
