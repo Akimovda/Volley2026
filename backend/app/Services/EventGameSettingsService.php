@@ -725,7 +725,9 @@ class EventGameSettingsService
 
         $isGameClassic = (bool)($game['isGameClassic'] ?? false);
     
-        $subtype = $data['game_subtype'] ?? null;
+        // Командный турнир: схема лежит в tournament_game_scheme (game_subtype у него нет) —
+        // иначе в event_game_settings попадал дефолт 4x2 и анонсы показывали неверный формат.
+        $subtype = $data['game_subtype'] ?? ($data['tournament_game_scheme'] ?? null) ?: null;
         $positions = [];
         $liberoMode = null;
     
