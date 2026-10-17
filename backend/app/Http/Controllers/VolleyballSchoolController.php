@@ -49,7 +49,8 @@ class VolleyballSchoolController extends Controller
         $todayUtc = CarbonImmutable::now('UTC')->startOfDay();
 
         // Приватные мероприятия школы видят только админ, сам организатор школы и его
-        // помощники (staff) — остальным (в т.ч. гостям) они скрыты, как и раньше.
+        // помощники (staff) — остальным (в т.ч. гостям) они скрыты, как и раньше
+        // (кроме тех, кто получил доступ по приватной ссылке — см. ниже).
         $viewer = auth()->user();
         $canSeePrivate = $viewer && (
             $viewer->isAdmin()
@@ -57,9 +58,24 @@ class VolleyballSchoolController extends Controller
             || app(\App\Services\EventVisibilityService::class)
                 ->isStaffOfOrganizer((int) $viewer->id, (int) $school->organizer_id)
         );
+        // Остальные залогиненные видят приватные события, на которые уже получили доступ по
+        // ссылке /e/{token} (event_private_accesses) — как и в ленте /events.
+        $accessEventIds = [];
+        if (!$canSeePrivate && $viewer && Schema::hasTable('event_private_accesses')) {
+            $accessEventIds = DB::table('event_private_accesses')
+                ->where('user_id', (int) $viewer->id)
+                ->pluck('event_id')
+                ->map(fn($v) => (int) $v)
+                ->all();
+        }
         $publicOnly = fn($w) => $canSeePrivate
             ? $w
-            : $w->where(fn($x) => $x->whereNull('is_private')->orWhere('is_private', false));
+            : $w->where(function ($x) use ($accessEventIds) {
+                $x->whereNull('is_private')->orWhere('is_private', false);
+                if ($accessEventIds) {
+                    $x->orWhereIn('id', $accessEventIds);
+                }
+            });
 
         // Фильтр по типу/уровню мероприятия — та же логика, что на /events
         $fFormat = trim((string) request('format', ''));
