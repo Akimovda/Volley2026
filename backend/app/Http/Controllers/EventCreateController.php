@@ -126,6 +126,9 @@ use App\Services\StaffLogService;
                    $lock->release();
                    $event = $result['event'];
 
+                   // событие создано — черновик больше не нужен
+                   \App\Models\EventDraft::where('user_id', $user->id)->delete();
+
                    // Рекламное мероприятие — оплата через ЮKassa
                    if (!(bool)($event->allow_registration ?? true)) {
                        $platSettings = \App\Models\PlatformPaymentSetting::first();
@@ -428,7 +431,17 @@ use App\Services\StaffLogService;
                 ->orderByDesc('created_at')
                 ->get();
 
+            // Несохранённый черновик (баннер «продолжить»): не показываем, если форма уже
+            // заполнена (редисплей после ошибки, восстановление черновика, «создать на основе»)
+            $draft = null;
+            if ($fromId <= 0 && !$request->session()->hasOldInput()) {
+                $draft = \App\Models\EventDraft::where('user_id', $user->id)
+                    ->where('updated_at', '>=', now()->subDays(30))
+                    ->first(['id', 'step', 'payload', 'updated_at']);
+            }
+
             return view('events.create', [
+			'draft' => $draft,
 			'cityId' => $cityId,
 			'userCityId' => $user->city_id ?? null,
 			

@@ -1,0 +1,26 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        // Черновик мастера создания мероприятия: один на пользователя.
+        // payload — поля формы как есть (то, что вернёт old() при восстановлении).
+        Schema::create('event_drafts', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->unique()->constrained()->cascadeOnDelete();
+            $table->unsignedSmallInteger('step')->default(1);
+            $table->text('payload');
+            $table->timestampsTz();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('event_drafts');
+    }
+};

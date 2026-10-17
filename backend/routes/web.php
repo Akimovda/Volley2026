@@ -13,6 +13,7 @@
 	use App\Http\Controllers\EventLikeController;
 use App\Http\Controllers\YookassaWebhookController;
 	use App\Http\Controllers\EventCreateController;
+	use App\Http\Controllers\EventDraftController;
 	use App\Http\Controllers\EventRegistrationController;
     use App\Http\Controllers\EventRegistrationInviteController;
 	use App\Http\Controllers\EventManagementController;
@@ -660,6 +661,15 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         ->middleware('no-store-html')
         ->name('events.create');
 		
+		// черновик мастера создания (один на пользователя)
+		Route::post('/events/create/draft', [EventDraftController::class, 'save'])
+        ->middleware('throttle:60,1')
+        ->name('events.draft.save');
+		Route::get('/events/create/draft/restore', [EventDraftController::class, 'restore'])
+        ->name('events.draft.restore');
+		Route::delete('/events/create/draft', [EventDraftController::class, 'destroy'])
+        ->name('events.draft.destroy');
+
 		// store event
 		Route::post('/events', [EventCreateController::class, 'store'])
         ->name('events.store');

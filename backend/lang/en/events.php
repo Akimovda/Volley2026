@@ -544,6 +544,12 @@ return [
     'create_pill_2'         => 'Location, time and registration limits',
     'create_saving'         => 'Saving...',
     'create_save_stuck'     => 'Could not save: the server did not respond. Check your connection and press Save again — your data is still on the page.',
+    'draft_found_title' => 'You have an unsaved event',
+    'draft_found_text' => 'You started creating an event :title (changed :when). Continue where you left off?',
+    'draft_continue' => 'Continue',
+    'draft_discard' => 'Discard draft',
+    'draft_restored' => 'Draft restored — check the details and continue.',
+    'draft_autosave_note' => 'Draft is saved automatically',
     'create_pill_3'         => 'Visibility, description, etc.',
 
     'create_inapp_warn'     => '⚠️ <b>You\'re using an in-app browser</b> — some features may not work.<br>To create an event, open the page in a <b>regular browser</b> (Safari, Chrome).',

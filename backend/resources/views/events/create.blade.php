@@ -430,6 +430,32 @@ if ($initialStep < 1 || $initialStep > 3) {
 				</div>
 			</div>
             @endif
+			@if (!empty($draft))
+			@php
+				$draftTitle = trim((string) (($draft->payload['title'] ?? '')));
+				$draftWhen  = $draft->updated_at->copy()->timezone(config('app.timezone'))->format('d.m.Y H:i');
+			@endphp
+			<div class="ramka">
+				<div class="alert alert-info">
+					<div class="alert-title">{{ __('events.draft_found_title') }}</div>
+					<p>{{ __('events.draft_found_text', ['title' => $draftTitle !== '' ? '«'.$draftTitle.'»' : '', 'when' => $draftWhen]) }}</p>
+					<div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem;">
+						<a href="{{ route('events.draft.restore') }}" class="btn btn-small">{{ __('events.draft_continue') }}</a>
+						<form method="POST" action="{{ route('events.draft.destroy') }}" style="margin:0;">
+							@csrf
+							@method('DELETE')
+							<button type="submit" class="btn btn-outline btn-small">{{ __('events.draft_discard') }}</button>
+						</form>
+					</div>
+				</div>
+			</div>
+			@elseif (session('draft_restored'))
+			<div class="ramka">
+				<div class="alert alert-info">
+					<div class="alert-title">{{ __('events.draft_restored') }}</div>
+				</div>
+			</div>
+			@endif
 			
 			<div class="form">					
 				<form 
@@ -720,6 +746,66 @@ document.addEventListener('DOMContentLoaded', function() {
         var btn = form.querySelector('button[type="submit"]');
         if (btn && ev.persisted && btn.dataset.submitted === 'true') unlock(btn);
     });
+
+    // ── Автосохранение черновика на сервере ─────────────────────────────────────
+    var draftUrl = @json(route('events.draft.save'));
+    var dirty = false, saveTimer = null, lastSent = '';
+
+    function draftBody() {
+        var fd = new FormData(form);
+        // файлы в черновик не кладём (фото грузятся отдельно, в форме — только ID)
+        Array.from(fd.keys()).forEach(function (k) {
+            fd.getAll(k).forEach(function (v) { if (v instanceof File) fd.delete(k); });
+        });
+        return fd;
+    }
+    function isSubmitting() {
+        var btn = form.querySelector('button[type="submit"]');
+        return !!(btn && btn.dataset.submitted === 'true');
+    }
+    function sig(fd) {
+        var parts = [];
+        fd.forEach(function (v, k) { if (k !== '_token') parts.push(k + '=' + v); });
+        return parts.join('&');
+    }
+    function saveDraft(useBeacon) {
+        if (!dirty || isSubmitting()) return;
+        var fd = draftBody();
+        var s = sig(fd);
+        if (s === lastSent) return;
+        lastSent = s;
+        if (useBeacon && navigator.sendBeacon) {
+            navigator.sendBeacon(draftUrl, fd);
+            return;
+        }
+        fetch(draftUrl, {
+            method: 'POST', body: fd, credentials: 'same-origin',
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+        }).catch(function () { lastSent = ''; });
+    }
+    function schedule() {
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(function () { saveDraft(false); }, 2500);
+    }
+    // только действия пользователя (программные change от скриптов формы игнорируем)
+    ['input', 'change'].forEach(function (evt) {
+        form.addEventListener(evt, function (ev) {
+            if (!ev.isTrusted) return;
+            dirty = true;
+            schedule();
+        }, true);
+    });
+    // кнопки «Далее/Назад» мастера не порождают input — сохраняем при смене шага
+    var stepEl = document.getElementById('wizard_step');
+    if (stepEl && window.MutationObserver) {
+        new MutationObserver(function () { if (dirty) schedule(); })
+            .observe(stepEl, { attributes: true, attributeFilter: ['value'] });
+    }
+    // приложение свернули / вкладку закрыли — досылаем то, что не успело уйти по таймеру
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'hidden') saveDraft(true);
+    });
+    window.addEventListener('pagehide', function () { saveDraft(true); });
 })();
 </script>
 
