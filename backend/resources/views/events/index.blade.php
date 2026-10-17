@@ -752,16 +752,55 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					// перебивать, пока он ещё не начал скроллить сам.
 					let suppressObserverUntil = 0;
 
+					// Плавный скролл окна на rAF. getTop() вызывается КАЖДЫЙ кадр (живая цель).
+					// Новый вызов отменяет предыдущую анимацию; касание/колесо пользователя — тоже.
+					let scrollAnim = null;
+					function animateScrollTo(getTop, onDone, onFinish) {
+						if (scrollAnim) scrollAnim.cancel();
+						const html = document.documentElement;
+						const prevSB = html.style.scrollBehavior;
+						html.style.scrollBehavior = 'auto'; // иначе CSS smooth «сгладит» каждый кадр
+						const startY = window.pageYOffset;
+						const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+						const dist = Math.abs(getTop() - startY);
+						const duration = reduce ? 0 : Math.min(700, 220 + dist * 0.2);
+						const t0 = performance.now();
+						let raf = 0, ended = false;
+						function end(completed) {
+							if (ended) return;
+							ended = true;
+							cancelAnimationFrame(raf);
+							window.removeEventListener('touchstart', onUser, true);
+							window.removeEventListener('wheel', onUser, true);
+							html.style.scrollBehavior = prevSB;
+							scrollAnim = null;
+							if (onFinish) onFinish();
+							if (completed && onDone) onDone();
+						}
+						function onUser() { end(false); }
+						window.addEventListener('touchstart', onUser, { capture: true, passive: true });
+						window.addEventListener('wheel', onUser, { capture: true, passive: true });
+						scrollAnim = { cancel: () => end(false) };
+						function frame(now) {
+							const p = duration > 0 ? Math.min(1, (now - t0) / duration) : 1;
+							const e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+							const target = getTop();
+							window.scrollTo(0, p >= 1 ? target : startY + (target - startY) * e);
+							if (p >= 1) { end(true); return; }
+							raf = requestAnimationFrame(frame);
+						}
+						raf = requestAnimationFrame(frame);
+					}
+
 					function scrollToDaySection(dateKey) {
-						suppressObserverUntil = performance.now() + 1500;
 						const target = document.querySelector('.day-section[data-date="' + dateKey + '"]');
 						if (!target) return;
+						suppressObserverUntil = performance.now() + 10000; // снимается по окончании анимации
 
 						function alignedTop() {
 							return Math.max(0, target.getBoundingClientRect().top + window.pageYOffset - stickyBottom() - 12);
 						}
 
-						window.scrollTo({ top: alignedTop(), behavior: 'smooth' });
 
 						// Топбар дат (фильтр/направление/фото/гео) сворачивается/разворачивается
 						// при пересечении порога "прилипания" (is-scrolled) — если скролл
@@ -796,36 +835,17 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							requestAnimationFrame(() => setActiveChip(dateKey, { centerChip: true, updateUrl: true }));
 						}
 
-						if ('onscrollend' in window) {
-							const onEnd = () => {
-								window.removeEventListener('scrollend', onEnd);
-								window.scrollTo({ top: alignedTop(), behavior: 'auto' });
-								finalizeActiveChip();
-							};
-							window.addEventListener('scrollend', onEnd);
-						} else {
-							let lastY = window.scrollY;
-							let stableFrames = 0;
-							let ticks = 0;
-							const maxTicks = 180; // ~3с на 60fps — страховка от бесконечного polling
-							function poll() {
-								ticks++;
-								const y = window.scrollY;
-								if (y === lastY) {
-									stableFrames++;
-								} else {
-									stableFrames = 0;
-									lastY = y;
-								}
-								if (stableFrames >= 3 || ticks >= maxTicks) {
-									window.scrollTo({ top: alignedTop(), behavior: 'auto' });
-									finalizeActiveChip();
-									return;
-								}
-								requestAnimationFrame(poll);
-							}
-							requestAnimationFrame(poll);
-						}
+						// Скролл анимируем САМИ (rAF), а не нативным smooth + 'scrollend'.
+						// Найдено на реальном баге (2026-10, iOS 26 Safari): после 2-3 тапов по
+						// чипам Safari молча игнорировал scrollTo({behavior:'smooth'}) (чип
+						// подсвечивался, страница не двигалась) — у html стоит CSS
+						// scroll-behavior:smooth, и незавершённая/прерванная нативная анимация
+						// блокирует следующие. Своя анимация не зависит ни от этого, ни от
+						// поддержки 'scrollend', и каждый кадр пересчитывает цель (высота
+						// липкой ленты меняется прямо во время скролла).
+						animateScrollTo(alignedTop, finalizeActiveChip, () => {
+							suppressObserverUntil = performance.now() + 300;
+						});
 					}
 
 					// Центрирует чип в горизонтальной ленте вручную через scrollLeft — НЕ
@@ -858,9 +878,12 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							if (chip) centerChipInStrip(chip);
 						}
 						if (options.updateUrl && window.history && window.history.replaceState) {
-							const url = new URL(window.location.href);
-							url.searchParams.set('date', dateKey);
-							window.history.replaceState(null, '', url.toString());
+							// Safari бросает SecurityError при >100 вызовов replaceState за 30 с
+							try {
+								const url = new URL(window.location.href);
+								url.searchParams.set('date', dateKey);
+								window.history.replaceState(null, '', url.toString());
+							} catch (e) { }
 						}
 					}
 
