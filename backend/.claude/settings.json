@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node tools/shot.mjs *)",
+      "Bash(node tools/shot-diff.mjs *)",
+      "Bash(node tools/a11y.mjs *)",
+      "Bash(php tools/blade-lint.php *)",
+      "Read(//tmp/shots/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "php \"$CLAUDE_PROJECT_DIR/tools/hook-lint.php\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
