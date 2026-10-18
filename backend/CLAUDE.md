@@ -499,6 +499,13 @@ sudo systemctl reload php8.3-fpm   # ← обязательно при изме�
 ## Мониторинг и бэкапы
 Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система бэкапов backup-сервера) перенесена в пользовательский `~/.claude/CLAUDE.md` — там она общая для всех сессий/проектов на этом сервере, не дублируем здесь.
 
+## Инструмент скриншотов `tools/shot.mjs` (2026-10-18)
+- Проверка вёрстки dev-сайта глазами: `node tools/shot.mjs /events --vp 390x844,1280x800 --theme both [--app] [--measure ".btn"] [--full] [--click sel] [--hide sel] [--cookie name=val]`, справка — `--help`. PNG по умолчанию в `/tmp/shots` (вне репозитория), смотреть инструментом Read.
+- Сам: puppeteer-core + Chrome из `storage/app/chromium/`, host → 127.0.0.1, каждый кадр в отдельном browser context, Twemoji, автозакрытие баннера «установить приложение», `.phpdebugbar` скрыт, ночь = `body.dark`, предупреждение о горизонтальном overflow и JS-ошибки в выводе. Закрытые страницы — только с cookie демо-пользователя dev (см. раздел про тестовые данные для скриншотов); прод и реальные сессии не трогать.
+- Рядом: `tools/shot-diff.mjs` (pixelmatch, до/после), `tools/a11y.mjs` (axe-core, контраст), `tools/blade-lint.php` (компиляция Blade + `php -l`). devDependencies `pixelmatch`/`pngjs`/`@axe-core/puppeteer` — на проде `npm install --legacy-peer-deps` их тоже поставит, это безвредно.
+- **Проектные настройки Claude Code** — `.claude/settings.json` (в git): разрешения на эти инструменты и хук `PostToolUse` на `Edit|Write` (`tools/hook-lint.php`: `.blade.php` → blade-lint, `.php` → `php -l`; при ошибке код 2 и текст попадает мне). Скилл `visual-check` — `.claude/skills/visual-check/SKILL.md` (порядок проверки + ловушки вёрстки проекта). Личные разрешения остаются в `.claude/settings.local.json` (в git не идёт).
+- Свёрстанное «на глаз» не считать готовым: после правки CSS/blade прогнать на 360 и 390 px в обеих темах.
+
 ## Правила работы
 - В конце каждой сессии обновляй этот файл: добавляй новые находки, баги, паттерны
 - Коммить изменения CLAUDE.md вместе с кодом

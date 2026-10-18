@@ -9,10 +9,13 @@
     "release": "cd .. && npx --prefix backend standard-version"
   },
   "devDependencies": {
+    "@axe-core/puppeteer": "^4.13.0",
     "@tailwindcss/forms": "^0.5.9",
     "@tailwindcss/typography": "^0.5.13",
     "autoprefixer": "^10.4.23",
     "laravel-vite-plugin": "^2.0.1",
+    "pixelmatch": "^8.0.0",
+    "pngjs": "^7.0.0",
     "postcss": "^8.5.6",
     "standard-version": "^9.5.0",
     "tailwindcss": "^3.4.17",
