@@ -18,6 +18,8 @@ return [
     'new_match_title'    => 'New match',
     'new_match_hint'     => 'Teams can change for every match. The list shows confirmed players, including those added by the organizer.',
     'roster_empty'       => 'There are no confirmed players for this session yet.',
+    'bot_team_add'       => 'Add a team of bots',
+    'bot_team_hint'      => 'Registers system bots for this occurrence on the required positions, matching the event level, age and gender requirements',
     'roster_add_link'    => 'Add players',
     'team_a'             => 'Team 1',
     'team_b'             => 'Team 2',

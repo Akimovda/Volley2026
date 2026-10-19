@@ -1140,6 +1140,8 @@ Route::middleware([
         ->name('game.manage');
     Route::post('/events/{event}/game/matches', [\App\Http\Controllers\FriendlyGameController::class, 'storeMatch'])
         ->name('game.matches.store');
+    Route::post('/events/{event}/game/bot-team', [\App\Http\Controllers\FriendlyGameController::class, 'addBotTeam'])
+        ->name('game.bot-team.add');
     Route::post('/events/{event}/game/config', [\App\Http\Controllers\FriendlyGameController::class, 'updateConfig'])
         ->name('game.config.update');
     Route::delete('/game-matches/{match}', [\App\Http\Controllers\FriendlyGameController::class, 'destroyMatch'])

@@ -69,6 +69,11 @@
                     @endif
                     <a class="btn btn-outline" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
                     <a class="btn btn-outline" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
+                    <form method="POST" action="{{ route('game.bot-team.add', $event) }}" class="form" style="display:inline">
+                        @csrf
+                        <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+                        <button type="submit" class="btn btn-outline" title="{{ __('games.bot_team_hint') }}">🤖 {{ __('games.bot_team_add') }}</button>
+                    </form>
                 </div>
             </div>
         </div>
