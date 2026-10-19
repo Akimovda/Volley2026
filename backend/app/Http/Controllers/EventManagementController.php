@@ -1416,8 +1416,9 @@ if ($role === 'admin') {
             if ($noPosNew && (($data['game_gender_policy'] ?? $event->gameSettings?->gender_policy) === 'mixed_limited')) {
                 $glp = ['player'];
             }
+            // updateOrCreate идёт через Eloquent с cast 'array' — кодировать вручную нельзя (двойное JSON-кодирование)
             if (is_array($glp)) {
-                $glp = json_encode(array_values($glp), JSON_UNESCAPED_UNICODE);
+                $glp = array_values($glp);
             }
     
             $gsPayload = array_filter([
