@@ -1419,13 +1419,8 @@
 		/** Подтверждённые игроки основных (не резервных, не friendly) команд тура. */
 		public function teamGamePlayersCount(EventOccurrence $occurrence): int
 		{
-			return \App\Models\EventTeamMember::where('confirmation_status', 'confirmed')
-				->whereHas('team', fn ($q) => $q->where('event_id', $occurrence->event_id)
-					->where(fn ($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
-					->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved'])
-					->whereNull('reserve_position')
-					->where(fn ($q3) => $q3->whereNull('meta->friendly')->orWhere('meta->friendly', false)))
-				->count();
+			return app(EventOccurrenceStatsService::class)
+				->teamGamePlayersCount((int) $occurrence->id, (int) $occurrence->event_id);
 		}
 
 		private function buildAvailabilitySnapshot(
