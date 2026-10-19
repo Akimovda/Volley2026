@@ -103,6 +103,24 @@ class FriendlyGameService
     }
 
     /**
+     * Готовые команды события на туре (созданные в турнирном/командном режиме), не служебные командные «под матч».
+     *
+     * @return Collection<int, EventTeam>
+     */
+    public function eventTeams(Event $event, int $occurrenceId): Collection
+    {
+        return EventTeam::query()
+            ->where('event_id', $event->id)
+            ->where('occurrence_id', $occurrenceId)
+            ->whereNull('reserve_position')
+            ->whereNotIn('status', ['cancelled', 'rejected', 'disbanded'])
+            ->with(['members' => fn ($q) => $q->where('confirmation_status', 'confirmed'), 'members.user'])
+            ->orderBy('name')->get()
+            ->reject(fn (EventTeam $t) => !empty($t->meta['friendly']))
+            ->values();
+    }
+
+    /**
      * @param int[] $homeUserIds
      * @param int[] $awayUserIds
      */
@@ -113,17 +131,51 @@ class FriendlyGameService
         array $awayUserIds,
         string $homeColor,
         string $awayColor,
+        ?int $homeTeamId = null,
+        ?int $awayTeamId = null,
     ): TournamentMatch {
         $homeUserIds = array_values(array_unique(array_map('intval', $homeUserIds)));
         $awayUserIds = array_values(array_unique(array_map('intval', $awayUserIds)));
 
-        if (!$homeUserIds || !$awayUserIds) {
+        // Сторона = готовая команда события ИЛИ состав из записанных игроков
+        $existing = [];
+        foreach (['home' => $homeTeamId, 'away' => $awayTeamId] as $side => $teamId) {
+            if (!$teamId) {
+                continue;
+            }
+            $team = $this->eventTeams($event, $occurrenceId)->firstWhere('id', $teamId);
+            if (!$team) {
+                throw new InvalidArgumentException('Выбранная команда не найдена на этом туре.');
+            }
+            if ($team->members->isEmpty()) {
+                throw new InvalidArgumentException("В команде «{$team->name}» нет подтверждённых игроков.");
+            }
+            $existing[$side] = $team;
+        }
+        if (isset($existing['home'])) {
+            $homeUserIds = [];
+        }
+        if (isset($existing['away'])) {
+            $awayUserIds = [];
+        }
+        if (isset($existing['home'], $existing['away']) && $existing['home']->id === $existing['away']->id) {
+            throw new InvalidArgumentException('Выберите две разные команды.');
+        }
+
+        if ((!isset($existing['home']) && !$homeUserIds) || (!isset($existing['away']) && !$awayUserIds)) {
             throw new InvalidArgumentException('В каждой команде должен быть хотя бы один игрок.');
         }
         if (array_intersect($homeUserIds, $awayUserIds)) {
             throw new InvalidArgumentException('Игрок не может быть в обеих командах.');
         }
-        if (!isset(self::COLORS[$homeColor], self::COLORS[$awayColor]) || $homeColor === $awayColor) {
+        // Цвета нужны только для команд, создаваемых из состава
+        $needColors = array_filter([!isset($existing['home']) ? $homeColor : null, !isset($existing['away']) ? $awayColor : null]);
+        foreach ($needColors as $c) {
+            if (!isset(self::COLORS[$c])) {
+                throw new InvalidArgumentException('Выберите цвет команды.');
+            }
+        }
+        if (count($needColors) === 2 && $homeColor === $awayColor) {
             throw new InvalidArgumentException('Выберите разные цвета команд.');
         }
 
@@ -134,12 +186,12 @@ class FriendlyGameService
             }
         }
 
-        return DB::transaction(function () use ($event, $occurrenceId, $homeUserIds, $awayUserIds, $homeColor, $awayColor) {
+        return DB::transaction(function () use ($event, $occurrenceId, $homeUserIds, $awayUserIds, $homeColor, $awayColor, $existing) {
             $stage  = $this->stageFor($event, $occurrenceId);
             $number = (int) TournamentMatch::where('stage_id', $stage->id)->max('match_number') + 1;
 
-            $home = $this->createTeam($event, $occurrenceId, $homeUserIds, self::COLORS[$homeColor] . ' · №' . $number, $homeColor);
-            $away = $this->createTeam($event, $occurrenceId, $awayUserIds, self::COLORS[$awayColor] . ' · №' . $number, $awayColor);
+            $home = $existing['home'] ?? $this->createTeam($event, $occurrenceId, $homeUserIds, self::COLORS[$homeColor] . ' · №' . $number, $homeColor);
+            $away = $existing['away'] ?? $this->createTeam($event, $occurrenceId, $awayUserIds, self::COLORS[$awayColor] . ' · №' . $number, $awayColor);
 
             return TournamentMatch::create([
                 'stage_id'      => $stage->id,

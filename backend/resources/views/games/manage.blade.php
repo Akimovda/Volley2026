@@ -123,7 +123,7 @@
             <div class="b-600">{{ __('games.new_match_title') }}</div>
             <div class="f-14 mb-2" style="opacity:.65">{{ __('games.new_match_hint') }}</div>
 
-            @if($roster->isEmpty())
+            @if($roster->isEmpty() && $eventTeams->isEmpty())
                 <div class="f-15" style="opacity:.75">{{ __('games.roster_empty') }}</div>
             @else
             <form method="POST" action="{{ route('game.matches.store', $event) }}" id="gm-form" class="form">
@@ -147,6 +147,32 @@
                         {{ __('games.count_home') }}: <b id="gm-cnt-home">0</b> · {{ __('games.count_away') }}: <b id="gm-cnt-away">0</b>
                     </span>
                 </div>
+
+                @if($eventTeams->isNotEmpty())
+                <div class="mb-2">
+                    <div class="b-600">{{ __('games.event_teams_title') }}</div>
+                    <div class="f-14 mb-1" style="opacity:.65">{{ __('games.event_teams_hint') }}</div>
+                    @foreach($eventTeams as $t)
+                    @php $chosenT = old("team_side.{$t->id}", ''); @endphp
+                    <div class="gm-row">
+                        <div class="gm-who">
+                            <div style="min-width:0">
+                                <div class="b-600">{{ $t->name }}</div>
+                                <div class="gm-lvl">
+                                    {{ __('games.event_team_players', ['n' => $t->members->count()]) }}
+                                    @if(!$t->is_complete) · ⚠️ {{ __('games.event_team_incomplete') }} @endif
+                                </div>
+                            </div>
+                        </div>
+                        <span class="gm-seg">
+                            <label class="gm-none"><input type="radio" name="team_side[{{ $t->id }}]" value="" @checked($chosenT === '')><span>—</span></label>
+                            <label class="gm-home"><input type="radio" name="team_side[{{ $t->id }}]" value="home" @checked($chosenT === 'home')><span>1</span></label>
+                            <label class="gm-away"><input type="radio" name="team_side[{{ $t->id }}]" value="away" @checked($chosenT === 'away')><span>2</span></label>
+                        </span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
 
                 <div id="gm-roster">
                     @foreach($roster as $u)
