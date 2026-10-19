@@ -1410,14 +1410,14 @@
 			|--------------------------------------------------------------------------
 		*/
 		
-		private function isTeamGame($event): bool
+		public function isTeamGame($event): bool
 		{
 			return $event->format === 'game'
 				&& in_array((string) ($event->registration_mode ?? ''), ['team', 'team_classic', 'team_beach'], true);
 		}
 
 		/** Подтверждённые игроки основных (не резервных, не friendly) команд тура. */
-		private function teamGamePlayersCount(EventOccurrence $occurrence): int
+		public function teamGamePlayersCount(EventOccurrence $occurrence): int
 		{
 			return \App\Models\EventTeamMember::where('confirmation_status', 'confirmed')
 				->whereHas('team', fn ($q) => $q->where('event_id', $occurrence->event_id)

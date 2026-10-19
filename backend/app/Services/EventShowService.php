@@ -219,6 +219,12 @@ class EventShowService
         */
         $registeredCount = $occurrence->registrations_count ?? 0;
 
+        // Командная игра: игроки в составах команд, а не в event_registrations
+        $guardForCount = app(EventRegistrationGuard::class);
+        if ($guardForCount->isTeamGame($event)) {
+            $registeredCount = $guardForCount->teamGamePlayersCount($occurrence);
+        }
+
         /*
         |--------------------------------------------------------------------------
         | BEACH GROUP UI
