@@ -69,6 +69,16 @@ final class TournamentTeamService
             // тот же запрет, что применяется к обычным участникам через inviteOrJoinMember().
             $this->assertNotInAnotherTeam($event->id, $occurrenceId, $captain->id);
 
+            // Уникальный индекс (event_id, occurrence_id, name) — отдаём понятную ошибку вместо 500.
+            $nameTaken = EventTeam::query()
+                ->where('event_id', $event->id)
+                ->where('occurrence_id', $occurrenceId)
+                ->where('name', trim($name))
+                ->exists();
+            if ($nameTaken) {
+                throw new DomainException('Команда с названием «' . trim($name) . '» уже есть в этом турнире. Выберите другое название.');
+            }
+
             $team = EventTeam::query()->create([
                 'event_id' => $event->id,
                 'occurrence_id' => $occurrenceId,
