@@ -300,7 +300,11 @@ class EventShowService
 
         $myTournamentTeams = collect();
 
-        if ($isTournament && $user) {
+        // Командная запись на обычной игре (events.registration_mode=team*, без event_tournament_settings):
+        // свои команды тоже нужны, иначе после создания команды блок «Моя команда» не показывается.
+        $isTeamGame = in_array((string) ($event->registration_mode ?? ''), ['team', 'team_classic', 'team_beach'], true);
+
+        if (($isTournament || $isTeamGame) && $user) {
             $myTournamentTeams = EventTeam::query()
                 ->where('event_id', $event->id)
                 ->where(function ($q) use ($occurrence) {
