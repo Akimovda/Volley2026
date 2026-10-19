@@ -388,6 +388,15 @@ return [
     'rally_set_decided'        => 'Партия завершена',
     'rally_set_n'              => 'Сет :n',
     'rally_no_player_option'   => '— без игрока —',
+    'rally_wiz_how'            => 'Как заработано очко',
+    'rally_wiz_error_type'     => 'Что сделал соперник',
+    'rally_wiz_who_scored'     => 'Кто набрал очко',
+    'rally_wiz_opp_who'        => 'Кто из соперников ошибся',
+    'rally_wiz_dig'            => 'Кто принимал? (необязательно)',
+    'rally_wiz_assist'         => 'Кто передавал? (необязательно)',
+    'rally_wiz_skip'           => 'Пропустить',
+    'rally_wiz_back'           => '← Назад',
+    'rally_wiz_cancel'         => 'Отмена',
 
     // === tv.blade.php (TV-режим) ===
     'tv_title'              => 'Табло турнира',
