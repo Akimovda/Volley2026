@@ -78,8 +78,12 @@ class ProcessWaitlistGenderWindows extends Command
             if (!$hasWaitlisted) continue;
 
             $positions = $row->gender_limited_positions;
-            if (is_string($positions)) {
-                $positions = json_decode($positions, true) ?: [];
+            // jsonb может быть сохранён строкой с вложенным JSON (двойное кодирование) — декодируем до массива
+            for ($i = 0; $i < 2 && is_string($positions); $i++) {
+                $positions = json_decode($positions, true);
+            }
+            if (!is_array($positions)) {
+                $positions = [];
             }
 
             Log::info('waitlist:process-gender-windows — triggering autoBook', [
