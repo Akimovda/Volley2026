@@ -413,13 +413,24 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							$dow = $daysOfWeek[$weekday] ?? '';
 							$isWeekend = $weekday >= 6;
 							$dayHasEvents = !empty($dayData['occurrences']);
+							// Доп. кружки по типам мероприятий дня: тренировка / кемп / турнир
+							$dayFormats = collect($dayData['occurrences'])->map(fn ($o) => (string) ($o->event?->format ?? ''))->unique()->all();
+							$dayKindDots = [];
+							if (array_intersect($dayFormats, ['training', 'training_game', 'training_pro_am'])) $dayKindDots['training'] = __('events.fmt_training');
+							if (in_array('camp', $dayFormats, true)) $dayKindDots['camp'] = __('events.fmt_camp');
+							if (in_array('tournament', $dayFormats, true)) $dayKindDots['tournament'] = __('events.fmt_tournament');
                             @endphp
                             <a href="javascript:void(0)" class="tab no-highlight day-chip {{ $isWeekend ? 'is-weekend' : '' }} {{ $loop->first ? 'active' : '' }}"
 							data-date="{{ $dateKey }}"
 							title="{{ $labelDate }}">
                                 <div class="dc-dow">{{ $dow }}</div>
                                 <div class="dc-date">{{ $day }}</div>
-                                <span class="dc-dot {{ $dayHasEvents ? '' : 'dc-dot--empty' }}" aria-hidden="true"></span>
+                                <span class="dc-dots" aria-hidden="true">
+									<span class="dc-dot {{ $dayHasEvents ? '' : 'dc-dot--empty' }}"></span>
+									@foreach($dayKindDots as $kindKey => $kindTitle)
+									<span class="dc-dot dc-dot--{{ $kindKey }}" title="{{ $kindTitle }}"></span>
+									@endforeach
+								</span>
 							</a>
                             @endforeach
                             <div class="tab-highlight"></div>

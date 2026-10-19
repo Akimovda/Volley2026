@@ -5277,15 +5277,29 @@ body.dark .wizard-pill.is-active {
 }
 .events-page .day-chip .dc-dow  { font-size: 12px; font-weight: 700; text-transform: uppercase; opacity: .7; }
 .events-page .day-chip .dc-date { font-weight: 700; font-size: 2.1rem; margin-top: 0.1rem; }
+.events-page .day-chip .dc-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
 .events-page .day-chip .dc-dot  {
     display: block;
     width: 0.6rem;
     height: 0.6rem;
     border-radius: 50%;
     background: #10b981;
-    margin: 0.5rem auto 0;
+    margin: 0;
 }
-.events-page .day-chip.last-tab .dc-dot { display: none; }
+/* Доп. кружки типов мероприятий дня (рядом с общим зелёным) */
+.events-page .day-chip .dc-dot--training   { background: #0a4500; }
+.events-page .day-chip .dc-dot--camp       { background: #cc1b00; }
+.events-page .day-chip .dc-dot--tournament { background: #ffd700; }
+/* Тёмная тема: тёмно-зелёный/красный теряются на фоне — тонкая светлая обводка */
+body.dark.events-page .day-chip .dc-dot--training,
+body.dark.events-page .day-chip .dc-dot--camp { box-shadow: 0 0 0 0.1rem rgba(255,255,255,.55); }
+.events-page .day-chip.last-tab .dc-dots { display: none; }
 /* День без мероприятий — точка резервирует место (не двигает высоту чипа), но невидима */
 .events-page .day-chip .dc-dot.dc-dot--empty { background: transparent; }
 .events-page .day-chip.last-tab .dc-date { font-size: 1.3rem; font-weight: 600; }
