@@ -365,7 +365,7 @@ return [
     'rally_opp_error_row'      => 'Ошибка соперника',
     'rally_opp_player_label'   => 'Игрок соперника',
     'rally_action_ace'         => 'Эйс',
-    'rally_action_kill'        => 'Килл',
+    'rally_action_kill'        => 'Атака',
     'rally_action_block'       => 'Блок',
     'rally_action_opp_serve_error'     => 'Ош. подачи соперника',
     'rally_action_opp_attack_error'    => 'Ош. атаки соперника',
