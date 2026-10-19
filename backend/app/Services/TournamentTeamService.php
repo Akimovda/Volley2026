@@ -40,7 +40,7 @@ final class TournamentTeamService
                     throw new DomainException('Для капитана классической команды нужно указать амплуа.');
                 }
 
-                $scheme = $settings?->getGameScheme() ?? '5x1';
+                $scheme = $this->resolveScheme($event ?? $team->event, $settings);
                 $allowedPositions = array_keys((array) config("volleyball.classic.{$scheme}.positions", []));
 
                 if (!in_array($captainPositionCode, $allowedPositions, true)) {
@@ -249,10 +249,10 @@ final class TournamentTeamService
 
         $team->loadMissing(['event.tournamentSetting', 'members.user']);
         $settings = $this->getSettings($team->event);
-        $scheme = $settings?->getGameScheme() ?? '5x1';
+        $scheme = $this->resolveScheme($event ?? $team->event, $settings);
 
         $positions = (array) config("volleyball.classic.{$scheme}.positions", []);
-        if ($settings?->require_libero && !array_key_exists('libero', $positions)) {
+        if ($this->requiresLibero($settings, $scheme) && !array_key_exists('libero', $positions)) {
             $positions['libero'] = 1;
         }
 
@@ -1092,7 +1092,7 @@ final class TournamentTeamService
         $issues = [];
     
         if ($team->team_kind === 'classic_team') {
-            $scheme = $settings?->getGameScheme() ?? '5x1';
+            $scheme = $this->resolveScheme($event ?? $team->event, $settings);
             $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
     
             foreach ($requiredPositions as $position => $requiredCount) {
@@ -1103,7 +1103,7 @@ final class TournamentTeamService
                 }
             }
     
-            if ($settings?->require_libero) {
+            if ($this->requiresLibero($settings, $scheme)) {
                 $hasLibero = $confirmed->contains('position_code', 'libero');
                 if (!$hasLibero) {
                     $issues[] = 'В составе отсутствует либеро';
@@ -1155,7 +1155,7 @@ final class TournamentTeamService
         $settings = $this->getSettings($team->event);
     
         $scheme = $settings?->getGameScheme()
-            ?? ($team->team_kind === 'beach_pair' ? '2x2' : '5x1');
+            ?? ($team->team_kind === 'beach_pair' ? '2x2' : $this->resolveScheme($team->event, $settings));
     
         if ($team->team_kind === 'beach_pair') {
             $base = match ($scheme) {
@@ -1193,6 +1193,31 @@ final class TournamentTeamService
         return $base;
     }
     
+    /**
+     * Схема классики: из настроек турнира, а для обычной командной игры
+     * (без event_tournament_settings) — из event_game_settings (5x1 + with_libero → 5x1_libero).
+     */
+    private function resolveScheme(Event $event, ?EventTournamentSetting $settings): string
+    {
+        if ($settings) {
+            return $settings->getGameScheme();
+        }
+
+        $gs = $event->gameSettings;
+        $subtype = (string) ($gs?->subtype ?? '5x1');
+
+        if ($subtype === '5x1' && (string) ($gs?->libero_mode ?? '') === 'with_libero') {
+            return '5x1_libero';
+        }
+
+        return $subtype;
+    }
+
+    private function requiresLibero(?EventTournamentSetting $settings, string $scheme): bool
+    {
+        return (bool) ($settings?->require_libero) || $scheme === '5x1_libero';
+    }
+
     private function getSettings(Event $event): ?EventTournamentSetting
     {
         return $event->relationLoaded('tournamentSetting')
