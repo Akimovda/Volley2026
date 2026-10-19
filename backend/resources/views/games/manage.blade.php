@@ -69,13 +69,20 @@
                     @endif
                     <a class="btn btn-outline" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
                     <a class="btn btn-outline" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
-                    <form method="POST" action="{{ route('game.bot-team.add', $event) }}" class="form" style="display:inline">
-                        @csrf
-                        <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
-                        <button type="submit" class="btn btn-outline" title="{{ __('games.bot_team_hint') }}">🤖 {{ __('games.bot_team_add') }}</button>
-                    </form>
                 </div>
             </div>
+        </div>
+
+        {{-- Команда из ботов --}}
+        <div class="ramka">
+            <h2 class="-mt-05">🤖 {{ __('games.bot_team_add') }}</h2>
+            <div class="f-14 mb-1" style="opacity:.65">{{ __('games.bot_team_hint') }}</div>
+            <form method="POST" action="{{ route('game.bot-team.add', $event) }}" class="form gm-color-row">
+                @csrf
+                <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+                <input type="text" name="team_name" maxlength="60" value="{{ old('team_name') }}" placeholder="{{ __('games.bot_team_name_ph') }}" style="max-width:32rem">
+                <button type="submit" class="btn btn-outline">{{ __('games.bot_team_btn') }}</button>
+            </form>
         </div>
 
         {{-- Новый матч: формат + составы --}}
