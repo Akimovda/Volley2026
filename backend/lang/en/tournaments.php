@@ -365,7 +365,7 @@ return [
     'rally_btn_add_point'      => 'Point',
     'rally_btn_pdf_stats'      => 'Export match stats to PDF',
     'rally_no_attempts_note'   => 'Serve/attack attempts are not counted automatically — refine them on the stats page if needed.',
-    'rally_hint_two_ways'      => 'Before adding a point, first choose: "🏐 Own point" — if the point was won by YOUR team\'s own action (ace/kill/block, with the player), or "⚠ Opponent error" — if the point was won because of the OPPONENT\'s mistake (on serve/attack/block/reception).',
+    'rally_hint_two_ways'      => 'Before adding a point, first choose: "🏐 Own point" — if the point was won by YOUR team\'s own action (ace/attack/block, with the player), or "⚠ Opponent error" — if the point was won because of the OPPONENT\'s mistake (on serve/attack/block/reception).',
     'rally_add_point_title'    => 'Add a point',
     'rally_own_action_btn'     => 'Own point',
     'rally_who_scored'         => 'Who scored',

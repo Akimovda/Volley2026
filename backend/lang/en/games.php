@@ -82,7 +82,7 @@ return [
     'col_diff'           => '+/−',
     'col_points'         => 'Pts',
     'col_aces'           => 'Aces',
-    'col_kills'          => 'Kills',
+    'col_kills'          => 'Attacks',
     'col_blocks'         => 'Blocks',
     'board_empty'        => 'Results will appear after the first finished match.',
 
