@@ -24,6 +24,7 @@ return [
     'event_teams_hint'   => 'A team chosen as side “1” or “2” plays the match as is — players from the list below are ignored for that side.',
     'event_team_players' => 'players: :n',
     'event_team_incomplete' => 'roster incomplete',
+    'event_team_complete_link' => 'Complete the roster',
     'roster_add_link'    => 'Add players',
     'team_a'             => 'Team 1',
     'team_b'             => 'Team 2',

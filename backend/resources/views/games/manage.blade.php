@@ -157,10 +157,13 @@
                     <div class="gm-row">
                         <div class="gm-who">
                             <div style="min-width:0">
-                                <div class="b-600">{{ $t->name }}</div>
+                                <div class="b-600"><a class="blink" href="{{ route('tournamentTeams.show', [$event, $t]) }}">{{ $t->name }}</a></div>
                                 <div class="gm-lvl">
                                     {{ __('games.event_team_players', ['n' => $t->members->count()]) }}
-                                    @if(!$t->is_complete) · ⚠️ {{ __('games.event_team_incomplete') }} @endif
+                                    @if(!$t->is_complete)
+                                        · ⚠️ {{ __('games.event_team_incomplete') }}
+                                        · <a class="blink" href="{{ route('tournamentTeams.show', [$event, $t]) }}">{{ __('games.event_team_complete_link') }} →</a>
+                                    @endif
                                 </div>
                             </div>
                         </div>
