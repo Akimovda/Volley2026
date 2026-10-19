@@ -80,6 +80,18 @@
 					'tournament_teams_reserve'    => $teamsReserve,
 				];
 
+				if ($this->isTeamGame($event)) {
+					$gMax   = (int) $occurrence->effectiveMaxPlayers();
+					$gReg   = $this->teamGamePlayersCount($occurrence);
+					$gTotal = $gMax + (int) ($event->gameSettings?->reserve_players_max ?? 0);
+					$teamsMeta += [
+						'max_players'      => $gMax,
+						'total_capacity'   => $gTotal,
+						'registered_total' => $gReg,
+						'remaining_total'  => max(0, $gTotal - $gReg),
+					];
+				}
+
 				if (
 					$occurrence->starts_at &&
 					$nowUtc->greaterThanOrEqualTo(Carbon::parse($occurrence->starts_at, 'UTC'))
@@ -1398,6 +1410,24 @@
 			|--------------------------------------------------------------------------
 		*/
 		
+		private function isTeamGame($event): bool
+		{
+			return $event->format === 'game'
+				&& in_array((string) ($event->registration_mode ?? ''), ['team', 'team_classic', 'team_beach'], true);
+		}
+
+		/** Подтверждённые игроки основных (не резервных, не friendly) команд тура. */
+		private function teamGamePlayersCount(EventOccurrence $occurrence): int
+		{
+			return \App\Models\EventTeamMember::where('confirmation_status', 'confirmed')
+				->whereHas('team', fn ($q) => $q->where('event_id', $occurrence->event_id)
+					->where(fn ($q2) => $q2->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+					->whereIn('status', ['ready','pending','pending_members','submitted','confirmed','approved'])
+					->whereNull('reserve_position')
+					->where(fn ($q3) => $q3->whereNull('meta->friendly')->orWhere('meta->friendly', false)))
+				->count();
+		}
+
 		private function buildAvailabilitySnapshot(
 			EventOccurrence $occurrence,
 			Collection $registrations,
@@ -1410,6 +1440,11 @@
 		): void {
 			
 			$registeredTotal = $occurrence->registrations_count ?? $registrations->count();
+
+			// Командная игра: игроки в составах EventTeam, а не в event_registrations
+			if ($this->isTeamGame($occurrence->event)) {
+				$registeredTotal = $this->teamGamePlayersCount($occurrence);
+			}
 
 			$reserveMax = (int) ($occurrence->event->gameSettings?->reserve_players_max ?? 0);
 			$totalCapacity = $maxPlayers + $reserveMax;
