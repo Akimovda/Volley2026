@@ -32,7 +32,7 @@
 	];
 
 	$actionMarkers = [
-		'ace' => 'Э', 'kill' => 'К', 'block' => 'Б',
+		'ace' => 'Э', 'kill' => 'А', 'block' => 'Б',
 		'opp_serve_error' => 'ошП', 'opp_attack_error' => 'ошА',
 		'opp_block_error' => 'ошБ', 'opp_reception_error' => 'ошПр',
 		'unattributed' => '•',
