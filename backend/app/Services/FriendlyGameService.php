@@ -406,56 +406,53 @@ class FriendlyGameService
     }
 
     /**
-     * Записывает на тур команду из ботов системы: нужное число игроков на каждую позицию,
-     * только боты, проходящие требования мероприятия (возраст, уровень, гендерная политика/квота позиции),
-     * ещё не записанные на тур, и только если на позициях есть свободные места.
-     * Либо добавляется вся команда, либо ничего (транзакция).
+     * Создаёт на туре готовую команду из ботов системы (EventTeam, не индивидуальные записи):
+     * нужное число игроков на каждую позицию, только боты, проходящие требования мероприятия
+     * (возраст, уровень, гендерная политика позиции), не состоящие в других командах тура
+     * и не записанные индивидуально. Либо команда создаётся целиком, либо ничего (транзакция).
+     * Название задаёт организатор; пустое — генерируется автоматически.
      *
-     * @return int[] id добавленных ботов (в порядке состава)
-     * @throws InvalidArgumentException если полную команду собрать нельзя
+     * @return EventTeam созданная команда
+     * @throws InvalidArgumentException если команду собрать нельзя
      */
-    public function addBotTeam(Event $event, EventOccurrence $occurrence, User $actor): array
+    public function addBotTeam(Event $event, EventOccurrence $occurrence, User $actor, ?string $name = null): EventTeam
     {
         $composition = $this->botTeamComposition($event);
         if (!$composition) {
             throw new InvalidArgumentException('Для мероприятия не настроены позиции — состав команды определить нельзя.');
         }
 
+        $name = trim((string) $name);
+        if ($name !== '' && EventTeam::where('event_id', $event->id)->where('occurrence_id', $occurrence->id)->where('name', $name)->exists()) {
+            throw new InvalidArgumentException("Команда «{$name}» уже есть на этом туре — выберите другое название.");
+        }
+
+        $limit = (int) ($event->tournament_teams_count ?: ($event->gameSettings?->teams_count ?? 0));
+        if ($limit > 0 && $this->eventTeams($event, $occurrence->id)->filter(fn ($t) => $t->reserve_position === null)->count() >= $limit) {
+            throw new InvalidArgumentException("На туре уже собрано максимальное число команд ({$limit}).");
+        }
+
         $guard = app(EventRegistrationGuard::class);
         $occurrence->loadMissing('event.gameSettings');
 
-        return DB::transaction(function () use ($event, $occurrence, $actor, $composition, $guard) {
-            $added    = [];
-            $busyIds  = DB::table('event_registrations')
-                ->where('occurrence_id', $occurrence->id)
-                ->pluck('user_id')->all();
-            $isSingle = count($composition) === 1;
+        return DB::transaction(function () use ($event, $occurrence, $composition, $guard, $name) {
+            // Заняты: индивидуальные записи тура + участники любых команд тура
+            $busyIds = array_merge(
+                DB::table('event_registrations')->where('occurrence_id', $occurrence->id)->pluck('user_id')->all(),
+                DB::table('event_team_members')
+                    ->whereIn('event_team_id', DB::table('event_teams')->where('event_id', $event->id)->where('occurrence_id', $occurrence->id)->select('id'))
+                    ->pluck('user_id')->all(),
+            );
 
+            $members = []; // [user, role]
             foreach ($composition as $role => $need) {
-                // Тот же advisory-lock, что у прямой записи и листа ожидания
-                DB::select('select pg_advisory_xact_lock(?, ?)', [$occurrence->id, crc32($role) & 0x7fffffff]);
-
-                $taken = (int) DB::table('event_registrations')
-                    ->where('occurrence_id', $occurrence->id)
-                    ->whereNull('cancelled_at')
-                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-                    ->whereRaw("(status IS NULL OR status != 'cancelled')")
-                    ->where('position', $role)
-                    ->count();
-                $max = (int) optional(app(EventRoleSlotService::class)->getSlots($event)->firstWhere('role', $role))->max_slots;
-                if ($max > 0 && $taken + $need > $max) {
-                    throw new InvalidArgumentException("Не хватает свободных мест на позиции «{$role}»: нужно {$need}, свободно " . max(0, $max - $taken) . '.');
-                }
-
-                $picked = 0;
                 $candidates = User::query()
                     ->where('is_bot', true)
                     ->whereNull('deleted_at')
-                    ->whereNotIn('id', array_merge($busyIds, $added))
-                    ->inRandomOrder()
-                    ->limit(200)
-                    ->get();
+                    ->whereNotIn('id', array_merge($busyIds, array_map(fn ($m) => $m[0]->id, $members)))
+                    ->inRandomOrder()->limit(200)->get();
 
+                $picked = 0;
                 foreach ($candidates as $bot) {
                     if ($picked >= $need) {
                         break;
@@ -463,32 +460,7 @@ class FriendlyGameService
                     if (!$guard->checkStaticEligibility($bot, $occurrence, $role)->allowed) {
                         continue;
                     }
-                    if (!$guard->checkGenderQuotaForUser($bot, $occurrence, null, $role)->allowed) {
-                        continue;
-                    }
-
-                    $regId = DB::table('event_registrations')->insertGetId([
-                        'event_id'      => $event->id,
-                        'occurrence_id' => $occurrence->id,
-                        'user_id'       => $bot->id,
-                        'status'        => 'confirmed',
-                        'position'      => $role,
-                        'cancelled_at'  => null,
-                        'created_at'    => now(),
-                        'updated_at'    => now(),
-                    ]);
-                    if (\Illuminate\Support\Facades\Schema::hasTable('event_registration_logs')) {
-                        DB::table('event_registration_logs')->insert([
-                            'registration_id' => $regId,
-                            'event_id'        => $event->id,
-                            'occurrence_id'   => $occurrence->id,
-                            'user_id'         => $bot->id,
-                            'actor_id'        => $actor->id,
-                            'action'          => 'registered',
-                            'created_at'      => now(),
-                        ]);
-                    }
-                    $added[] = $bot->id;
+                    $members[] = [$bot, $role];
                     $picked++;
                 }
 
@@ -497,7 +469,38 @@ class FriendlyGameService
                 }
             }
 
-            return $added;
+            if ($name === '') {
+                $name = app(TournamentTeamNamingService::class)->generate($event, collect(array_map(fn ($m) => $m[0], $members)), $occurrence->id);
+            }
+
+            $team = EventTeam::create([
+                'event_id'        => $event->id,
+                'occurrence_id'   => $occurrence->id,
+                'captain_user_id' => $members[0][0]->id,
+                'name'            => $name,
+                'team_kind'       => $event->direction === 'beach' ? 'beach_pair' : 'classic_team',
+                'status'          => 'approved',
+                'invite_code'     => Str::upper(Str::random(10)),
+                'is_complete'     => true,
+                'confirmed_at'    => now(),
+                'meta'            => ['bots' => true],
+            ]);
+
+            foreach ($members as $i => [$bot, $role]) {
+                EventTeamMember::create([
+                    'event_team_id'       => $team->id,
+                    'user_id'             => $bot->id,
+                    'role_code'           => $i === 0 ? 'captain' : 'player',
+                    'team_role'           => $i === 0 ? 'captain' : 'player',
+                    'position_code'       => $role === 'player' ? null : $role,
+                    'confirmation_status' => 'confirmed',
+                    'position_order'      => $i + 1,
+                    'joined_at'           => now(),
+                    'confirmed_at'        => now(),
+                ]);
+            }
+
+            return $team;
         });
     }
 

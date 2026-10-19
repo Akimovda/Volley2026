@@ -1051,6 +1051,50 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 			<div class="f-14 cd mb-2">{{ __('events.player_quality', ['value' => number_format($player_quality, 2, '.', ''), 'max' => 7]) }}</div>
 			@endif
 
+			@php
+			$teamGameList = $event->format === 'game' && in_array((string) ($event->registration_mode ?? ''), ['team', 'team_classic', 'team_beach'], true);
+			@endphp
+			@if($teamGameList)
+			@php
+			$gameTeams = \App\Models\EventTeam::where('event_id', $event->id)
+				->where(fn($q) => $q->where('occurrence_id', $occurrence->id)->orWhereNull('occurrence_id'))
+				->whereIn('status', ['ready','pending_members','draft','submitted','pending','confirmed','approved','incomplete'])
+				->whereNull('reserve_position')
+				->with(['members' => fn($q) => $q->where('confirmation_status', 'confirmed'), 'members.user'])
+				->orderByRaw("CASE WHEN status IN ('ready','submitted','confirmed','approved') THEN 0 ELSE 1 END")
+				->orderBy('name')->get()
+				->reject(fn($t) => !empty($t->meta['friendly']))->values();
+			@endphp
+			@if($gameTeams->isEmpty())
+			<div class="alert alert-info">{{ __('events.show_pl_no_teams') }}</div>
+			@else
+			@foreach($gameTeams as $gTeam)
+			@php
+			$gMembers = $gTeam->members->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
+			$gStatus  = $teamStatusMap[$gTeam->status] ?? ['label' => $gTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
+			@endphp
+			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
+				<div class="d-flex between fvc mb-05">
+					<div class="d-flex fvc" style="gap:.5rem">
+						<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0">#{{ $loop->iteration }}</span>
+						<a href="{{ route('tournamentTeams.show', [$event, $gTeam]) }}" class="blink f-15 b-600">{{ $gTeam->name }}</a>
+					</div>
+					<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:{{ $gStatus['bg'] }};color:{{ $gStatus['color'] }}">{{ $gStatus['label'] }}</span>
+				</div>
+				<div class="f-14">
+					@foreach($gMembers as $gm)
+					@php $gu = $gm->user; $gn = $gu ? (trim(($gu->last_name ?? '') . ' ' . ($gu->first_name ?? '')) ?: $gu->name) : '?'; @endphp
+					<div>
+						@if($gu)<a href="{{ route('users.show', $gu->id) }}" class="blink">{{ $gn }}</a>@else{{ $gn }}@endif
+						@if($gm->role_code === 'captain') <span style="opacity:.6">· ©</span>@endif
+						@if($gm->position_code) <span style="opacity:.6">· {{ position_name($gm->position_code) }}</span>@endif
+					</div>
+					@endforeach
+				</div>
+			</div>
+			@endforeach
+			@endif
+			@else
 			@if($event->format === 'tournament' && !$isIndividualTournament)
 			@php
             $allTournamentTeams = \App\Models\EventTeam::where('event_id', $event->id)
@@ -1238,6 +1282,7 @@ $showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
 				<div class="text-muted small b-600 mb-05"><x-menu-icon name="players" class="cd" style="width:1.5rem;height:1.5rem;vertical-align:-0.25rem;margin-right:0.3rem" /> {{ __('events.show_pl_reserve_players') }}</div>
 				<div id="reserve-players-list"></div>
 			</div>
+			@endif
 			@endif
 			@endif
 		</div>
