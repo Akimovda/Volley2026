@@ -724,14 +724,16 @@ $genderWindowOpensAt   = isset($join->meta['gender_window_opens_at'])
 // когда заняты классические позиции ИЛИ когда гендерное окно закрыто (встать в очередь
 // разрешено до открытия окна). Скрываем если пользователь уже записан в состав
 // (включая запасные места) — ему нечего делать в очереди.
-$showWaitlistJoinForm = !$isTournament && !$eventStarted && auth()->check() && !$isRegistered && (
+// Командная игра (format=game, registration_mode=team*): записываются командами, индивидуальной очереди нет
+$isTeamGameWl = $event->format === 'game' && in_array($regMode, ['team', 'team_classic', 'team_beach'], true);
+$showWaitlistJoinForm = !$isTournament && !$isTeamGameWl && !$eventStarted && auth()->check() && !$isRegistered && (
     $isFull || ($isClassic && !empty($occupiedPositions)) || $genderWindowClosed
 );
 
 // Блок «просмотр очереди» — открыт всем (не только организатору/админу), кто видит
 // страницу события: список содержит только имя/позицию, без контактов и ссылок на
 // профиль. Не зависит от того, зарегистрирован ли сам смотрящий.
-$showWaitlistViewer = !$isTournament && !$eventStarted && $waitlistCount > 0;
+$showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $waitlistCount > 0;
 @endphp
 
 @if($showWaitlistJoinForm || $showWaitlistViewer)
