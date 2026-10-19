@@ -334,6 +334,121 @@ class FriendlyGameService
         return ['type' => 'players', 'items' => array_slice($playerRows, 0, 3)];
     }
 
+    /**
+     * Состав одной команды по настройкам мероприятия: роль => сколько игроков.
+     * Берётся из слотов позиций (max_slots / число команд), запасные не считаются.
+     *
+     * @return array<string,int>
+     */
+    public function botTeamComposition(Event $event): array
+    {
+        $slots = app(EventRoleSlotService::class)->getSlots($event)->where('role', '!=', 'reserve');
+        $teams = max(1, (int) ($event->gameSettings?->teams_count ?? 2));
+
+        $composition = [];
+        foreach ($slots as $slot) {
+            $composition[$slot->role] = max(1, intdiv((int) $slot->max_slots, $teams));
+        }
+
+        return $composition;
+    }
+
+    /**
+     * Записывает на тур команду из ботов системы: нужное число игроков на каждую позицию,
+     * только боты, проходящие требования мероприятия (возраст, уровень, гендерная политика/квота позиции),
+     * ещё не записанные на тур, и только если на позициях есть свободные места.
+     * Либо добавляется вся команда, либо ничего (транзакция).
+     *
+     * @return int[] id добавленных ботов (в порядке состава)
+     * @throws InvalidArgumentException если полную команду собрать нельзя
+     */
+    public function addBotTeam(Event $event, EventOccurrence $occurrence, User $actor): array
+    {
+        $composition = $this->botTeamComposition($event);
+        if (!$composition) {
+            throw new InvalidArgumentException('Для мероприятия не настроены позиции — состав команды определить нельзя.');
+        }
+
+        $guard = app(EventRegistrationGuard::class);
+        $occurrence->loadMissing('event.gameSettings');
+
+        return DB::transaction(function () use ($event, $occurrence, $actor, $composition, $guard) {
+            $added    = [];
+            $busyIds  = DB::table('event_registrations')
+                ->where('occurrence_id', $occurrence->id)
+                ->pluck('user_id')->all();
+            $isSingle = count($composition) === 1;
+
+            foreach ($composition as $role => $need) {
+                // Тот же advisory-lock, что у прямой записи и листа ожидания
+                DB::select('select pg_advisory_xact_lock(?, ?)', [$occurrence->id, crc32($role) & 0x7fffffff]);
+
+                $taken = (int) DB::table('event_registrations')
+                    ->where('occurrence_id', $occurrence->id)
+                    ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->whereRaw("(status IS NULL OR status != 'cancelled')")
+                    ->where('position', $role)
+                    ->count();
+                $max = (int) optional(app(EventRoleSlotService::class)->getSlots($event)->firstWhere('role', $role))->max_slots;
+                if ($max > 0 && $taken + $need > $max) {
+                    throw new InvalidArgumentException("Не хватает свободных мест на позиции «{$role}»: нужно {$need}, свободно " . max(0, $max - $taken) . '.');
+                }
+
+                $picked = 0;
+                $candidates = User::query()
+                    ->where('is_bot', true)
+                    ->whereNull('deleted_at')
+                    ->whereNotIn('id', array_merge($busyIds, $added))
+                    ->inRandomOrder()
+                    ->limit(200)
+                    ->get();
+
+                foreach ($candidates as $bot) {
+                    if ($picked >= $need) {
+                        break;
+                    }
+                    if (!$guard->checkStaticEligibility($bot, $occurrence, $role)->allowed) {
+                        continue;
+                    }
+                    if (!$guard->checkGenderQuotaForUser($bot, $occurrence, null, $role)->allowed) {
+                        continue;
+                    }
+
+                    $regId = DB::table('event_registrations')->insertGetId([
+                        'event_id'      => $event->id,
+                        'occurrence_id' => $occurrence->id,
+                        'user_id'       => $bot->id,
+                        'status'        => 'confirmed',
+                        'position'      => $role,
+                        'cancelled_at'  => null,
+                        'created_at'    => now(),
+                        'updated_at'    => now(),
+                    ]);
+                    if (\Illuminate\Support\Facades\Schema::hasTable('event_registration_logs')) {
+                        DB::table('event_registration_logs')->insert([
+                            'registration_id' => $regId,
+                            'event_id'        => $event->id,
+                            'occurrence_id'   => $occurrence->id,
+                            'user_id'         => $bot->id,
+                            'actor_id'        => $actor->id,
+                            'action'          => 'registered',
+                            'created_at'      => now(),
+                        ]);
+                    }
+                    $added[] = $bot->id;
+                    $picked++;
+                }
+
+                if ($picked < $need) {
+                    throw new InvalidArgumentException("Не нашлось достаточно подходящих ботов для позиции «{$role}» (нужно {$need}, подошло {$picked}) — проверьте уровень/возраст/пол в требованиях мероприятия.");
+                }
+            }
+
+            return $added;
+        });
+    }
+
     /** @param int[] $userIds */
     private function createTeam(Event $event, int $occurrenceId, array $userIds, string $name, string $color): EventTeam
     {

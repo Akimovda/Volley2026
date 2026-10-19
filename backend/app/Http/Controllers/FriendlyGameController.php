@@ -54,6 +54,11 @@ class FriendlyGameController extends Controller
             }
         }
 
+        // Только что добавленная команда ботов — сразу во второй состав
+        if ($bots = array_filter(array_map('intval', explode(',', (string) $request->query('bots', ''))))) {
+            $prefill['away'] = array_values(array_intersect($bots, $roster->pluck('id')->all()));
+        }
+
         $occurrences = EventOccurrence::where('event_id', $event->id)
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->orderByDesc('starts_at')->limit(30)->get();
@@ -106,6 +111,30 @@ class FriendlyGameController extends Controller
         return redirect()
             ->route('tournament.matches.score.form', $match)
             ->with('success', "Матч №{$match->match_number} создан. Введите счёт (или перейдите на поочковый ввод со статистикой).");
+    }
+
+    /** Записать на тур команду из ботов системы (подходящих под требования мероприятия) */
+    public function addBotTeam(Request $request, Event $event): RedirectResponse
+    {
+        $this->authorizeManage($request, $event);
+
+        $data       = $request->validate(['occurrence_id' => ['required', 'integer']]);
+        $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
+
+        try {
+            $ids = $this->games->addBotTeam($event, $occurrence, $request->user());
+        } catch (\InvalidArgumentException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        // Анонс в каналах — как при ручном добавлении игроков
+        if (\Illuminate\Support\Facades\DB::table('event_notification_channels')->where('event_id', $event->id)->exists()) {
+            \App\Jobs\RefreshOccurrenceAnnouncementJob::dispatch($occurrence->id)->onQueue('default');
+        }
+
+        return redirect()
+            ->route('game.manage', [$event, 'occurrence' => $occurrence->id, 'bots' => implode(',', $ids)])
+            ->with('success', 'Команда из ' . count($ids) . ' ботов добавлена и отмечена как «2» — можно создавать матч.');
     }
 
     /** Формат матча (партии/очки) — конфиг служебной стадии */
