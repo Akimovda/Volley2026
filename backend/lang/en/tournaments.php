@@ -349,7 +349,7 @@ return [
     'rally_opp_error_row'      => 'Opponent error',
     'rally_opp_player_label'   => "Opponent's player",
     'rally_action_ace'         => 'Ace',
-    'rally_action_kill'        => 'Kill',
+    'rally_action_kill'        => 'Attack',
     'rally_action_block'       => 'Block',
     'rally_action_opp_serve_error'     => 'Opponent serve error',
     'rally_action_opp_attack_error'    => 'Opponent attack error',
