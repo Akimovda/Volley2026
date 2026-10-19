@@ -70,6 +70,7 @@ class FriendlyGameController extends Controller
             'stage'       => $stage,
             'config'      => $stage?->config ?? $this->games->defaultConfig(),
             'roster'      => $roster,
+            'eventTeams'  => $this->games->eventTeams($event, $occurrence->id),
             'positions'   => $this->games->positions($occurrence->id),
             'matches'     => $matches,
             'board'       => $board,
@@ -89,9 +90,20 @@ class FriendlyGameController extends Controller
             'side.*'        => ['nullable', 'in:home,away'],
             'home_color'    => ['required', 'string'],
             'away_color'    => ['required', 'string'],
+            'team_side'     => ['nullable', 'array'],
+            'team_side.*'   => ['nullable', 'in:home,away'],
         ]);
 
         $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
+
+        $homeTeamId = $awayTeamId = null;
+        foreach ((array) ($data['team_side'] ?? []) as $tid => $side) {
+            if ($side === 'home') {
+                $homeTeamId = (int) $tid;
+            } elseif ($side === 'away') {
+                $awayTeamId = (int) $tid;
+            }
+        }
 
         $home = $away = [];
         foreach ((array) ($data['side'] ?? []) as $uid => $side) {
@@ -103,7 +115,7 @@ class FriendlyGameController extends Controller
         }
 
         try {
-            $match = $this->games->createMatch($event, $occurrence->id, $home, $away, $data['home_color'], $data['away_color']);
+            $match = $this->games->createMatch($event, $occurrence->id, $home, $away, $data['home_color'], $data['away_color'], $homeTeamId, $awayTeamId);
         } catch (\InvalidArgumentException $e) {
             return back()->withInput()->with('error', $e->getMessage());
         }
