@@ -9,6 +9,7 @@
 	@var \App\Models\TournamentMatch $match
 	@var \App\Models\Event $event
 --}}
+@include('tournaments._partials.lineup_popup_js')
 @if(!empty($matchProgress['has_progress']))
 @include('tournaments._partials.match_progress', ['progress' => $matchProgress, 'match' => $match, 'event' => $event])
 @else

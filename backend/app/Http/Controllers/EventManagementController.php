@@ -987,6 +987,7 @@ if ($role === 'admin') {
             'is_outdoor'               => ['sometimes', 'boolean'],
             'collect_stats'            => ['sometimes', 'boolean'],
             'stats_rated'              => ['sometimes', 'boolean'],
+            'track_lineup'             => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
             'description_html'         => ['nullable', 'string'],
@@ -1443,6 +1444,9 @@ if ($role === 'admin') {
                     ? (($data['game_reserve_players_max'] === '' || $data['game_reserve_players_max'] === null) ? null : (int) $data['game_reserve_players_max'])
                     : null,
                 'registration_without_positions' => $noPosApplicable ? $noPosNew : null,
+                // «Вести стартовый состав и замены»: только классика; пляж/прочее не затрагиваем
+                'track_lineup' => (array_key_exists('track_lineup', $data) && ($event->direction ?? 'classic') === 'classic')
+                    ? (bool) $data['track_lineup'] : null,
             ], static fn ($v) => $v !== null);
     
             if (!isset($gsPayload['subtype']) && !$event->gameSettings) {
@@ -1582,6 +1586,8 @@ if ($role === 'admin') {
                     'auto_submit_when_ready'       => array_key_exists('tournament_auto_submit_when_ready', $data) ? (bool) $data['tournament_auto_submit_when_ready'] : null,
                     'allow_incomplete_application' => array_key_exists('tournament_allow_incomplete_application', $data) ? (bool) $data['tournament_allow_incomplete_application'] : null,
                     'payment_mode'                 => $payMode,
+                    'track_lineup'                 => (array_key_exists('track_lineup', $data) && !$isBeach)
+                        ? (bool) $data['track_lineup'] : null,
                 ], static fn ($v) => $v !== null);
 
                 \App\Models\EventTournamentSetting::updateOrCreate(

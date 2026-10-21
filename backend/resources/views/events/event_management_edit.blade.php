@@ -1418,6 +1418,21 @@
                         </div>
                         @endif
 
+                        @if(($event->direction ?? 'classic') !== 'beach' && in_array($event->format ?? null, ['game', 'tournament'], true))
+                        @php $trackLineupVal = ($event->format === 'tournament') ? ($event->tournamentSetting?->track_lineup ?? false) : ($event->gameSettings?->track_lineup ?? false); @endphp
+                        <div class="col-md-4">
+                            <div class="card" style="overflow:visible">
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="track_lineup" value="0">
+                                    <input type="checkbox" name="track_lineup" value="1" @checked(old('track_lineup', $trackLineupVal))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.track_lineup_label') }}</span>
+                                </label>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.track_lineup_hint') }}</div>
+                            </div>
+                        </div>
+                        @endif
+
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.show_participants_label') }}</label>

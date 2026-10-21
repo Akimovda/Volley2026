@@ -19,6 +19,7 @@ class EventTournamentSetting extends Model
 
         // правила
         'require_libero',
+        'track_lineup',
         'max_rating_sum',
         'allow_reserves',
         'captain_confirms_members',
@@ -40,6 +41,7 @@ class EventTournamentSetting extends Model
 
     protected $casts = [
         'require_libero' => 'boolean',
+        'track_lineup' => 'boolean',
         'allow_reserves' => 'boolean',
         'captain_confirms_members' => 'boolean',
         'auto_submit_when_ready' => 'boolean',

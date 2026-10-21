@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\MatchPlayerStats;
+use App\Models\MatchSetLineup;
 use App\Models\PlayerCareerStats;
 use App\Models\PlayerOpponentStats;
 use App\Models\PlayerPairStats;
@@ -333,6 +334,27 @@ class UserMergeService
                     'assists', 'points_scored',
                 ]
             );
+
+            // 14b-2. Поочковый ввод и состав. Ключ строк состава — (match, set, team, user): при конфликте
+            // (оба игрока в одном составе) строка secondary удаляется, строка primary остаётся.
+            $this->mergeUserOwnedRows(
+                MatchSetLineup::class,
+                $primary->id,
+                $secondary->id,
+                ['match_id', 'set_number', 'team_id'],
+                []
+            );
+            foreach ([
+                ['match_rally_events', ['player_id', 'dig_user_id', 'assist_user_id', 'recorded_by_user_id']],
+                ['match_lineup_events', ['out_user_id', 'in_user_id', 'recorded_by_user_id']],
+                ['match_set_starts', ['recorded_by_user_id']],
+                ['match_set_lineups', ['recorded_by_user_id']],
+                ['match_action_log', ['recorded_by_user_id']],
+            ] as [$table, $columns]) {
+                foreach ($columns as $column) {
+                    DB::table($table)->where($column, $secondary->id)->update([$column => $primary->id]);
+                }
+            }
 
             // 14c. tournament_season_stats — unique(season_id, league_id, user_id)
             $this->mergeUserOwnedRows(

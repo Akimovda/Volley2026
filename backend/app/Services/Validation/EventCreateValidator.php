@@ -197,6 +197,7 @@
             ],
 
             'game_registration_by_positions' => ['nullable', 'boolean'],
+            'track_lineup' => ['nullable', 'boolean'],
 
             'game_allow_girls' => ['nullable','boolean'],
 			

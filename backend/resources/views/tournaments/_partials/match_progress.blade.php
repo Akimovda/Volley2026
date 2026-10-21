@@ -42,6 +42,24 @@ $posFull = [
 		</div>
 		<div class="rp-feed">
 			@foreach($set['rallies'] as $r)
+			@if(($r['kind'] ?? 'point') !== 'point')
+			@php $liKind = $r['kind'] === 'substitution' ? 'sub' : 'libero'; @endphp
+			<div class="rp-row rp-row--lineup" role="button" tabindex="0" data-lineup-popup="{{ json_encode($r['popup'], JSON_UNESCAPED_UNICODE) }}">
+				@foreach(['home', 'away'] as $side)
+				@php $filled = $r['team_side'] === $side; @endphp
+				<div class="rp-cell rp-cell--{{ $side }}{{ $filled ? ' rp-cell--filled rp-cell--lineup' : '' }}">
+				@if($filled)
+					<div class="rp-event">
+						<div class="rp-action lu-line lu-line--{{ $liKind }}">@include('tournaments._partials.icon_sub', ['kind' => $liKind, 'size' => 16]) {{ $r['label'] }}</div>
+						<div class="rp-position">{{ $r['summary'] }}</div>
+					</div>
+				@endif
+				</div>
+				@endforeach
+				<div class="rp-score">{{ $r['score_home'] }}:{{ $r['score_away'] }}</div>
+			</div>
+			@continue
+			@endif
 			@php
 			$actionLabel = $r['action_type'] === 'unattributed'
 				? __('tournaments.rally_team_point')

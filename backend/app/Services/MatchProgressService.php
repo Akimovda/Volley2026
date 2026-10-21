@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\MatchLineupEvent;
 use App\Models\MatchRallyEvent;
 use App\Models\TournamentMatch;
 use App\Models\User;
@@ -25,14 +26,15 @@ class MatchProgressService
     /**
      * @return array{has_progress: bool, sets: array<int, array{rallies: array, final_score: array{home:int,away:int}}>}
      */
-    public function build(int $matchId): array
+    public function build(int $matchId, bool $withRecorder = false): array
     {
         $match = TournamentMatch::findOrFail($matchId);
         $events = MatchRallyEvent::where('match_id', $matchId)
-            ->orderBy('set_number')->orderBy('id')
+            ->orderBy('set_number')->orderBy('seq')
             ->get();
+        $lineup = MatchLineupEvent::where('match_id', $matchId)->orderBy('set_number')->orderBy('seq')->get();
 
-        return $this->assemble($match, $events);
+        return $this->assemble($match, $events, $lineup, $withRecorder);
     }
 
     /**
@@ -50,40 +52,69 @@ class MatchProgressService
         }
 
         $allEvents = MatchRallyEvent::whereIn('match_id', $matchIds)
-            ->orderBy('set_number')->orderBy('id')
+            ->orderBy('set_number')->orderBy('seq')
+            ->get()
+            ->groupBy('match_id');
+        $allLineup = MatchLineupEvent::whereIn('match_id', $matchIds)
+            ->orderBy('set_number')->orderBy('seq')
             ->get()
             ->groupBy('match_id');
 
         $result = [];
         foreach ($matches as $match) {
-            $result[$match->id] = $this->assemble($match, $allEvents->get($match->id, collect()));
+            $result[$match->id] = $this->assemble(
+                $match, $allEvents->get($match->id, collect()), $allLineup->get($match->id, collect())
+            );
         }
 
         return $result;
     }
 
     /**
-     * @param Collection<int, MatchRallyEvent> $events уже отсортированы set_number, id
+     * Очки и события состава вперемешку, по seq внутри партии. Элементы:
+     * kind=point (как раньше, плюс 'kind') | substitution | libero_in | libero_out.
+     * Счёт на момент события состава — снимок score_home/away самого события.
+     *
+     * @param Collection<int, MatchRallyEvent> $events уже отсортированы set_number, seq
+     * @param Collection<int, MatchLineupEvent> $lineup уже отсортированы set_number, seq
      */
-    private function assemble(TournamentMatch $match, Collection $events): array
+    private function assemble(TournamentMatch $match, Collection $events, ?Collection $lineup = null, bool $withRecorder = false): array
     {
-        if ($events->isEmpty()) {
+        $lineup ??= collect();
+        if ($events->isEmpty() && $lineup->isEmpty()) {
             return ['has_progress' => false, 'sets' => []];
         }
 
-        $players = $this->resolvePlayers($match, $events->pluck('player_id')->filter()->unique());
+        $playerIds = $events->pluck('player_id')
+            ->merge($lineup->pluck('out_user_id'))->merge($lineup->pluck('in_user_id'))
+            ->filter()->unique();
+        $players = $this->resolvePlayers($match, $playerIds);
+        $tz = $match->stage?->event?->timezone ?: 'Europe/Moscow';
+
+        $setNumbers = $events->pluck('set_number')->merge($lineup->pluck('set_number'))->unique()->sort()->values();
+        $eventsBySet = $events->groupBy('set_number');
+        $lineupBySet = $lineup->groupBy('set_number');
 
         $sets = [];
-        foreach ($events->groupBy('set_number') as $setNumber => $setEvents) {
+        foreach ($setNumbers as $setNumber) {
             $homeScore = 0;
             $awayScore = 0;
             $rallies = [];
             $rallyN = 0;
 
-            foreach ($setEvents as $event) {
-                $rallyN++;
+            $merged = collect($eventsBySet->get($setNumber, collect())->all())
+                ->merge($lineupBySet->get($setNumber, collect())->all())
+                ->sortBy('seq')->values();
+
+            foreach ($merged as $event) {
                 $isHome = (int) $event->team_id === (int) $match->team_home_id;
 
+                if ($event instanceof MatchLineupEvent) {
+                    $rallies[] = $this->lineupItem($match, $event, $isHome, $players, $tz, $withRecorder);
+                    continue;
+                }
+
+                $rallyN++;
                 if ($isHome) {
                     $homeScore = $event->team_point_number;
                 } else {
@@ -91,6 +122,8 @@ class MatchProgressService
                 }
 
                 $rallies[] = [
+                    'kind'        => 'point',
+                    'seq'         => (int) $event->seq,
                     'rally_n'     => $rallyN,
                     'id'          => $event->id,
                     'action_type' => $event->action_type,
@@ -109,6 +142,75 @@ class MatchProgressService
         }
 
         return ['has_progress' => true, 'sets' => $sets];
+    }
+
+    /** Строка ленты для события состава + готовый (уже переведённый) текст попапа. */
+    private function lineupItem(TournamentMatch $match, MatchLineupEvent $ev, bool $isHome, array $players, string $tz, bool $withRecorder): array
+    {
+        $teamName = (string) (($isHome ? $match->teamHome : $match->teamAway)?->name ?? '');
+        $out = $players[$ev->out_user_id] ?? null;
+        $in  = $players[$ev->in_user_id] ?? null;
+        $fullName = fn (?array $p) => $p ? $p['name'] : '—';
+        $surname = fn (?array $p) => $p ? (trim(explode(' ', $p['name'])[0] ?? '') ?: $p['name']) : '—';
+        $posName = function (?string $code) {
+            return $code ? __('tournaments.pos_abbr_' . $code) : null;
+        };
+        $posFull = fn (?string $code) => $code ? __('tournaments.pos_full_' . $code) : null;
+        $zone = $ev->zone;
+
+        $where = collect([$posFull($ev->position), $zone ? __('tournaments.lineup_zone_n', ['n' => $zone]) : null])->filter()->implode(', ');
+
+        $lines = [];
+        if ($ev->type === MatchLineupEvent::TYPE_SUBSTITUTION) {
+            $label = __('tournaments.lineup_ev_substitution');
+            $lines[] = __('tournaments.lineup_popup_out', ['name' => $fullName($out)]);
+            $lines[] = __('tournaments.lineup_popup_in', ['name' => $fullName($in)]) . ($where ? " ($where)" : '');
+            $summary = $surname($out) . ' → ' . $surname($in);
+        } elseif ($ev->type === MatchLineupEvent::TYPE_LIBERO_IN) {
+            $label = __('tournaments.lineup_ev_libero');
+            $lines[] = __('tournaments.lineup_popup_libero_in', [
+                'libero' => $fullName($in), 'name' => $fullName($out),
+                'pos' => $posFull($ev->position) ?: '—',
+            ]) . ($zone ? ' · ' . __('tournaments.lineup_zone_n', ['n' => $zone]) : '');
+            $summary = $surname($in) . ' → ' . $surname($out);
+        } else {
+            $label = __('tournaments.lineup_ev_libero');
+            $lines[] = __('tournaments.lineup_popup_libero_out', ['name' => $fullName($in), 'libero' => $fullName($out)])
+                . ($where ? " ($where)" : '');
+            $summary = $surname($out) . ' ↔ ' . $surname($in);
+        }
+
+        if ($withRecorder && ($ev->recorded_by_user_id || $ev->recorded_by_name)) {
+            $by = $ev->recorded_by_name;
+            if (!$by && $ev->recorded_by_user_id) {
+                $u = User::find($ev->recorded_by_user_id);
+                $by = $u ? trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) : null;
+            }
+            if ($by) {
+                $lines[] = __('tournaments.lineup_popup_by', [
+                    'name' => $by, 'time' => $ev->created_at?->copy()->setTimezone($tz)->format('H:i') ?? '',
+                ]);
+            }
+        }
+
+        return [
+            'kind'       => $ev->type,
+            'seq'        => (int) $ev->seq,
+            'id'         => $ev->id,
+            'team_side'  => $isHome ? 'home' : 'away',
+            'team_name'  => $teamName,
+            'label'      => $label,
+            'summary'    => $summary,
+            'score_home' => (int) $ev->score_home,
+            'score_away' => (int) $ev->score_away,
+            'popup'      => [
+                'title' => $label . ' · ' . $teamName,
+                'sub'   => __('tournaments.lineup_popup_set_score', [
+                    'set' => $ev->set_number, 'h' => $ev->score_home, 'a' => $ev->score_away,
+                ]),
+                'lines' => $lines,
+            ],
+        ];
     }
 
     /**

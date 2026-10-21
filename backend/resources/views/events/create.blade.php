@@ -83,7 +83,7 @@ $step1Fields = [
 'classic_level_min','classic_level_max',
 'beach_level_min','beach_level_max',
 'allow_registration',
-'age_policy','is_snow','is_outdoor','collect_stats','stats_rated',
+'age_policy','is_snow','is_outdoor','collect_stats','stats_rated','track_lineup',
 ];
 // ✅ Step 2 fields (including registration timings)
 $step2Fields = [
