@@ -3338,8 +3338,6 @@ class TournamentController extends Controller
             return $redirect;
         }
 
-        $stage = $match->stage;
-        $event = $stage->event;
         $match->load(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
 
         $activeSet = $this->rallyService->getActiveSetNumber($match);
@@ -3348,12 +3346,40 @@ class TournamentController extends Controller
             $setNumber = $activeSet;
         }
 
+        return view('tournaments.score_rally', $this->rallyViewData($match, $setNumber));
+    }
+
+    /** Данные экрана поочкового ввода — общие для полной страницы и для HTML-фрагмента без перезагрузки. */
+    private function rallyViewData(TournamentMatch $match, int $setNumber): array
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
         $board = $this->rallyService->getBoard($match, $setNumber);
         $matchReady = $this->rallyService->isMatchReadyToFinalize($match);
         $lineup = app(\App\Services\MatchLineupView::class)->forRally($match, $setNumber, $board['decided']);
         $journal = app(\App\Services\MatchProgressService::class)->build($match->id, true)['sets'][$setNumber]['rallies'] ?? [];
 
-        return view('tournaments.score_rally', compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal'));
+        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal');
+    }
+
+    /** HTML динамической части экрана (счёт, доска, составы, журнал, кнопки) — клиент подменяет блок без reload. */
+    private function rallyFragmentHtml(TournamentMatch $match, int $setNumber): string
+    {
+        $match = $match->fresh(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
+
+        return view('tournaments._partials.rally_live', $this->rallyViewData($match, $setNumber))->render();
+    }
+
+    /** GET: свежий HTML-фрагмент экрана (после сетевой ошибки, при возврате на вкладку). */
+    public function rallyFragment(Request $request, TournamentMatch $match)
+    {
+        if ($this->guardRallyMode($request, $match)) {
+            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+        }
+
+        $setNumber = max(1, (int) $request->query('set', $this->rallyService->getActiveSetNumber($match)));
+
+        return response()->json(['success' => true, 'html' => $this->rallyFragmentHtml($match, $setNumber)]);
     }
 
     public function rallyRecordPoint(Request $request, TournamentMatch $match)
@@ -3400,6 +3426,7 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+                'html'    => $this->rallyFragmentHtml($match, (int) $validated['set_number']),
             ]);
         }
 
@@ -3440,6 +3467,7 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+                'html'    => $this->rallyFragmentHtml($match, (int) $validated['set_number']),
             ]);
         }
 
@@ -3533,6 +3561,7 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), $setNumber),
+                'html'    => $this->rallyFragmentHtml($match, $setNumber),
             ]);
         }
 

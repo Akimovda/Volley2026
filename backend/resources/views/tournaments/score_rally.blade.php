@@ -14,54 +14,7 @@
 </x-slot>
 
 @php
-	$format = $stage->matchFormat();
-	$maxSets = match($format) { 'bo1' => 1, 'bo3' => 3, 'bo5' => 5, default => 3 };
-
-	$statLabels = [
-		'serves_total'     => __('tournaments.stat_serves_short'),
-		'aces'             => __('tournaments.stat_aces_short'),
-		'serve_errors'     => __('tournaments.stat_serve_err_short'),
-		'attacks_total'    => __('tournaments.stat_attacks_short'),
-		'kills'            => __('tournaments.stat_kills_short'),
-		'attack_errors'    => __('tournaments.stat_attack_err_short'),
-		'blocks'           => __('tournaments.stat_blocks_short'),
-		'block_errors'     => __('tournaments.stat_block_err_short'),
-		'digs'             => __('tournaments.stat_digs_short'),
-		'reception_errors' => __('tournaments.stat_dig_err_short'),
-		'assists'          => __('tournaments.stat_assists_short'),
-	];
-
-	$actionMarkers = [
-		'ace' => 'Э', 'kill' => 'А', 'block' => 'Б',
-		'opp_serve_error' => 'ошП', 'opp_attack_error' => 'ошА',
-		'opp_block_error' => 'ошБ', 'opp_reception_error' => 'ошПр',
-		'unattributed' => '•',
-	];
-
-	$sides = [
-		'home' => ['team' => $match->teamHome, 'team_id' => (int) $match->team_home_id, 'opp_id' => (int) $match->team_away_id],
-		'away' => ['team' => $match->teamAway, 'team_id' => (int) $match->team_away_id, 'opp_id' => (int) $match->team_home_id],
-	];
-
 	$luOn = !empty($lineup['enabled']);
-	$luStarted = $luOn && $lineup['has_start'];
-	// Для матчей с учётом состава в попапе очка — только игроки НА ПЛОЩАДКЕ сейчас (включая вышедшего либеро)
-	$courtPlayers = function (string $sk) use ($lineup, $board) {
-		return array_map(
-			fn ($c) => ['id' => $c['id'], 'name' => $c['name']],
-			$lineup['teams'][$sk]['court']
-		);
-	};
-	$rwData = [];
-	foreach ($sides as $sk => $sd) {
-		$oppSk = $sk === 'home' ? 'away' : 'home';
-		$rwData[$sk] = [
-			'teamId'     => $sd['team_id'],
-			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
-			'players'    => $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]),
-			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
-		];
-	}
 	$rwText = [
 		'ace' => __('tournaments.rally_action_ace'), 'kill' => __('tournaments.rally_action_kill'), 'block' => __('tournaments.rally_action_block'),
 		'opp_serve_error' => __('tournaments.rally_action_opp_serve_error'), 'opp_attack_error' => __('tournaments.rally_action_opp_attack_error'),
@@ -86,152 +39,8 @@
 
 	<div class="ramka">
 
-		{{-- Шапка матча + табы сетов --}}
-		<div class="card p-3 mb-2" style="text-align:center">
-			@php $roundLabel = $stage->roundLabelFor($match); @endphp
-			<div class="mb-2">
-				<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
-				<span class="score-pill score-pill--green">{{ $roundLabel ?? __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
-				<span class="score-pill score-pill--orange">{{ strtoupper($format) }}</span>
-			</div>
-			<div class="d-flex between fvc mb-2">
-				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
-					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
-				</div>
-				<div class="f-24 b-800 px-2">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
-				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
-					@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'style' => 'opacity:.7'])
-				</div>
-			</div>
-			<div class="mb-2">
-				<span class="score-pill score-pill--blue">{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }}</span>
-				<span class="score-pill score-pill--red">{{ __('tournaments.score_to_pts') }} {{ $board['target_points'] }}</span>
-				@if($board['decided'])
-				<span class="score-pill score-pill--green">{{ __('tournaments.rally_set_decided') }}</span>
-				@endif
-			</div>
-			<div class="d-flex gap-1 text-center mt-2" style="flex-wrap:wrap;justify-content:center">
-				@for($i = 1; $i <= $maxSets; $i++)
-				<a href="{{ route('tournament.matches.rally.form', [$match, 'set' => $i]) }}"
-				   class="btn btn-small {{ $i === $setNumber ? 'btn-primary' : 'btn-secondary' }}">
-					{{ __('tournaments.rally_set_n', ['n' => $i]) }}
-				</a>
-				@endfor
-			</div>
-		</div>
-
-		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
-		<div class="alert alert-info f-13 mb-2">{{ __('tournaments.rally_no_attempts_note') }}</div>
-
-		@php $maxColumns = max($board['columns']['home'], $board['columns']['away']); @endphp
-
-		{{-- Сводная таблица: по вертикали — команды (2 строки), по горизонтали — итоги + очки.
-		     Разбивка по игрокам — на странице результатов турнира. --}}
-		<div class="card mb-2">
-			<div class="table-scrollable">
-				<table class="table f-13">
-					<thead>
-						<tr>
-							<th style="text-align:left">{{ __('tournaments.setup_col_team') }}</th>
-							@foreach($statLabels as $label)
-							<th style="text-align:center">{{ $label }}</th>
-							@endforeach
-							<th style="text-align:center">{{ __('tournaments.stats_col_pts') }}</th>
-							@for($c = 1; $c <= $maxColumns; $c++)
-							<th style="text-align:center;min-width:2.4rem">{{ $c }}</th>
-							@endfor
-						</tr>
-					</thead>
-					<tbody>
-						@foreach($sides as $sideKey => $side)
-						@php
-							$teamAggregates = $board['aggregates'][$sideKey];
-							$teamCells = $board['cells'][$sideKey];
-						@endphp
-						<tr>
-							<td class="b-700">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</td>
-							@foreach(array_keys($statLabels) as $f)
-							<td style="text-align:center">{{ array_sum(array_column($teamAggregates, $f)) }}</td>
-							@endforeach
-							<td style="text-align:center" class="b-700">{{ array_sum(array_column($teamAggregates, 'points_scored')) }}</td>
-							@for($c = 1; $c <= $maxColumns; $c++)
-							@php $cell = $teamCells[$c] ?? null; @endphp
-							<td style="text-align:center">
-								@if($cell)
-									<span class="b-700">{{ $actionMarkers[$cell['action_type']] ?? '?' }}</span>
-								@else
-									<span style="opacity:.25">·</span>
-								@endif
-							</td>
-							@endfor
-						</tr>
-						@endforeach
-					</tbody>
-				</table>
-			</div>
-		</div>
-
-		@if($luOn && !$board['decided'])
-		@include('tournaments._partials.lineup_setup_panel')
-		@endif
-
-		@foreach($sides as $sideKey => $side)
-		@php
-			$teamId = $side['team_id'];
-			$players = $board['players'][$sideKey];
-			$oppPlayers = $board['players'][$sideKey === 'home' ? 'away' : 'home'];
-		@endphp
-		<div class="card mb-2">
-			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
-
-			@if(!$board['decided'] && $luOn && $lineup['needs_start'])
-			<div class="alert alert-info f-13 mt-2">{{ __('tournaments.lineup_need_setup') }}</div>
-			@elseif(!$board['decided'])
-			<div class="mt-2">
-				<div class="f-13 b-600 mb-1">{{ __('tournaments.rally_add_point_title') }}</div>
-				<div class="d-flex gap-1" style="flex-wrap:wrap">
-
-					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem">🏐 {{ __('tournaments.rally_own_action_btn') }}</button>
-					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</button>
-					@if($luStarted)
-					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
-					@endif
-
-				</div>
-			</div>
-			@endif
-		</div>
-		@endforeach
-
-		@if($luOn)
-		@include('tournaments._partials.lineup_journal')
-		@endif
-
-		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
-			<form method="POST" action="{{ route('tournament.matches.rally.undo', $match) }}" style="flex:1">
-				@csrf
-				<input type="hidden" name="set_number" value="{{ $setNumber }}">
-				@if($luOn)<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">@endif
-				<button type="submit" class="btn btn-secondary w-100" {{ $board['can_undo'] ? '' : 'disabled' }}>
-					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
-				</button>
-			</form>
-			<form method="POST" action="{{ route('tournament.matches.rally.finalize', $match) }}" style="flex:1">
-				@csrf
-				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
-					💾 {{ __('tournaments.rally_btn_finalize') }}
-				</button>
-			</form>
-			<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-secondary" style="flex:1;text-align:center">
-				{{ __('tournaments.btn_back') }}
-			</a>
-			@if($match->isCompleted())
-			<a href="{{ route('tournament.matches.pdf_stats', $match) }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
-				📊 PDF
-			</a>
-			@endif
+		<div id="rw-live" data-fragment-url="{{ route('tournament.matches.rally.fragment', $match) }}" data-set="{{ $setNumber }}">
+@include('tournaments._partials.rally_live')
 		</div>
 
 	</div>
@@ -273,11 +82,120 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-grid .rw-wide{grid-column:1/-1}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
+.rw-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222333;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10002;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;text-align:center}
+.rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 
 <script>
+/* Общий рантайм экрана поочкового ввода: AJAX (jQuery — fetch в WKWebView ненадёжен), подмена блока #rw-live
+   серверным HTML-фрагментом, блокировка кнопок на время запроса, повтор при сетевой ошибке с тем же client_request_id. */
+window.RallyLive = (function () {
+	var NET_ERR = @json(__('tournaments.rally_net_err'));
+	var live = document.getElementById('rw-live');
+	var toastEl = null, toastTimer = null;
+
+	function token() { var t = document.querySelector('#rw-form input[name=_token]'); return t ? t.value : ''; }
+	function data() { var el = document.getElementById('rw-live-data'); try { return JSON.parse(el.textContent); } catch (e) { return {rw: {}, lu: null}; } }
+	function uuid() {
+		if (window.crypto && crypto.randomUUID) { return crypto.randomUUID(); }
+		var b = new Uint8Array(16);
+		if (window.crypto && crypto.getRandomValues) { crypto.getRandomValues(b); } else { for (var i = 0; i < 16; i++) { b[i] = Math.floor(Math.random() * 256); } }
+		b[6] = (b[6] & 15) | 64; b[8] = (b[8] & 63) | 128;
+		var h = Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+		return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+	}
+	function errText(xhr, net) {
+		var j = xhr && xhr.responseJSON;
+		if (net) { return NET_ERR; }
+		return (j && (j.error || j.message)) || NET_ERR;
+	}
+
+	/* opts: {json: bool (тело JSON), retry: bool}. fail(message). Сетевая ошибка/5xx-шлюза → до 3 повторов тем же телом. */
+	function send(url, body, opts, ok, fail) {
+		opts = opts || {};
+		var tries = 0;
+		(function go() {
+			jQuery.ajax({
+				url: url, method: 'POST', dataType: 'json', timeout: 15000,
+				xhrFields: {withCredentials: true},
+				data: opts.json ? JSON.stringify(body) : body,
+				contentType: opts.json ? 'application/json' : 'application/x-www-form-urlencoded; charset=UTF-8',
+				headers: {'Accept': 'application/json', 'X-CSRF-TOKEN': token(), 'X-Requested-With': 'XMLHttpRequest'}
+			}).done(function (j) {
+				if (j && j.success) { ok(j); } else { fail((j && (j.error || j.message)) || NET_ERR); }
+			}).fail(function (xhr) {
+				var net = xhr.status === 0 || xhr.status >= 502;
+				if (net && opts.retry && tries < 3) { tries++; setTimeout(go, 600 * Math.pow(2, tries - 1)); return; }
+				fail(errText(xhr, net), net);
+			});
+		})();
+	}
+
+	function swap(html) {
+		if (!live || !html) { return; }
+		live.innerHTML = html;
+		var jn = document.getElementById('jn-list');
+		if (jn) { jn.scrollTop = jn.scrollHeight; }
+		document.dispatchEvent(new CustomEvent('rally:swapped'));
+	}
+	function refresh(done) {
+		jQuery.ajax({url: live.getAttribute('data-fragment-url') + '?set=' + live.getAttribute('data-set'), dataType: 'json', xhrFields: {withCredentials: true}, headers: {'Accept': 'application/json'}})
+			.done(function (j) { if (j && j.html) { swap(j.html); } })
+			.always(function () { if (done) { done(); } });
+	}
+
+	/* блокировка кнопок экрана на время запроса */
+	var locked = [];
+	function busy(on) {
+		if (!live) { return; }
+		if (on) {
+			locked = [];
+			live.querySelectorAll('button').forEach(function (b) { if (!b.disabled) { b.disabled = true; locked.push(b); } });
+		} else {
+			locked.forEach(function (b) { b.disabled = false; });
+			locked = [];
+		}
+	}
+
+	function toast(msg) {
+		if (!toastEl) { toastEl = document.createElement('div'); toastEl.className = 'rw-toast'; document.body.appendChild(toastEl); }
+		toastEl.textContent = msg; toastEl.classList.add('rw-toast-on');
+		clearTimeout(toastTimer);
+		toastTimer = setTimeout(function () { toastEl.classList.remove('rw-toast-on'); }, 1800);
+	}
+
+	/* отмена последнего действия и «Записать счёт» — формы внутри #rw-live (делегирование) */
+	document.addEventListener('submit', function (e) {
+		var f = e.target;
+		if (!f || !f.classList) { return; }
+		if (f.classList.contains('js-rw-undo')) {
+			e.preventDefault();
+			if (f.dataset.busy === '1') { return; }
+			f.dataset.busy = '1';
+			busy(true);
+			var body = {}; new FormData(f).forEach(function (v, k) { body[k] = v; });
+			send(f.action, body, {retry: false}, function (j) { busy(false); swap(j.html); }, function (m) {
+				busy(false); f.dataset.busy = '';
+				toast(m);
+				refresh(); // расхождение (чужая отмена/очко) — показать актуальное состояние
+			});
+		} else if (f.classList.contains('js-rw-finalize')) {
+			if (f.dataset.sent === '1') { e.preventDefault(); return; }
+			f.dataset.sent = '1';
+			var b = f.querySelector('button[type=submit]');
+			if (b) { setTimeout(function () { b.disabled = true; }, 0); }
+		}
+	});
+	// возврат из bfcache — формы снова рабочие
+	window.addEventListener('pageshow', function (ev) { if (ev.persisted) { refresh(); } });
+
+	return {send: send, swap: swap, refresh: refresh, busy: busy, toast: toast, uuid: uuid, data: data, token: token, netErr: NET_ERR};
+})();
+</script>
+
+<script>
 (function () {
-	var DATA = @json($rwData);
+	var DATA = RallyLive.data().rw;
 	var T = @json($rwText);
 	var SELF = ['ace', 'kill', 'block'];
 	var OPP = ['opp_serve_error', 'opp_attack_error', 'opp_block_error', 'opp_reception_error'];
@@ -287,10 +205,10 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 
 	var overlay = document.createElement('div');
 	overlay.className = 'rw-overlay';
-	overlay.innerHTML = '<div class="rw-box"><div class="rw-title"></div><div class="rw-sub"></div><div class="rw-grid"></div><div class="rw-foot"></div></div>';
+	overlay.innerHTML = '<div class="rw-box"><div class="rw-title"></div><div class="rw-sub"></div><div class="rw-grid"></div><div class="rw-note" style="color:#dc2626;font-size:13px;margin-top:8px;min-height:1em"></div><div class="rw-foot"></div></div>';
 	document.body.appendChild(overlay);
 	var elTitle = overlay.querySelector('.rw-title'), elSub = overlay.querySelector('.rw-sub'),
-		elGrid = overlay.querySelector('.rw-grid'), elFoot = overlay.querySelector('.rw-foot');
+		elGrid = overlay.querySelector('.rw-grid'), elFoot = overlay.querySelector('.rw-foot'), elNote = overlay.querySelector('.rw-note');
 
 	function btn(label, cls, onClick, wide) {
 		var b = document.createElement('button');
@@ -304,17 +222,35 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 		for (var i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i].name;
 		return '';
 	}
-	function close() { overlay.classList.remove('rw-open'); st = null; history = []; }
+	function close() { if (sending) return; overlay.classList.remove('rw-open'); st = null; history = []; }
 
 	function submit() {
 		if (sending) return;
 		sending = true;
-		form.elements.team_id.value = DATA[st.side].teamId;
-		form.elements.action_type.value = st.action || '';
-		form.elements.player_id.value = st.player || '';
-		form.elements.dig_user_id.value = st.dig || '';
-		form.elements.assist_user_id.value = st.assist || '';
-		form.submit();
+		st.rid = st.rid || RallyLive.uuid(); // один uuid на одно нажатие: повтор запроса не задвоит очко
+		var body = {
+			set_number: form.elements.set_number.value,
+			team_id: DATA[st.side].teamId,
+			action_type: st.action || '',
+			client_request_id: st.rid
+		};
+		if (st.player) body.player_id = st.player;
+		if (st.dig) body.dig_user_id = st.dig;
+		if (st.assist) body.assist_user_id = st.assist;
+		setSending(true);
+		RallyLive.send(form.action, body, {retry: true}, function (j) {
+			sending = false; setSending(false);
+			close();
+			RallyLive.swap(j.html);
+		}, function (m, net) {
+			sending = false; setSending(false);
+			elNote.textContent = m; // тот же st.rid — повторное нажатие не задвоит очко, если первый запрос дошёл
+			if (!net) { RallyLive.refresh(); }
+		});
+	}
+	function setSending(on) {
+		overlay.querySelectorAll('button').forEach(function (b) { b.disabled = on; });
+		if (on) elNote.textContent = '';
 	}
 
 	function go(step) { history.push(st.step); st.step = step; render(); }
@@ -327,7 +263,7 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 
 	function render() {
 		var d = DATA[st.side], players = d.players;
-		elGrid.innerHTML = ''; elFoot.innerHTML = '';
+		elGrid.innerHTML = ''; elFoot.innerHTML = ''; elNote.textContent = '';
 		var crumbs = [d.teamName];
 		if (st.action) crumbs.push(T[st.action]);
 		if (st.player) crumbs.push(nameOf(st.kind === 'own' ? d.players : d.oppPlayers, st.player));
@@ -373,13 +309,14 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 		elFoot.appendChild(btn(T.cancel, 'btn-secondary', close));
 	}
 
-	document.querySelectorAll('.js-rw-start').forEach(function (b) {
-		b.addEventListener('click', function () {
-			st = { side: this.dataset.side, kind: this.dataset.kind, step: 'action', action: '', player: '', dig: '', assist: '' };
-			history = [];
-			overlay.classList.add('rw-open');
-			render();
-		});
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest ? e.target.closest('.js-rw-start') : null;
+		if (!b || b.disabled) return;
+		DATA = RallyLive.data().rw;
+		st = { side: b.dataset.side, kind: b.dataset.kind, step: 'action', action: '', player: '', dig: '', assist: '', rid: '' };
+		history = [];
+		overlay.classList.add('rw-open');
+		render();
 	});
 	overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
 	document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st) close(); });
