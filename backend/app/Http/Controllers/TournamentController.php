@@ -3357,6 +3357,7 @@ class TournamentController extends Controller
             'player_id'       => 'nullable|integer',
             'dig_user_id'     => 'nullable|integer',
             'assist_user_id'  => 'nullable|integer',
+            'client_request_id' => 'nullable|uuid',
         ]);
 
         try {
@@ -3369,6 +3370,7 @@ class TournamentController extends Controller
                 isset($validated['dig_user_id']) ? (int) $validated['dig_user_id'] : null,
                 isset($validated['assist_user_id']) ? (int) $validated['assist_user_id'] : null,
                 $request->user(),
+                $validated['client_request_id'] ?? null,
             );
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
@@ -3479,6 +3481,7 @@ class TournamentController extends Controller
             'type'        => 'required|in:substitution,libero_in,libero_out',
             'out_user_id' => 'nullable|integer',
             'in_user_id'  => 'nullable|integer',
+            'client_request_id' => 'nullable|uuid',
         ]);
 
         return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
@@ -3487,11 +3490,12 @@ class TournamentController extends Controller
             $team = (int) $validated['team_id'];
             $out = isset($validated['out_user_id']) ? (int) $validated['out_user_id'] : 0;
             $in = isset($validated['in_user_id']) ? (int) $validated['in_user_id'] : 0;
+            $rid = $validated['client_request_id'] ?? null;
 
             match ($validated['type']) {
-                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user()),
-                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user()),
-                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user()),
+                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user(), null, $rid),
+                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user(), null, $rid),
+                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user(), null, $rid),
             };
         });
     }
