@@ -467,6 +467,10 @@
 								<a href="{{ route('organizer.my-events') }}" class="menu-item">
 									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
 								</a>
+								{{-- Трансляция (камера в приложении) --}}
+								<a href="{{ route('broadcast.camera') }}" class="menu-item">
+									<span class="menu-text">{{ __('ui.org_broadcast') }}</span>
+								</a>
 								@if(!$isStaffHelper)
 								<a href="{{ route('placeholders.index') }}" class="menu-item">
 									<span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
