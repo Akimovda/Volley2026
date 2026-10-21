@@ -3,6 +3,7 @@
 namespace App\Services\Broadcast;
 
 use App\Models\BroadcastSetting;
+use App\Models\BroadcastTeamStyle;
 use App\Models\EventCourt;
 use App\Models\EventTeam;
 use App\Models\MatchLineupEvent;
@@ -439,6 +440,104 @@ class CourtStateService
         ];
     }
 
+    public const DEMOS = ['splash', 'live', 'sub', 'set_summary', 'match_summary'];
+
+    /**
+     * Образцовое состояние для предпросмотра оверлея (?preview=1&demo=…). Ничего не пишет и не читает счёт:
+     * оформление/заставка/события — реальные, команды — реальные (матч площадки или первые две команды события),
+     * иначе «Команда А/Б».
+     */
+    public function demo(EventCourt $court, string $kind, ?Carbon $now = null): array
+    {
+        $now = ($now ?? now())->copy();
+        $court->loadMissing('event.organizer');
+        $settings = BroadcastSetting::resolve((int) $court->event_id, $court->occurrence_id ? (int) $court->occurrence_id : null);
+
+        $teams = null;
+        $m = $this->courtMatches($court)->whereNotIn('status', [TournamentMatch::STATUS_COMPLETED, TournamentMatch::STATUS_CANCELLED])
+            ->whereNotNull('team_home_id')->whereNotNull('team_away_id')->orderByRaw('scheduled_at IS NULL')->orderBy('scheduled_at')->orderBy('id')
+            ->with(['teamHome', 'teamAway'])->first();
+        if ($m) {
+            $teams = $this->teamsOf($m, $court);
+        } else {
+            $two = EventTeam::where('event_id', $court->event_id)
+                ->when($court->occurrence_id, fn ($q) => $q->where('occurrence_id', $court->occurrence_id))
+                ->orderBy('id')->limit(2)->get();
+            if ($two->count() === 2) {
+                $side = fn (EventTeam $t) => ['name' => $t->name, 'short_name' => $this->styles->shortFor($t),
+                    'color' => $this->styles->colorFor($t), 'logo_url' => $this->styles->logoUrlFor($t, $court->event)];
+                $teams = ['home' => $side($two[0]), 'away' => $side($two[1])];
+            }
+        }
+        $teams ??= [
+            'home' => ['name' => 'Команда А', 'short_name' => 'КА', 'color' => BroadcastTeamStyle::PALETTE[0], 'logo_url' => null],
+            'away' => ['name' => 'Команда Б', 'short_name' => 'КБ', 'color' => BroadcastTeamStyle::PALETTE[1], 'logo_url' => null],
+        ];
+
+        $stat = fn (array $h, array $a) => ['scope' => null, 'set_number' => null, 'teams' => [
+            'home' => $h + ['points' => $h['aces'] + $h['kills'] + $h['blocks'], 'digs' => 0, 'assists' => 0],
+            'away' => $a + ['points' => $a['aces'] + $a['kills'] + $a['blocks'], 'digs' => 0, 'assists' => 0],
+        ]];
+
+        $payload = [
+            'court' => ['id' => (int) $court->id, 'name' => $court->name],
+            'mode' => $kind === 'sub' ? 'live' : $kind,
+            'mode_until' => null,
+            'match' => ['id' => 0, 'status' => 'live', 'stage' => null, 'round' => null, 'format' => null, 'scheduled_at' => null,
+                'home' => $teams['home']['name'], 'away' => $teams['away']['name']],
+            'next_match' => ['id' => 0, 'status' => 'scheduled', 'home' => 'Команда В', 'away' => 'Команда Г', 'scheduled_at' => null],
+            'teams' => $teams,
+            'set' => ['n' => 2, 'target' => 25, 'home' => 18, 'away' => 16, 'deciding' => false],
+            'sets' => [['n' => 1, 'home' => 25, 'away' => 21], ['n' => 2, 'home' => 18, 'away' => 16]],
+            'wins' => ['home' => 1, 'away' => 0],
+            'serving' => 'home',
+            'last_sub' => null,
+            'summary' => null,
+            'splash' => null,
+            'stats_basis' => 'attributed',
+            'seq' => 1,
+            'aspect' => $settings->aspect ?: '16:9',
+            'event' => ['title' => $court->event?->title, 'logo_url' => $this->styles->organizerAvatarUrl($court->event?->organizer)],
+            'theme' => $this->theme($settings),
+            'now_ms' => (int) round($now->getPreciseTimestamp(3)),
+            'ts' => $now->toIso8601String(),
+        ];
+
+        switch ($kind) {
+            case 'sub':
+                $payload['last_sub'] = ['text' => __('tournaments.lineup_ev_substitution') . ': Иванов → Петров', 'team' => 'home', 'at' => $now->toIso8601String()];
+                break;
+            case 'set_summary':
+                $payload['set'] = ['n' => 2, 'target' => 25, 'home' => 0, 'away' => 0, 'deciding' => false];
+                $payload['sets'] = [['n' => 1, 'home' => 25, 'away' => 21]];
+                $payload['summary'] = ['scope' => 'set', 'set_number' => 1] + $stat(
+                    ['aces' => 3, 'kills' => 12, 'blocks' => 4, 'errors' => 7],
+                    ['aces' => 1, 'kills' => 9, 'blocks' => 2, 'errors' => 5]);
+                break;
+            case 'match_summary':
+                $payload['sets'] = [['n' => 1, 'home' => 25, 'away' => 21], ['n' => 2, 'home' => 22, 'away' => 25], ['n' => 3, 'home' => 25, 'away' => 19], ['n' => 4, 'home' => 25, 'away' => 23]];
+                $payload['wins'] = ['home' => 3, 'away' => 1];
+                $payload['serving'] = null;
+                $payload['match']['status'] = 'completed';
+                $payload['summary'] = ['scope' => 'match', 'set_number' => null] + $stat(
+                    ['aces' => 11, 'kills' => 47, 'blocks' => 13, 'errors' => 26],
+                    ['aces' => 6, 'kills' => 38, 'blocks' => 8, 'errors' => 21]);
+                break;
+            case 'splash':
+                $payload['match'] = null;
+                $payload['sets'] = [];
+                $payload['set'] = null;
+                $payload['wins'] = ['home' => 0, 'away' => 0];
+                $payload['serving'] = null;
+                $payload['next_match'] = ['id' => 0, 'status' => 'scheduled', 'home' => $teams['home']['name'], 'away' => $teams['away']['name'], 'scheduled_at' => null];
+                $payload['splash'] = $this->splash($settings, null);
+                $payload['splash']['countdown_to'] = $now->copy()->addMinutes(5)->toIso8601String();
+                break;
+        }
+
+        return $payload;
+    }
+
     /* ------------------------------------------------------------------ */
     /*  Блоки payload                                                      */
     /* ------------------------------------------------------------------ */
@@ -461,14 +560,36 @@ class CourtStateService
     {
         $side = fn (?EventTeam $t) => $t ? [
             'name' => $t->name,
+            'short_name' => $this->styles->shortFor($t),
             'color' => $this->styles->colorFor($t),
             'logo_url' => $this->styles->logoUrlFor($t, $court->event),
-        ] : ['name' => null, 'color' => null, 'logo_url' => null];
+        ] : ['name' => null, 'short_name' => null, 'color' => null, 'logo_url' => null];
 
         return ['home' => $side($m->teamHome), 'away' => $side($m->teamAway)];
     }
 
-    private function theme(BroadcastSetting $settings): array
+    /** Непрозрачность панелей: 30–100 % шагом 5, по умолчанию 85. */
+    public static function clampOpacity(mixed $v): int
+    {
+        if (!is_numeric($v)) {
+            return 85;
+        }
+
+        return max(30, min(100, (int) round(((int) $v) / 5) * 5));
+    }
+
+    /** Масштаб табло: 50–150 % шагом 10, по умолчанию 70. */
+    public static function clampScale(mixed $v): int
+    {
+        if (!is_numeric($v)) {
+            return 70;
+        }
+        $v = (int) round(((int) $v) / 10) * 10;
+
+        return max(50, min(150, $v));
+    }
+
+    public function theme(BroadcastSetting $settings): array
     {
         $t = (array) ($settings->theme ?? []);
         $corner = $t['corner'] ?? 'top-left';
@@ -479,6 +600,10 @@ class CourtStateService
             'template'        => in_array($template, ['compact', 'sets_table'], true) ? $template : 'compact',
             'show_set_scores' => (bool) ($t['show_set_scores'] ?? true),
             'show_logos'      => (bool) ($t['show_logos'] ?? true),
+            'scale'           => self::clampScale($t['scale'] ?? null),
+            'opacity'         => self::clampOpacity($t['opacity'] ?? null),
+            'edge_margin'     => in_array($t['edge_margin'] ?? null, ['small', 'medium', 'large'], true) ? $t['edge_margin'] : 'medium',
+            'show_team_names' => (bool) ($t['show_team_names'] ?? true),
         ];
     }
 

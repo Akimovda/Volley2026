@@ -17,6 +17,7 @@ use App\Services\Broadcast\BroadcastLinkService;
 use App\Services\Broadcast\CourtRegistry;
 use App\Services\Broadcast\CourtStateBroadcaster;
 use App\Services\Broadcast\StreamLinksService;
+use App\Services\Broadcast\CourtStateService;
 use App\Services\Broadcast\TeamStyleService;
 use App\Services\EventAccessService;
 use Carbon\Carbon;
@@ -101,6 +102,10 @@ class BroadcastSetupController extends Controller
                 'corner'          => in_array($theme['corner'] ?? '', ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $theme['corner'] : 'top-left',
                 'show_set_scores' => (bool) ($theme['show_set_scores'] ?? true),
                 'show_logos'      => (bool) ($theme['show_logos'] ?? true),
+                'scale'           => CourtStateService::clampScale($theme['scale'] ?? null),
+                'opacity'         => CourtStateService::clampOpacity($theme['opacity'] ?? null),
+                'edge_margin'     => in_array($theme['edge_margin'] ?? '', ['small', 'medium', 'large'], true) ? $theme['edge_margin'] : 'medium',
+                'show_team_names' => (bool) ($theme['show_team_names'] ?? true),
                 'text'            => (string) ($splash['text'] ?? ''),
                 'timer'           => $splash['timer'] ?? (($splash['show_countdown'] ?? true) ? 'schedule' : 'none'),
                 'custom_at'       => $customAt,
@@ -286,12 +291,18 @@ class BroadcastSetupController extends Controller
             'corner'          => ['required', Rule::in(['top-left', 'top-right', 'bottom-left', 'bottom-right'])],
             'show_set_scores' => ['required', 'boolean'],
             'show_logos'      => ['required', 'boolean'],
+            'scale'           => ['required', 'integer', 'between:50,150', 'multiple_of:10'],
+            'opacity'         => ['required', 'integer', 'between:30,100', 'multiple_of:5'],
+            'edge_margin'     => ['required', Rule::in(['small', 'medium', 'large'])],
+            'show_team_names' => ['required', 'boolean'],
         ]);
         $occ = $this->ownOccurrence($event, (int) $data['occurrence_id']);
         $s = $this->settingsRow($event, $occ);
         $s->theme = array_merge((array) $s->theme, [
             'template' => $data['template'], 'corner' => $data['corner'],
             'show_set_scores' => (bool) $data['show_set_scores'], 'show_logos' => (bool) $data['show_logos'],
+            'scale' => (int) $data['scale'], 'opacity' => (int) $data['opacity'], 'edge_margin' => $data['edge_margin'],
+            'show_team_names' => (bool) $data['show_team_names'],
         ]);
         $s->save();
         $this->refreshCourts($event, $occ->id);
@@ -373,6 +384,18 @@ class BroadcastSetupController extends Controller
         $this->refreshCourts($event, $team->occurrence_id);
 
         return response()->json(['ok' => true, 'color' => $this->styles->colorFor($team->fresh())]);
+    }
+
+    public function teamShortName(Request $request, Event $event, EventTeam $team): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownTeam($event, $team);
+        $data = $request->validate(['short_name' => ['nullable', 'string', 'max:4']]);
+        $v = trim(strip_tags((string) ($data['short_name'] ?? '')));
+        BroadcastTeamStyle::updateOrCreate(['event_team_id' => $team->id], ['short_name' => $v !== '' ? mb_strtoupper($v) : null]);
+        $this->refreshCourts($event, $team->occurrence_id);
+
+        return response()->json(['ok' => true, 'short_name' => $this->styles->shortFor($team->fresh())]);
     }
 
     public function teamLogo(Request $request, Event $event, EventTeam $team): JsonResponse
@@ -580,6 +603,8 @@ class BroadcastSetupController extends Controller
                 'id' => (int) $t->id,
                 'name' => $t->name,
                 'color' => $this->styles->colorFor($t),
+                'short_name' => (string) ($styles[$t->id]->short_name ?? ''),
+                'short_default' => TeamStyleService::defaultShort((string) $t->name),
                 'logo' => $logo ? ($logo->hasGeneratedConversion('logo') ? $logo->getUrl('logo') : $logo->getUrl()) : null,
                 'friendly' => is_string($t->meta['color'] ?? null),
             ];

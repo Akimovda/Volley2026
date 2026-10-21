@@ -20,7 +20,7 @@ class BroadcastTeamStyle extends Model implements HasMedia
         '#00ACC1', '#FDD835', '#D81B60', '#6D4C41', '#546E7A',
     ];
 
-    protected $fillable = ['event_team_id', 'color'];
+    protected $fillable = ['event_team_id', 'color', 'short_name'];
 
     public function team(): BelongsTo
     {

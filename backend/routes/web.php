@@ -1167,6 +1167,7 @@ Route::middleware([
         Route::post('/bg', [$c, 'uploadBg'])->name('.bg.upload');
         Route::delete('/bg', [$c, 'deleteBg'])->name('.bg.delete');
         Route::post('/teams/{team}/color', [$c, 'teamColor'])->whereNumber('team')->name('.team.color');
+        Route::post('/teams/{team}/short-name', [$c, 'teamShortName'])->whereNumber('team')->name('.team.short');
         Route::post('/teams/{team}/logo', [$c, 'teamLogo'])->whereNumber('team')->name('.team.logo');
         Route::delete('/teams/{team}/logo', [$c, 'deleteTeamLogo'])->whereNumber('team')->name('.team.logo.delete');
     });

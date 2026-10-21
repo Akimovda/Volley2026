@@ -39,7 +39,17 @@ class BroadcastOverlayController extends Controller
             'preview'  => $request->boolean('preview'),
             'strings'  => trans('broadcast'),
             'initial'  => $broadcaster->cached($court),
+            'demo'     => null,
         ];
+        // Пример состояния — ТОЛЬКО вместе с preview=1 (в эфир не попадает): без канала и без опроса /state
+        $demo = (string) $request->query('demo');
+        if ($config['preview'] && in_array($demo, \App\Services\Broadcast\CourtStateService::DEMOS, true)) {
+            $config['demo'] = $demo;
+            $config['initial'] = app(\App\Services\Broadcast\CourtStateService::class)->demo($court, $demo);
+            $config['channel'] = null;
+            $config['key'] = '';
+            $config['stateUrl'] = null;
+        }
 
         return response(view('broadcast.overlay', ['config' => $config, 'preview' => $config['preview']])->render(), 200,
             self::HEADERS + ['Content-Type' => 'text/html; charset=UTF-8']);

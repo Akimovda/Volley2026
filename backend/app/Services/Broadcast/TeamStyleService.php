@@ -68,6 +68,19 @@ class TeamStyleService
         return $color;
     }
 
+    /** Короткое имя (2–4 символа): заданное вручную, иначе первые 3 буквы названия в верхнем регистре без пробелов. */
+    public function shortFor(EventTeam $team): string
+    {
+        $manual = trim((string) BroadcastTeamStyle::where('event_team_id', $team->id)->value('short_name'));
+
+        return $manual !== '' ? $manual : self::defaultShort((string) $team->name);
+    }
+
+    public static function defaultShort(string $name): string
+    {
+        return mb_strtoupper(mb_substr(preg_replace('/\s+/u', '', $name), 0, 3));
+    }
+
     /** Логотип — только загруженный команде. Без него в эфире остаётся цветная полоса (аватар организатора — только на заставке). */
     public function logoUrlFor(EventTeam $team, ?Event $event = null): ?string
     {

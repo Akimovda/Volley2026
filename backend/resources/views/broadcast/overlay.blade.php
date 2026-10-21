@@ -14,18 +14,22 @@
 @font-face{font-family:"Commissioner";font-weight:500;font-display:block;src:url(/assets/fonts/commissioner-medium.woff2) format("woff2")}
 @font-face{font-family:"Commissioner";font-weight:600;font-display:block;src:url(/assets/fonts/commissioner-semibold.woff2) format("woff2")}
 @font-face{font-family:"Commissioner";font-weight:700;font-display:block;src:url(/assets/fonts/commissioner-bold.woff2) format("woff2")}
-:root{--u:min(calc(100vw/1920),calc(100vh/1080));--panel:rgba(12,16,24,.85);--text:rgba(255,255,255,.95);--muted:rgba(255,255,255,.68)}
+:root{--u0:min(calc(100vw/1920),calc(100vh/1080));--u:var(--u0);--edge:48;--panel:rgba(12,16,24,.85);--text:rgba(255,255,255,.95);--muted:rgba(255,255,255,.68)}
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;overflow:hidden;background:transparent;width:100%;height:100%}
 body.preview{background:#5b6068}
 body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+#board,#sub,#setsum,#matchsum{--u:calc(var(--u0)*var(--k,.7))}
 #stage{position:absolute;left:0;top:0;width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
-.card{background:var(--panel);border-radius:calc(var(--u)*14);overflow:hidden}
+.card{background:rgba(12,16,24,var(--pa,.85));border-radius:calc(var(--u)*14);overflow:hidden}
 .stripe{flex:none;width:calc(var(--u)*10);align-self:stretch}
 .logo{flex:none;width:calc(var(--u)*56);height:calc(var(--u)*56);object-fit:cover;border-radius:50%;margin-left:calc(var(--u)*14)}
 .hide{display:none!important}
+.logo.only{width:calc(var(--u)*64);height:calc(var(--u)*64);margin:0 calc(var(--u)*14) 0 calc(var(--u)*18)}
+.name.sp{flex:1}
+.sum-score .tn img.lg2{width:calc(var(--u)*64);height:calc(var(--u)*64);border-radius:50%;object-fit:cover;flex:none}
 
 /* ---- метка платформы ---- */
 #tag{left:50%;bottom:calc(var(--u)*14);width:calc(var(--u)*700);margin-left:calc(var(--u)*-350);text-align:center;font-size:calc(var(--u)*22);font-weight:500;color:#fff;opacity:0;text-shadow:0 0 calc(var(--u)*6) rgba(0,0,0,.75),0 calc(var(--u)*1) calc(var(--u)*2) rgba(0,0,0,.6);letter-spacing:.02em;transform:none;z-index:5}
@@ -33,10 +37,10 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 
 /* ---- табло ---- */
 #board{width:calc(var(--u)*640)}
-#board.tl{left:calc(var(--u)*48);top:calc(var(--u)*48)}
-#board.tr{right:calc(var(--u)*48);top:calc(var(--u)*48)}
-#board.bl{left:calc(var(--u)*48);bottom:calc(var(--u)*48)}
-#board.br{right:calc(var(--u)*48);bottom:calc(var(--u)*48)}
+#board.tl{left:calc(var(--u0)*var(--edge));top:calc(var(--u0)*var(--edge))}
+#board.tr{right:calc(var(--u0)*var(--edge));top:calc(var(--u0)*var(--edge))}
+#board.bl{left:calc(var(--u0)*var(--edge));bottom:calc(var(--u0)*var(--edge))}
+#board.br{right:calc(var(--u0)*var(--edge));bottom:calc(var(--u0)*var(--edge))}
 #board.wide{width:auto;min-width:calc(var(--u)*640)}
 .row{display:flex;align-items:center;height:calc(var(--u)*88);border-top:1px solid rgba(255,255,255,.08)}
 .row:first-child{border-top:0}
@@ -53,16 +57,16 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 .foot{height:calc(var(--u)*44);line-height:calc(var(--u)*44);padding:0 calc(var(--u)*20);font-size:calc(var(--u)*24);font-weight:500;color:var(--muted);background:rgba(255,255,255,.06);display:flex;justify-content:space-between}
 
 /* ---- замена ---- */
-#sub{min-width:calc(var(--u)*520);max-width:calc(var(--u)*760);bottom:calc(var(--u)*48)}
-#sub.r{right:calc(var(--u)*48)}
-#sub.l{left:calc(var(--u)*48)}
+#sub{min-width:calc(var(--u)*520);max-width:calc(var(--u)*760);bottom:calc(var(--u0)*var(--edge))}
+#sub.r{right:calc(var(--u0)*var(--edge))}
+#sub.l{left:calc(var(--u0)*var(--edge))}
 #sub .in{display:flex;align-items:center;padding:calc(var(--u)*16) calc(var(--u)*24) calc(var(--u)*16) 0}
 #sub svg{flex:none;width:calc(var(--u)*40);height:calc(var(--u)*40);margin:0 calc(var(--u)*18)}
 #sub .t1{font-size:calc(var(--u)*24);color:var(--muted);font-weight:500}
 #sub .t2{font-size:calc(var(--u)*34);font-weight:600}
 
 /* ---- итоги ---- */
-#setsum{left:50%;bottom:calc(var(--u)*56);width:calc(var(--u)*1100);margin-left:calc(var(--u)*-550)}
+#setsum{left:50%;bottom:calc(var(--u0)*var(--edge));width:calc(var(--u)*1100);margin-left:calc(var(--u)*-550)}
 #matchsum{left:50%;top:50%;width:calc(var(--u)*1120);margin-left:calc(var(--u)*-560);margin-top:calc(var(--u)*-300)}
 .sum-title{padding:calc(var(--u)*18) calc(var(--u)*30);font-size:calc(var(--u)*30);font-weight:600;color:var(--muted);text-align:center;background:rgba(255,255,255,.06);letter-spacing:.02em}
 .sum-score{display:flex;align-items:center;justify-content:center;padding:calc(var(--u)*22) calc(var(--u)*30)}
@@ -130,6 +134,23 @@ window.__BC = @json($config);
     var BALL = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9.5" fill="#fff" stroke="none"/><path d="M12 2.5c-3 3-3 6.500 0 9.500s3 6.500 0 9.500M2.500 12c3-1 6.500-1 9.500 0s6.500 1 9.500 0" stroke="#10141c" stroke-width="1.500"/></svg>';
     var SWAP = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.200" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 20l-4-4 4-4"/></svg>';
 
+    function labelOf(p, side) {
+        // → {logo, text, only}: при скрытых названиях — логотип (если есть и показ логотипов включён), иначе короткое имя
+        var t = team(p, side), th = p.theme || {};
+        if (th.show_team_names === false) {
+            var lg = th.show_logos !== false ? safeUrl(t.logo_url) : '';
+            return {logo: lg, text: lg ? '' : (t.short_name || ''), only: !!lg};
+        }
+        return {logo: '', text: t.name || '', only: false};
+    }
+    var EDGES = {small: 24, medium: 48, large: 80};
+    function applyTheme(th) {
+        th = th || {};
+        var k = Math.max(50, Math.min(150, parseInt(th.scale, 10) || 70)) / 100;
+        var pa = Math.max(30, Math.min(100, parseInt(th.opacity, 10) || 85)) / 100;
+        ['board', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
+        document.getElementById('stage').style.setProperty('--edge', EDGES[th.edge_margin] || 48);
+    }
     function team(p, side) { return (p.teams && p.teams[side]) || {name: '', color: null, logo_url: null}; }
 
     /* ---------- табло ---------- */
@@ -146,7 +167,9 @@ window.__BC = @json($config);
         var html = '';
         ['home', 'away'].forEach(function (side) {
             var t = team(p, side), pts = cs[side];
-            var logo = th.show_logos !== false && safeUrl(t.logo_url) ? '<img class="logo" src="' + esc(t.logo_url) + '" alt="">' : '';
+            var lb = labelOf(p, side);
+            var logo = lb.only ? '<img class="logo only" src="' + esc(lb.logo) + '" alt="">'
+                : (th.show_team_names !== false && th.show_logos !== false && safeUrl(t.logo_url) ? '<img class="logo" src="' + esc(t.logo_url) + '" alt="">' : '');
             var extra = '';
             if (th.show_set_scores !== false) {
                 if (tpl === 'sets_table') {
@@ -159,7 +182,7 @@ window.__BC = @json($config);
                 }
             }
             html += '<div class="row"><i class="stripe" style="background:' + color(t.color) + '"></i>' + logo +
-                '<div class="name">' + esc(t.name) + '</div>' +
+                '<div class="name' + (lb.only ? ' sp' : '') + '">' + esc(lb.text) + '</div>' +
                 '<div class="sv' + (p.serving === side ? ' on' : '') + '">' + BALL + '</div>' + extra +
                 '<div class="pts"><span data-side="' + side + '">' + pts + '</span></div></div>';
         });
@@ -182,17 +205,17 @@ window.__BC = @json($config);
         var key = (p.match ? p.match.id : 0) + '|' + ls.at + '|' + ls.text;
         if (key === subKey) { return; }
         subKey = key;
-        // старые замены (при загрузке страницы) не показываем
-        if (ls.at && srvNow() - Date.parse(ls.at) > 15000) { return; }
+        // старые замены (при загрузке страницы) не показываем (в примере — висит постоянно)
+        if (!C.demo && ls.at && srvNow() - Date.parse(ls.at) > 15000) { return; }
         var th = p.theme || {}, left = (th.corner || 'top-left').indexOf('left') >= 0;
         var t = team(p, ls.team);
         els.sub.className = 'p card ' + (left ? 'r' : 'l');
         els.sub.innerHTML = '<div style="display:flex;align-items:center"><i class="stripe" style="background:' + color(t.color) + ';align-self:stretch"></i>' +
-            '<div class="in">' + SWAP + '<div><div class="t1">' + esc(t.name) + '</div><div class="t2">' + esc(ls.text) + '</div></div></div></div>';
+            '<div class="in">' + SWAP + '<div><div class="t1">' + esc(labelOf(p, ls.team).text || t.name) + '</div><div class="t2">' + esc(ls.text) + '</div></div></div></div>';
         void els.sub.offsetWidth;
         show(els.sub, true);
         clearTimeout(subTimer);
-        subTimer = setTimeout(function () { show(els.sub, false); }, 5000);
+        if (!C.demo) { subTimer = setTimeout(function () { show(els.sub, false); }, 5000); }
     }
 
     /* ---------- итоги ---------- */
@@ -204,8 +227,10 @@ window.__BC = @json($config);
         }).join('');
     }
     function nameChip(p, side, right) {
-        var t = team(p, side);
-        return '<div class="tn' + (right ? ' r' : '') + '">' + (right ? '<span>' + esc(t.name) + '</span><b style="background:' + color(t.color) + '"></b>' : '<b style="background:' + color(t.color) + '"></b><span>' + esc(t.name) + '</span>') + '</div>';
+        var t = team(p, side), lb = labelOf(p, side);
+        var bar = '<b style="background:' + color(t.color) + '"></b>';
+        var body = lb.only ? '<img class="lg2" src="' + esc(lb.logo) + '" alt="">' : '<span>' + esc(lb.text) + '</span>';
+        return '<div class="tn' + (right ? ' r' : '') + '">' + (right ? body + bar : bar + body) + '</div>';
     }
     function renderSetSum(p) {
         var sm = p.summary; if (!sm || sm.scope !== 'set') { return; }
@@ -251,6 +276,7 @@ window.__BC = @json($config);
     /* ---------- применение состояния ---------- */
     function render(p) {
         var m = p.mode;
+        if (p.theme) { applyTheme(p.theme); }
         show(els.tag, m !== 'off');
         show(els.board, m === 'live' || m === 'set_summary' ? (renderBoard(p), true) : false);
         if (m === 'live') { renderSub(p); } else { show(els.sub, false); }
@@ -285,6 +311,7 @@ window.__BC = @json($config);
 
     /* ---------- получение состояния ---------- */
     function fetchState() {
+        if (C.demo || !C.stateUrl) { return; }
         lastFetch = Date.now();
         try {
             var x = new XMLHttpRequest();
@@ -339,8 +366,29 @@ window.__BC = @json($config);
         } catch (e) {}
     }
 
+    // Предпросмотр из настройки стрима: тема применяется сразу, без перезагрузки и без запроса к серверу
+    window.addEventListener('message', function (e) {
+        try {
+            if (!C.preview || !e.data || e.data.type !== 'bc-theme' || !cur) { return; }
+            var n = JSON.parse(JSON.stringify(cur));
+            n.theme = Object.assign({}, n.theme || {}, e.data.theme || {});
+            if (e.data.teams && n.teams) { ['home', 'away'].forEach(function (k) { if (e.data.teams[k]) { n.teams[k] = Object.assign({}, n.teams[k], e.data.teams[k]); } }); }
+            subKey = null;
+            cur = n; render(n);
+        } catch (er) {}
+    });
+
     apply(C.initial);
-    connect();
+    if (C.demo) {
+        // Пример: без канала и без опроса; таймер заставки идёт от «сейчас»
+        try {
+            offset = 0; cur.now_ms = Date.now();
+            if (cur.splash && cur.splash.countdown_to) { cur.splash.countdown_to = new Date(Date.now() + 300000).toISOString(); }
+            render(cur);
+        } catch (er) {}
+    } else {
+        connect();
+    }
 })();
 </script>
 </body>
