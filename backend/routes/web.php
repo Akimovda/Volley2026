@@ -1161,6 +1161,10 @@ Route::middleware([
         Route::delete('/courts/{court}/link', [$c, 'revokeLink'])->whereNumber('court')->name('.link.revoke');
         Route::post('/courts/{court}/control', [$c, 'control'])->whereNumber('court')->name('.control');
         Route::post('/courts/{court}/streams', [$c, 'streams'])->whereNumber('court')->name('.streams');
+        Route::post('/courts/{court}/destinations', [$c, 'storeDestination'])->whereNumber('court')->name('.dest.store');
+        Route::post('/courts/{court}/destinations/{destination}/default', [$c, 'defaultDestination'])->whereNumber(['court', 'destination'])->name('.dest.default');
+        Route::post('/courts/{court}/destinations/{destination}/reveal', [$c, 'revealDestination'])->whereNumber(['court', 'destination'])->name('.dest.reveal');
+        Route::delete('/courts/{court}/destinations/{destination}', [$c, 'destroyDestination'])->whereNumber(['court', 'destination'])->name('.dest.destroy');
         Route::post('/matches/{match}/court', [$c, 'assignMatch'])->whereNumber('match')->name('.match.court');
         Route::post('/theme', [$c, 'saveTheme'])->name('.theme');
         Route::post('/splash', [$c, 'saveSplash'])->name('.splash');
@@ -1171,6 +1175,10 @@ Route::middleware([
         Route::post('/teams/{team}/logo', [$c, 'teamLogo'])->whereNumber('team')->name('.team.logo');
         Route::delete('/teams/{team}/logo', [$c, 'deleteTeamLogo'])->whereNumber('team')->name('.team.logo.delete');
     });
+    // Трансляция из приложения: экран выбора площадки и старт эфира. Права — canManageEvent внутри контроллера.
+    Route::get('/broadcast/camera', [\App\Http\Controllers\BroadcastCameraController::class, 'index'])->name('broadcast.camera');
+    Route::post('/broadcast/camera/{court}/start', [\App\Http\Controllers\BroadcastCameraController::class, 'start'])
+        ->whereNumber('court')->name('broadcast.camera.start');
     Route::post('/events/{event}/tournament/sync-league', [TournamentController::class, 'syncAllTeamsToLeague'])
         ->name('tournament.syncLeague');
 

@@ -9,12 +9,17 @@
     $modeLabels = [];
     foreach ($modes as $m) { $modeLabels[$m] = __('stream.mode_' . $m); }
     $platformLabels = ['vk' => __('stream.p_vk'), 'rutube' => __('stream.p_rutube'), 'youtube' => __('stream.p_youtube'), 'other' => __('stream.p_other')];
+    $destPlatforms = [];
+    foreach (['vk','rutube','youtube','telegram','custom'] as $dp) { $destPlatforms[$dp] = __('stream.dest_p_' . $dp); }
     $jsStrings = [
         'saved' => __('stream.saved'), 'error' => __('stream.error'), 'copied' => __('stream.link_copied'),
         'regenQ' => __('stream.link_regen_q'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
         'captionAuto' => __('stream.mode_caption_auto'), 'manualBanner' => __('stream.manual_banner'),
         'matchAuto' => __('stream.match_auto'), 'matchNone' => __('stream.match_none'),
         'modes' => $modeLabels, 'pick' => __('stream.assign_pick'),
+        'destDeleteQ' => __('stream.dest_delete_q'), 'destShow' => __('stream.dest_show'), 'destHide' => __('stream.dest_hide'),
+        'destDefault' => __('stream.dest_default'), 'destDelete' => __('stream.dest_delete'), 'destNone' => __('stream.dest_none'),
+        'destPlatforms' => $destPlatforms,
     ];
     $cfg = [
         'csrf' => csrf_token(),
@@ -27,7 +32,7 @@
 <x-voll-layout body_class="stream-setup-page">
 
     <x-slot name="title">{{ __('stream.title') }} — {{ $event->title }}</x-slot>
-    <x-slot name="h1">📡 {{ __('stream.title') }}</x-slot>
+    <x-slot name="h1">📡 {{ __('stream.title') }} <x-beta-badge /></x-slot>
     <x-slot name="h2">{{ $event->title }}</x-slot>
 
     <x-slot name="breadcrumbs">
@@ -398,6 +403,61 @@
             @endif
         </div>
 
+        {{-- 5б. Эфир из приложения VolleyClub: куда отправлять видео --}}
+        <div class="ramka" id="bc-dest">
+            <h2 class="-mt-05">{{ __('stream.dest_h') }}</h2>
+            <div class="bc-hint">{{ __('stream.dest_hint') }}</div>
+            <x-beta-note />
+            @if($courts->isEmpty())
+            <p>{{ __('stream.pult_no_courts') }}</p>
+            @else
+            <div class="bc-chips" id="bc-dest-chips" style="margin-top:1rem">
+                @foreach($courts as $c)
+                <button type="button" class="btn btn-small btn-secondary" data-dest-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
+                @endforeach
+            </div>
+            <div id="bc-dest-list" style="margin-top:1rem"></div>
+            <form id="bc-dest-form" onsubmit="return false" autocomplete="off" style="margin-top:1.2rem">
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-d-platform">{{ __('stream.dest_platform') }}</label>
+                    <select id="bc-d-platform" name="bc_d_platform">
+                        @foreach($destPlatforms as $k => $label)
+                        <option value="{{ $k }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-d-server">{{ __('stream.dest_server') }}</label>
+                    <input type="text" id="bc-d-server" name="bc_d_server" maxlength="300" placeholder="rtmp://">
+                </div>
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-d-key">{{ __('stream.dest_key') }}</label>
+                    <input type="password" id="bc-d-key" name="bc_d_key" maxlength="300" autocomplete="new-password" placeholder="{{ __('stream.dest_key_ph') }}">
+                </div>
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-d-label">{{ __('stream.dest_label') }}</label>
+                    <input type="text" id="bc-d-label" name="bc_d_label" maxlength="100">
+                </div>
+                <div class="bc-field">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="bc-d-default" name="bc_d_default" value="1">
+                        <div class="custom-checkbox"></div>
+                        <span>{{ __('stream.dest_default') }}</span>
+                    </label>
+                </div>
+                <button type="button" class="btn btn-small" id="bc-dest-add">{{ __('stream.dest_add') }}</button>
+            </form>
+
+            <h3 style="margin-top:2rem">{{ __('stream.dest_where_h') }}</h3>
+            @foreach(['vk','rutube','youtube','telegram','custom'] as $pk)
+            <details class="bc-where" data-where="{{ $pk }}" style="margin-top:.6rem">
+                <summary>{{ $destPlatforms[$pk] }}</summary>
+                <div class="bc-hint" style="opacity:.85;margin-top:.5rem">{!! __('stream.dest_where_' . $pk) !!}</div>
+            </details>
+            @endforeach
+            @endif
+        </div>
+
         {{-- 6. Как подключить камеру --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('stream.howto_h') }}</h2>
@@ -679,6 +739,58 @@
                 call('POST', CFG.base + '/courts/' + curStream.id + '/streams', { urls: urls }, function (r) { curStream.streams = r.urls; toast(S.saved); });
             });
             fillStreams();
+
+            /* ---------- эфир из приложения (RTMP + ключ) ---------- */
+            var YT_SERVER = 'rtmp://a.rtmp.youtube.com/live2';
+            var curDest = first ? (byId[saved] || first) : null;
+            function renderDests() {
+                if (!curDest) { return; }
+                $('#bc-dest-chips [data-dest-chip]').each(function () { $(this).toggleClass('btn-secondary', $(this).data('dest-chip') !== curDest.id); });
+                var box = $('#bc-dest-list').empty();
+                if (!curDest.destinations.length) { box.append($('<p class="bc-hint">').text(S.destNone)); return; }
+                curDest.destinations.forEach(function (d) {
+                    var row = $('<div class="bc-row" data-dest>').attr('data-dest', d.id);
+                    var info = $('<div>');
+                    info.append($('<b>').text((S.destPlatforms[d.platform] || d.platform) + (d.label ? ' · ' + d.label : '')));
+                    if (d.is_default) { info.append($('<span class="bc-tag">').text(S.destDefault)); }
+                    info.append($('<div class="bc-hint">').text(d.server_url));
+                    info.append($('<div class="bc-hint bc-key">').text('••••••••'));
+                    var act = $('<div class="bc-actions" style="margin-top:0">');
+                    act.append($('<button type="button" class="btn btn-small btn-secondary bc-d-show">').text(S.destShow));
+                    if (!d.is_default) { act.append($('<button type="button" class="btn btn-small btn-secondary bc-d-def">').text(S.destDefault)); }
+                    act.append($('<button type="button" class="btn btn-small btn-outline bc-d-del">').text(S.destDelete));
+                    box.append(row.append(info, act));
+                });
+            }
+            function destUrl(id, tail) { return CFG.base + '/courts/' + curDest.id + '/destinations' + (id ? '/' + id : '') + (tail || ''); }
+            $('#bc-dest-chips').on('click', '[data-dest-chip]', function () { curDest = byId[$(this).data('dest-chip')]; renderDests(); });
+            $('#bc-d-platform').on('change', function () {
+                var srv = $('#bc-d-server');
+                if ($(this).val() === 'youtube') { if (!srv.val()) { srv.val(YT_SERVER); } }
+                else if (srv.val() === YT_SERVER) { srv.val(''); }
+            });
+            $('#bc-dest-add').on('click', function () {
+                if (!curDest) { return; }
+                call('POST', destUrl(), {
+                    platform: $('#bc-d-platform').val(), server_url: $.trim($('#bc-d-server').val()), stream_key: $.trim($('#bc-d-key').val()),
+                    label: $.trim($('#bc-d-label').val()), is_default: $('#bc-d-default').is(':checked') ? 1 : 0
+                }, function () { toast(S.saved); setTimeout(reload, 400); });
+            });
+            $('#bc-dest-list').on('click', '.bc-d-show', function () {
+                var btn = $(this), row = btn.closest('[data-dest]'), keyEl = row.find('.bc-key');
+                if (btn.data('shown')) { keyEl.text('••••••••'); btn.data('shown', 0).text(S.destShow); return; }
+                call('POST', destUrl(row.data('dest'), '/reveal'), {}, function (r) {
+                    keyEl.text(r.stream_key); btn.data('shown', 1).text(S.destHide);
+                });
+            });
+            $('#bc-dest-list').on('click', '.bc-d-def', function () {
+                call('POST', destUrl($(this).closest('[data-dest]').data('dest'), '/default'), {}, reload);
+            });
+            $('#bc-dest-list').on('click', '.bc-d-del', function () {
+                var id = $(this).closest('[data-dest]').data('dest');
+                confirmThen(S.destDeleteQ, function () { call('DELETE', destUrl(id), {}, reload); });
+            });
+            renderDests();
         })();
         </script>
     </x-slot>

@@ -65,6 +65,7 @@ return [
     'org_coupons_issued'    => 'Issued coupons',
     'org_my_leagues'        => 'My leagues & seasons',
     'org_notif_channels'    => 'Notification channels',
+    'org_broadcast'         => 'Broadcast',
     'org_widget'            => 'Site widget',
     'org_pro'               => 'Organizer Pro',
 

@@ -43,4 +43,9 @@ class EventCourt extends Model
     {
         return $this->hasOne(BroadcastCourtOverride::class, 'court_id');
     }
+
+    public function destinations(): HasMany
+    {
+        return $this->hasMany(BroadcastDestination::class, 'court_id');
+    }
 }

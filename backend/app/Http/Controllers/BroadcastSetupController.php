@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BroadcastCourtOverride;
+use App\Models\BroadcastDestination;
 use App\Models\BroadcastLink;
 use App\Models\BroadcastSetting;
 use App\Models\BroadcastTeamStyle;
@@ -52,7 +53,7 @@ class BroadcastSetupController extends Controller
         $occurrence = $this->resolveOccurrence($event, $occurrences, (int) $request->query('occurrence_id', $request->query('occurrence', 0)));
         $occId = $occurrence?->id;
 
-        $courts = $this->courtsOf($event, $occId)->load('override');
+        $courts = $this->courtsOf($event, $occId)->load(['override', 'destinations']);
         $activeLinks = BroadcastLink::where('event_id', $event->id)->where('role', BroadcastLink::ROLE_OVERLAY)
             ->whereNull('revoked_at')->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->get()->keyBy('court_id');
@@ -74,6 +75,7 @@ class BroadcastSetupController extends Controller
                 'mode'      => $state['mode'],
                 'match'     => $state['match'] ?? null,
                 'streams'   => (array) ($o?->stream_urls ?? []),
+                'destinations' => $c->destinations->sortBy('id')->map(fn ($d) => $this->destinationRow($d))->values()->all(),
                 'matches'   => $this->matchesOfCourt($c),
             ];
         })->values();
@@ -279,6 +281,85 @@ class BroadcastSetupController extends Controller
     }
 
     /* ------------------------------------------------------------------ */
+    /*  Эфир из приложения: куда отправлять видео (RTMP + ключ)            */
+    /* ------------------------------------------------------------------ */
+
+    public function storeDestination(Request $request, Event $event, EventCourt $court): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        $data = $request->validate([
+            'platform'   => ['required', Rule::in(BroadcastDestination::PLATFORMS)],
+            'label'      => ['nullable', 'string', 'max:100'],
+            'server_url' => ['nullable', 'string', 'max:300'],
+            'stream_key' => ['required', 'string', 'max:300'],
+            'is_default' => ['nullable', 'boolean'],
+        ]);
+        $server = trim((string) ($data['server_url'] ?? ''));
+        if ($server === '' && $data['platform'] === 'youtube') {
+            $server = BroadcastDestination::YOUTUBE_SERVER;
+        }
+        abort_unless(BroadcastDestination::validServer($server), 422, __('stream.dest_bad_server'));
+
+        $d = DB::transaction(function () use ($court, $data, $server) {
+            $isFirst = !$court->destinations()->exists();
+            $makeDefault = $isFirst || !empty($data['is_default']);
+            if ($makeDefault) {
+                $court->destinations()->update(['is_default' => false]);
+            }
+            return $court->destinations()->create([
+                'platform'   => $data['platform'],
+                'label'      => ($data['label'] ?? null) ? trim($data['label']) : null,
+                'server_url' => $server,
+                'stream_key' => trim($data['stream_key']),
+                'is_default' => $makeDefault,
+            ]);
+        });
+
+        return response()->json(['ok' => true, 'destination' => $this->destinationRow($d)]);
+    }
+
+    public function defaultDestination(Request $request, Event $event, EventCourt $court, BroadcastDestination $destination): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        abort_unless((int) $destination->court_id === (int) $court->id, 404);
+        DB::transaction(function () use ($court, $destination) {
+            $court->destinations()->update(['is_default' => false]);
+            $destination->forceFill(['is_default' => true])->save();
+        });
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function destroyDestination(Request $request, Event $event, EventCourt $court, BroadcastDestination $destination): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        abort_unless((int) $destination->court_id === (int) $court->id, 404);
+        DB::transaction(function () use ($court, $destination) {
+            $was = $destination->is_default;
+            $destination->delete();
+            if ($was && ($next = $court->destinations()->orderBy('id')->first())) {
+                $next->forceFill(['is_default' => true])->save();
+            }
+        });
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** Показ ключа по кнопке: POST, не кешируется, в HTML страницы ключа нет. */
+    public function revealDestination(Request $request, Event $event, EventCourt $court, BroadcastDestination $destination): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        abort_unless((int) $destination->court_id === (int) $court->id, 404);
+
+        return response()->json(['ok' => true, 'stream_key' => $destination->stream_key])
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    /* ------------------------------------------------------------------ */
     /*  Оформление, заставка, итоги                                        */
     /* ------------------------------------------------------------------ */
 
@@ -424,6 +505,15 @@ class BroadcastSetupController extends Controller
     /*  Вспомогательное                                                    */
     /* ------------------------------------------------------------------ */
 
+    /** Строка для страницы: ключ НЕ отдаём — только маска; сам ключ — отдельным запросом (revealDestination). */
+    private function destinationRow(BroadcastDestination $d): array
+    {
+        return [
+            'id' => (int) $d->id, 'platform' => $d->platform, 'label' => $d->label,
+            'server_url' => $d->server_url, 'is_default' => (bool) $d->is_default,
+        ];
+    }
+
     private function authorizeEvent(Request $request, Event $event): void
     {
         $user = $request->user();
@@ -539,18 +629,7 @@ class BroadcastSetupController extends Controller
 
     private function statusOf(array $state, string $tz): array
     {
-        $m = $state['match'] ?? null;
-        if (($state['mode'] ?? '') !== 'splash' && $m && ($m['status'] ?? '') === 'live') {
-            return ['kind' => 'live', 'text' => __('stream.court_live', ['a' => $m['home'], 'b' => $m['away']])];
-        }
-        $n = $state['next_match'] ?? null;
-        if ($n) {
-            $t = !empty($n['scheduled_at']) ? Carbon::parse($n['scheduled_at'])->setTimezone($tz)->format('H:i') : null;
-            return ['kind' => 'next', 'text' => $t
-                ? __('stream.court_next', ['a' => $n['home'], 'b' => $n['away'], 't' => $t])
-                : __('stream.court_next_nt', ['a' => $n['home'], 'b' => $n['away']])];
-        }
-        return ['kind' => 'none', 'text' => __('stream.court_none')];
+        return \App\Services\Broadcast\CourtStatusLine::of($state, $tz);
     }
 
     private function matchesOfCourt(EventCourt $court): array

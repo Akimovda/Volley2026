@@ -229,6 +229,15 @@
                         <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
+                {{-- Трансляция (камера в приложении) --}}
+                <a href="{{ route('broadcast.camera') }}"
+                   class="menu-item {{ $activeMenu === 'broadcast_camera' ? 'active' : '' }}">
+                    @if($activeMenu === 'broadcast_camera')
+                        <strong class="cd menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></strong>
+                    @else
+                        <span class="menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></span>
+                    @endif
+                </a>
                 {{-- Аккаунты-пустышки (не для помощника) --}}
                 @if(!$isStaffHelper)
                 <a href="{{ route('placeholders.index') }}"

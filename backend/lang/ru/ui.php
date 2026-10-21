@@ -65,6 +65,7 @@ return [
     'org_coupons_issued'    => 'Выданные купоны',
     'org_my_leagues'        => 'Мои лиги и сезоны',
     'org_notif_channels'    => 'Каналы уведомлений',
+    'org_broadcast'         => 'Трансляция',
     'org_widget'            => 'Виджет на сайт',
     'org_pro'               => 'Организатор Pro',
 
