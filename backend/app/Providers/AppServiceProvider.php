@@ -27,6 +27,11 @@ class AppServiceProvider extends ServiceProvider
 
 public function boot(): void
 {
+        // Ведущий матча по токен-ссылке (routes/broadcast.php). Именованные лимитеры: безымянный throttle:N,M делит счётчик по IP
+        // со всеми такими же, и трафик ввода душил бы оверлей (120/мин) на той же сети. Здесь, а не в routes: при route:cache файл роутов не исполняется.
+        \Illuminate\Support\Facades\RateLimiter::for('scorer-ip', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(900)->by('scorer-ip:' . $request->ip()));
+        \Illuminate\Support\Facades\RateLimiter::for('scorer', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(240)->by('scorer:' . (string) $request->route('token')));
+
     EventRegistration::observe(EventRegistrationObserver::class);
         User::observe(UserObserver::class);
 
