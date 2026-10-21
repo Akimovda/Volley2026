@@ -485,12 +485,17 @@ class CourtStateService
     private function splash(BroadcastSetting $settings, ?TournamentMatch $next): array
     {
         $cfg = (array) ($settings->splash ?? []);
-        $show = $cfg['show_countdown'] ?? true;
+        // timer: schedule (по расписанию матча) | custom (своё время) | none; старые настройки — show_countdown/manual_start_at
+        $timer = $cfg['timer'] ?? (($cfg['show_countdown'] ?? true) ? 'schedule' : 'none');
         $to = null;
-        if ($show) {
-            $to = $next?->scheduled_at;
-            if (!$to && !empty($cfg['manual_start_at'])) {
-                $to = Carbon::parse($cfg['manual_start_at']);
+        if ($timer === 'custom' && !empty($cfg['manual_start_at'])) {
+            $to = Carbon::parse($cfg['manual_start_at']);
+        } elseif ($timer === 'schedule' || !isset($cfg['timer'])) {
+            if ($timer !== 'none') {
+                $to = $next?->scheduled_at;
+                if (!$to && !empty($cfg['manual_start_at'])) {
+                    $to = Carbon::parse($cfg['manual_start_at']);
+                }
             }
         }
 

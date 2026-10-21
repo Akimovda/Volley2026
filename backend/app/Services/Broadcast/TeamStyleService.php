@@ -68,17 +68,13 @@ class TeamStyleService
         return $color;
     }
 
-    /** Логотип: загруженный команде → аватар организатора (оригинал) → null. */
+    /** Логотип — только загруженный команде. Без него в эфире остаётся цветная полоса (аватар организатора — только на заставке). */
     public function logoUrlFor(EventTeam $team, ?Event $event = null): ?string
     {
         $style = BroadcastTeamStyle::where('event_team_id', $team->id)->first();
         $media = $style?->getFirstMedia('team_logo');
-        if ($media) {
-            return $this->abs($media->hasGeneratedConversion('logo') ? $media->getUrl('logo') : $media->getUrl());
-        }
 
-        $event ??= Event::with('organizer')->find($team->event_id);
-        return $this->organizerAvatarUrl($event?->organizer);
+        return $media ? $this->abs($media->hasGeneratedConversion('logo') ? $media->getUrl('logo') : $media->getUrl()) : null;
     }
 
     public function organizerAvatarUrl(?User $user): ?string
