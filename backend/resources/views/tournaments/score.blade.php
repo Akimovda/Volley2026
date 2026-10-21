@@ -317,6 +317,25 @@
 					});
 					
 					recalc();
+
+					// Двойной сабмит: после первой отправки форма блокируется (кнопка «Сохраняю…»)
+					var scoreForm = document.getElementById('scoreForm');
+					if (scoreForm) {
+						var idleLabel = submitBtn.textContent;
+						scoreForm.addEventListener('submit', function(e) {
+							if (scoreForm.dataset.sent === '1') { e.preventDefault(); return; }
+							scoreForm.dataset.sent = '1';
+							submitBtn.disabled = true;
+							submitBtn.textContent = @json(__('tournaments.score_saving'));
+						});
+						// возврат кнопкой «назад» (bfcache) — форма снова рабочая
+						window.addEventListener('pageshow', function(ev) {
+							if (!ev.persisted) return;
+							scoreForm.dataset.sent = '';
+							submitBtn.textContent = idleLabel;
+							recalc();
+						});
+					}
 				});
 			</script>
 			
