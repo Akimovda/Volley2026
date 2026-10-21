@@ -1,0 +1,685 @@
+{{-- Настройка стрима (она же пульт). Права и данные — BroadcastSetupController::show --}}
+@php
+    $qs = $occurrence ? ['occurrence_id' => $occurrence->id] : [];
+    $tz = $occurrence?->timezone ?: ($event->timezone ?: 'Europe/Moscow');
+    $backUrl = $isFriendly
+        ? route('game.manage', $event) . ($occurrence ? '?occurrence=' . $occurrence->id : '')
+        : route('tournament.setup', $event) . ($occurrence ? '?occurrence_id=' . $occurrence->id : '');
+    $modes = ['auto', 'splash', 'live', 'set_summary', 'match_summary', 'off'];
+    $modeLabels = [];
+    foreach ($modes as $m) { $modeLabels[$m] = __('stream.mode_' . $m); }
+    $platformLabels = ['vk' => __('stream.p_vk'), 'rutube' => __('stream.p_rutube'), 'youtube' => __('stream.p_youtube'), 'other' => __('stream.p_other')];
+    $jsStrings = [
+        'saved' => __('stream.saved'), 'error' => __('stream.error'), 'copied' => __('stream.link_copied'),
+        'regenQ' => __('stream.link_regen_q'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
+        'captionAuto' => __('stream.mode_caption_auto'), 'manualBanner' => __('stream.manual_banner'),
+        'matchAuto' => __('stream.match_auto'), 'matchNone' => __('stream.match_none'),
+        'modes' => $modeLabels, 'pick' => __('stream.assign_pick'),
+    ];
+    $cfg = [
+        'csrf' => csrf_token(),
+        'base' => route('broadcast.setup', $event),
+        'occurrenceId' => $occurrence?->id,
+        'courts' => $courts,
+        's' => $jsStrings,
+    ];
+@endphp
+<x-voll-layout body_class="stream-setup-page">
+
+    <x-slot name="title">{{ __('stream.title') }} — {{ $event->title }}</x-slot>
+    <x-slot name="h1">📡 {{ __('stream.title') }}</x-slot>
+    <x-slot name="h2">{{ $event->title }}</x-slot>
+
+    <x-slot name="breadcrumbs">
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('events.show', $event) }}{{ $occurrence ? '?occurrence=' . $occurrence->id : '' }}" itemprop="item"><span itemprop="name">{{ $event->title }}</span></a>
+            <meta itemprop="position" content="2">
+        </li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <span itemprop="name">{{ __('stream.breadcrumb') }}</span>
+            <meta itemprop="position" content="3">
+        </li>
+    </x-slot>
+
+    <x-slot name="style">
+        <style>
+            .bc-page .ramka { margin-bottom: 2rem; }
+            .bc-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; padding:1rem 0; border-bottom:1px solid rgba(0,0,0,.08); }
+            .bc-row:last-child { border-bottom:0; }
+            body.dark .bc-row { border-bottom-color: rgba(255,255,255,.1); }
+            .bc-court { padding:1.2rem 0; border-bottom:1px solid rgba(0,0,0,.08); }
+            .bc-court:last-child { border-bottom:0; }
+            body.dark .bc-court { border-bottom-color: rgba(255,255,255,.1); }
+            .bc-court-name { font-weight:700; font-size:1.7rem; }
+            .bc-status { font-size:1.4rem; opacity:.75; margin-top:.2rem; }
+            .bc-status.live { opacity:1; color:#d32f2f; font-weight:600; }
+            .bc-actions { display:flex; gap:.8rem; flex-wrap:wrap; margin-top:.9rem; align-items:center; }
+            .bc-linkbox { display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; margin-top:.9rem; }
+            .bc-linkbox input { flex:1 1 22rem; min-width:0; font-size:1.3rem; }
+            .bc-qr { margin-top:1rem; display:none; }
+            .bc-qr.on { display:block; }
+            .bc-qr svg { width:18rem; height:18rem; background:#fff; padding:1rem; border-radius:1rem; }
+            .bc-warn { font-size:1.25rem; opacity:.65; margin-top:.6rem; }
+            .bc-chips { display:flex; gap:.8rem; flex-wrap:wrap; margin-bottom:1.2rem; }
+            .bc-preview { position:relative; width:100%; padding-top:56.25%; background:#555; border-radius:1rem; overflow:hidden; }
+            .bc-preview iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+            .bc-preview .bc-empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.5rem; padding:2rem; text-align:center; }
+            .bc-modes { display:flex; gap:.7rem; flex-wrap:wrap; margin-top:1.2rem; }
+            .bc-modes .btn.on { outline:3px solid #E7612F; outline-offset:1px; }
+            .bc-pultrow { margin-top:1.4rem; }
+            .bc-pultrow .bc-rl { font-weight:700; font-size:1.3rem; text-transform:uppercase; letter-spacing:.04em; opacity:.7; margin-bottom:.5rem; }
+            .bc-demos { display:flex; gap:.7rem; flex-wrap:wrap; padding:1rem 1.2rem; border:2px dashed rgba(0,0,0,.25); border-radius:1rem; }
+            body.dark .bc-demos { border-color:rgba(255,255,255,.3); }
+            .bc-demos .btn { background:transparent; border:1.5px solid currentColor; color:inherit; }
+            .bc-demos .btn.on { background:#2967BA; border-color:#2967BA; color:#fff; }
+            .bc-demo-note { font-size:1.25rem; opacity:.7; margin-top:.5rem; }
+            .bc-scale { display:flex; align-items:center; gap:1.2rem; } .bc-scale input[type=range] { flex:1; max-width:30rem; } .bc-scale b { min-width:5rem; }
+            .bc-short { width:7rem; text-transform:uppercase; }
+            .bc-banner { display:none; margin-top:1.2rem; padding:1.2rem 1.5rem; border-radius:1rem; background:#E7612F; color:#fff; font-weight:700; font-size:1.5rem; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+            .bc-banner.on { display:flex; }
+            .bc-banner .btn { background:#fff; color:#E7612F; }
+            .bc-caption { margin-top:1rem; font-size:1.4rem; opacity:.8; }
+            .bc-matchline { margin-top:1rem; font-size:1.5rem; }
+            .bc-matchlist { display:none; margin-top:.8rem; }
+            .bc-matchlist.on { display:block; }
+            .bc-matchlist button { display:block; width:100%; text-align:left; padding:.9rem 1.1rem; margin-bottom:.5rem; border-radius:.8rem; border:1px solid rgba(0,0,0,.15); background:transparent; color:inherit; font-size:1.4rem; cursor:pointer; }
+            body.dark .bc-matchlist button { border-color: rgba(255,255,255,.2); }
+            .bc-matchlist button.sel { border-color:#E7612F; font-weight:700; }
+            .bc-field { margin-bottom:1.3rem; }
+            .bc-field label.bc-l { display:block; font-weight:600; font-size:1.4rem; margin-bottom:.4rem; }
+            .bc-grid { display:grid; grid-template-columns:1fr; gap:0 2rem; }
+            @media (min-width: 768px) { .bc-grid { grid-template-columns:1fr 1fr; } }
+            .bc-team { display:flex; gap:1.2rem; align-items:center; flex-wrap:wrap; padding:1.2rem 0; border-bottom:1px solid rgba(0,0,0,.08); }
+            body.dark .bc-team { border-bottom-color: rgba(255,255,255,.1); }
+            .bc-team:last-child { border-bottom:0; }
+            .bc-team-name { font-weight:600; flex:1 1 14rem; min-width:0; }
+            .bc-sw { display:inline-block; width:2.6rem; height:2.6rem; border-radius:50%; border:2px solid rgba(0,0,0,.2); cursor:pointer; padding:0; vertical-align:middle; }
+            .bc-sw.sel { outline:3px solid #E7612F; outline-offset:2px; }
+            .bc-swatches { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
+            .bc-hex { width:11rem !important; }
+            .bc-logo { width:5rem; height:5rem; object-fit:contain; border-radius:.6rem; background:rgba(128,128,128,.15); }
+            .bc-hint { font-size:1.25rem; opacity:.65; }
+            .bc-bg { max-width:24rem; width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:.8rem; display:block; margin-bottom:.8rem; }
+            .bc-howto li { margin-bottom:.7rem; font-size:1.45rem; line-height:1.4; }
+            .bc-toast { position:fixed; left:50%; bottom:3rem; transform:translateX(-50%) translateY(2rem); background:#2e7d32; color:#fff; padding:1rem 2rem; border-radius:3rem; font-size:1.5rem; opacity:0; pointer-events:none; transition:.25s; z-index:99999; }
+            .bc-toast.on { opacity:1; transform:translateX(-50%); }
+            .bc-toast.err { background:#c62828; }
+            .bc-rounds { display:flex; gap:.8rem; flex-wrap:wrap; }
+            .bc-tag { font-size:1.2rem; padding:.2rem .8rem; border-radius:1rem; background:rgba(128,128,128,.2); margin-left:.6rem; }
+        </style>
+    </x-slot>
+
+    <div class="container form bc-page">
+
+        <div class="ramka">
+            <div class="d-flex between fvc" style="flex-wrap:wrap;gap:1rem">
+                <a href="{{ $backUrl }}" class="btn btn-outline btn-small">← {{ $isFriendly ? __('games.manage_title') : __('tournaments.setup_breadcrumb') }}</a>
+                @if($occurrences->count() > 1)
+                <div class="bc-rounds">
+                    @foreach($occurrences as $o)
+                    <a href="{{ route('broadcast.setup', $event) }}?occurrence_id={{ $o->id }}" class="btn btn-small {{ $occurrence && $o->id === $occurrence->id ? '' : 'btn-secondary' }}">
+                        {{ $o->starts_at?->copy()->timezone($o->timezone ?: $tz)->format('d.m H:i') }}
+                    </a>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+        </div>
+
+        @if(!$occurrence)
+        <div class="ramka"><p>{{ __('stream.court_none') }}</p></div>
+        @else
+
+        {{-- 1. Площадки --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('stream.courts_h') }}</h2>
+            @if($isFriendly)<div class="bc-hint">{{ __('stream.court_single') }}</div>@endif
+
+            @foreach($courts as $c)
+            <div class="bc-court" data-court="{{ $c['id'] }}">
+                <div class="bc-court-name">
+                    {{ $c['name'] }}
+                    @unless($c['is_active'])<span class="bc-tag">{{ __('stream.court_hidden') }}</span>@endunless
+                </div>
+                <div class="bc-status {{ $c['status']['kind'] }}">{{ $c['status']['text'] }}</div>
+
+                <div class="bc-linkbox">
+                    @if($c['link'])
+                    <input type="text" readonly value="{{ $c['link']['url'] }}" class="bc-link-input" aria-label="{{ __('stream.link_h') }}">
+                    <button type="button" class="btn btn-small btn-outline bc-copy">{{ __('stream.link_copy') }}</button>
+                    <button type="button" class="btn btn-small btn-outline bc-qr-btn">{{ __('stream.qr') }}</button>
+                    <button type="button" class="btn btn-small btn-outline bc-regen">{{ __('stream.link_regen') }}</button>
+                    <button type="button" class="btn btn-small btn-outline bc-revoke">{{ __('stream.link_revoke') }}</button>
+                    @else
+                    <span class="bc-hint">{{ __('stream.link_none') }}</span>
+                    <button type="button" class="btn btn-small bc-issue">{{ __('stream.link_issue') }}</button>
+                    @endif
+                </div>
+                @if($c['link'])
+                <div class="bc-qr" data-url="{{ $c['link']['url'] }}"></div>
+                <div class="bc-warn">{{ __('stream.link_warn') }}</div>
+                @endif
+
+                <div class="bc-actions">
+                    <input type="text" class="bc-rename-input" value="{{ $c['name'] }}" maxlength="100" style="max-width:20rem" aria-label="{{ __('stream.court_name') }}">
+                    <button type="button" class="btn btn-small btn-outline bc-rename">{{ __('stream.court_rename') }}</button>
+                    @unless($isFriendly)
+                    <button type="button" class="btn btn-small btn-outline bc-toggle" data-active="{{ $c['is_active'] ? 1 : 0 }}">{{ $c['is_active'] ? __('stream.court_hide') : __('stream.court_show') }}</button>
+                    @endunless
+                </div>
+            </div>
+            @endforeach
+
+            @if($dayCourtPending)
+            <div class="bc-court">
+                <p>{{ __('stream.day_court_pending') }}</p>
+                <div class="bc-actions"><button type="button" class="btn btn-small" id="bc-issue-day">{{ __('stream.link_issue') }}</button></div>
+            </div>
+            @endif
+
+            @unless($isFriendly)
+            <div class="bc-actions" style="margin-top:1.5rem">
+                <input type="text" id="bc-new-court" maxlength="100" placeholder="{{ __('stream.court_add_ph') }}" style="max-width:24rem" aria-label="{{ __('stream.court_name') }}">
+                <button type="button" class="btn btn-small" id="bc-add-court">+ {{ __('stream.court_add') }}</button>
+            </div>
+            @endunless
+
+            @if($unassigned->isNotEmpty() && $courts->isNotEmpty())
+            <h3 style="margin-top:2.5rem">{{ __('stream.unassigned_h') }}</h3>
+            <div class="bc-hint">{{ __('stream.unassigned_hint') }}</div>
+            @foreach($unassigned as $m)
+            <div class="bc-row" data-match="{{ $m->id }}">
+                <div>
+                    <div class="b-600">{{ $m->teamHome?->name ?? '?' }} — {{ $m->teamAway?->name ?? '?' }}</div>
+                    <div class="bc-hint">{{ $m->stage?->name }}@if($m->scheduled_at) · {{ $m->scheduled_at->copy()->timezone($tz)->format('d.m H:i') }}@endif</div>
+                </div>
+                <div class="bc-actions" style="margin:0">
+                    <select class="bc-assign-select" aria-label="{{ __('stream.assign_pick') }}">
+                        @foreach($courts as $c)<option value="{{ $c['id'] }}">{{ $c['name'] }}</option>@endforeach
+                    </select>
+                    <button type="button" class="btn btn-small bc-assign">{{ __('stream.assign') }}</button>
+                </div>
+            </div>
+            @endforeach
+            @endif
+        </div>
+
+        {{-- 2. Пульт --}}
+        <div class="ramka" id="bc-pult">
+            <h2 class="-mt-05">{{ __('stream.pult_h') }}</h2>
+            @if($courts->isEmpty())
+            <p>{{ __('stream.pult_no_courts') }}</p>
+            @else
+            <div class="bc-chips" id="bc-pult-chips">
+                @foreach($courts as $c)
+                <button type="button" class="btn btn-small btn-secondary" data-court-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
+                @endforeach
+            </div>
+            <div class="bc-preview"><iframe id="bc-frame" title="preview" allowtransparency="true" style="display:none"></iframe><div class="bc-empty" id="bc-frame-empty">{{ __('stream.pult_no_link') }}</div></div>
+
+            <div class="bc-banner" id="bc-banner"><span id="bc-banner-text"></span><button type="button" class="btn btn-small" id="bc-back-auto">{{ __('stream.manual_back') }}</button></div>
+
+            <div class="bc-pultrow"><div class="bc-rl">{{ __('stream.pult_live_h') }}</div>
+            <div class="bc-modes" id="bc-modes" style="margin-top:0">
+                @foreach($modes as $m)
+                <button type="button" class="btn btn-small btn-outline" data-mode="{{ $m }}">{{ $modeLabels[$m] }}</button>
+                @endforeach
+            </div></div>
+            <div class="bc-pultrow"><div class="bc-rl">{{ __('stream.demo_h') }}</div>
+            <div class="bc-demos" id="bc-demos">
+                @foreach(['splash', 'live', 'sub', 'set_summary', 'match_summary'] as $d)
+                <button type="button" class="btn btn-small" data-demo="{{ $d }}">{{ __('stream.demo_' . $d) }}</button>
+                @endforeach
+                <button type="button" class="btn btn-small on" data-demo="">{{ __('stream.demo_live_air') }}</button>
+            </div>
+            <div class="bc-demo-note">{{ __('stream.demo_note') }}</div></div>
+            <div class="bc-caption" id="bc-caption"></div>
+            <div class="bc-matchline">{{ __('stream.match_label') }}: <b id="bc-match-name">—</b> · <a href="javascript:void(0)" class="blink" id="bc-match-pick">{{ __('stream.match_pick') }}</a></div>
+            <div class="bc-matchlist" id="bc-matchlist"></div>
+            @endif
+        </div>
+
+        {{-- 3. Оформление --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('stream.style_h') }}</h2>
+            <form id="bc-theme-form" onsubmit="return false">
+                <div class="bc-grid">
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-template">{{ __('stream.tpl') }}</label>
+                        <select id="bc-template" name="template">
+                            <option value="compact" @selected($form['template'] === 'compact')>{{ __('stream.tpl_compact') }}</option>
+                            <option value="sets_table" @selected($form['template'] === 'sets_table')>{{ __('stream.tpl_sets_table') }}</option>
+                        </select>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-corner">{{ __('stream.corner') }}</label>
+                        <select id="bc-corner" name="corner">
+                            @foreach(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as $k)
+                            <option value="{{ $k }}" @selected($form['corner'] === $k)>{{ __('stream.corner_' . $k) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="bc-grid">
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-scale">{{ __('stream.scale') }}</label>
+                        <div class="bc-scale"><input type="range" id="bc-scale" min="50" max="150" step="10" value="{{ $form['scale'] }}"><b id="bc-scale-v">{{ $form['scale'] }} %</b></div>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-opacity">{{ __('stream.opacity') }}</label>
+                        <div class="bc-scale"><input type="range" id="bc-opacity" min="30" max="100" step="5" value="{{ $form['opacity'] }}"><b id="bc-opacity-v">{{ $form['opacity'] }} %</b></div>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-edge">{{ __('stream.edge') }}</label>
+                        <select id="bc-edge" name="edge_margin">
+                            @foreach(['small', 'medium', 'large'] as $k)
+                            <option value="{{ $k }}" @selected($form['edge_margin'] === $k)>{{ __('stream.edge_' . $k) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <label class="checkbox-item bc-field">
+                    <input type="checkbox" id="bc-team-names" name="show_team_names" value="1" @checked($form['show_team_names'])>
+                    <div class="custom-checkbox"></div>
+                    <span>{{ __('stream.show_team_names') }}</span>
+                </label>
+                <label class="checkbox-item bc-field">
+                    <input type="checkbox" id="bc-set-scores" name="show_set_scores" value="1" @checked($form['show_set_scores'])>
+                    <div class="custom-checkbox"></div>
+                    <span>{{ __('stream.show_set_scores') }}</span>
+                </label>
+                <label class="checkbox-item bc-field">
+                    <input type="checkbox" id="bc-show-logos" name="show_logos" value="1" @checked($form['show_logos'])>
+                    <div class="custom-checkbox"></div>
+                    <span>{{ __('stream.show_logos') }}</span>
+                </label>
+                <button type="button" class="btn btn-small" id="bc-theme-save">{{ __('stream.save') }}</button>
+            </form>
+
+            <h3 style="margin-top:2.5rem">{{ __('stream.teams_h') }}</h3>
+            <div class="bc-hint">{{ __('stream.team_logo_hint') }}</div>
+            @forelse($teams as $t)
+            <div class="bc-team" data-team="{{ $t['id'] }}" data-friendly="{{ $t['friendly'] ? 1 : 0 }}">
+                <div class="bc-team-name">{{ $t['name'] }}</div>
+                @if($t['friendly'])
+                <div class="bc-swatches"><span class="bc-sw sel" style="background:{{ $t['color'] }};cursor:default"></span><span class="bc-hint">{{ __('stream.team_friendly_color') }}</span></div>
+                @else
+                <div class="bc-swatches">
+                    @foreach($palette as $p)
+                    <button type="button" class="bc-sw {{ strtoupper($t['color']) === $p ? 'sel' : '' }}" style="background:{{ $p }}" data-color="{{ $p }}" aria-label="{{ $p }}"></button>
+                    @endforeach
+                    <input type="text" class="bc-hex" value="{{ $t['color'] }}" maxlength="7" placeholder="#RRGGBB" aria-label="{{ __('stream.team_color_hex') }}">
+                </div>
+                @endif
+                <div class="d-flex fvc" style="gap:.6rem">
+                    <label class="bc-hint" style="margin:0" for="bc-short-{{ $t['id'] }}">{{ __('stream.short_name') }}</label>
+                    <input type="text" class="bc-short" id="bc-short-{{ $t['id'] }}" value="{{ $t['short_name'] }}" maxlength="4" placeholder="{{ $t['short_default'] }}">
+                </div>
+                <div class="d-flex fvc" style="gap:.8rem;flex-wrap:wrap">
+                    @if($t['logo'])<img class="bc-logo" src="{{ $t['logo'] }}" alt="">@endif
+                    <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer">{{ __('stream.team_logo_upload') }}<input type="file" class="bc-logo-file" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+                    @if($t['logo'])<button type="button" class="btn btn-small btn-outline bc-logo-del">{{ __('stream.team_logo_delete') }}</button>@endif
+                </div>
+            </div>
+            @empty
+            <p class="bc-hint">{{ __('stream.teams_empty') }}</p>
+            @endforelse
+        </div>
+
+        {{-- 4. Заставка и итоги --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('stream.splash_h') }}</h2>
+            <div class="bc-field">
+                <span class="bc-l" style="display:block;font-weight:600;font-size:1.4rem;margin-bottom:.4rem">{{ __('stream.bg') }}</span>
+                @if($form['bg_url'])<img src="{{ $form['bg_url'] }}" class="bc-bg" id="bc-bg-img" alt="">@else<img src="" class="bc-bg" id="bc-bg-img" alt="" style="display:none">@endif
+                <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer">{{ __('stream.bg_upload') }}<input type="file" id="bc-bg-file" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+                <button type="button" class="btn btn-small btn-outline" id="bc-bg-del" @if(!$form['bg_url']) style="display:none" @endif>{{ __('stream.bg_delete') }}</button>
+                <div class="bc-hint" style="margin-top:.5rem">{{ __('stream.bg_hint') }}</div>
+            </div>
+            <form id="bc-splash-form" onsubmit="return false">
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-text">{{ __('stream.greeting') }}</label>
+                    <input type="text" id="bc-text" name="text" maxlength="80" value="{{ $form['text'] }}" placeholder="{{ __('stream.greeting_ph') }}">
+                </div>
+                <div class="bc-grid">
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-timer">{{ __('stream.timer') }}</label>
+                        <select id="bc-timer" name="timer">
+                            @foreach(['schedule', 'custom', 'none'] as $k)
+                            <option value="{{ $k }}" @selected($form['timer'] === $k)>{{ __('stream.timer_' . $k) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="bc-field" id="bc-custom-wrap" @if($form['timer'] !== 'custom') style="display:none" @endif>
+                        <label class="bc-l" for="bc-custom-at">{{ __('stream.timer_at') }} ({{ $tz }})</label>
+                        <input type="datetime-local" id="bc-custom-at" name="custom_at" value="{{ $form['custom_at'] }}">
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-summary-mode">{{ __('stream.summary_mode') }}</label>
+                        <select id="bc-summary-mode" name="summary_mode">
+                            <option value="every_set" @selected($form['summary_mode'] === 'every_set')>{{ __('stream.sm_every_set') }}</option>
+                            <option value="match_end" @selected($form['summary_mode'] === 'match_end')>{{ __('stream.sm_match_end') }}</option>
+                        </select>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-set-secs">{{ __('stream.set_secs') }}</label>
+                        <input type="number" id="bc-set-secs" name="set_secs" min="5" max="120" value="{{ $form['set_secs'] }}">
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-match-secs">{{ __('stream.match_secs') }}</label>
+                        <input type="number" id="bc-match-secs" name="match_secs" min="10" max="300" value="{{ $form['match_secs'] }}">
+                    </div>
+                </div>
+                <button type="button" class="btn btn-small" id="bc-splash-save">{{ __('stream.save') }}</button>
+            </form>
+        </div>
+
+        {{-- 5. Ссылки на эфир --}}
+        <div class="ramka" id="bc-streams">
+            <h2 class="-mt-05">{{ __('stream.streams_h') }}</h2>
+            <div class="bc-hint">{{ __('stream.streams_hint') }}</div>
+            @if($courts->isEmpty())
+            <p>{{ __('stream.pult_no_courts') }}</p>
+            @else
+            <div class="bc-chips" id="bc-stream-chips" style="margin-top:1rem">
+                @foreach($courts as $c)
+                <button type="button" class="btn btn-small btn-secondary" data-stream-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
+                @endforeach
+            </div>
+            <form id="bc-streams-form" onsubmit="return false">
+                @foreach($platformLabels as $k => $label)
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-s-{{ $k }}">{{ $label }}</label>
+                    <input type="url" id="bc-s-{{ $k }}" data-platform="{{ $k }}" maxlength="300" placeholder="https://">
+                </div>
+                @endforeach
+                <button type="button" class="btn btn-small" id="bc-streams-save">{{ __('stream.save') }}</button>
+            </form>
+            @endif
+        </div>
+
+        {{-- 6. Как подключить камеру --}}
+        <div class="ramka">
+            <h2 class="-mt-05">{{ __('stream.howto_h') }}</h2>
+            <ul class="bc-howto">
+                <li>{!! __('stream.howto_phone') !!}</li>
+                <li>{!! __('stream.howto_laptop') !!}</li>
+                <li>{{ __('stream.howto_quality') }}</li>
+            </ul>
+        </div>
+
+        @endif
+    </div>
+
+    <div class="bc-toast" id="bc-toast"></div>
+
+    <x-slot name="script">
+        <script src="{{ asset('assets/qrcode.js') }}?v={{ filemtime(public_path('assets/qrcode.js')) }}"></script>
+        <script>
+        (function () {
+            var CFG = @json($cfg);
+            if (!CFG.occurrenceId) { return; }
+            var $ = jQuery, S = CFG.s;
+            var courts = CFG.courts, byId = {};
+            courts.forEach(function (c) { byId[c.id] = c; });
+
+            /* ---------- общие ---------- */
+            var toastTimer;
+            function toast(msg, err) {
+                var el = document.getElementById('bc-toast');
+                el.textContent = msg; el.classList.toggle('err', !!err); el.classList.add('on');
+                clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove('on'); }, 2200);
+            }
+            function errText(xhr) {
+                var j = xhr && xhr.responseJSON;
+                if (j && j.errors) { var k = Object.keys(j.errors)[0]; return j.errors[k][0]; }
+                return (j && j.message) || S.error;
+            }
+            function fail(xhr) {
+                var t = errText(xhr);
+                if (window.swal) { swal({ text: t, icon: 'error' }); } else { toast(t, true); }
+            }
+            function call(method, url, data, ok, bad) {
+                var fd = (data instanceof FormData);
+                if (fd) { data.append('_method', method); } else { data = $.extend({ _method: method }, data || {}); }
+                $.ajax({
+                    url: url, type: 'POST', data: data, dataType: 'json',
+                    processData: !fd, contentType: fd ? false : 'application/x-www-form-urlencoded; charset=UTF-8',
+                    headers: { 'X-CSRF-TOKEN': CFG.csrf, 'Accept': 'application/json' },
+                    xhrFields: { withCredentials: true },
+                    success: function (r) { if (ok) { ok(r); } },
+                    error: function (xhr) { if (bad) { bad(xhr); } else { fail(xhr); } }
+                });
+            }
+            function confirmThen(text, fn) {
+                if (!window.swal) { if (confirm(text)) { fn(); } return; }
+                swal({ text: text, icon: 'warning', buttons: { cancel: { text: S.cancel, visible: true }, confirm: { text: S.yes } } })
+                    .then(function (v) { if (v) { fn(); } });
+            }
+            function reload() { location.reload(); }
+            function esc(s) { return $('<div>').text(s == null ? '' : s).html(); }
+            function selVal(sel) { var v = $(sel).val(); return v; }
+
+            /* ---------- площадки ---------- */
+            $('#bc-add-court').on('click', function () {
+                var name = $.trim($('#bc-new-court').val());
+                if (!name) { return; }
+                call('POST', CFG.base + '/courts', { name: name, occurrence_id: CFG.occurrenceId }, reload);
+            });
+            $(document).on('click', '.bc-rename', function () {
+                var box = $(this).closest('[data-court]');
+                call('PATCH', CFG.base + '/courts/' + box.data('court'), { name: $.trim(box.find('.bc-rename-input').val()) }, reload);
+            });
+            $(document).on('click', '.bc-toggle', function () {
+                var box = $(this).closest('[data-court]');
+                call('PATCH', CFG.base + '/courts/' + box.data('court'), { is_active: $(this).data('active') ? 0 : 1 }, reload);
+            });
+            $(document).on('click', '.bc-assign', function () {
+                var row = $(this).closest('[data-match]');
+                call('POST', CFG.base + '/matches/' + row.data('match') + '/court', { court_id: row.find('.bc-assign-select').val() },
+                    function () { toast(S.saved); setTimeout(reload, 500); });
+            });
+
+            /* ---------- ссылки оверлея ---------- */
+            $('#bc-issue-day').on('click', function () {
+                call('POST', CFG.base + '/day-court/link', { occurrence_id: CFG.occurrenceId }, reload);
+            });
+            $(document).on('click', '.bc-issue', function () {
+                call('POST', CFG.base + '/courts/' + $(this).closest('[data-court]').data('court') + '/link', {}, reload);
+            });
+            $(document).on('click', '.bc-regen', function () {
+                var id = $(this).closest('[data-court]').data('court');
+                confirmThen(S.regenQ, function () { call('POST', CFG.base + '/courts/' + id + '/link', {}, reload); });
+            });
+            $(document).on('click', '.bc-revoke', function () {
+                var id = $(this).closest('[data-court]').data('court');
+                confirmThen(S.revokeQ, function () { call('DELETE', CFG.base + '/courts/' + id + '/link', {}, reload); });
+            });
+            $(document).on('click', '.bc-copy', function () {
+                var inp = $(this).closest('[data-court]').find('.bc-link-input')[0];
+                inp.focus(); inp.select(); inp.setSelectionRange(0, 9999);
+                var done = function () { toast(S.copied); };
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(inp.value).then(done, function () { try { document.execCommand('copy'); done(); } catch (e) {} });
+                } else { try { document.execCommand('copy'); done(); } catch (e) {} }
+            });
+            $(document).on('click', '.bc-qr-btn', function () {
+                var box = $(this).closest('[data-court]').find('.bc-qr');
+                if (!box.hasClass('on') && !box.children().length) {
+                    var qr = qrcode(0, 'M'); qr.addData(box.data('url')); qr.make();
+                    box.html(qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true }));
+                }
+                box.toggleClass('on');
+            });
+
+            /* ---------- пульт ---------- */
+            var cur = null, pollTimer = null, demo = '';
+            var saved = parseInt(sessionStorage.getItem('bc_court_' + CFG.occurrenceId), 10);
+            var first = courts.filter(function (c) { return c.is_active; })[0] || courts[0];
+            if (first) { cur = byId[saved] || first; }
+
+            function modeName(m) { return S.modes[m] || m; }
+            function liveMode(c) { return c.mode === 'live' ? 'live' : c.mode; }
+
+            function renderPult() {
+                if (!cur) { return; }
+                $('#bc-pult-chips [data-court-chip]').each(function () {
+                    $(this).toggleClass('btn-secondary', $(this).data('court-chip') !== cur.id);
+                });
+                var frame = document.getElementById('bc-frame'), empty = document.getElementById('bc-frame-empty');
+                var url = cur.link ? cur.link.url + (cur.link.url.indexOf('?') < 0 ? '?preview=1' : '&preview=1') + (demo ? '&demo=' + demo : '') : '';
+                if (url) {
+                    if (frame.getAttribute('data-src') !== url) { frame.setAttribute('data-src', url); frame.src = url; }
+                    frame.style.display = ''; empty.style.display = 'none';
+                } else {
+                    frame.removeAttribute('data-src'); frame.removeAttribute('src'); frame.style.display = 'none'; empty.style.display = '';
+                }
+                var manual = cur.manual_mode;
+                var ban = $('#bc-banner');
+                ban.toggleClass('on', !!manual);
+                $('#bc-banner-text').text(manual ? S.manualBanner.replace(':m', modeName(manual)) : '');
+                $('#bc-modes [data-mode]').each(function () {
+                    var m = $(this).data('mode');
+                    $(this).toggleClass('on', manual ? m === manual : m === 'auto');
+                });
+                $('#bc-caption').text(manual ? '' : S.captionAuto.replace(':m', modeName(cur.mode)));
+                var mt = cur.match ? ((cur.match.home || '?') + ' — ' + (cur.match.away || '?')) : '—';
+                $('#bc-match-name').text(mt + (cur.manual_match_id ? '' : ' (' + S.matchAuto + ')'));
+                renderMatchList();
+            }
+            function renderMatchList() {
+                var box = $('#bc-matchlist').empty();
+                var reset = $('<button type="button">').text('↺ ' + $('#bc-match-pick').data('reset')).toggleClass('sel', !cur.manual_match_id).data('id', 0);
+                box.append(reset);
+                if (!cur.matches.length) { box.append($('<div class="bc-hint">').text(S.matchNone)); }
+                cur.matches.forEach(function (m) {
+                    box.append($('<button type="button">').text(m.label + (m.stage ? ' · ' + m.stage : '')).toggleClass('sel', cur.manual_match_id === m.id).data('id', m.id));
+                });
+            }
+            function applyControl(r) {
+                cur.mode = r.mode; cur.manual_mode = r.manual_mode; cur.manual_match_id = r.manual_match_id ? parseInt(r.manual_match_id, 10) : null;
+                cur.match = r.match;
+                renderPult(); toast(S.saved);
+            }
+            function control(data) { call('POST', CFG.base + '/courts/' + cur.id + '/control', data, applyControl); }
+
+            $('#bc-match-pick').data('reset', @json(__('stream.match_reset')));
+            $('#bc-pult-chips').on('click', '[data-court-chip]', function () {
+                cur = byId[$(this).data('court-chip')];
+                sessionStorage.setItem('bc_court_' + CFG.occurrenceId, cur.id);
+                renderPult(); poll();
+            });
+            function reloadFrame() { var f = document.getElementById('bc-frame'); if (demo && f.getAttribute('data-src')) { f.src = f.getAttribute('data-src'); } }
+            $('#bc-demos').on('click', '[data-demo]', function () {
+                demo = String($(this).data('demo') || '');
+                $('#bc-demos [data-demo]').removeClass('on'); $(this).addClass('on');
+                renderPult();
+            });
+            $('#bc-modes').on('click', '[data-mode]', function () { control({ mode: $(this).data('mode') }); });
+            $('#bc-back-auto').on('click', function () { control({ mode: 'auto' }); });
+            $('#bc-match-pick').on('click', function () { $('#bc-matchlist').toggleClass('on'); });
+            $('#bc-matchlist').on('click', 'button', function () {
+                var id = $(this).data('id');
+                control({ match_id: id ? id : '' });
+                $('#bc-matchlist').removeClass('on');
+            });
+
+            // Подпись «сейчас …» следует за автоматикой: публичный state той же ссылки
+            function poll() {
+                clearTimeout(pollTimer);
+                if (!cur || !cur.link) { return; }
+                var c = cur, stateUrl = c.link.url.replace(/\/?(\?.*)?$/, '') + '/state';
+                $.ajax({ url: stateUrl, dataType: 'json', cache: false }).done(function (st) {
+                    if (cur === c && !c.manual_mode) { c.mode = st.mode; c.match = st.match; renderPult(); }
+                }).always(function () { pollTimer = setTimeout(poll, 5000); });
+            }
+            renderPult(); poll();
+
+            /* ---------- оформление ---------- */
+            function themeNow() {
+                return { template: $('#bc-template').val(), corner: $('#bc-corner').val(),
+                    show_set_scores: $('#bc-set-scores').is(':checked'), show_logos: $('#bc-show-logos').is(':checked'),
+                    scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked') };
+            }
+            function pushTheme() {
+                $('#bc-scale-v').text($('#bc-scale').val() + ' %'); $('#bc-opacity-v').text($('#bc-opacity').val() + ' %');
+                var f = document.getElementById('bc-frame');
+                if (f && f.contentWindow) { f.contentWindow.postMessage({ type: 'bc-theme', theme: themeNow() }, location.origin); }
+            }
+            $('#bc-theme-form').on('input change', 'input, select', pushTheme);
+            $(document).on('change', '.bc-short', function () {
+                var v = $.trim($(this).val());
+                call('POST', CFG.base + '/teams/' + $(this).closest('[data-team]').data('team') + '/short-name', { short_name: v }, function () { toast(S.saved); reloadFrame(); });
+            });
+            $('#bc-theme-save').on('click', function () {
+                call('POST', CFG.base + '/theme', {
+                    occurrence_id: CFG.occurrenceId,
+                    template: $('#bc-template').val(), corner: $('#bc-corner').val(),
+                    show_set_scores: $('#bc-set-scores').is(':checked') ? 1 : 0,
+                    show_logos: $('#bc-show-logos').is(':checked') ? 1 : 0,
+                    scale: $('#bc-scale').val(), opacity: $('#bc-opacity').val(), edge_margin: $('#bc-edge').val(),
+                    show_team_names: $('#bc-team-names').is(':checked') ? 1 : 0
+                }, function () { toast(S.saved); });
+            });
+
+            function setColor(box, color) {
+                call('POST', CFG.base + '/teams/' + box.data('team') + '/color', { color: color }, function (r) {
+                    box.find('.bc-sw').removeClass('sel').filter(function () { return String($(this).data('color')).toUpperCase() === r.color.toUpperCase(); }).addClass('sel');
+                    box.find('.bc-hex').val(r.color); toast(S.saved); reloadFrame();
+                });
+            }
+            $(document).on('click', '.bc-team .bc-sw[data-color]', function () { setColor($(this).closest('[data-team]'), $(this).data('color')); });
+            $(document).on('change', '.bc-hex', function () {
+                var v = $.trim($(this).val()); if (v && v.charAt(0) !== '#') { v = '#' + v; }
+                if (!/^#[0-9a-fA-F]{6}$/.test(v)) { toast(S.error, true); return; }
+                setColor($(this).closest('[data-team]'), v);
+            });
+            $(document).on('change', '.bc-logo-file', function () {
+                if (!this.files.length) { return; }
+                var fd = new FormData(); fd.append('file', this.files[0]);
+                call('POST', CFG.base + '/teams/' + $(this).closest('[data-team]').data('team') + '/logo', fd, function () { toast(S.saved); setTimeout(reload, 400); });
+            });
+            $(document).on('click', '.bc-logo-del', function () {
+                call('DELETE', CFG.base + '/teams/' + $(this).closest('[data-team]').data('team') + '/logo', {}, function () { toast(S.saved); setTimeout(reload, 400); });
+            });
+
+            /* ---------- заставка ---------- */
+            $('#bc-timer').on('change', function () { $('#bc-custom-wrap').toggle($(this).val() === 'custom'); });
+            $('#bc-splash-save').on('click', function () {
+                call('POST', CFG.base + '/splash', {
+                    occurrence_id: CFG.occurrenceId, text: $('#bc-text').val(), timer: $('#bc-timer').val(),
+                    custom_at: $('#bc-custom-at').val(), summary_mode: $('#bc-summary-mode').val(),
+                    set_secs: $('#bc-set-secs').val(), match_secs: $('#bc-match-secs').val()
+                }, function () { toast(S.saved); });
+            });
+            $('#bc-bg-file').on('change', function () {
+                if (!this.files.length) { return; }
+                var fd = new FormData(); fd.append('file', this.files[0]); fd.append('occurrence_id', CFG.occurrenceId);
+                call('POST', CFG.base + '/bg', fd, function (r) {
+                    if (r.url) { $('#bc-bg-img').attr('src', r.url + (r.url.indexOf('?') < 0 ? '?t=' : '&t=') + Date.now()).show(); $('#bc-bg-del').show(); }
+                    toast(S.saved);
+                });
+                this.value = '';
+            });
+            $('#bc-bg-del').on('click', function () {
+                call('DELETE', CFG.base + '/bg', { occurrence_id: CFG.occurrenceId }, function () { $('#bc-bg-img').hide(); $('#bc-bg-del').hide(); toast(S.saved); });
+            });
+
+            /* ---------- ссылки на эфир ---------- */
+            var curStream = first ? (byId[saved] || first) : null;
+            function fillStreams() {
+                if (!curStream) { return; }
+                $('#bc-stream-chips [data-stream-chip]').each(function () { $(this).toggleClass('btn-secondary', $(this).data('stream-chip') !== curStream.id); });
+                $('#bc-streams-form [data-platform]').each(function () { $(this).val((curStream.streams || {})[$(this).data('platform')] || ''); });
+            }
+            $('#bc-stream-chips').on('click', '[data-stream-chip]', function () { curStream = byId[$(this).data('stream-chip')]; fillStreams(); });
+            $('#bc-streams-save').on('click', function () {
+                var urls = {};
+                $('#bc-streams-form [data-platform]').each(function () { urls[$(this).data('platform')] = $.trim($(this).val()); });
+                call('POST', CFG.base + '/courts/' + curStream.id + '/streams', { urls: urls }, function (r) { curStream.streams = r.urls; toast(S.saved); });
+            });
+            fillStreams();
+        })();
+        </script>
+    </x-slot>
+</x-voll-layout>

@@ -44,6 +44,9 @@
         <div class="ramka"><div class="f-14" style="opacity:.75">🏅 {{ __('games.rated_note') }}</div></div>
         @endif
 
+        @php $__wOcc = $occurrence->id; @endphp
+        @include('broadcast._watch', ['event' => $event, 'occurrenceId' => $__wOcc, 'wrap' => true])
+
         {{-- Вечер / серия --}}
         <div class="ramka">
             <div class="gm-actions">

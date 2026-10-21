@@ -1149,6 +1149,28 @@ Route::middleware([
 
     Route::get('/events/{event}/tournament/setup', [TournamentController::class, 'setup'])
         ->name('tournament.setup');
+
+    // Трансляция: «Настройка стрима» (она же пульт). Права — canManageEvent внутри контроллера.
+    Route::prefix('/events/{event}/broadcast')->name('broadcast.setup')->group(function () {
+        $c = \App\Http\Controllers\BroadcastSetupController::class;
+        Route::get('/', [$c, 'show']);
+        Route::post('/courts', [$c, 'storeCourt'])->name('.courts.store');
+        Route::patch('/courts/{court}', [$c, 'updateCourt'])->whereNumber('court')->name('.courts.update');
+        Route::post('/courts/{court}/link', [$c, 'issueLink'])->whereNumber('court')->name('.link.issue');
+        Route::post('/day-court/link', [$c, 'issueDayLink'])->name('.daylink.issue');
+        Route::delete('/courts/{court}/link', [$c, 'revokeLink'])->whereNumber('court')->name('.link.revoke');
+        Route::post('/courts/{court}/control', [$c, 'control'])->whereNumber('court')->name('.control');
+        Route::post('/courts/{court}/streams', [$c, 'streams'])->whereNumber('court')->name('.streams');
+        Route::post('/matches/{match}/court', [$c, 'assignMatch'])->whereNumber('match')->name('.match.court');
+        Route::post('/theme', [$c, 'saveTheme'])->name('.theme');
+        Route::post('/splash', [$c, 'saveSplash'])->name('.splash');
+        Route::post('/bg', [$c, 'uploadBg'])->name('.bg.upload');
+        Route::delete('/bg', [$c, 'deleteBg'])->name('.bg.delete');
+        Route::post('/teams/{team}/color', [$c, 'teamColor'])->whereNumber('team')->name('.team.color');
+        Route::post('/teams/{team}/short-name', [$c, 'teamShortName'])->whereNumber('team')->name('.team.short');
+        Route::post('/teams/{team}/logo', [$c, 'teamLogo'])->whereNumber('team')->name('.team.logo');
+        Route::delete('/teams/{team}/logo', [$c, 'deleteTeamLogo'])->whereNumber('team')->name('.team.logo.delete');
+    });
     Route::post('/events/{event}/tournament/sync-league', [TournamentController::class, 'syncAllTeamsToLeague'])
         ->name('tournament.syncLeague');
 

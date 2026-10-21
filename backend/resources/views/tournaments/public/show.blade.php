@@ -98,6 +98,8 @@
 				<a href="{{ route('tournament.tv', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" target="_blank" class="btn btn-secondary">
 					📺 TV Mode
 				</a>
+				@php $__courtStreams = app(\App\Services\Broadcast\StreamLinksService::class)->forEvent((int) $event->id, $selectedOccurrence?->id); @endphp
+				@include('broadcast._watch', ['event' => $event, 'occurrenceId' => $selectedOccurrence?->id])
 				<a href="{{ route('tournament.pdf.schedule', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" data-file-download class="btn btn-secondary">
 					📄 {{ __('tournaments.pub_pdf_schedule_short') }}
 				</a>
@@ -626,6 +628,8 @@
 				<span class="match-score-cell b-700">
 					@if($m->isLive())
 					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}">🔴 {{ __('tournaments.pub_match_live') }}</span>
+					@php $__ls = $m->court_id ? ($__courtStreams[$m->court_id] ?? null) : null; @endphp
+					@if($__ls)<a href="{{ $__ls['links'][0]['url'] }}" target="_blank" rel="noopener nofollow" class="blink b-600 f-12" style="display:block">📡 {{ __('stream.watch') }}</a>@endif
 					@elseif(!$m->teamHome || !$m->teamAway)
 					—
 					@else

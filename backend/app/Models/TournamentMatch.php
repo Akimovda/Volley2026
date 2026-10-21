@@ -19,6 +19,7 @@ class TournamentMatch extends Model
         'team_home_id',
         'team_away_id',
         'court',
+        'court_id',
         'scheduled_at',
         'status',
         'winner_team_id',
@@ -76,6 +77,11 @@ class TournamentMatch extends Model
     public function stage(): BelongsTo
     {
         return $this->belongsTo(TournamentStage::class, 'stage_id');
+    }
+
+    public function courtModel(): BelongsTo
+    {
+        return $this->belongsTo(EventCourt::class, 'court_id');
     }
 
     public function group(): BelongsTo
