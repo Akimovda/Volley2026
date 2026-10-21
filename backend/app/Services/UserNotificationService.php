@@ -476,6 +476,30 @@ final class UserNotificationService
         );
     }
 
+    /** Ведущего матчей площадки пригласили по токен-ссылке (открывается только под его аккаунтом). */
+    public function createBroadcastScorerInvitedNotification(
+        int $userId,
+        int $eventId,
+        string $eventTitle,
+        string $courtName,
+        string $url,
+    ): UserNotification {
+        return $this->create(
+            userId: $userId,
+            type: 'broadcast_scorer_invited',
+            title: '🏐 ' . __('broadcast.scorer_invite_title'),
+            body: __('broadcast.scorer_invite_body', ['court' => $courtName, 'event' => $eventTitle]),
+            payload: [
+                'event_id'    => $eventId,
+                'event_title' => $eventTitle,
+                'court_name'  => $courtName,
+                'button_text' => __('broadcast.scorer_invite_button'),
+                'button_url'  => $url,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max', 'push']
+        );
+    }
+
     public function createTrainerRatingRequestNotification(
         int $userId,
         int $eventId,

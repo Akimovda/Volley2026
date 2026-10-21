@@ -294,6 +294,7 @@ class MatchLineupService
         int $firstServeTeamId,
         ?User $recordedBy = null,
         ?string $recordedByName = null,
+        ?int $recordedByLinkId = null,
     ): MatchSetStart {
         $profile = $this->profile($match);
         $this->assertEnabled($profile);
@@ -302,7 +303,7 @@ class MatchLineupService
         $away = (int) $match->team_away_id;
 
         $start = DB::transaction(function () use (
-            $match, $setNumber, $lineups, $firstServeTeamId, $recordedBy, $recordedByName, $profile, $home, $away
+            $match, $setNumber, $lineups, $firstServeTeamId, $recordedBy, $recordedByName, $recordedByLinkId, $profile, $home, $away
         ) {
             $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
             $this->assertEditable($locked, $setNumber);
@@ -318,7 +319,7 @@ class MatchLineupService
                 throw new InvalidArgumentException('Укажите, какая из команд матча подаёт первой.');
             }
 
-            $rows = $this->validatedLineupRows($locked, $setNumber, $lineups, $profile, $home, $away, $recordedBy, $recordedByName);
+            $rows = $this->validatedLineupRows($locked, $setNumber, $lineups, $profile, $home, $away, $recordedBy, $recordedByName, $recordedByLinkId);
 
             MatchSetLineup::where('match_id', $locked->id)->where('set_number', $setNumber)->delete();
             MatchSetLineup::insert($rows);
@@ -328,6 +329,7 @@ class MatchLineupService
                 [
                     'first_serve_team_id' => $firstServeTeamId,
                     'recorded_by_user_id' => $recordedBy?->id,
+                    'recorded_by_link_id' => $recordedByLinkId,
                     'recorded_by_name'    => $recordedByName,
                 ]
             );
@@ -352,6 +354,7 @@ class MatchLineupService
         int $away,
         ?User $by,
         ?string $byName,
+        ?int $byLinkId = null,
     ): array {
         $roster = $this->roster($match);
         $size = $profile['on_court_size'];
@@ -396,7 +399,7 @@ class MatchLineupService
                 $zones[$zone] = true;
                 $seen[$uid] = true;
 
-                $rows[] = $this->lineupRow($match, $setNumber, $tid, $uid, $pos, $zone, $by, $byName, $now);
+                $rows[] = $this->lineupRow($match, $setNumber, $tid, $uid, $pos, $zone, $by, $byName, $now, $byLinkId);
             }
 
             $liberos = $team['libero'] ?? null;
@@ -416,19 +419,19 @@ class MatchLineupService
                     throw new InvalidArgumentException('Игрок не может быть в составе дважды или в обеих командах.');
                 }
                 $seen[$lid] = true;
-                $rows[] = $this->lineupRow($match, $setNumber, $tid, $lid, self::LIBERO, null, $by, $byName, $now);
+                $rows[] = $this->lineupRow($match, $setNumber, $tid, $lid, self::LIBERO, null, $by, $byName, $now, $byLinkId);
             }
         }
 
         return $rows;
     }
 
-    private function lineupRow(TournamentMatch $match, int $set, int $tid, int $uid, string $pos, ?int $zone, ?User $by, ?string $byName, $now): array
+    private function lineupRow(TournamentMatch $match, int $set, int $tid, int $uid, string $pos, ?int $zone, ?User $by, ?string $byName, $now, ?int $byLinkId = null): array
     {
         return [
             'match_id' => $match->id, 'set_number' => $set, 'team_id' => $tid, 'user_id' => $uid,
             'position' => $pos, 'zone' => $zone,
-            'recorded_by_user_id' => $by?->id, 'recorded_by_link_id' => null, 'recorded_by_name' => $byName,
+            'recorded_by_user_id' => $by?->id, 'recorded_by_link_id' => $byLinkId, 'recorded_by_name' => $byName,
             'created_at' => $now, 'updated_at' => $now,
         ];
     }
@@ -447,8 +450,9 @@ class MatchLineupService
         ?User $recordedBy = null,
         ?string $recordedByName = null,
         ?string $clientRequestId = null,
+        ?int $recordedByLinkId = null,
     ): MatchLineupEvent {
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId, byLinkId: $recordedByLinkId, build:
             function (array $team, array $roster) use ($outUserId, $inUserId) {
                 if ($outUserId === $inUserId) {
                     throw new InvalidArgumentException('Выберите двух разных игроков.');
@@ -495,13 +499,14 @@ class MatchLineupService
         ?User $recordedBy = null,
         ?string $recordedByName = null,
         ?string $clientRequestId = null,
+        ?int $recordedByLinkId = null,
     ): MatchLineupEvent {
         $profile = $this->profile($match);
         if (!$profile['has_libero']) {
             throw new InvalidArgumentException('В этой схеме игры либеро не предусмотрен.');
         }
 
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId, byLinkId: $recordedByLinkId, build:
             function (array $team) use ($partnerUserId) {
                 $libero = $team['libero_id'];
                 if (!$libero) {
@@ -531,8 +536,9 @@ class MatchLineupService
         ?User $recordedBy = null,
         ?string $recordedByName = null,
         ?string $clientRequestId = null,
+        ?int $recordedByLinkId = null,
     ): MatchLineupEvent {
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId, byLinkId: $recordedByLinkId, build:
             function (array $team) {
                 $libero = $team['libero_id'];
                 $entry = $libero ? ($team['court'][$libero] ?? null) : null;
@@ -563,6 +569,7 @@ class MatchLineupService
         ?string $byName,
         ?string $clientRequestId,
         callable $build,
+        ?int $byLinkId = null,
     ): MatchLineupEvent {
         if ($clientRequestId !== null && $dup = $this->findByRequestId($match->id, $clientRequestId)) {
             return $dup;
@@ -576,7 +583,7 @@ class MatchLineupService
         }
 
         try {
-            [$event, $isDuplicate] = DB::transaction(function () use ($match, $setNumber, $teamId, $by, $byName, $build, $clientRequestId) {
+            [$event, $isDuplicate] = DB::transaction(function () use ($match, $setNumber, $teamId, $by, $byName, $build, $clientRequestId, $byLinkId) {
                 $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
                 if ($clientRequestId !== null && $dup = $this->findByRequestId($locked->id, $clientRequestId)) {
@@ -598,7 +605,7 @@ class MatchLineupService
                     'match_id' => $locked->id, 'set_number' => $setNumber, 'team_id' => $teamId,
                     'seq' => $this->nextSeq($locked),
                     'score_home' => $info['home'], 'score_away' => $info['away'],
-                    'recorded_by_user_id' => $by?->id, 'recorded_by_name' => $byName,
+                    'recorded_by_user_id' => $by?->id, 'recorded_by_link_id' => $byLinkId, 'recorded_by_name' => $byName,
                     'client_request_id' => $clientRequestId,
                 ]);
 

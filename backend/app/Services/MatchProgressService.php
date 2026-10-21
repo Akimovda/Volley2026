@@ -132,6 +132,7 @@ class MatchProgressService
                     'player'      => $event->player_id ? ($players[$event->player_id] ?? null) : null,
                     'score_home'  => $homeScore,
                     'score_away'  => $awayScore,
+                    'by'          => $withRecorder ? $this->recorderName($event) : null,
                 ];
             }
 
@@ -142,6 +143,27 @@ class MatchProgressService
         }
 
         return ['has_progress' => true, 'sets' => $sets];
+    }
+
+    /** @var array<int, ?string> */
+    private array $recorderNames = [];
+
+    /** Кто ввёл действие: имя ведущего по ссылке или ФИО залогиненного пользователя. */
+    private function recorderName($ev): ?string
+    {
+        if (!empty($ev->recorded_by_name)) {
+            return (string) $ev->recorded_by_name;
+        }
+        $uid = (int) ($ev->recorded_by_user_id ?? 0);
+        if (!$uid) {
+            return null;
+        }
+        if (!array_key_exists($uid, $this->recorderNames)) {
+            $u = User::find($uid);
+            $this->recorderNames[$uid] = $u ? (trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) ?: null) : null;
+        }
+
+        return $this->recorderNames[$uid];
     }
 
     /** Строка ленты для события состава + готовый (уже переведённый) текст попапа. */
@@ -180,17 +202,11 @@ class MatchProgressService
             $summary = $surname($out) . ' ↔ ' . $surname($in);
         }
 
-        if ($withRecorder && ($ev->recorded_by_user_id || $ev->recorded_by_name)) {
-            $by = $ev->recorded_by_name;
-            if (!$by && $ev->recorded_by_user_id) {
-                $u = User::find($ev->recorded_by_user_id);
-                $by = $u ? trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) : null;
-            }
-            if ($by) {
-                $lines[] = __('tournaments.lineup_popup_by', [
-                    'name' => $by, 'time' => $ev->created_at?->copy()->setTimezone($tz)->format('H:i') ?? '',
-                ]);
-            }
+        $by = $withRecorder ? $this->recorderName($ev) : null;
+        if ($by) {
+            $lines[] = __('tournaments.lineup_popup_by', [
+                'name' => $by, 'time' => $ev->created_at?->copy()->setTimezone($tz)->format('H:i') ?? '',
+            ]);
         }
 
         return [
@@ -201,6 +217,7 @@ class MatchProgressService
             'team_name'  => $teamName,
             'label'      => $label,
             'summary'    => $summary,
+            'by'         => $by,
             'score_home' => (int) $ev->score_home,
             'score_away' => (int) $ev->score_away,
             'popup'      => [

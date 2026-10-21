@@ -16,12 +16,14 @@ class BroadcastLink extends Model
     protected $fillable = [
         'event_id', 'occurrence_id', 'court_id', 'role', 'token', 'label',
         'created_by_user_id', 'expires_at', 'revoked_at', 'last_used_at',
+        'assigned_user_id', 'last_actor_name', 'last_actor_user_id', 'last_actor_at',
     ];
 
     protected $casts = [
         'expires_at' => 'datetime',
         'revoked_at' => 'datetime',
         'last_used_at' => 'datetime',
+        'last_actor_at' => 'datetime',
     ];
 
     public function event(): BelongsTo
@@ -32,6 +34,17 @@ class BroadcastLink extends Model
     public function court(): BelongsTo
     {
         return $this->belongsTo(EventCourt::class, 'court_id');
+    }
+
+    /** Приглашённый пользователь (ссылка ведущего «под аккаунт»); NULL — анонимная ссылка. */
+    public function assignedUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_user_id');
+    }
+
+    public function lastActorUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'last_actor_user_id');
     }
 
     public function isActive(): bool

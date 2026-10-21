@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'abilities'           => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
             'organizer.pro'       => \App\Http\Middleware\EnsureOrganizerPro::class,
             'broadcast.link'      => \App\Http\Middleware\BroadcastLinkAccess::class,
+            'scorer.link'         => \App\Http\Middleware\ScorerLinkAccess::class,
         ]);
         $middleware->append(\App\Http\Middleware\DetectBrand::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);

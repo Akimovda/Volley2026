@@ -46,6 +46,8 @@ class MatchRallyService
         ?int $assistUserId,
         ?User $recordedBy,
         ?string $clientRequestId = null,
+        ?string $recordedByName = null,
+        ?int $recordedByLinkId = null,
     ): MatchRallyEvent {
         // Повтор уже записанного запроса — быстрый путь без проверок и без нового seq/пересчёта/broadcast
         if ($clientRequestId !== null && $dup = $this->findByRequestId($match->id, $clientRequestId)) {
@@ -102,7 +104,7 @@ class MatchRallyService
         try {
             [$event, $isDuplicate] = DB::transaction(function () use (
                 $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
-                $digUserId, $assistUserId, $recordedBy, $clientRequestId
+                $digUserId, $assistUserId, $recordedBy, $clientRequestId, $recordedByName, $recordedByLinkId
             ) {
                 $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
@@ -138,6 +140,8 @@ class MatchRallyService
                     'dig_user_id'         => $digUserId,
                     'assist_user_id'      => $assistUserId,
                     'recorded_by_user_id' => $recordedBy?->id,
+                    'recorded_by_link_id' => $recordedByLinkId,
+                    'recorded_by_name'    => $recordedByName,
                     'seq'                 => $this->lineupService->nextSeq($locked),
                     'client_request_id'   => $clientRequestId,
                 ]);
@@ -191,12 +195,13 @@ class MatchRallyService
         ?int $expectedLastSeq = null,
         ?User $by = null,
         ?string $byName = null,
+        ?int $byLinkId = null,
     ): bool {
         if ($match->isCompleted()) {
             throw new InvalidArgumentException('Матч уже завершён.');
         }
 
-        $undone = DB::transaction(function () use ($match, $setNumber, $expectedLastSeq, $by, $byName) {
+        $undone = DB::transaction(function () use ($match, $setNumber, $expectedLastSeq, $by, $byName, $byLinkId) {
             $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
             $point = MatchRallyEvent::where('match_id', $locked->id)->where('set_number', $setNumber)
@@ -220,6 +225,7 @@ class MatchRallyService
                 'action'              => $last instanceof MatchRallyEvent ? 'undo_point' : 'undo_lineup_event',
                 'payload'             => $last->toArray(),
                 'recorded_by_user_id' => $by?->id,
+                'recorded_by_link_id' => $byLinkId,
                 'recorded_by_name'    => $byName,
             ]);
 
