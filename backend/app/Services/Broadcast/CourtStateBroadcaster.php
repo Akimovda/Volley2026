@@ -21,7 +21,16 @@ class CourtStateBroadcaster
     /** Состояние с кешем на 1 с (для публичного GET). */
     public function cached(EventCourt $court): array
     {
-        return Cache::remember(self::CACHE_PREFIX . $court->id, 1, fn () => $this->states->forCourt($court));
+        $key = self::CACHE_PREFIX . $court->id;
+        $hit = Cache::get($key);
+        // Кеш не должен пережить запланированную смену режима (иначе клиент после mode_until получит старый режим)
+        if (is_array($hit) && (empty($hit['mode_until']) || now()->lt(\Carbon\Carbon::parse($hit['mode_until'])))) {
+            return $hit;
+        }
+        $state = $this->states->forCourt($court);
+        Cache::put($key, $state, 1);
+
+        return $state;
     }
 
     public function forMatch(int|TournamentMatch|null $match): void

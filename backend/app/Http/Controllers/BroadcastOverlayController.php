@@ -17,20 +17,35 @@ class BroadcastOverlayController extends Controller
         'X-Robots-Tag'    => 'noindex, nofollow',
     ];
 
-    /** Заглушка: страница оверлея — этап А2. */
-    public function page(Request $request): Response
+    /** Страница оверлея: отдельный blade без общего layout. */
+    public function page(Request $request, CourtStateBroadcaster $broadcaster): Response
     {
-        return response(
-            '<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">'
-            . '<meta name="referrer" content="no-referrer"><title></title>'
-            . '<style>html,body{margin:0;background:transparent}</style></head><body></body></html>',
-            200,
-            self::HEADERS + ['Content-Type' => 'text/html; charset=UTF-8']
-        );
+        $this->noDebugbar();
+        /** @var BroadcastLink $link */
+        $link = $request->attributes->get('broadcast_link');
+        $court = $link->court;
+        abort_unless($court && $court->is_active, 404);
+
+        // Язык — RU по умолчанию, ?lang=en переопределяет (сессии/SetLocale на этом роуте нет)
+        $lang = $request->query('lang') === 'en' ? 'en' : 'ru';
+        app()->setLocale($lang);
+
+        $config = [
+            'stateUrl' => route('broadcast.overlay.state', ['token' => $link->token], false),
+            'channel'  => 'court.' . $court->channel_key,
+            'key'      => (string) config('reverb.apps.apps.0.key'),
+            'preview'  => $request->boolean('preview'),
+            'strings'  => trans('broadcast'),
+            'initial'  => $broadcaster->cached($court),
+        ];
+
+        return response(view('broadcast.overlay', ['config' => $config, 'preview' => $config['preview']])->render(), 200,
+            self::HEADERS + ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
     public function state(Request $request, CourtStateBroadcaster $broadcaster): JsonResponse
     {
+        $this->noDebugbar();
         /** @var BroadcastLink $link */
         $link = $request->attributes->get('broadcast_link');
         $court = $link->court;
@@ -40,5 +55,13 @@ class BroadcastOverlayController extends Controller
             // CORS: оверлей может открываться из WebView/другого домена
             'Access-Control-Allow-Origin' => '*',
         ]);
+    }
+
+    /** Панель отладки не должна попадать в кадр эфира (на dev она внедряется в любой HTML). */
+    private function noDebugbar(): void
+    {
+        if (class_exists(\Barryvdh\Debugbar\Facades\Debugbar::class)) {
+            \Barryvdh\Debugbar\Facades\Debugbar::disable();
+        }
     }
 }

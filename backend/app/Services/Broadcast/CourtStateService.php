@@ -92,8 +92,21 @@ class CourtStateService
                 $summaryScope = 'match';
                 $until = $recent['at']->copy()->addSeconds($matchSec);
             } elseif ($live) {
-                $mode = 'live';
-                $subject = $live['match'];
+                $liveState = $this->setsOf($live['match']);
+                if ($liveState['match_decided']) {
+                    // Решён по очкам, но оператор ещё не финализировал: сразу итоги матча, затем заставка.
+                    // Отмена очка вернёт live (решённости больше нет).
+                    $lastPoint = $this->lastPointAt($live['match']) ?? $live['at'];
+                    if ($matchSec > 0 && $now->lt($lastPoint->copy()->addSeconds($matchSec))) {
+                        $mode = 'match_summary';
+                        $subject = $live['match'];
+                        $summaryScope = 'match';
+                        $until = $lastPoint->copy()->addSeconds($matchSec);
+                    }
+                } else {
+                    $mode = 'live';
+                    $subject = $live['match'];
+                }
             }
         }
 
@@ -148,6 +161,8 @@ class CourtStateService
             'stats_basis' => 'attributed',
             'seq'        => $subject ? (int) DB::table('tournament_matches')->where('id', $subject->id)->value('last_seq') : 0,
             'aspect'     => $settings->aspect ?: '16:9',
+            'event'      => ['title' => $court->event?->title, 'logo_url' => $this->styles->organizerAvatarUrl($court->event?->organizer)],
+            'theme'      => $this->theme($settings),
             'now_ms'     => (int) round($now->getPreciseTimestamp(3)),
             'ts'         => $now->toIso8601String(),
         ];
@@ -229,6 +244,12 @@ class CourtStateService
         return $best;
     }
 
+    private function lastPointAt(TournamentMatch $m): ?Carbon
+    {
+        $t = MatchRallyEvent::where('match_id', $m->id)->max('created_at');
+        return $t ? Carbon::parse($t) : null;
+    }
+
     private function activityAt(TournamentMatch $m): Carbon
     {
         $times = array_filter([
@@ -246,7 +267,17 @@ class CourtStateService
         $m = (clone $base)->where('status', TournamentMatch::STATUS_COMPLETED)
             ->orderByRaw('scored_at DESC NULLS LAST')->orderByDesc('updated_at')->orderByDesc('id')->first();
 
-        return $m ? ['match' => $m, 'at' => ($m->scored_at ?? $m->updated_at)->copy()] : null;
+        if (!$m) {
+            return null;
+        }
+        $at = ($m->scored_at ?? $m->updated_at)->copy();
+        // Итоги уже показывались с момента последнего очка — финализация их не продлевает
+        $last = $this->lastPointAt($m);
+        if ($last && $last->lt($at)) {
+            $at = $last;
+        }
+
+        return ['match' => $m, 'at' => $at];
     }
 
     private function nextUnfinished(Builder $base, Carbon $now, ?int $excludeId): ?TournamentMatch
@@ -435,6 +466,20 @@ class CourtStateService
         ] : ['name' => null, 'color' => null, 'logo_url' => null];
 
         return ['home' => $side($m->teamHome), 'away' => $side($m->teamAway)];
+    }
+
+    private function theme(BroadcastSetting $settings): array
+    {
+        $t = (array) ($settings->theme ?? []);
+        $corner = $t['corner'] ?? 'top-left';
+        $template = $t['template'] ?? 'compact';
+
+        return [
+            'corner'          => in_array($corner, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $corner : 'top-left',
+            'template'        => in_array($template, ['compact', 'sets_table'], true) ? $template : 'compact',
+            'show_set_scores' => (bool) ($t['show_set_scores'] ?? true),
+            'show_logos'      => (bool) ($t['show_logos'] ?? true),
+        ];
     }
 
     private function splash(BroadcastSetting $settings, ?TournamentMatch $next): array
