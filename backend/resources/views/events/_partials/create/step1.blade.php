@@ -173,7 +173,7 @@
 													<label class="checkbox-item">
 														<input type="hidden" name="track_lineup" value="0">
 														<input type="checkbox" name="track_lineup" value="1" id="track_lineup"
-														@checked(old('track_lineup', $prefill['track_lineup'] ?? true))>
+														@checked(old('track_lineup', $prefill['track_lineup'] ?? false))>
 														<div class="custom-checkbox"></div>
 														<span>{{ __('events.track_lineup_label') }}</span>
 													</label>

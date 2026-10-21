@@ -899,7 +899,7 @@ class EventGameSettingsService
     }
 
     /**
-     * «Вести стартовый состав и замены»: у НОВЫХ классических событий включён по умолчанию,
+     * «Вести стартовый состав и замены»: у новых событий по умолчанию ВЫКЛЮЧЕН (организатор включает галочкой),
      * у существующих (строка настроек уже есть) значение не трогаем, пока форма не передала его явно.
      * Пляж и прочие форматы — выключено (учёт состава там не поддерживается).
      */
@@ -909,7 +909,7 @@ class EventGameSettingsService
             return ['track_lineup' => $classicEligible && (bool) $data['track_lineup']];
         }
 
-        return $rowExists ? [] : ['track_lineup' => $classicEligible];
+        return $rowExists ? [] : ['track_lineup' => false];
     }
 
 }
