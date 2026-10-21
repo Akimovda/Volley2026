@@ -52,15 +52,16 @@
 	var SIDES = ['home', 'away'];
 
 	function post(url, body, ok, fail) {
-		fetch(url, {
-			method: 'POST', credentials: 'same-origin',
-			headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest'},
-			body: JSON.stringify(body)
-		}).then(function (r) {
-			return r.json().catch(function () { return {}; }).then(function (j) { return {ok: r.ok, j: j}; });
-		}).then(function (x) {
-			if (x.ok && x.j.success) { ok(x.j); } else { fail((x.j && (x.j.error || x.j.message)) || T.net_err); }
-		}).catch(function () { fail(T.net_err); });
+		jQuery.ajax({
+			url: url, method: 'POST', xhrFields: {withCredentials: true},
+			contentType: 'application/json', dataType: 'json', data: JSON.stringify(body),
+			headers: {'Accept': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest'}
+		}).done(function (j) {
+			if (j && j.success) { ok(j); } else { fail((j && (j.error || j.message)) || T.net_err); }
+		}).fail(function (xhr) {
+			var j = xhr.responseJSON;
+			fail((j && (j.error || j.message)) || T.net_err);
+		});
 	}
 	function surname(n) { return String(n || '').split(' ')[0]; }
 	function posLabel(p) { return p ? (POS[p] || p) : ''; }
