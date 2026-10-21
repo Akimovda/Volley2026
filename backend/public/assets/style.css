@@ -7766,4 +7766,7 @@ body.dark .jn-row{border-color:rgba(255,255,255,.1)}
 .rw-note{font-size:13px;color:#dc2626;margin-bottom:8px;min-height:1em}
 
 .beta-badge{display:inline-block;vertical-align:middle;margin-left:.6rem;padding:.1rem .7rem;border-radius:1rem;font-size:1rem;line-height:1.5;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:#fff;background:#E7612F}
-.beta-note{font-size:1.3rem;opacity:.75;margin:.8rem 0}
+.beta-note{font-size:1.4rem;line-height:1.4;font-weight:700;color:#c62828;background:rgba(198,40,40,.08);border:2px solid #c62828;border-radius:1rem;padding:1rem 1.4rem;margin:1rem 0}
+.beta-note a{color:#c62828;text-decoration:underline}
+body.dark .beta-note{color:#ff8a80;background:rgba(255,138,128,.1);border-color:#ff8a80}
+body.dark .beta-note a{color:#ff8a80}
