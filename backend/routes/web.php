@@ -112,7 +112,7 @@ use App\Http\Controllers\Admin\AdminAppController;
 				'/court-bookings', '/coupon', '/coupons', '/registrations', '/occurrences',
 				'/division-teams', '/tournament-tiebreakers', '/tournament-tiebreaker-sets',
 				'/tournament-stages', '/tournament-matches', '/integrations',
-				'/organizer-requests', '/broadcasts', '/embed', '/e', '/lang', '/cities',
+				'/organizer-requests', '/broadcasts', '/embed', '/e', '/lang', '/cities', '/s/', '/o/',
 			];
 			$body = "User-agent: *\n";
 			foreach ($disallow as $path) {
@@ -1159,6 +1159,9 @@ Route::middleware([
         Route::post('/courts/{court}/link', [$c, 'issueLink'])->whereNumber('court')->name('.link.issue');
         Route::post('/day-court/link', [$c, 'issueDayLink'])->name('.daylink.issue');
         Route::delete('/courts/{court}/link', [$c, 'revokeLink'])->whereNumber('court')->name('.link.revoke');
+        Route::post('/courts/{court}/scorer-link', [$c, 'issueScorerLink'])->whereNumber('court')->name('.scorer.issue');
+        Route::post('/courts/{court}/scorer-invite', [$c, 'inviteScorer'])->whereNumber('court')->name('.scorer.invite');
+        Route::delete('/courts/{court}/scorer-links/{link}', [$c, 'revokeScorerLink'])->whereNumber(['court', 'link'])->name('.scorer.revoke');
         Route::post('/courts/{court}/control', [$c, 'control'])->whereNumber('court')->name('.control');
         Route::post('/courts/{court}/streams', [$c, 'streams'])->whereNumber('court')->name('.streams');
         Route::post('/courts/{court}/destinations', [$c, 'storeDestination'])->whereNumber('court')->name('.dest.store');
@@ -1458,7 +1461,8 @@ Route::get('/s/{slug}', function (string $slug) {
     $season = App\Models\TournamentSeason::where('slug', $slug)->firstOrFail();
     $leagueSlug = $season->league?->slug ?? 'league';
     return redirect()->route('seasons.show.slug', [$leagueSlug, $slug], 301);
-})->name('seasons.show.slug.legacy');
+})->where('slug', '(?![A-Za-z0-9]{40}$)[^/]+') // 40 симв. [A-Za-z0-9] — токен ведущего матча (/s/{token}, routes/broadcast.php)
+    ->name('seasons.show.slug.legacy');
 
 
 /*

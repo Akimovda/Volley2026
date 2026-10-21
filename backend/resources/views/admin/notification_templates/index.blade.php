@@ -33,7 +33,7 @@
                 'Приглашения'  => ['event_invite','group_invite','tournament_team_invite'],
                 'Мероприятия'  => ['event_reminder','event_cancelled','event_cancelled_quorum','friend_joined_event','new_event_in_city','weekly_digest'],
                 'Платежи'      => ['payment_confirmed','payment_cancelled','payment_rejected','payment_user_confirmed','cash_payment_reminder','cash_payment_confirmed','cash_payment_control_reminder','cash_payment_banned'],
-                'Турниры'      => ['tournament_match_upcoming','tournament_match_result','tournament_advancement','tournament_completed','tournament_started','tournament_photos','tournament_application_incomplete','tournament_application_completed','tournament_application_auto_rejected'],
+                'Турниры'      => ['broadcast_scorer_invited','tournament_match_upcoming','tournament_match_result','tournament_advancement','tournament_completed','tournament_started','tournament_photos','tournament_application_incomplete','tournament_application_completed','tournament_application_auto_rejected'],
                 'Лиги и сезоны'=> ['season_promotion','season_elimination','season_reserve_activated','season_confirm_participation','promotion','reserve_spot_offered'],
                 'Социальное'   => ['user_level_voted','user_play_liked','followed_player_registered'],
                 'Тренеры'      => ['trainer_assigned', 'trainer_rating_request'],

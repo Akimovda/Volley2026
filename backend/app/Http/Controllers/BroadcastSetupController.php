@@ -60,7 +60,11 @@ class BroadcastSetupController extends Controller
 
         $tz = $occurrence?->timezone ?: ($event->timezone ?: 'Europe/Moscow');
 
-        $courtData = $courts->map(function (EventCourt $c) use ($activeLinks, $tz) {
+        $scorerLinks = BroadcastLink::with('assignedUser')->where('event_id', $event->id)->where('role', BroadcastLink::ROLE_SCORER)
+            ->whereNull('revoked_at')->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+            ->orderBy('id')->get()->groupBy('court_id');
+
+        $courtData = $courts->map(function (EventCourt $c) use ($activeLinks, $tz, $scorerLinks) {
             $state = $this->broadcaster->cached($c);
             $link = $activeLinks[$c->id] ?? null;
             $o = $c->override;
@@ -77,6 +81,7 @@ class BroadcastSetupController extends Controller
                 'streams'   => (array) ($o?->stream_urls ?? []),
                 'destinations' => $c->destinations->sortBy('id')->map(fn ($d) => $this->destinationRow($d))->values()->all(),
                 'matches'   => $this->matchesOfCourt($c),
+                'scorer'    => $this->scorerRows($scorerLinks->get($c->id, collect()), $tz),
             ];
         })->values();
 
@@ -218,6 +223,74 @@ class BroadcastSetupController extends Controller
         $this->ownCourt($event, $court);
         BroadcastLink::where('court_id', $court->id)->where('role', BroadcastLink::ROLE_OVERLAY)->whereNull('revoked_at')->get()
             ->each(fn ($l) => $this->links->revoke($request->user(), $l));
+
+        return response()->json(['ok' => true]);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Ссылки ведущих (ввод счёта по токену)                              */
+    /* ------------------------------------------------------------------ */
+
+    /** @return array{anon:?array, invites:array<int,array>} */
+    private function scorerRows($links, string $tz): array
+    {
+        $row = function (BroadcastLink $l) use ($tz) {
+            $fmt = fn ($d) => $d ? $d->copy()->setTimezone($tz)->format('d.m H:i') : null;
+            $u = $l->assignedUser;
+            return [
+                'id'         => (int) $l->id,
+                'url'        => route('scorer.hub', ['token' => $l->token]),
+                'user'       => $u ? (trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')) ?: ('ID ' . $u->id)) : null,
+                'expires'    => $fmt($l->expires_at),
+                'used'       => $fmt($l->last_used_at),
+                'actor'      => $l->last_actor_name,
+                'actor_at'   => $fmt($l->last_actor_at),
+            ];
+        };
+        $anon = $links->first(fn ($l) => !$l->assigned_user_id);
+
+        return [
+            'anon'    => $anon ? $row($anon) : null,
+            'invites' => $links->filter(fn ($l) => $l->assigned_user_id)->map($row)->values()->all(),
+        ];
+    }
+
+    /** Анонимная ссылка ведущего: выдать или перевыпустить (старая отзывается). */
+    public function issueScorerLink(Request $request, Event $event, EventCourt $court): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+
+        BroadcastLink::where('court_id', $court->id)->where('role', BroadcastLink::ROLE_SCORER)
+            ->whereNull('assigned_user_id')->whereNull('revoked_at')->get()
+            ->each(fn ($l) => $this->links->revoke($request->user(), $l));
+        $link = $this->links->createScorer($request->user(), $event, $court);
+
+        return response()->json(['ok' => true, 'url' => route('scorer.hub', ['token' => $link->token])]);
+    }
+
+    public function inviteScorer(Request $request, Event $event, EventCourt $court): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        $data = $request->validate(['user_id' => ['required', 'integer', 'exists:users,id']]);
+        $user = \App\Models\User::findOrFail((int) $data['user_id']);
+
+        // Прежнее приглашение этого же пользователя на эту площадку заменяется
+        BroadcastLink::where('court_id', $court->id)->where('role', BroadcastLink::ROLE_SCORER)
+            ->where('assigned_user_id', $user->id)->whereNull('revoked_at')->get()
+            ->each(fn ($l) => $this->links->revoke($request->user(), $l));
+        $link = $this->links->createScorer($request->user(), $event, $court, $user, true);
+
+        return response()->json(['ok' => true, 'url' => route('scorer.hub', ['token' => $link->token])]);
+    }
+
+    public function revokeScorerLink(Request $request, Event $event, EventCourt $court, BroadcastLink $link): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        abort_unless((int) $link->court_id === (int) $court->id && $link->role === BroadcastLink::ROLE_SCORER, 404);
+        $this->links->revoke($request->user(), $link);
 
         return response()->json(['ok' => true]);
     }

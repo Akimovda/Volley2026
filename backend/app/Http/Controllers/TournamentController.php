@@ -1076,65 +1076,16 @@ class TournamentController extends Controller
         }
 
         try {
-            // Под lock матча: двойной сабмит (двойной тап, повтор по сети) того же счёта —
-            // успех без повторных побочных эффектов; другой счёт у уже завершённого матча — ошибка.
-            $alreadyScored = DB::transaction(function () use ($match, $sets, $request) {
-                $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
-                if ($locked->isCompleted()) {
-                    if ($this->sameSetScores($locked, $sets)) {
-                        return true;
-                    }
-                    throw new \InvalidArgumentException('Матч уже завершён.');
-                }
-                $this->matchService->recordScore($locked, $sets, $request->user());
-                return false;
-            });
+            $result = app(\App\Services\MatchFinalizeService::class)->finalize($match, $sets, $request->user());
+            $alreadyScored = $result['already'];
 
-            // «Игра со статистикой» (обычное мероприятие): никаких турнирных последствий —
-            // ни пересчёта турнирной статистики/рейтингов, ни завершения стадии, ни перехода на setup.
-            if ($stage->type === TournamentStage::TYPE_FRIENDLY) {
-                if ($alreadyScored) {
-                    return $request->expectsJson()
-                        ? response()->json(['success' => true, 'match' => $match->fresh()])
-                        : redirect()->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])->with('success', 'Счёт записан.');
+            if ($result['friendly']) {
+                if ($request->expectsJson()) {
+                    return response()->json(['success' => true, 'match' => $match->fresh()]);
                 }
-                return $this->afterFriendlyScore($request, $event, $stage, $match);
-            }
-
-            if (!$alreadyScored) {
-                // Standings ЗАТРОНУТОЙ этим матчем группы уже пересчитаны синхронно
-                // внутри recordScore()/submitScore() (быстро, одна группа) — организатор
-                // видит верную таблицу без задержки. "Тяжёлый хвост" — player_tournament_stats
-                // всего события + career + (для сезонных) весь сезон — в очередь, не
-                // блокирует ответ страницы (report_league_tournament_setup_diag_2026-08-07.md).
-                try {
-                    \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
-                } catch (\Throwable $e) {
-                    \Log::warning('Stats rebuild dispatch failed: ' . $e->getMessage());
-                }
-
-                // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
-                $freshMatch = $freshMatch ?? $match->fresh();
-                if ($freshMatch->is_tiebreaker && $freshMatch->winner_team_id) {
-                    $tb = TournamentTiebreaker::where('match_id', $freshMatch->id)->first();
-                    if ($tb && $tb->status !== 'resolved') {
-                        $tb->update([
-                            'winner_team_id'      => $freshMatch->winner_team_id,
-                            'resolved_by_user_id' => $request->user()->id,
-                            'resolved_at'         => now(),
-                            'status'              => 'resolved',
-                        ]);
-                        if ($freshMatch->group_id) {
-                            $group = TournamentGroup::find($freshMatch->group_id);
-                            if ($group) {
-                                $this->standingsService->recalculateGroup($stage, $group);
-                            }
-                        }
-                    }
-                }
-
-                // Проверяем, завершена ли стадия
-                $this->checkStageCompletion($stage);
+                return redirect()
+                    ->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])
+                    ->with('success', 'Счёт записан.');
             }
 
             if ($request->expectsJson()) {
@@ -2776,28 +2727,6 @@ class TournamentController extends Controller
     /**
      * Redirect to setup preserving occurrence_id.
      */
-    /** После записи счёта матча «Игры со статистикой»: назад на страницу организатора. */
-    private function afterFriendlyScore(Request $request, Event $event, TournamentStage $stage, TournamentMatch $match)
-    {
-        // Рейтинговое мероприятие (events.stats_rated): результаты идут в общие рейтинги тем же путём,
-        // что и турнирные (полный пересчёт события + Elo/OpenSkill в очереди). Обычные игры — нет.
-        if ($event->stats_rated) {
-            try {
-                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
-            } catch (\Throwable $e) {
-                \Log::warning('Friendly game rating dispatch failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json(['success' => true, 'match' => $match->fresh()]);
-        }
-
-        return redirect()
-            ->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])
-            ->with('success', 'Счёт записан.');
-    }
-
     private function redirectToSetup(Event $event, ?string $message = null, bool $isError = false, ?string $anchor = null)
     {
         // Матч «Игры со статистикой» (у роута есть {match}) — возвращаем на страницу игры, а не на турнирный setup
@@ -2945,213 +2874,12 @@ class TournamentController extends Controller
 
     private function checkStageCompletion(TournamentStage $stage): void
     {
-        // King of the Court (переписано 2026-09-07) больше не создаёт
-        // TournamentMatch вообще — завершение стадии целиком управляется
-        // TournamentKingOfCourtController::endRound() (финализация после
-        // 3-го раунда), эта функция для него неприменима.
-        if ($stage->type === TournamentStage::TYPE_KING_OF_COURT) {
-            return;
-        }
-
-        $total = $stage->matches()
-            ->whereNotIn('status', [TournamentMatch::STATUS_CANCELLED])
-            ->count();
-
-        $completed = $stage->matches()
-            ->where('status', TournamentMatch::STATUS_COMPLETED)
-            ->count();
-
-        // Swiss — тот же наивный критерий ложно совпадает с "формат закончен"
-        // после каждого сыгранного тура, до клика "Следующий тур" (см.
-        // report/kotc_deps_recon_2026-08-21.md, п.4). В отличие от KotC, у Swiss
-        // нет config['current_round'] (нет одного "текущего" матча — весь тур
-        // генерируется батчем) — текущий тур вычисляется как max(round) уже
-        // СОЗДАННЫХ матчей стадии. Стадия считается завершённой только когда
-        // сыгран последний тур (rounds_count) целиком.
-        if ($total > 0 && $total === $completed && $stage->type === TournamentStage::TYPE_SWISS) {
-            $roundsCount = (int) $stage->cfg('rounds_count', 0);
-            $maxRound = (int) $stage->matches()->max('round');
-            if ($roundsCount > 0 && $maxRound < $roundsCount) {
-                return;
-            }
-        }
-
-        if ($total > 0 && $total === $completed) {
-            $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
-            $this->afterStageCompleted($stage);
-        }
+        app(\App\Services\StageCompletionService::class)->check($stage);
     }
 
-    /**
-     * Хвост checkStageCompletion(), выполняемый ПОСЛЕ выставления status=completed:
-     * автозапуск companion-стадий, гейт divisions, финальная проверка завершённости
-     * всего турнира (уведомление + промоушен). Вынесен отдельным методом, чтобы
-     * его же мог переиспользовать finishStage() (ручное завершение инкрементальной
-     * стадии организатором) без прохождения через наивные guard'ы rounds_count.
-     */
     private function afterStageCompleted(TournamentStage $stage): void
     {
-        // Проверяем завершение
-        $event = $stage->event;
-
-        // Для сезонных турниров: НЕ отправляем "турнир завершён"
-        // Каждый тур — отдельный цикл, завершение управляется промоушеном
-        if ($event->season_id) {
-            // Проверяем только: нужно ли формировать группы Hard/Lite?
-            $occId = $stage->occurrence_id;
-            $occStages = $event->tournamentStages()->where('occurrence_id', $occId);
-            $allOccCompleted = $occStages->count() > 0
-                && $occStages->where('status', TournamentStage::STATUS_COMPLETED)->count() === $occStages->count();
-
-            // Ничего не делаем — организатор сам нажимает "Применить промоушен"
-            return;
-        }
-
-        // === АВТОЗАПУСК bracket-плей-офф (только несезонные туры) ===
-        // Сезонные туры сюда не доходят (early return выше) — у них запуск ручной.
-        // Для несезонных после завершения группового этапа автоматически
-        // запускаем pending-скелет с finals_mode='bracket'. Placement и divisions
-        // остаются ручными. Защита от гонки: два последних матча группы могут
-        // завершиться почти одновременно (параллельные корты, два запроса) — оба
-        // дойдут сюда, а advanceToPlayoff() неатомарен (delete→create), что дало
-        // бы дубли сетки. Атомарный claim pending→in_progress одним UPDATE
-        // пропускает ровно один параллельный запрос (affected=1), остальные видят
-        // affected=0 и просто ничего не делают. launchStage обёрнут в транзакцию
-        // (advanceToPlayoff сам неатомарен) — при сбое откатывается, claim
-        // возвращается в pending, чтобы организатор мог запустить вручную.
-        $autoNext = $event->tournamentStages()
-            ->where('occurrence_id', $stage->occurrence_id)
-            ->where('sort_order', '>', $stage->sort_order)
-            ->where('status', TournamentStage::STATUS_PENDING)
-            ->orderBy('sort_order')
-            ->first();
-
-        if ($autoNext && $autoNext->cfg('finals_mode') === 'bracket') {
-            $claimed = TournamentStage::where('id', $autoNext->id)
-                ->where('status', TournamentStage::STATUS_PENDING)
-                ->update(['status' => TournamentStage::STATUS_IN_PROGRESS]);
-
-            if ($claimed === 1) {
-                $autoPrev = $event->tournamentStages()
-                    ->where('occurrence_id', $autoNext->occurrence_id)
-                    ->where('sort_order', '<', $autoNext->sort_order)
-                    ->orderByDesc('sort_order')
-                    ->first();
-
-                if ($autoPrev && $autoPrev->isCompleted()) {
-                    try {
-                        DB::transaction(function () use ($autoNext, $autoPrev) {
-                            $this->setupService->launchStage($autoNext->fresh(), $autoPrev, []);
-                        });
-                        \Log::warning("Автозапуск bracket-стадии {$autoNext->id} после завершения группы {$stage->id}");
-                    } catch (\Throwable $e) {
-                        TournamentStage::where('id', $autoNext->id)
-                            ->update(['status' => TournamentStage::STATUS_PENDING]);
-                        \Log::warning("Ошибка автозапуска bracket-стадии {$autoNext->id}, статус возвращён в pending: " . $e->getMessage());
-                    }
-                } else {
-                    // предшественник ещё не завершён (не должно происходить, т.к. мы
-                    // сюда попадаем именно из завершения группы) — откатить claim
-                    TournamentStage::where('id', $autoNext->id)
-                        ->update(['status' => TournamentStage::STATUS_PENDING]);
-                }
-            }
-        }
-
-        // 'divisions' (финальные группы по уровням) — эта группа завершена,
-        // но турнир НЕ закончен: для divisions companion-стадия сознательно
-        // не создаётся при createStage() (см. комментарий там), поэтому без
-        // этой проверки завершённая группа была бы ЕДИНСТВЕННОЙ batch-стадией
-        // и турнир закрылся бы сразу — тот же баг, что чинили для event 402.
-        // Ждём, пока организатор явно нажмёт "Сформировать группы" на пульте
-        // (formDivisions() создаёт стадии "Группа Hard/Lite/...") — до этого
-        // момента считаем турнир незавершённым.
-        if (
-            $stage->canHaveFollowupStage()
-            && $stage->cfg('finals_mode') === 'divisions'
-            && $stage->groups->count() >= 2
-            && !$event->tournamentStages()->where('name', 'like', 'Группа %')->exists()
-        ) {
-            return;
-        }
-
-        // Инкрементальные форматы (swiss/king_beach) генерируют матчи по ходу
-        // турнира — "все СОЗДАННЫЕ на сейчас матчи сыграны" (наивный критерий
-        // строкой выше, применённый к $stage) ложно совпадает с "формат закончен":
-        // swiss закрывается после первого раунда, до клика "Следующий тур" (см.
-        // report_stage_type_branching_audit.md §3/§4.4). king_of_court
-        // (переписано 2026-09-07) сюда вообще не попадает — TournamentMatch для
-        // него больше не создаются, checkStageCompletion() возвращается для
-        // него рано, до этой функции. Поэтому при решении "весь ТУРНИР завершён"
-        // инкрементальные стадии не учитываются вовсе, если в событии есть хотя
-        // бы одна batch/bracket стадия (round_robin/groups_playoff/single_elim/
-        // double_elim/thai) — завершённость турнира определяется ТОЛЬКО ими.
-        $stages = $event->tournamentStages()->get();
-        $batchStages = $stages->reject(fn($s) => $s->hasIncrementalMatchGeneration());
-
-        if ($batchStages->isEmpty()) {
-            // Событие целиком состоит из инкрементальных стадий. Область этой
-            // проверки — ТОЛЬКО swiss: для него isCompleted()===true достигается
-            // исключительно либо честным исчерпанием rounds_count (guard'ы выше
-            // в checkStageCompletion()), либо явным ручным finishStage() — оба
-            // случая означают реальное завершение. king_beach тоже incremental,
-            // но у него НЕТ такого guard'а в checkStageCompletion() (completed
-            // выставляется безусловно по total===completed) — включать его сюда
-            // было бы преждевременным закрытием турнира. Если среди
-            // инкрементальных стадий события есть king_beach — сохраняем прежнее
-            // консервативное поведение (return), это отдельный backlog, не в
-            // рамках этого прохода (report/finish_stage_recon_2026-08-21.md).
-            $onlySwiss = $stages->every(fn($s) => $s->type === TournamentStage::TYPE_SWISS);
-
-            if (!$onlySwiss) {
-                return;
-            }
-
-            $countableStages = $stages;
-        } else {
-            $countableStages = $batchStages;
-        }
-
-        $allStages = $countableStages->count();
-        $completedStages = $countableStages->filter(fn($s) => $s->isCompleted())->count();
-
-        if ($allStages > 0 && $allStages === $completedStages) {
-            try {
-                // Атомарный claim: "турнир завершён" — событие, которое должно
-                // произойти РОВНО ОДИН РАЗ за жизнь турнира. Без guard'а этот
-                // блок срабатывает при КАЖДОМ переходе allStages===completedStages
-                // в true — если в уже завершённый турнир позже дозаполняется и
-                // завершается ещё один матч (например, дозаполнение плей-офф
-                // матчем за 3-4 место), участники получали бы повторное
-                // "Турнир завершён!" уведомление. Тот же паттерн, что и
-                // events.city_notified_at.
-                $claimed = DB::table('events')
-                    ->where('id', $event->id)
-                    ->whereNull('tournament_completed_notified_at')
-                    ->update(['tournament_completed_notified_at' => now()]);
-
-                if ($claimed) {
-                    app(\App\Services\TournamentNotificationService::class)
-                        ->notifyTournamentCompleted($event);
-                }
-
-                // Пересчёт статистики/Elo/OpenSkill НЕ дублируем здесь: единственные
-                // реальные вызывающие пути этого метода — score()/rescoreMatch() — уже
-                // ставят RecalculateTournamentStatsJob (обёртка над recalculateTournament(),
-                // сама ставит ratings job внутри себя) в очередь непосредственно перед
-                // checkStageCompletion() в том же запросе — ShouldBeUnique по event_id
-                // и так схлопнул бы повторный dispatch, но лишний вызов здесь не нужен.
-                // (scoreKingBeach() тоже зовёт этот метод, но не через team_home_id/
-                // winner_team_id — для king_beach recalculateTournament() безрезультатен
-                // и раньше не вызывался вовсе, см. отдельный backlog.)
-
-                // Авто-продвижение в сезоне (promote/relegate/reserve)
-                app(\App\Services\TournamentPromotionService::class)
-                    ->processEvent($event);
-            } catch (\Throwable $e) {
-                \Log::warning('Tournament completion notification failed: ' . $e->getMessage());
-            }
-        }
+        app(\App\Services\StageCompletionService::class)->afterCompleted($stage);
     }
 
     /* ================================================================
@@ -3352,22 +3080,15 @@ class TournamentController extends Controller
     /** Данные экрана поочкового ввода — общие для полной страницы и для HTML-фрагмента без перезагрузки. */
     private function rallyViewData(TournamentMatch $match, int $setNumber): array
     {
-        $stage = $match->stage;
-        $event = $stage->event;
-        $board = $this->rallyService->getBoard($match, $setNumber);
-        $matchReady = $this->rallyService->isMatchReadyToFinalize($match);
-        $lineup = app(\App\Services\MatchLineupView::class)->forRally($match, $setNumber, $board['decided']);
-        $journal = app(\App\Services\MatchProgressService::class)->build($match->id, true)['sets'][$setNumber]['rallies'] ?? [];
-
-        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal');
+        return app(\App\Services\RallyScreenService::class)
+            ->viewData($match, $setNumber, \App\Support\RallyUrls::forOrganizer($match));
     }
 
     /** HTML динамической части экрана (счёт, доска, составы, журнал, кнопки) — клиент подменяет блок без reload. */
     private function rallyFragmentHtml(TournamentMatch $match, int $setNumber): string
     {
-        $match = $match->fresh(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
-
-        return view('tournaments._partials.rally_live', $this->rallyViewData($match, $setNumber))->render();
+        return app(\App\Services\RallyScreenService::class)
+            ->fragmentHtml($match, $setNumber, \App\Support\RallyUrls::forOrganizer($match));
     }
 
     /** GET: свежий HTML-фрагмент экрана (после сетевой ошибки, при возврате на вкладку). */
@@ -3391,28 +3112,10 @@ class TournamentController extends Controller
             return $redirect;
         }
 
-        $validated = $request->validate([
-            'set_number'      => 'required|integer|min:1|max:5',
-            'team_id'         => 'required|integer',
-            'action_type'     => 'required|string',
-            'player_id'       => 'nullable|integer',
-            'dig_user_id'     => 'nullable|integer',
-            'assist_user_id'  => 'nullable|integer',
-            'client_request_id' => 'nullable|uuid',
-        ]);
+        $validated = $request->validate(\App\Services\RallyInputService::pointRules());
 
         try {
-            $this->rallyService->recordPoint(
-                $match,
-                (int) $validated['set_number'],
-                (int) $validated['team_id'],
-                $validated['action_type'],
-                isset($validated['player_id']) ? (int) $validated['player_id'] : null,
-                isset($validated['dig_user_id']) ? (int) $validated['dig_user_id'] : null,
-                isset($validated['assist_user_id']) ? (int) $validated['assist_user_id'] : null,
-                $request->user(),
-                $validated['client_request_id'] ?? null,
-            );
+            app(\App\Services\RallyInputService::class)->point($match, $validated, \App\Support\RallyActor::user($request->user()));
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);
@@ -3442,18 +3145,10 @@ class TournamentController extends Controller
             return $redirect;
         }
 
-        $validated = $request->validate([
-            'set_number'        => 'required|integer|min:1|max:5',
-            'expected_last_seq' => 'nullable|integer|min:0',
-        ]);
+        $validated = $request->validate(\App\Services\RallyInputService::undoRules());
 
         try {
-            $this->rallyService->undoLast(
-                $match,
-                (int) $validated['set_number'],
-                isset($validated['expected_last_seq']) ? (int) $validated['expected_last_seq'] : null,
-                $request->user(),
-            );
+            app(\App\Services\RallyInputService::class)->undo($match, $validated, \App\Support\RallyActor::user($request->user()));
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);
@@ -3483,29 +3178,10 @@ class TournamentController extends Controller
                 : $redirect;
         }
 
-        $validated = $request->validate([
-            'set_number'               => 'required|integer|min:1|max:5',
-            'first_serve_team_id'      => 'required|integer',
-            'lineups'                  => 'required|array',
-            'lineups.*.court'          => 'required|array',
-            'lineups.*.court.*.user_id'  => 'required|integer',
-            'lineups.*.court.*.position' => 'required|string|max:20',
-            'lineups.*.court.*.zone'     => 'required|integer|min:1|max:12',
-            'lineups.*.libero'         => 'nullable|integer',
-        ]);
+        $validated = $request->validate(\App\Services\RallyInputService::startRules());
 
-        $lineups = [];
-        foreach ($validated['lineups'] as $teamId => $team) {
-            $lineups[(int) $teamId] = [
-                'court'  => array_values($team['court']),
-                'libero' => $team['libero'] ?? null,
-            ];
-        }
-
-        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $lineups, $request) {
-            app(\App\Services\MatchLineupService::class)->setSetStart(
-                $match, (int) $validated['set_number'], $lineups, (int) $validated['first_serve_team_id'], $request->user()
-            );
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
+            app(\App\Services\RallyInputService::class)->setStart($match, $validated, \App\Support\RallyActor::user($request->user()));
         });
     }
 
@@ -3518,28 +3194,10 @@ class TournamentController extends Controller
                 : $redirect;
         }
 
-        $validated = $request->validate([
-            'set_number'  => 'required|integer|min:1|max:5',
-            'team_id'     => 'required|integer',
-            'type'        => 'required|in:substitution,libero_in,libero_out',
-            'out_user_id' => 'nullable|integer',
-            'in_user_id'  => 'nullable|integer',
-            'client_request_id' => 'nullable|uuid',
-        ]);
+        $validated = $request->validate(\App\Services\RallyInputService::eventRules());
 
         return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
-            $svc = app(\App\Services\MatchLineupService::class);
-            $set = (int) $validated['set_number'];
-            $team = (int) $validated['team_id'];
-            $out = isset($validated['out_user_id']) ? (int) $validated['out_user_id'] : 0;
-            $in = isset($validated['in_user_id']) ? (int) $validated['in_user_id'] : 0;
-            $rid = $validated['client_request_id'] ?? null;
-
-            match ($validated['type']) {
-                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user(), null, $rid),
-                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user(), null, $rid),
-                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user(), null, $rid),
-            };
+            app(\App\Services\RallyInputService::class)->lineupEvent($match, $validated, \App\Support\RallyActor::user($request->user()));
         });
     }
 
@@ -3571,12 +3229,7 @@ class TournamentController extends Controller
     /** Совпадает ли счёт по сетам завершённого матча с присланным ($sets = [[home, away], ...]). */
     private function sameSetScores(TournamentMatch $match, array $sets): bool
     {
-        $home = array_map('intval', (array) $match->score_home);
-        $away = array_map('intval', (array) $match->score_away);
-        $inHome = array_map(fn ($s) => (int) $s[0], $sets);
-        $inAway = array_map(fn ($s) => (int) $s[1], $sets);
-
-        return $home === array_values($inHome) && $away === array_values($inAway);
+        return app(\App\Services\MatchFinalizeService::class)->sameSetScores($match, $sets);
     }
 
     public function rallyFinalize(Request $request, TournamentMatch $match)

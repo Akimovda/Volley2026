@@ -57,8 +57,8 @@
 		}
 		$luCfg = [
 			'setNumber' => $setNumber,
-			'startUrl'  => route('tournament.matches.rally.lineup.start', $match),
-			'eventUrl'  => route('tournament.matches.rally.lineup.event', $match),
+			'startUrl'  => $urls['lineup_start'],
+			'eventUrl'  => $urls['lineup_event'],
 			'size'      => $lineup['profile']['on_court_size'],
 			'hasLibero' => $lineup['profile']['has_libero'],
 			'positions' => $lineup['profile']['positions'],
@@ -98,7 +98,7 @@
 			</div>
 			<div class="d-flex gap-1 text-center mt-2" style="flex-wrap:wrap;justify-content:center">
 				@for($i = 1; $i <= $maxSets; $i++)
-				<a href="{{ route('tournament.matches.rally.form', [$match, 'set' => $i]) }}"
+				<a href="{{ \App\Support\RallyUrls::setUrl($urls, $i) }}"
 				   class="btn btn-small {{ $i === $setNumber ? 'btn-primary' : 'btn-secondary' }}">
 					{{ __('tournaments.rally_set_n', ['n' => $i]) }}
 				</a>
@@ -194,7 +194,7 @@
 		@endif
 
 		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
-			<form method="POST" action="{{ route('tournament.matches.rally.undo', $match) }}" style="flex:1" class="js-rw-undo">
+			<form method="POST" action="{{ $urls['undo'] }}" style="flex:1" class="js-rw-undo">
 				@csrf
 				<input type="hidden" name="set_number" value="{{ $setNumber }}">
 				<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">
@@ -202,17 +202,19 @@
 					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
 				</button>
 			</form>
-			<form method="POST" action="{{ route('tournament.matches.rally.finalize', $match) }}" style="flex:1" class="js-rw-finalize">
+			<form method="POST" action="{{ $urls['finalize'] }}" style="flex:1" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
 				@csrf
 				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
 					💾 {{ __('tournaments.rally_btn_finalize') }}
 				</button>
 			</form>
-			<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-secondary" style="flex:1;text-align:center">
+			@if($urls['back'])
+			<a href="{{ $urls['back'] }}" class="btn btn-secondary" style="flex:1;text-align:center">
 				{{ __('tournaments.btn_back') }}
 			</a>
-			@if($match->isCompleted())
-			<a href="{{ route('tournament.matches.pdf_stats', $match) }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
+			@endif
+			@if($match->isCompleted() && $urls['pdf'])
+			<a href="{{ $urls['pdf'] }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
 				📊 PDF
 			</a>
 			@endif

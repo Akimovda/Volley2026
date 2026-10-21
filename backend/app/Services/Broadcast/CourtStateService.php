@@ -214,6 +214,40 @@ class CourtStateService
             ->whereNotIn('status', [TournamentMatch::STATUS_CANCELLED, TournamentMatch::STATUS_FORFEIT]);
     }
 
+    /** Матчи площадки (без отменённых) — для проверки «матч принадлежит площадке ссылки». */
+    public function matchesOfCourt(EventCourt $court): Builder
+    {
+        return $this->courtMatches($court);
+    }
+
+    /**
+     * Очередь ведущего: идущие и ожидающие матчи площадки с известными командами.
+     * current — как в оверлее (живой матч, иначе ближайший нерозыгранный), upcoming — остальные по порядку.
+     *
+     * @return array{current:?TournamentMatch, upcoming:\Illuminate\Support\Collection<int,TournamentMatch>}
+     */
+    public function queueFor(EventCourt $court, ?Carbon $now = null): array
+    {
+        $now ??= Carbon::now();
+        $base = $this->courtMatches($court);
+        $live = $this->liveMatch($base, $now);
+
+        $pending = (clone $base)
+            ->whereIn('status', [TournamentMatch::STATUS_LIVE, TournamentMatch::STATUS_SCHEDULED])
+            ->whereNotNull('team_home_id')->whereNotNull('team_away_id')
+            ->orderByRaw("CASE WHEN status = 'live' THEN 0 ELSE 1 END")
+            ->orderByRaw('scheduled_at IS NULL')->orderBy('scheduled_at')
+            ->orderBy('round')->orderBy('match_number')->orderBy('id')
+            ->get();
+
+        $current = $live['match'] ?? $pending->first();
+
+        return [
+            'current'  => $current,
+            'upcoming' => $pending->reject(fn ($m) => $current && (int) $m->id === (int) $current->id)->values(),
+        ];
+    }
+
     private function manualMatch(EventCourt $court, ?int $id): ?TournamentMatch
     {
         if (!$id) {

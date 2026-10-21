@@ -20,6 +20,8 @@
         'destDeleteQ' => __('stream.dest_delete_q'), 'destShow' => __('stream.dest_show'), 'destHide' => __('stream.dest_hide'),
         'destDefault' => __('stream.dest_default'), 'destDelete' => __('stream.dest_delete'), 'destNone' => __('stream.dest_none'),
         'destPlatforms' => $destPlatforms,
+        'scorerRegenQ' => __('stream.scorer_regen_q'), 'scorerRevokeQ' => __('stream.scorer_revoke_q'),
+        'scorerInvited' => __('stream.scorer_invited'), 'scorerInviteQ' => __('stream.scorer_invite_q'), 'scorerNoUsers' => __('stream.scorer_no_users'),
     ];
     $cfg = [
         'csrf' => csrf_token(),
@@ -65,6 +67,10 @@
             .bc-qr.on { display:block; }
             .bc-qr svg { width:18rem; height:18rem; background:#fff; padding:1rem; border-radius:1rem; }
             .bc-warn { font-size:1.25rem; opacity:.65; margin-top:.6rem; }
+            .bc-scorer { margin-top:1.4rem; padding-top:1rem; border-top:1px dashed rgba(128,128,128,.35); }
+            .bc-court-sub { font-weight:700; font-size:1.5rem; margin-bottom:.3rem; }
+            .bc-invite-dd .bc-invite-item { padding:.7rem 1rem; cursor:pointer; font-size:1.3rem; }
+            .bc-invite-dd .bc-invite-item:hover { background:rgba(41,103,186,.12); }
             .bc-chips { display:flex; gap:.8rem; flex-wrap:wrap; margin-bottom:1.2rem; }
             .bc-preview { position:relative; width:100%; padding-top:56.25%; background:#555; border-radius:1rem; overflow:hidden; }
             .bc-preview iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
@@ -164,6 +170,55 @@
                 <div class="bc-qr" data-url="{{ $c['link']['url'] }}"></div>
                 <div class="bc-warn">{{ __('stream.link_warn') }}</div>
                 @endif
+
+                {{-- Ведущий матча: ввод счёта по токен-ссылке (без аккаунта) или приглашение пользователя --}}
+                <div class="bc-scorer" data-scorer>
+                    <div class="bc-court-sub">🏐 {{ __('stream.scorer_h') }}</div>
+                    <div class="bc-hint">{{ __('stream.scorer_hint') }}</div>
+                    <div class="bc-linkbox">
+                        @if($c['scorer']['anon'])
+                        <input type="text" readonly value="{{ $c['scorer']['anon']['url'] }}" class="bc-link-input bc-scorer-input" aria-label="{{ __('stream.scorer_h') }}">
+                        <button type="button" class="btn btn-small btn-outline bc-scorer-copy">{{ __('stream.link_copy') }}</button>
+                        <button type="button" class="btn btn-small btn-outline bc-scorer-qr-btn">{{ __('stream.qr') }}</button>
+                        <button type="button" class="btn btn-small btn-outline bc-scorer-regen">{{ __('stream.link_regen') }}</button>
+                        <button type="button" class="btn btn-small btn-outline bc-scorer-revoke" data-link="{{ $c['scorer']['anon']['id'] }}">{{ __('stream.link_revoke') }}</button>
+                        @else
+                        <span class="bc-hint">{{ __('stream.scorer_none') }}</span>
+                        <button type="button" class="btn btn-small bc-scorer-issue">{{ __('stream.link_issue') }}</button>
+                        @endif
+                    </div>
+                    @if($c['scorer']['anon'])
+                    <div class="bc-qr bc-scorer-qr" data-url="{{ $c['scorer']['anon']['url'] }}"></div>
+                    <div class="bc-hint">
+                        {{ __('stream.scorer_expires', ['t' => $c['scorer']['anon']['expires'] ?? '—']) }}
+                        @if($c['scorer']['anon']['actor'])
+                        · {{ __('stream.scorer_last', ['name' => $c['scorer']['anon']['actor'], 't' => $c['scorer']['anon']['actor_at']]) }}
+                        @elseif($c['scorer']['anon']['used'])
+                        · {{ __('stream.scorer_opened', ['t' => $c['scorer']['anon']['used']]) }}
+                        @endif
+                    </div>
+                    @endif
+
+                    <div class="bc-actions bc-invite" style="position:relative">
+                        <input type="text" class="bc-invite-search" placeholder="{{ __('stream.scorer_invite_ph') }}" autocomplete="off" style="max-width:24rem" aria-label="{{ __('stream.scorer_invite') }}">
+                        <div class="form-select-dropdown bc-invite-dd" style="display:none;position:absolute;top:100%;left:0;z-index:20;max-height:22rem;overflow:auto;min-width:24rem"></div>
+                    </div>
+                    @if(!empty($c['scorer']['invites']))
+                    <div class="bc-invites">
+                        @foreach($c['scorer']['invites'] as $inv)
+                        <div class="bc-invite-row" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;margin-top:.5rem">
+                            <b>{{ $inv['user'] }}</b>
+                            <span class="bc-hint">
+                                {{ __('stream.scorer_expires', ['t' => $inv['expires'] ?? '—']) }}
+                                @if($inv['actor']) · {{ __('stream.scorer_last', ['name' => $inv['actor'], 't' => $inv['actor_at']]) }}@elseif($inv['used']) · {{ __('stream.scorer_opened', ['t' => $inv['used']]) }}@endif
+                            </span>
+                            <button type="button" class="btn btn-small btn-outline bc-scorer-copy-url" data-url="{{ $inv['url'] }}">{{ __('stream.link_copy') }}</button>
+                            <button type="button" class="btn btn-small btn-outline bc-scorer-revoke" data-link="{{ $inv['id'] }}">{{ __('stream.link_revoke') }}</button>
+                        </div>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
 
                 <div class="bc-actions">
                     <input type="text" class="bc-rename-input" value="{{ $c['name'] }}" maxlength="100" style="max-width:20rem" aria-label="{{ __('stream.court_name') }}">
@@ -571,6 +626,65 @@
                 }
                 box.toggleClass('on');
             });
+
+            /* ---------- ссылки ведущих ---------- */
+            function courtId(el) { return $(el).closest('[data-court]').data('court'); }
+            $(document).on('click', '.bc-scorer-issue', function () {
+                call('POST', CFG.base + '/courts/' + courtId(this) + '/scorer-link', {}, reload);
+            });
+            $(document).on('click', '.bc-scorer-regen', function () {
+                var id = courtId(this);
+                confirmThen(S.scorerRegenQ, function () { call('POST', CFG.base + '/courts/' + id + '/scorer-link', {}, reload); });
+            });
+            $(document).on('click', '.bc-scorer-revoke', function () {
+                var id = courtId(this), link = $(this).data('link');
+                confirmThen(S.scorerRevokeQ, function () { call('DELETE', CFG.base + '/courts/' + id + '/scorer-links/' + link, {}, reload); });
+            });
+            function copyText(text) {
+                var done = function () { toast(S.copied); };
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(done, function () {});
+                } else {
+                    var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select();
+                    try { document.execCommand('copy'); done(); } catch (e) {} document.body.removeChild(t);
+                }
+            }
+            $(document).on('click', '.bc-scorer-copy', function () { copyText($(this).closest('[data-scorer]').find('.bc-scorer-input').val()); });
+            $(document).on('click', '.bc-scorer-copy-url', function () { copyText($(this).data('url')); });
+            $(document).on('click', '.bc-scorer-qr-btn', function () {
+                var box = $(this).closest('[data-scorer]').find('.bc-scorer-qr');
+                if (!box.hasClass('on') && !box.children().length) {
+                    var qr = qrcode(0, 'M'); qr.addData(box.data('url')); qr.make();
+                    box.html(qr.createSvgTag({ cellSize: 4, margin: 0, scalable: true }));
+                }
+                box.toggleClass('on');
+            });
+            // Приглашение пользователя: поиск как при выборе капитана (debounce 250 мс, от 2 символов)
+            $(document).on('input', '.bc-invite-search', function () {
+                var inp = $(this), dd = inp.siblings('.bc-invite-dd'), q = $.trim(inp.val()), timer = inp.data('t');
+                clearTimeout(timer);
+                if (q.length < 2) { dd.hide().empty(); return; }
+                inp.data('t', setTimeout(function () {
+                    $.ajax({ url: '/ajax/users/search', data: { q: q, exclude_bots: 0 }, dataType: 'json', xhrFields: { withCredentials: true } })
+                        .done(function (j) {
+                            dd.empty();
+                            var items = (j && j.items) || [];
+                            if (!items.length) { dd.append($('<div class="bc-invite-item">').text(S.scorerNoUsers)); }
+                            items.forEach(function (it) {
+                                dd.append($('<div class="bc-invite-item">').text(it.label || it.name).data('id', it.id));
+                            });
+                            dd.show();
+                        });
+                }, 250));
+            });
+            $(document).on('click', '.bc-invite-item', function () {
+                var uid = $(this).data('id'), name = $(this).text(), id = courtId(this);
+                if (!uid) { return; }
+                confirmThen(S.scorerInviteQ.replace(':name', name), function () {
+                    call('POST', CFG.base + '/courts/' + id + '/scorer-invite', { user_id: uid }, function () { toast(S.scorerInvited); setTimeout(reload, 600); });
+                });
+            });
+            $(document).on('click', function (e) { if (!$(e.target).closest('.bc-invite').length) { $('.bc-invite-dd').hide(); } });
 
             /* ---------- пульт ---------- */
             var cur = null, pollTimer = null, demo = '';
