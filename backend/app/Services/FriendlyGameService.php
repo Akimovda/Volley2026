@@ -163,7 +163,7 @@ class FriendlyGameService
         }
 
         if ((!isset($existing['home']) && !$homeUserIds) || (!isset($existing['away']) && !$awayUserIds)) {
-            throw new InvalidArgumentException('В каждой команде должен быть хотя бы один игрок.');
+            throw new InvalidArgumentException('Выберите, кто играет: отметьте «1» и «2» у готовых команд или у игроков каждой стороны.');
         }
         if (array_intersect($homeUserIds, $awayUserIds)) {
             throw new InvalidArgumentException('Игрок не может быть в обеих командах.');
