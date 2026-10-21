@@ -445,8 +445,9 @@ class MatchLineupService
         int $inUserId,
         ?User $recordedBy = null,
         ?string $recordedByName = null,
+        ?string $clientRequestId = null,
     ): MatchLineupEvent {
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
             function (array $team, array $roster) use ($outUserId, $inUserId) {
                 if ($outUserId === $inUserId) {
                     throw new InvalidArgumentException('Выберите двух разных игроков.');
@@ -492,13 +493,14 @@ class MatchLineupService
         int $partnerUserId,
         ?User $recordedBy = null,
         ?string $recordedByName = null,
+        ?string $clientRequestId = null,
     ): MatchLineupEvent {
         $profile = $this->profile($match);
         if (!$profile['has_libero']) {
             throw new InvalidArgumentException('В этой схеме игры либеро не предусмотрен.');
         }
 
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
             function (array $team) use ($partnerUserId) {
                 $libero = $team['libero_id'];
                 if (!$libero) {
@@ -527,8 +529,9 @@ class MatchLineupService
         int $teamId,
         ?User $recordedBy = null,
         ?string $recordedByName = null,
+        ?string $clientRequestId = null,
     ): MatchLineupEvent {
-        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName,
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId,
             function (array $team) {
                 $libero = $team['libero_id'];
                 $entry = $libero ? ($team['court'][$libero] ?? null) : null;
@@ -557,8 +560,13 @@ class MatchLineupService
         int $teamId,
         ?User $by,
         ?string $byName,
+        ?string $clientRequestId,
         callable $build,
     ): MatchLineupEvent {
+        if ($clientRequestId !== null && $dup = $this->findByRequestId($match->id, $clientRequestId)) {
+            return $dup;
+        }
+
         $profile = $this->profile($match);
         $this->assertEnabled($profile);
 
@@ -566,34 +574,54 @@ class MatchLineupService
             throw new InvalidArgumentException('Команда не участвует в этом матче.');
         }
 
-        $event = DB::transaction(function () use ($match, $setNumber, $teamId, $by, $byName, $build) {
-            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
-            $this->assertEditable($locked, $setNumber);
+        try {
+            [$event, $isDuplicate] = DB::transaction(function () use ($match, $setNumber, $teamId, $by, $byName, $build, $clientRequestId) {
+                $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
-            $state = $this->state($locked, $setNumber);
-            if (!$state['has_start']) {
-                throw new InvalidArgumentException('Сначала задайте стартовый состав.');
+                if ($clientRequestId !== null && $dup = $this->findByRequestId($locked->id, $clientRequestId)) {
+                    return [$dup, true];
+                }
+
+                $this->assertEditable($locked, $setNumber);
+
+                $state = $this->state($locked, $setNumber);
+                if (!$state['has_start']) {
+                    throw new InvalidArgumentException('Сначала задайте стартовый состав.');
+                }
+
+                $attrs = $build($state['teams'][$teamId], $this->roster($locked)[$teamId] ?? []);
+
+                $info = $this->rally()->computeMatchState($locked)['sets'][$setNumber];
+
+                $event = MatchLineupEvent::create($attrs + [
+                    'match_id' => $locked->id, 'set_number' => $setNumber, 'team_id' => $teamId,
+                    'seq' => $this->nextSeq($locked),
+                    'score_home' => $info['home'], 'score_away' => $info['away'],
+                    'recorded_by_user_id' => $by?->id, 'recorded_by_name' => $byName,
+                    'client_request_id' => $clientRequestId,
+                ]);
+
+                $this->rally()->syncPlayerStats($locked, $setNumber);
+
+                return [$event, false];
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ((string) $e->getCode() === '23505') {
+                throw new InvalidArgumentException('Повторите действие.');
             }
+            throw $e;
+        }
 
-            $attrs = $build($state['teams'][$teamId], $this->roster($locked)[$teamId] ?? []);
-
-            $info = $this->rally()->computeMatchState($locked)['sets'][$setNumber];
-
-            $event = MatchLineupEvent::create($attrs + [
-                'match_id' => $locked->id, 'set_number' => $setNumber, 'team_id' => $teamId,
-                'seq' => $this->nextSeq($locked),
-                'score_home' => $info['home'], 'score_away' => $info['away'],
-                'recorded_by_user_id' => $by?->id, 'recorded_by_name' => $byName,
-            ]);
-
-            $this->rally()->syncPlayerStats($locked, $setNumber);
-
-            return $event;
-        });
-
-        broadcast(new TournamentMatchRallyUpdated($match->id, $setNumber));
+        if (!$isDuplicate) {
+            broadcast(new TournamentMatchRallyUpdated($match->id, $setNumber));
+        }
 
         return $event;
+    }
+
+    private function findByRequestId(int $matchId, string $clientRequestId): ?MatchLineupEvent
+    {
+        return MatchLineupEvent::where('match_id', $matchId)->where('client_request_id', $clientRequestId)->first();
     }
 
     /* ------------------------------------------------------------------ */

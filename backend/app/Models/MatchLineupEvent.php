@@ -14,7 +14,7 @@ class MatchLineupEvent extends Model
     public const TYPE_LIBERO_IN    = 'libero_in';
     public const TYPE_LIBERO_OUT   = 'libero_out';
 
-    protected $fillable = ['match_id','set_number','team_id','type','out_user_id','in_user_id','position','zone','seq','score_home','score_away','recorded_by_user_id','recorded_by_link_id','recorded_by_name'];
+    protected $fillable = ['match_id','set_number','team_id','type','out_user_id','in_user_id','position','zone','seq','score_home','score_away','recorded_by_user_id','recorded_by_link_id','recorded_by_name','client_request_id'];
 
     public function match(): BelongsTo
     {

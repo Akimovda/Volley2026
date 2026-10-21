@@ -1,0 +1,222 @@
+@php
+	$format = $stage->matchFormat();
+	$maxSets = match($format) { 'bo1' => 1, 'bo3' => 3, 'bo5' => 5, default => 3 };
+
+	$statLabels = [
+		'serves_total'     => __('tournaments.stat_serves_short'),
+		'aces'             => __('tournaments.stat_aces_short'),
+		'serve_errors'     => __('tournaments.stat_serve_err_short'),
+		'attacks_total'    => __('tournaments.stat_attacks_short'),
+		'kills'            => __('tournaments.stat_kills_short'),
+		'attack_errors'    => __('tournaments.stat_attack_err_short'),
+		'blocks'           => __('tournaments.stat_blocks_short'),
+		'block_errors'     => __('tournaments.stat_block_err_short'),
+		'digs'             => __('tournaments.stat_digs_short'),
+		'reception_errors' => __('tournaments.stat_dig_err_short'),
+		'assists'          => __('tournaments.stat_assists_short'),
+	];
+
+	$actionMarkers = [
+		'ace' => 'Э', 'kill' => 'А', 'block' => 'Б',
+		'opp_serve_error' => 'ошП', 'opp_attack_error' => 'ошА',
+		'opp_block_error' => 'ошБ', 'opp_reception_error' => 'ошПр',
+		'unattributed' => '•',
+	];
+
+	$sides = [
+		'home' => ['team' => $match->teamHome, 'team_id' => (int) $match->team_home_id, 'opp_id' => (int) $match->team_away_id],
+		'away' => ['team' => $match->teamAway, 'team_id' => (int) $match->team_away_id, 'opp_id' => (int) $match->team_home_id],
+	];
+
+	$luOn = !empty($lineup['enabled']);
+	$luStarted = $luOn && $lineup['has_start'];
+	// Для матчей с учётом состава в попапе очка — только игроки НА ПЛОЩАДКЕ сейчас (включая вышедшего либеро)
+	$courtPlayers = function (string $sk) use ($lineup, $board) {
+		return array_map(
+			fn ($c) => ['id' => $c['id'], 'name' => $c['name']],
+			$lineup['teams'][$sk]['court']
+		);
+	};
+	$rwData = [];
+	foreach ($sides as $sk => $sd) {
+		$oppSk = $sk === 'home' ? 'away' : 'home';
+		$rwData[$sk] = [
+			'teamId'     => $sd['team_id'],
+			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
+			'players'    => $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]),
+			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
+		];
+	}
+@endphp
+@php
+	$luCfg = null;
+	if ($luOn) {
+		$luTeams = [];
+		foreach ($sides as $sk => $sd) {
+			$luTeams[$sk] = $lineup['teams'][$sk] + ['name' => (string) ($sd['team']->name ?? 'TBD')];
+		}
+		$luCfg = [
+			'setNumber' => $setNumber,
+			'startUrl'  => route('tournament.matches.rally.lineup.start', $match),
+			'eventUrl'  => route('tournament.matches.rally.lineup.event', $match),
+			'size'      => $lineup['profile']['on_court_size'],
+			'hasLibero' => $lineup['profile']['has_libero'],
+			'positions' => $lineup['profile']['positions'],
+			'hasStart'  => $lineup['has_start'],
+			'teams'     => $luTeams,
+			'setup'     => $lineup['setup'],
+		];
+	}
+	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg];
+@endphp
+
+		{{-- Шапка матча + табы сетов --}}
+		<div class="card p-3 mb-2" style="text-align:center">
+			@php $roundLabel = $stage->roundLabelFor($match); @endphp
+			<div class="mb-2">
+				<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
+				<span class="score-pill score-pill--green">{{ $roundLabel ?? __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
+				<span class="score-pill score-pill--orange">{{ strtoupper($format) }}</span>
+			</div>
+			<div class="d-flex between fvc mb-2">
+				<div style="flex:1">
+					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
+				</div>
+				<div class="f-24 b-800 px-2">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
+				<div style="flex:1">
+					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+					@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'style' => 'opacity:.7'])
+				</div>
+			</div>
+			<div class="mb-2">
+				<span class="score-pill score-pill--blue">{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }}</span>
+				<span class="score-pill score-pill--red">{{ __('tournaments.score_to_pts') }} {{ $board['target_points'] }}</span>
+				@if($board['decided'])
+				<span class="score-pill score-pill--green">{{ __('tournaments.rally_set_decided') }}</span>
+				@endif
+			</div>
+			<div class="d-flex gap-1 text-center mt-2" style="flex-wrap:wrap;justify-content:center">
+				@for($i = 1; $i <= $maxSets; $i++)
+				<a href="{{ route('tournament.matches.rally.form', [$match, 'set' => $i]) }}"
+				   class="btn btn-small {{ $i === $setNumber ? 'btn-primary' : 'btn-secondary' }}">
+					{{ __('tournaments.rally_set_n', ['n' => $i]) }}
+				</a>
+				@endfor
+			</div>
+		</div>
+
+		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
+		<div class="alert alert-info f-13 mb-2">{{ __('tournaments.rally_no_attempts_note') }}</div>
+
+		@php $maxColumns = max($board['columns']['home'], $board['columns']['away']); @endphp
+
+		{{-- Сводная таблица: по вертикали — команды (2 строки), по горизонтали — итоги + очки.
+		     Разбивка по игрокам — на странице результатов турнира. --}}
+		<div class="card mb-2">
+			<div class="table-scrollable">
+				<table class="table f-13">
+					<thead>
+						<tr>
+							<th style="text-align:left">{{ __('tournaments.setup_col_team') }}</th>
+							@foreach($statLabels as $label)
+							<th style="text-align:center">{{ $label }}</th>
+							@endforeach
+							<th style="text-align:center">{{ __('tournaments.stats_col_pts') }}</th>
+							@for($c = 1; $c <= $maxColumns; $c++)
+							<th style="text-align:center;min-width:2.4rem">{{ $c }}</th>
+							@endfor
+						</tr>
+					</thead>
+					<tbody>
+						@foreach($sides as $sideKey => $side)
+						@php
+							$teamAggregates = $board['aggregates'][$sideKey];
+							$teamCells = $board['cells'][$sideKey];
+						@endphp
+						<tr>
+							<td class="b-700">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</td>
+							@foreach(array_keys($statLabels) as $f)
+							<td style="text-align:center">{{ array_sum(array_column($teamAggregates, $f)) }}</td>
+							@endforeach
+							<td style="text-align:center" class="b-700">{{ array_sum(array_column($teamAggregates, 'points_scored')) }}</td>
+							@for($c = 1; $c <= $maxColumns; $c++)
+							@php $cell = $teamCells[$c] ?? null; @endphp
+							<td style="text-align:center">
+								@if($cell)
+									<span class="b-700">{{ $actionMarkers[$cell['action_type']] ?? '?' }}</span>
+								@else
+									<span style="opacity:.25">·</span>
+								@endif
+							</td>
+							@endfor
+						</tr>
+						@endforeach
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		@if($luOn && !$board['decided'])
+		@include('tournaments._partials.lineup_setup_panel')
+		@endif
+
+		@foreach($sides as $sideKey => $side)
+		@php
+			$teamId = $side['team_id'];
+			$players = $board['players'][$sideKey];
+			$oppPlayers = $board['players'][$sideKey === 'home' ? 'away' : 'home'];
+		@endphp
+		<div class="card mb-2">
+			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
+
+			@if(!$board['decided'] && $luOn && $lineup['needs_start'])
+			<div class="alert alert-info f-13 mt-2">{{ __('tournaments.lineup_need_setup') }}</div>
+			@elseif(!$board['decided'])
+			<div class="mt-2">
+				<div class="f-13 b-600 mb-1">{{ __('tournaments.rally_add_point_title') }}</div>
+				<div class="d-flex gap-1" style="flex-wrap:wrap">
+
+					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem">🏐 {{ __('tournaments.rally_own_action_btn') }}</button>
+					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</button>
+					@if($luStarted)
+					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
+					@endif
+
+				</div>
+			</div>
+			@endif
+		</div>
+		@endforeach
+
+		@if($luOn)
+		@include('tournaments._partials.lineup_journal')
+		@endif
+
+		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
+			<form method="POST" action="{{ route('tournament.matches.rally.undo', $match) }}" style="flex:1" class="js-rw-undo">
+				@csrf
+				<input type="hidden" name="set_number" value="{{ $setNumber }}">
+				<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">
+				<button type="submit" class="btn btn-secondary w-100" {{ $board['can_undo'] ? '' : 'disabled' }}>
+					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
+				</button>
+			</form>
+			<form method="POST" action="{{ route('tournament.matches.rally.finalize', $match) }}" style="flex:1" class="js-rw-finalize">
+				@csrf
+				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
+					💾 {{ __('tournaments.rally_btn_finalize') }}
+				</button>
+			</form>
+			<a href="{{ route('tournament.matches.score.form', $match) }}" class="btn btn-secondary" style="flex:1;text-align:center">
+				{{ __('tournaments.btn_back') }}
+			</a>
+			@if($match->isCompleted())
+			<a href="{{ route('tournament.matches.pdf_stats', $match) }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
+				📊 PDF
+			</a>
+			@endif
+		</div>
+
+
+<script type="application/json" id="rw-live-data">@json($rwLiveData)</script>

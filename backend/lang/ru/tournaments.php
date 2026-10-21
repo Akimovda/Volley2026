@@ -1071,6 +1071,8 @@ return [
     'lineup_stat_subs_played' => 'Вышли на замену',
     'lineup_stat_libero' => 'Либеро',
     'lineup_ev_point' => 'Очко',
+    'score_saving' => 'Сохраняю…',
+    'rally_net_err' => 'Нет связи, очко не записано — повторите',
     'lineup_saving' => 'Сохраняю…',
     'lineup_ok' => 'Готово',
     'lineup_done_sub' => 'Замена выполнена',

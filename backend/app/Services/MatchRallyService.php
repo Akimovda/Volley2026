@@ -45,7 +45,13 @@ class MatchRallyService
         ?int $digUserId,
         ?int $assistUserId,
         ?User $recordedBy,
+        ?string $clientRequestId = null,
     ): MatchRallyEvent {
+        // Повтор уже записанного запроса — быстрый путь без проверок и без нового seq/пересчёта/broadcast
+        if ($clientRequestId !== null && $dup = $this->findByRequestId($match->id, $clientRequestId)) {
+            return $dup;
+        }
+
         if ($match->isCompleted()) {
             throw new InvalidArgumentException('Матч уже завершён, поочковый ввод недоступен.');
         }
@@ -93,26 +99,34 @@ class MatchRallyService
             throw new InvalidArgumentException('Игрок передачи должен быть из выигравшей команды.');
         }
 
-        $event = DB::transaction(function () use (
-            $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
-            $digUserId, $assistUserId, $recordedBy
-        ) {
-            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+        try {
+            [$event, $isDuplicate] = DB::transaction(function () use (
+                $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
+                $digUserId, $assistUserId, $recordedBy, $clientRequestId
+            ) {
+                $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
-            $state = $this->computeMatchState($locked);
-            $setInfo = $state['sets'][$setNumber] ?? null;
-            if ($setInfo && $setInfo['decided']) {
-                throw new InvalidArgumentException('Эта партия уже завершена.');
-            }
+                // Параллельный повтор: ждал lock, пока первый запрос записывал событие
+                if ($clientRequestId !== null && $dup = $this->findByRequestId($locked->id, $clientRequestId)) {
+                    return [$dup, true];
+                }
 
-            $this->assertPlayersOnCourt($locked, $setNumber, $scoringTeamId, $actionType, $playerId, $digUserId, $assistUserId);
+                $state = $this->computeMatchState($locked);
+                $setInfo = $state['sets'][$setNumber] ?? null;
+                if ($setInfo && $setInfo['decided']) {
+                    throw new InvalidArgumentException('Эта партия уже завершена.');
+                }
 
-            $teamPointNumber = MatchRallyEvent::where('match_id', $locked->id)
-                ->where('set_number', $setNumber)
-                ->where('team_id', $scoringTeamId)
-                ->count() + 1;
+                $this->assertPlayersOnCourt($locked, $setNumber, $scoringTeamId, $actionType, $playerId, $digUserId, $assistUserId);
 
-            try {
+                $teamPointNumber = MatchRallyEvent::where('match_id', $locked->id)
+                    ->where('set_number', $setNumber)
+                    ->where('team_id', $scoringTeamId)
+                    ->count() + 1;
+
+                // Гонку исключает lockForUpdate матча; уникальные индексы (match_id, seq) и
+                // (match_id, team_id, set_number, team_point_number) — только страховка: при срабатывании
+                // откатывается вся транзакция (см. catch снаружи), а не «ловится» ошибка внутри неё.
                 $event = MatchRallyEvent::create([
                     'match_id'            => $locked->id,
                     'set_number'          => $setNumber,
@@ -125,30 +139,38 @@ class MatchRallyService
                     'assist_user_id'      => $assistUserId,
                     'recorded_by_user_id' => $recordedBy?->id,
                     'seq'                 => $this->lineupService->nextSeq($locked),
+                    'client_request_id'   => $clientRequestId,
                 ]);
-            } catch (QueryException $e) {
-                // Гонка по уникальному индексу — кто-то уже вставил этот же team_point_number
-                $event = MatchRallyEvent::where('match_id', $locked->id)
-                    ->where('set_number', $setNumber)
-                    ->where('team_id', $scoringTeamId)
-                    ->where('team_point_number', $teamPointNumber)
-                    ->firstOrFail();
+
+                $this->syncPlayerStats($locked, $setNumber);
+
+                if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
+                    $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
+                }
+
+                return [$event, false];
+            });
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() === '23505') {
+                throw new InvalidArgumentException('Повторите действие.');
             }
+            throw $e;
+        }
 
-            $this->syncPlayerStats($locked, $setNumber);
-
-            if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
-                $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
-            }
-
-            return $event;
-        });
+        if ($isDuplicate) {
+            return $event; // повтор — ничего нового не записано, broadcast не нужен
+        }
 
         // После commit — публичная страница турнира узнаёт по WebSocket, что нужно
         // перечитать ленту "ход матча" (см. TournamentMatchRallyUpdated).
         broadcast(new \App\Events\TournamentMatchRallyUpdated($match->id, $setNumber));
 
         return $event;
+    }
+
+    private function findByRequestId(int $matchId, string $clientRequestId): ?MatchRallyEvent
+    {
+        return MatchRallyEvent::where('match_id', $matchId)->where('client_request_id', $clientRequestId)->first();
     }
 
     /** Совместимость: отмена последнего действия партии (очко ИЛИ событие состава). */

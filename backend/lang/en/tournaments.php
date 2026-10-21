@@ -1052,6 +1052,8 @@ return [
     'lineup_stat_subs_played' => 'Substitutes who played',
     'lineup_stat_libero' => 'Libero',
     'lineup_ev_point' => 'Point',
+    'score_saving' => 'Saving…',
+    'rally_net_err' => 'No connection, the point was not saved — try again',
     'lineup_saving' => 'Saving…',
     'lineup_ok' => 'OK',
     'lineup_done_sub' => 'Substitution done',

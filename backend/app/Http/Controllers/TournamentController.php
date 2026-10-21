@@ -1076,51 +1076,66 @@ class TournamentController extends Controller
         }
 
         try {
-            $this->matchService->recordScore(
-                $match,
-                $sets,
-                $request->user(),
-            );
+            // Под lock матча: двойной сабмит (двойной тап, повтор по сети) того же счёта —
+            // успех без повторных побочных эффектов; другой счёт у уже завершённого матча — ошибка.
+            $alreadyScored = DB::transaction(function () use ($match, $sets, $request) {
+                $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+                if ($locked->isCompleted()) {
+                    if ($this->sameSetScores($locked, $sets)) {
+                        return true;
+                    }
+                    throw new \InvalidArgumentException('Матч уже завершён.');
+                }
+                $this->matchService->recordScore($locked, $sets, $request->user());
+                return false;
+            });
 
             // «Игра со статистикой» (обычное мероприятие): никаких турнирных последствий —
             // ни пересчёта турнирной статистики/рейтингов, ни завершения стадии, ни перехода на setup.
             if ($stage->type === TournamentStage::TYPE_FRIENDLY) {
+                if ($alreadyScored) {
+                    return $request->expectsJson()
+                        ? response()->json(['success' => true, 'match' => $match->fresh()])
+                        : redirect()->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])->with('success', 'Счёт записан.');
+                }
                 return $this->afterFriendlyScore($request, $event, $stage, $match);
             }
 
-            // Standings ЗАТРОНУТОЙ этим матчем группы уже пересчитаны синхронно
-            // внутри recordScore()/submitScore() (быстро, одна группа) — организатор
-            // видит верную таблицу без задержки. "Тяжёлый хвост" — player_tournament_stats
-            // всего события + career + (для сезонных) весь сезон — в очередь, не
-            // блокирует ответ страницы (report_league_tournament_setup_diag_2026-08-07.md).
-            try {
-                \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
-            } catch (\Throwable $e) {
-                \Log::warning('Stats rebuild dispatch failed: ' . $e->getMessage());
-            }
+            if (!$alreadyScored) {
+                // Standings ЗАТРОНУТОЙ этим матчем группы уже пересчитаны синхронно
+                // внутри recordScore()/submitScore() (быстро, одна группа) — организатор
+                // видит верную таблицу без задержки. "Тяжёлый хвост" — player_tournament_stats
+                // всего события + career + (для сезонных) весь сезон — в очередь, не
+                // блокирует ответ страницы (report_league_tournament_setup_diag_2026-08-07.md).
+                try {
+                    \App\Jobs\RecalculateTournamentStatsJob::dispatch($event->id)->afterCommit();
+                } catch (\Throwable $e) {
+                    \Log::warning('Stats rebuild dispatch failed: ' . $e->getMessage());
+                }
 
-            // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
-            $freshMatch = $freshMatch ?? $match->fresh();
-            if ($freshMatch->is_tiebreaker && $freshMatch->winner_team_id) {
-                $tb = TournamentTiebreaker::where('match_id', $freshMatch->id)->first();
-                if ($tb && $tb->status !== 'resolved') {
-                    $tb->update([
-                        'winner_team_id'      => $freshMatch->winner_team_id,
-                        'resolved_by_user_id' => $request->user()->id,
-                        'resolved_at'         => now(),
-                        'status'              => 'resolved',
-                    ]);
-                    if ($freshMatch->group_id) {
-                        $group = TournamentGroup::find($freshMatch->group_id);
-                        if ($group) {
-                            $this->standingsService->recalculateGroup($stage, $group);
+                // Если это тайбрейк-матч — разрезолвим тайбрейкер и пересчитаем standings
+                $freshMatch = $freshMatch ?? $match->fresh();
+                if ($freshMatch->is_tiebreaker && $freshMatch->winner_team_id) {
+                    $tb = TournamentTiebreaker::where('match_id', $freshMatch->id)->first();
+                    if ($tb && $tb->status !== 'resolved') {
+                        $tb->update([
+                            'winner_team_id'      => $freshMatch->winner_team_id,
+                            'resolved_by_user_id' => $request->user()->id,
+                            'resolved_at'         => now(),
+                            'status'              => 'resolved',
+                        ]);
+                        if ($freshMatch->group_id) {
+                            $group = TournamentGroup::find($freshMatch->group_id);
+                            if ($group) {
+                                $this->standingsService->recalculateGroup($stage, $group);
+                            }
                         }
                     }
                 }
-            }
 
-            // Проверяем, завершена ли стадия
-            $this->checkStageCompletion($stage);
+                // Проверяем, завершена ли стадия
+                $this->checkStageCompletion($stage);
+            }
 
             if ($request->expectsJson()) {
                 return response()->json(['success' => true, 'match' => $match->fresh()]);
@@ -3323,8 +3338,6 @@ class TournamentController extends Controller
             return $redirect;
         }
 
-        $stage = $match->stage;
-        $event = $stage->event;
         $match->load(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
 
         $activeSet = $this->rallyService->getActiveSetNumber($match);
@@ -3333,12 +3346,40 @@ class TournamentController extends Controller
             $setNumber = $activeSet;
         }
 
+        return view('tournaments.score_rally', $this->rallyViewData($match, $setNumber));
+    }
+
+    /** Данные экрана поочкового ввода — общие для полной страницы и для HTML-фрагмента без перезагрузки. */
+    private function rallyViewData(TournamentMatch $match, int $setNumber): array
+    {
+        $stage = $match->stage;
+        $event = $stage->event;
         $board = $this->rallyService->getBoard($match, $setNumber);
         $matchReady = $this->rallyService->isMatchReadyToFinalize($match);
         $lineup = app(\App\Services\MatchLineupView::class)->forRally($match, $setNumber, $board['decided']);
         $journal = app(\App\Services\MatchProgressService::class)->build($match->id, true)['sets'][$setNumber]['rallies'] ?? [];
 
-        return view('tournaments.score_rally', compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal'));
+        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal');
+    }
+
+    /** HTML динамической части экрана (счёт, доска, составы, журнал, кнопки) — клиент подменяет блок без reload. */
+    private function rallyFragmentHtml(TournamentMatch $match, int $setNumber): string
+    {
+        $match = $match->fresh(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
+
+        return view('tournaments._partials.rally_live', $this->rallyViewData($match, $setNumber))->render();
+    }
+
+    /** GET: свежий HTML-фрагмент экрана (после сетевой ошибки, при возврате на вкладку). */
+    public function rallyFragment(Request $request, TournamentMatch $match)
+    {
+        if ($this->guardRallyMode($request, $match)) {
+            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+        }
+
+        $setNumber = max(1, (int) $request->query('set', $this->rallyService->getActiveSetNumber($match)));
+
+        return response()->json(['success' => true, 'html' => $this->rallyFragmentHtml($match, $setNumber)]);
     }
 
     public function rallyRecordPoint(Request $request, TournamentMatch $match)
@@ -3357,6 +3398,7 @@ class TournamentController extends Controller
             'player_id'       => 'nullable|integer',
             'dig_user_id'     => 'nullable|integer',
             'assist_user_id'  => 'nullable|integer',
+            'client_request_id' => 'nullable|uuid',
         ]);
 
         try {
@@ -3369,6 +3411,7 @@ class TournamentController extends Controller
                 isset($validated['dig_user_id']) ? (int) $validated['dig_user_id'] : null,
                 isset($validated['assist_user_id']) ? (int) $validated['assist_user_id'] : null,
                 $request->user(),
+                $validated['client_request_id'] ?? null,
             );
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
@@ -3383,6 +3426,7 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+                'html'    => $this->rallyFragmentHtml($match, (int) $validated['set_number']),
             ]);
         }
 
@@ -3423,6 +3467,7 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), (int) $validated['set_number']),
+                'html'    => $this->rallyFragmentHtml($match, (int) $validated['set_number']),
             ]);
         }
 
@@ -3479,6 +3524,7 @@ class TournamentController extends Controller
             'type'        => 'required|in:substitution,libero_in,libero_out',
             'out_user_id' => 'nullable|integer',
             'in_user_id'  => 'nullable|integer',
+            'client_request_id' => 'nullable|uuid',
         ]);
 
         return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
@@ -3487,11 +3533,12 @@ class TournamentController extends Controller
             $team = (int) $validated['team_id'];
             $out = isset($validated['out_user_id']) ? (int) $validated['out_user_id'] : 0;
             $in = isset($validated['in_user_id']) ? (int) $validated['in_user_id'] : 0;
+            $rid = $validated['client_request_id'] ?? null;
 
             match ($validated['type']) {
-                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user()),
-                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user()),
-                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user()),
+                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user(), null, $rid),
+                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user(), null, $rid),
+                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user(), null, $rid),
             };
         });
     }
@@ -3514,14 +3561,36 @@ class TournamentController extends Controller
             return response()->json([
                 'success' => true,
                 'board'   => $this->rallyService->getBoard($match->fresh(), $setNumber),
+                'html'    => $this->rallyFragmentHtml($match, $setNumber),
             ]);
         }
 
         return redirect()->route('tournament.matches.rally.form', [$match, 'set' => $setNumber]);
     }
 
+    /** Совпадает ли счёт по сетам завершённого матча с присланным ($sets = [[home, away], ...]). */
+    private function sameSetScores(TournamentMatch $match, array $sets): bool
+    {
+        $home = array_map('intval', (array) $match->score_home);
+        $away = array_map('intval', (array) $match->score_away);
+        $inHome = array_map(fn ($s) => (int) $s[0], $sets);
+        $inAway = array_map(fn ($s) => (int) $s[1], $sets);
+
+        return $home === array_values($inHome) && $away === array_values($inAway);
+    }
+
     public function rallyFinalize(Request $request, TournamentMatch $match)
     {
+        // Повторный тап «Записать счёт»: матч уже завершён тем же счётом из лога очков — это успех,
+        // а не ошибка guardRallyMode (score() сам распознает дубль и не повторит побочные эффекты).
+        $fresh = $match->fresh();
+        if ($fresh->isCompleted() && $this->rallyService->isMatchReadyToFinalize($fresh)
+            && $this->sameSetScores($fresh, $this->rallyService->buildFinalSets($fresh))) {
+            $request->merge(['sets' => $this->rallyService->buildFinalSets($fresh)]);
+
+            return $this->score($request, $match);
+        }
+
         if ($redirect = $this->guardRallyMode($request, $match)) {
             return $redirect;
         }

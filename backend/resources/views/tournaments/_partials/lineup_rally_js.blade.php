@@ -1,21 +1,6 @@
 {{-- Экран поочкового ввода при включённом учёте состава: расстановка партии + попап замены/либеро.
      Данные приходят готовыми из MatchLineupView::forRally(); JS только рисует и шлёт JSON. --}}
 @php
-	$luTeams = [];
-	foreach ($sides as $sk => $sd) {
-		$luTeams[$sk] = $lineup['teams'][$sk] + ['name' => (string) ($sd['team']->name ?? 'TBD')];
-	}
-	$luCfg = [
-		'setNumber' => $setNumber,
-		'startUrl'  => route('tournament.matches.rally.lineup.start', $match),
-		'eventUrl'  => route('tournament.matches.rally.lineup.event', $match),
-		'size'      => $lineup['profile']['on_court_size'],
-		'hasLibero' => $lineup['profile']['has_libero'],
-		'positions' => $lineup['profile']['positions'],
-		'hasStart'  => $lineup['has_start'],
-		'teams'     => $luTeams,
-		'setup'     => $lineup['setup'],
-	];
 	$luPos = [];
 	foreach (['setter', 'outside', 'opposite', 'middle', 'libero'] as $pc) {
 		$luPos[$pc] = __('tournaments.pos_abbr_' . $pc);
@@ -46,22 +31,12 @@
 @endphp
 <script>
 (function () {
-	var C = @json($luCfg), T = @json($luT), POS = @json($luPos);
-	var tokenEl = document.querySelector('#rw-form input[name=_token]');
-	var token = tokenEl ? tokenEl.value : '';
+	var C = RallyLive.data().lu, T = @json($luT), POS = @json($luPos);
 	var SIDES = ['home', 'away'];
 
+	/* запросы — общий рантайм (jQuery.ajax, повтор при сетевой ошибке тем же client_request_id) */
 	function post(url, body, ok, fail) {
-		jQuery.ajax({
-			url: url, method: 'POST', xhrFields: {withCredentials: true},
-			contentType: 'application/json', dataType: 'json', data: JSON.stringify(body),
-			headers: {'Accept': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest'}
-		}).done(function (j) {
-			if (j && j.success) { ok(j); } else { fail((j && (j.error || j.message)) || T.net_err); }
-		}).fail(function (xhr) {
-			var j = xhr.responseJSON;
-			fail((j && (j.error || j.message)) || T.net_err);
-		});
+		RallyLive.send(url, body, {json: true, retry: !!body.client_request_id}, ok, fail);
 	}
 	function surname(n) { return String(n || '').split(' ')[0]; }
 	function posLabel(p) { return p ? (POS[p] || p) : ''; }
@@ -117,16 +92,16 @@
 	function sendEvent(body, inName, doneKey) {
 		if (busy) { return; }
 		sub.inName = inName;
+		sub.rid = sub.rid || RallyLive.uuid(); // один uuid на одно нажатие: повтор запроса не задвоит замену
 		oNote.style.color = 'inherit'; oNote.textContent = T.saving;
 		lockOv(true);
-		body.set_number = C.setNumber; body.team_id = C.teams[sub.side].team_id;
-		post(C.eventUrl, body, function () {
-			resetOv('✓ ' + T[doneKey], doneText());
-			oNote.style.color = '#16a34a';
-			oFoot.appendChild(mk(T.ok, 'btn-primary', function () { location.reload(); }));
-			busy = true; // повторные нажатия не нужны — страница сейчас перезагрузится
-			setTimeout(function () { location.reload(); }, 1300);
-		}, function (m) { lockOv(false); oNote.style.color = ''; oNote.textContent = m; });
+		body.set_number = C.setNumber; body.team_id = C.teams[sub.side].team_id; body.client_request_id = sub.rid;
+		post(C.eventUrl, body, function (j) {
+			var msg = '✓ ' + T[doneKey] + ' · ' + doneText();
+			busy = false; closeOv();
+			RallyLive.swap(j.html);
+			RallyLive.toast(msg);
+		}, function (m) { lockOv(false); oNote.style.color = '#dc2626'; oNote.textContent = m; });
 	}
 	function stepOut() {
 		var t = C.teams[sub.side];
@@ -168,151 +143,159 @@
 		oFoot.appendChild(mk(T.back, 'btn-secondary', stepOut));
 		oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
 	}
-	document.querySelectorAll('.js-lu-sub').forEach(function (b) {
-		b.addEventListener('click', function () { sub = {side: this.dataset.side, out: null}; stepOut(); showOv(); });
+	document.addEventListener('click', function (e) {
+		var b = e.target.closest ? e.target.closest('.js-lu-sub') : null;
+		if (!b || b.disabled) { return; }
+		sub = {side: b.dataset.side, out: null, rid: ''};
+		stepOut(); showOv();
 	});
 
-	/* ---------- расстановка ---------- */
-	var panel = document.getElementById('ls-panel');
-	if (!panel || !C.setup) { return; }
-	var courtEl = document.getElementById('ls-court'), poolEl = document.getElementById('ls-pool'),
-		missEl = document.getElementById('ls-missing'), errEl = document.getElementById('ls-error'),
-		startBtn = document.getElementById('ls-start'), liberoBtn = document.getElementById('ls-libero'),
-		toggle = document.getElementById('ls-toggle');
-	var cur = 'home', first = C.setup.first_serve_side, S = {}, R = {};
+	/* ---------- расстановка (пересоздаётся после каждой подмены блока) ---------- */
+	function initPanel() {
+		C = RallyLive.data().lu;
+		var panel = document.getElementById('ls-panel');
+		if (!panel || !C || !C.setup) { return; }
+		var courtEl = document.getElementById('ls-court'), poolEl = document.getElementById('ls-pool'),
+			missEl = document.getElementById('ls-missing'), errEl = document.getElementById('ls-error'),
+			startBtn = document.getElementById('ls-start'), liberoBtn = document.getElementById('ls-libero'),
+			toggle = document.getElementById('ls-toggle');
+		var cur = 'home', first = C.setup.first_serve_side, S = {}, R = {};
 
-	SIDES.forEach(function (side) {
-		var st = {zones: {}, libero: C.setup.teams[side].libero || null, cand: []};
-		R[side] = {};
-		C.setup.teams[side].roster.forEach(function (p) { R[side][p.id] = p; });
-		C.setup.teams[side].court.forEach(function (c) {
-			if (c.zone) { st.zones[c.zone] = {uid: c.user_id, pos: c.position || null}; } else { st.cand.push(c.user_id); }
-			if (c.position && R[side][c.user_id] && !R[side][c.user_id].position) { R[side][c.user_id].position = c.position; }
+		SIDES.forEach(function (side) {
+			var st = {zones: {}, libero: C.setup.teams[side].libero || null, cand: []};
+			R[side] = {};
+			C.setup.teams[side].roster.forEach(function (p) { R[side][p.id] = p; });
+			C.setup.teams[side].court.forEach(function (c) {
+				if (c.zone) { st.zones[c.zone] = {uid: c.user_id, pos: c.position || null}; } else { st.cand.push(c.user_id); }
+				if (c.position && R[side][c.user_id] && !R[side][c.user_id].position) { R[side][c.user_id].position = c.position; }
+			});
+			S[side] = st;
 		});
-		S[side] = st;
-	});
 
-	function nameOf(side, uid) { return R[side][uid] ? R[side][uid].name : '#' + uid; }
-	function placedIds(side) { return Object.keys(S[side].zones).map(function (z) { return S[side].zones[z].uid; }); }
-	function validPos(p) { return p && C.positions.indexOf(p) !== -1 ? p : null; }
-	function zoneOrder() { return C.size === 6 ? [4, 3, 2, 5, 6, 1] : Array.apply(null, Array(C.size)).map(function (_, i) { return i + 1; }); }
+		function nameOf(side, uid) { return R[side][uid] ? R[side][uid].name : '#' + uid; }
+		function placedIds(side) { return Object.keys(S[side].zones).map(function (z) { return S[side].zones[z].uid; }); }
+		function validPos(p) { return p && C.positions.indexOf(p) !== -1 ? p : null; }
+		function zoneOrder() { return C.size === 6 ? [4, 3, 2, 5, 6, 1] : Array.apply(null, Array(C.size)).map(function (_, i) { return i + 1; }); }
 
-	var ACCENT = {home: ['#2967BA', '41,103,186'], away: ['#E7612F', '231,97,47']};
-	function missingZones(side) {
-		return zoneOrder().filter(function (z) { return !S[side].zones[z]; }).sort(function (a, b) { return a - b; });
-	}
-	function render() {
-		var st = S[cur];
-		panel.style.setProperty('--ls-accent', ACCENT[cur][0]);
-		panel.style.setProperty('--ls-accent-rgb', ACCENT[cur][1]);
-		var titleEl = document.getElementById('ls-title');
-		if (titleEl) { titleEl.textContent = T.setupTitle + ' · ' + C.teams[cur].name; }
-		panel.querySelectorAll('.ls-tab').forEach(function (b) {
-			var sd = b.dataset.side, miss = missingZones(sd), stEl = b.querySelector('.ls-tab-state');
-			b.classList.toggle('ls-on', sd === cur);
-			b.classList.toggle('ls-done', miss.length === 0);
-			b.style.setProperty('--ls-tab-accent', ACCENT[sd][0]);
-			if (stEl) { stEl.textContent = miss.length === 0 ? '✓ ' + T.tabOk : (miss.length === 1 ? T.tabMissOne : T.tabMissMany).replace(':z', miss.join(', ')); }
-		});
-		panel.querySelectorAll('.ls-serve').forEach(function (b) { b.classList.toggle('ls-on', b.dataset.side === first); });
-		courtEl.className = 'ls-court' + (C.size === 6 ? '' : ' ls-court--flat');
-		courtEl.innerHTML = '';
-		zoneOrder().forEach(function (z) {
-			var cell = st.zones[z], b = document.createElement('button');
-			b.type = 'button'; b.className = 'ls-zone' + (cell ? ' ls-zone--filled' : '');
-			var h = '<span class="ls-zone-n">' + z + '</span>';
-			if (first === cur && z === 1) { h += '<span class="ls-ball">🏐</span>'; }
-			b.innerHTML = h;
-			if (cell) {
-				var n = document.createElement('span'); n.className = 'ls-zone-name'; n.textContent = surname(nameOf(cur, cell.uid));
-				var p = document.createElement('span'); p.className = 'ls-zone-pos'; p.textContent = posLabel(cell.pos);
-				b.appendChild(n); b.appendChild(p);
+		var ACCENT = {home: ['#2967BA', '41,103,186'], away: ['#E7612F', '231,97,47']};
+		function missingZones(side) {
+			return zoneOrder().filter(function (z) { return !S[side].zones[z]; }).sort(function (a, b) { return a - b; });
+		}
+		function render() {
+			var st = S[cur];
+			panel.style.setProperty('--ls-accent', ACCENT[cur][0]);
+			panel.style.setProperty('--ls-accent-rgb', ACCENT[cur][1]);
+			var titleEl = document.getElementById('ls-title');
+			if (titleEl) { titleEl.textContent = T.setupTitle + ' · ' + C.teams[cur].name; }
+			panel.querySelectorAll('.ls-tab').forEach(function (b) {
+				var sd = b.dataset.side, miss = missingZones(sd), stEl = b.querySelector('.ls-tab-state');
+				b.classList.toggle('ls-on', sd === cur);
+				b.classList.toggle('ls-done', miss.length === 0);
+				b.style.setProperty('--ls-tab-accent', ACCENT[sd][0]);
+				if (stEl) { stEl.textContent = miss.length === 0 ? '✓ ' + T.tabOk : (miss.length === 1 ? T.tabMissOne : T.tabMissMany).replace(':z', miss.join(', ')); }
+			});
+			panel.querySelectorAll('.ls-serve').forEach(function (b) { b.classList.toggle('ls-on', b.dataset.side === first); });
+			courtEl.className = 'ls-court' + (C.size === 6 ? '' : ' ls-court--flat');
+			courtEl.innerHTML = '';
+			zoneOrder().forEach(function (z) {
+				var cell = st.zones[z], b = document.createElement('button');
+				b.type = 'button'; b.className = 'ls-zone' + (cell ? ' ls-zone--filled' : '');
+				var h = '<span class="ls-zone-n">' + z + '</span>';
+				if (first === cur && z === 1) { h += '<span class="ls-ball">🏐</span>'; }
+				b.innerHTML = h;
+				if (cell) {
+					var n = document.createElement('span'); n.className = 'ls-zone-name'; n.textContent = surname(nameOf(cur, cell.uid));
+					var p = document.createElement('span'); p.className = 'ls-zone-pos'; p.textContent = posLabel(cell.pos);
+					b.appendChild(n); b.appendChild(p);
+				}
+				b.addEventListener('click', function () { openZone(z); });
+				courtEl.appendChild(b);
+			});
+			if (liberoBtn) { liberoBtn.textContent = T.liberoLabel + ': ' + (st.libero ? nameOf(cur, st.libero) : T.liberoNone); }
+			var placed = placedIds(cur), un = st.cand.filter(function (id) { return placed.indexOf(id) === -1 && id !== st.libero; });
+			poolEl.style.display = un.length ? '' : 'none';
+			poolEl.innerHTML = '';
+			if (un.length) {
+				poolEl.appendChild(document.createTextNode(T.unplaced + ': '));
+				un.forEach(function (id) { var s = document.createElement('span'); s.className = 'ls-pill'; s.textContent = nameOf(cur, id); poolEl.appendChild(s); });
 			}
-			b.addEventListener('click', function () { openZone(z); });
-			courtEl.appendChild(b);
-		});
-		if (liberoBtn) { liberoBtn.textContent = T.liberoLabel + ': ' + (st.libero ? nameOf(cur, st.libero) : T.liberoNone); }
-		var placed = placedIds(cur), un = st.cand.filter(function (id) { return placed.indexOf(id) === -1 && id !== st.libero; });
-		poolEl.style.display = un.length ? '' : 'none';
-		poolEl.innerHTML = '';
-		if (un.length) {
-			poolEl.appendChild(document.createTextNode(T.unplaced + ': '));
-			un.forEach(function (id) { var s = document.createElement('span'); s.className = 'ls-pill'; s.textContent = nameOf(cur, id); poolEl.appendChild(s); });
-		}
-		var miss = [];
-		SIDES.forEach(function (side) {
-			var n = C.size - Object.keys(S[side].zones).length;
-			if (n > 0) { miss.push(T.missZones.replace(':team', C.teams[side].name).replace(':n', n)); }
-		});
-		if (!first) { miss.push(T.missServe); }
-		missEl.textContent = miss.length ? T.missPrefix + miss.join('; ') : '';
-		startBtn.disabled = miss.length > 0;
-	}
-
-	function openZone(z) {
-		var st = S[cur], occ = st.zones[z] || null, chosen = occ ? occ.pos : null, touched = false;
-		function draw() {
-			resetOv(T.pickPlayer.replace(':n', z), C.teams[cur].name);
-			C.positions.forEach(function (p) {
-				oChips.appendChild(mk(posLabel(p), 'btn-secondary' + (chosen === p ? ' rw-on' : ''), function () { chosen = p; touched = true; draw(); }));
+			var miss = [];
+			SIDES.forEach(function (side) {
+				var n = C.size - Object.keys(S[side].zones).length;
+				if (n > 0) { miss.push(T.missZones.replace(':team', C.teams[side].name).replace(':n', n)); }
 			});
-			var placed = placedIds(cur), seen = {}, list = [];
-			function add(id) { if (!seen[id] && id !== st.libero) { seen[id] = 1; list.push(id); } }
-			if (occ) { add(occ.uid); }
-			st.cand.forEach(function (id) { if (placed.indexOf(id) === -1) { add(id); } });
-			Object.keys(R[cur]).forEach(function (id) { id = parseInt(id, 10); if (placed.indexOf(id) === -1) { add(id); } });
-			list.forEach(function (id) {
-				var p = R[cur][id], dp = validPos(p.position);
-				var b = mkP(p.name, posLabel(dp), '', 'btn-primary' + (occ && occ.uid === id ? ' rw-hl' : ''), function () {
-					var pos = touched ? chosen : ((occ && occ.uid === id && occ.pos) || dp || chosen);
-					if (!pos) { oNote.textContent = T.pickPos + '?'; return; }
-					st.zones[z] = {uid: id, pos: pos};
-					closeOv(); render();
+			if (!first) { miss.push(T.missServe); }
+			missEl.textContent = miss.length ? T.missPrefix + miss.join('; ') : '';
+			startBtn.disabled = miss.length > 0;
+		}
+
+		function openZone(z) {
+			var st = S[cur], occ = st.zones[z] || null, chosen = occ ? occ.pos : null, touched = false;
+			function draw() {
+				resetOv(T.pickPlayer.replace(':n', z), C.teams[cur].name);
+				C.positions.forEach(function (p) {
+					oChips.appendChild(mk(posLabel(p), 'btn-secondary' + (chosen === p ? ' rw-on' : ''), function () { chosen = p; touched = true; draw(); }));
 				});
-				oGrid.appendChild(b);
-			});
-			if (occ) { oFoot.appendChild(mk(T.clearZone, 'btn-secondary', function () { delete st.zones[z]; closeOv(); render(); })); }
-			oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
+				var placed = placedIds(cur), seen = {}, list = [];
+				function add(id) { if (!seen[id] && id !== st.libero) { seen[id] = 1; list.push(id); } }
+				if (occ) { add(occ.uid); }
+				st.cand.forEach(function (id) { if (placed.indexOf(id) === -1) { add(id); } });
+				Object.keys(R[cur]).forEach(function (id) { id = parseInt(id, 10); if (placed.indexOf(id) === -1) { add(id); } });
+				list.forEach(function (id) {
+					var p = R[cur][id], dp = validPos(p.position);
+					var b = mkP(p.name, posLabel(dp), '', 'btn-primary' + (occ && occ.uid === id ? ' rw-hl' : ''), function () {
+						var pos = touched ? chosen : ((occ && occ.uid === id && occ.pos) || dp || chosen);
+						if (!pos) { oNote.textContent = T.pickPos + '?'; return; }
+						st.zones[z] = {uid: id, pos: pos};
+						closeOv(); render();
+					});
+					oGrid.appendChild(b);
+				});
+				if (occ) { oFoot.appendChild(mk(T.clearZone, 'btn-secondary', function () { delete st.zones[z]; closeOv(); render(); })); }
+				oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
+			}
+			draw(); showOv();
 		}
-		draw(); showOv();
-	}
 
-	if (liberoBtn) {
-		liberoBtn.addEventListener('click', function () {
-			var st = S[cur], placed = placedIds(cur);
-			resetOv(T.liberoPick, C.teams[cur].name);
-			Object.keys(R[cur]).forEach(function (id) {
-				id = parseInt(id, 10);
-				if (placed.indexOf(id) !== -1) { return; }
-				var p = R[cur][id];
-				oGrid.appendChild(mkP(p.name, p.position === 'libero' ? posLabel('libero') : '', '', 'btn-primary' + (st.libero === id ? ' rw-hl' : ''), function () {
-					st.libero = id; closeOv(); render();
-				}));
+		if (liberoBtn) {
+			liberoBtn.addEventListener('click', function () {
+				var st = S[cur], placed = placedIds(cur);
+				resetOv(T.liberoPick, C.teams[cur].name);
+				Object.keys(R[cur]).forEach(function (id) {
+					id = parseInt(id, 10);
+					if (placed.indexOf(id) !== -1) { return; }
+					var p = R[cur][id];
+					oGrid.appendChild(mkP(p.name, p.position === 'libero' ? posLabel('libero') : '', '', 'btn-primary' + (st.libero === id ? ' rw-hl' : ''), function () {
+						st.libero = id; closeOv(); render();
+					}));
+				});
+				oGrid.appendChild(mk(T.liberoNone, 'btn-secondary', function () { st.libero = null; closeOv(); render(); }, true));
+				oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
+				showOv();
 			});
-			oGrid.appendChild(mk(T.liberoNone, 'btn-secondary', function () { st.libero = null; closeOv(); render(); }, true));
-			oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
-			showOv();
+		}
+
+		panel.querySelectorAll('.ls-tab').forEach(function (b) { b.addEventListener('click', function () { cur = this.dataset.side; render(); }); });
+		panel.querySelectorAll('.ls-serve').forEach(function (b) { b.addEventListener('click', function () { first = this.dataset.side; render(); }); });
+		if (toggle) { toggle.addEventListener('click', function () { panel.style.display = panel.style.display === 'none' ? '' : 'none'; }); }
+
+		startBtn.addEventListener('click', function () {
+			errEl.style.display = 'none';
+			startBtn.disabled = true;
+			var lineups = {};
+			SIDES.forEach(function (side) {
+				var st = S[side], court = [];
+				Object.keys(st.zones).forEach(function (z) { court.push({user_id: st.zones[z].uid, position: st.zones[z].pos, zone: parseInt(z, 10)}); });
+				lineups[C.teams[side].team_id] = {court: court, libero: C.hasLibero ? st.libero : null};
+			});
+			post(C.startUrl, {set_number: C.setNumber, first_serve_team_id: C.teams[first].team_id, lineups: lineups},
+				function (j) { closeOv(); RallyLive.swap(j.html); },
+				function (m) { errEl.textContent = m; errEl.style.display = ''; startBtn.disabled = false; });
 		});
+
+		render();
 	}
-
-	panel.querySelectorAll('.ls-tab').forEach(function (b) { b.addEventListener('click', function () { cur = this.dataset.side; render(); }); });
-	panel.querySelectorAll('.ls-serve').forEach(function (b) { b.addEventListener('click', function () { first = this.dataset.side; render(); }); });
-	if (toggle) { toggle.addEventListener('click', function () { panel.style.display = panel.style.display === 'none' ? '' : 'none'; }); }
-
-	startBtn.addEventListener('click', function () {
-		errEl.style.display = 'none';
-		startBtn.disabled = true;
-		var lineups = {};
-		SIDES.forEach(function (side) {
-			var st = S[side], court = [];
-			Object.keys(st.zones).forEach(function (z) { court.push({user_id: st.zones[z].uid, position: st.zones[z].pos, zone: parseInt(z, 10)}); });
-			lineups[C.teams[side].team_id] = {court: court, libero: C.hasLibero ? st.libero : null};
-		});
-		post(C.startUrl, {set_number: C.setNumber, first_serve_team_id: C.teams[first].team_id, lineups: lineups},
-			function () { location.reload(); },
-			function (m) { errEl.textContent = m; errEl.style.display = ''; startBtn.disabled = false; });
-	});
-
-	render();
+	initPanel();
+	document.addEventListener('rally:swapped', initPanel);
 })();
 </script>
