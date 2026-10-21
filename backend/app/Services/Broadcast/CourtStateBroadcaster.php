@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Services\Broadcast;
+
+use App\Events\CourtStateUpdated;
+use App\Models\EventCourt;
+use App\Models\TournamentMatch;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+
+/** Рассылка состояния площадки. Сбой трансляции никогда не должен ломать ввод счёта. */
+class CourtStateBroadcaster
+{
+    public const CACHE_PREFIX = 'broadcast:court-state:';
+
+    public function __construct(
+        protected CourtStateService $states,
+        protected CourtRegistry $courts,
+    ) {}
+
+    /** Состояние с кешем на 1 с (для публичного GET). */
+    public function cached(EventCourt $court): array
+    {
+        return Cache::remember(self::CACHE_PREFIX . $court->id, 1, fn () => $this->states->forCourt($court));
+    }
+
+    public function forMatch(int|TournamentMatch|null $match): void
+    {
+        try {
+            $match = is_int($match) ? TournamentMatch::find($match) : $match;
+            if (!$match) {
+                return;
+            }
+            $court = $this->courts->courtOfMatch($match);
+            if ($court) {
+                $this->forCourt($court);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('broadcast.court_state_failed', ['match_id' => is_object($match) ? $match->id : $match, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** Матч + матчи, в которые перешёл победитель/проигравший (у них могли появиться команды). */
+    public function forMatchAndFollowers(TournamentMatch $match): void
+    {
+        $ids = array_unique(array_filter([$match->id, $match->next_match_id, $match->loser_next_match_id]));
+        foreach ($ids as $id) {
+            $this->forMatch((int) $id);
+        }
+    }
+
+    public function forCourt(EventCourt $court): array
+    {
+        Cache::forget(self::CACHE_PREFIX . $court->id);
+        $state = $this->states->forCourt($court->fresh() ?? $court);
+
+        try {
+            broadcast(new CourtStateUpdated($court->channel_key, $state));
+        } catch (\Throwable $e) {
+            Log::warning('broadcast.court_state_failed', ['court_id' => $court->id, 'error' => $e->getMessage()]);
+        }
+
+        return $state;
+    }
+}

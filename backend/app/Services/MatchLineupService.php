@@ -338,6 +338,7 @@ class MatchLineupService
         });
 
         broadcast(new TournamentMatchRallyUpdated($match->id, $setNumber));
+        app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatch($match->id);
 
         return $start;
     }
@@ -614,6 +615,7 @@ class MatchLineupService
 
         if (!$isDuplicate) {
             broadcast(new TournamentMatchRallyUpdated($match->id, $setNumber));
+            app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatch($match->id);
         }
 
         return $event;

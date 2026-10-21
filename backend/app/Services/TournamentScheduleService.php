@@ -11,6 +11,13 @@ use InvalidArgumentException;
 
 class TournamentScheduleService
 {
+    private ?\App\Services\Broadcast\CourtRegistry $courtRegistry = null;
+
+    private function courtRegistry(): \App\Services\Broadcast\CourtRegistry
+    {
+        return $this->courtRegistry ??= new \App\Services\Broadcast\CourtRegistry();
+    }
+
     /**
      * Назначить расписание для матчей стадии.
      *
@@ -106,9 +113,17 @@ class TournamentScheduleService
                     $court = $courts[0];
                 }
 
+                // Площадка трансляции (event_courts) — рядом со строкой court, которую не трогаем
+                $courtModel = $this->courtRegistry()->ensure(
+                    (int) $stage->event_id,
+                    $stage->occurrence_id ? (int) $stage->occurrence_id : null,
+                    (string) $court
+                );
+
                 $match->update([
                     'scheduled_at' => $currentTime,
                     'court'        => $court,
+                    'court_id'     => $courtModel->id,
                 ]);
 
                 $courtIdx++;

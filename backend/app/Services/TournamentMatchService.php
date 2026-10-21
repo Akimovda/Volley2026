@@ -106,6 +106,9 @@ class TournamentMatchService
             $this->handleGrandFinalReset($match);
         });
 
+        // Табло трансляции: итоги матча + матчи, куда перешли команды
+        app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatchAndFollowers($match);
+
         return $match->fresh();
     }
 
@@ -223,6 +226,8 @@ class TournamentMatchService
                 );
             }
         });
+
+        app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatchAndFollowers($match);
 
         return $match->fresh();
     }
