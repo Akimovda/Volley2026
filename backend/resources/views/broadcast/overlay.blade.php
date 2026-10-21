@@ -259,9 +259,18 @@ window.__BC = @json($config);
         show(els.splash, m === 'splash' ? (renderSplash(p), true) : false);
     }
 
+    // Ссылка недоступна / площадка скрыта: полностью прозрачный кадр, редкий опрос (оживёт, если вернут)
+    var offMode = false;
+    function goOff() {
+        offMode = true; cur = null; switched = null;
+        try { render({mode: 'off'}); } catch (e) {}
+    }
+
     function apply(p) {
         try {
             if (!p || !p.mode) { return; }
+            if (p.hidden) { goOff(); return; }
+            offMode = false;
             if (cur) {
                 var cm = cur.match ? cur.match.id : null, pm = p.match ? p.match.id : null;
                 if (cm === pm && p.seq < cur.seq) { return; }
@@ -280,7 +289,7 @@ window.__BC = @json($config);
         try {
             var x = new XMLHttpRequest();
             x.open('GET', C.stateUrl + (C.stateUrl.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now());
-            x.onload = function () { try { if (x.status === 200) { apply(JSON.parse(x.responseText)); } } catch (e) {} };
+            x.onload = function () { try { if (x.status === 200) { apply(JSON.parse(x.responseText)); } else if (x.status === 404) { goOff(); } } catch (e) {} };
             x.send();
         } catch (e) {}
     }
@@ -308,7 +317,10 @@ window.__BC = @json($config);
     setInterval(tick, 200);
 
     // polling-fallback: WS не поднялся за 5 с или разорван
-    setInterval(function () { if (!wsOk && Date.now() >= pollFrom) { fetchState(); } }, 3000);
+    setInterval(function () {
+        if (offMode) { if (Date.now() - lastFetch >= 30000) { fetchState(); } return; }
+        if (!wsOk && Date.now() >= pollFrom) { fetchState(); }
+    }, 3000);
 
     function connect() {
         try {

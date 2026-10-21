@@ -51,11 +51,6 @@ class BroadcastSetupController extends Controller
         $occurrence = $this->resolveOccurrence($event, $occurrences, (int) $request->query('occurrence_id', $request->query('occurrence', 0)));
         $occId = $occurrence?->id;
 
-        // Friendly: «площадка дня» одна — создаём при первом заходе (иначе у игры нет площадки вообще)
-        if ($isFriendly && $occId && !EventCourt::where('event_id', $event->id)->where('occurrence_id', $occId)->exists()) {
-            $this->registry->ensure((int) $event->id, (int) $occId, 'Площадка');
-        }
-
         $courts = $this->courtsOf($event, $occId)->load('override');
         $activeLinks = BroadcastLink::where('event_id', $event->id)->where('role', BroadcastLink::ROLE_OVERLAY)
             ->whereNull('revoked_at')->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
@@ -82,7 +77,8 @@ class BroadcastSetupController extends Controller
             ];
         })->values();
 
-        $settings = BroadcastSetting::resolve((int) $event->id, $this->settingsScope($event, $occId));
+        // Страница редактирует настройки события (основные для всех туров); переопределения тура в UI нет
+        $settings = BroadcastSetting::resolve((int) $event->id, null);
         $theme = (array) ($settings->theme ?? []);
         $splash = (array) ($settings->splash ?? []);
         $customAt = null;
@@ -97,6 +93,7 @@ class BroadcastSetupController extends Controller
             'occurrences' => $occurrences,
             'occurrence'  => $occurrence,
             'courts'      => $courtData,
+            'dayCourtPending' => $isFriendly && $occId && $courts->isEmpty(),
             'unassigned'  => $isFriendly ? collect() : $this->unassignedMatches($event, $occId),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
             'form'        => [
@@ -193,6 +190,19 @@ class BroadcastSetupController extends Controller
             : $this->links->create($request->user(), $event, BroadcastLink::ROLE_OVERLAY, $court);
 
         return response()->json(['ok' => true, 'url' => route('broadcast.overlay', ['token' => $link->token])]);
+    }
+
+    /** Friendly: площадка дня создаётся здесь, при первом изменяющем действии (GET страницы в БД не пишет). */
+    public function issueDayLink(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        abort_unless($this->isFriendly($event), 404);
+        $occ = $this->ownOccurrence($event, (int) $request->validate(['occurrence_id' => ['required', 'integer']])['occurrence_id']);
+
+        $court = EventCourt::where('event_id', $event->id)->where('occurrence_id', $occ->id)->orderBy('sort_order')->orderBy('id')->first()
+            ?? $this->registry->ensure((int) $event->id, (int) $occ->id, 'Площадка');
+
+        return $this->issueLink($request, $event, $court);
     }
 
     public function revokeLink(Request $request, Event $event, EventCourt $court): JsonResponse
@@ -466,12 +476,12 @@ class BroadcastSetupController extends Controller
     }
 
     /**
-     * Область настроек: оверлей берёт их по occurrence_id площадки (CourtStateService), поэтому у площадок события
-     * без тура (occurrence_id NULL) настройки событийные, у площадок тура — свои для тура.
+     * Область настроек: страница всегда пишет в запись СОБЫТИЯ (основные для всех туров). Запись уровня тура
+     * (occurrence_id) — только переопределение, если существует; читает её CourtStateService (тур → иначе событие).
      */
     private function settingsScope(Event $event, ?int $occId): ?int
     {
-        return $occId && EventCourt::where('event_id', $event->id)->where('occurrence_id', $occId)->exists() ? $occId : null;
+        return null;
     }
 
     /** Строка настроек нужной области: при первом сохранении наследует то, что действовало до неё (вместе с фоном). */
@@ -498,7 +508,8 @@ class BroadcastSetupController extends Controller
     /** CourtStateUpdated для всех площадок тура (тема/команды/заставка влияют на каждую). */
     private function refreshCourts(Event $event, ?int $occId): void
     {
-        foreach ($this->courtsOf($event, $occId) as $c) {
+        // Настройки события общие для всех туров — обновляем площадки всех туров
+        foreach ($this->courtsOf($event, null) as $c) {
             $this->broadcaster->forCourt($c);
         }
     }

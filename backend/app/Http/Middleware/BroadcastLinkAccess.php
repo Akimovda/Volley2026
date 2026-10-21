@@ -19,7 +19,7 @@ class BroadcastLinkAccess
         $link = $token !== '' ? BroadcastLink::where('token', $token)->first() : null;
 
         if (!$link || $link->role !== $role || !$link->isActive()) {
-            abort(404);
+            return self::blank($request);
         }
 
         if ($link->last_used_at === null || $link->last_used_at->lt(now()->subMinute())) {
@@ -29,5 +29,22 @@ class BroadcastLinkAccess
         $request->attributes->set('broadcast_link', $link);
 
         return $next($request);
+    }
+
+    /** 404 без видимого текста: в кадре эфира ошибка недопустима (страница — прозрачная, /state — пустое тело). */
+    public static function blank(Request $request): Response
+    {
+        $headers = [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Referrer-Policy' => 'no-referrer',
+            'X-Robots-Tag' => 'noindex, nofollow',
+        ];
+        if (str_ends_with($request->path(), '/state')) {
+            return response('', 404, $headers + ['Access-Control-Allow-Origin' => '*']);
+        }
+
+        return response('<!doctype html><html><head><meta charset="utf-8"><meta name="robots" content="noindex">'
+            . '<style>html,body{margin:0;background:transparent}</style></head><body></body></html>',
+            404, $headers + ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 }

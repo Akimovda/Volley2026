@@ -61,7 +61,9 @@ class CourtStateBroadcaster
     public function forCourt(EventCourt $court): array
     {
         Cache::forget(self::CACHE_PREFIX . $court->id);
-        $state = $this->states->forCourt($court->fresh() ?? $court);
+        $court = $court->fresh() ?? $court;
+        // Площадка скрыта: оверлей уходит в прозрачный режим (клиент затем опрашивает раз в 30 с)
+        $state = $court->is_active ? $this->states->forCourt($court) : ['mode' => 'off', 'hidden' => true, 'seq' => 0, 'now_ms' => (int) (microtime(true) * 1000)];
 
         try {
             broadcast(new CourtStateUpdated($court->channel_key, $state));

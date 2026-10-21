@@ -30,6 +30,7 @@ return [
     'court_single'     => 'A game with statistics has a single court.',
     'link_h'           => 'Overlay link',
     'link_none'        => 'No link issued',
+    'day_court_pending' => 'The court will be created when you issue a link.',
     'link_issue'       => 'Issue link',
     'link_copy'        => 'Copy',
     'link_copied'      => 'Link copied',

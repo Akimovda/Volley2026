@@ -1157,6 +1157,7 @@ Route::middleware([
         Route::post('/courts', [$c, 'storeCourt'])->name('.courts.store');
         Route::patch('/courts/{court}', [$c, 'updateCourt'])->whereNumber('court')->name('.courts.update');
         Route::post('/courts/{court}/link', [$c, 'issueLink'])->whereNumber('court')->name('.link.issue');
+        Route::post('/day-court/link', [$c, 'issueDayLink'])->name('.daylink.issue');
         Route::delete('/courts/{court}/link', [$c, 'revokeLink'])->whereNumber('court')->name('.link.revoke');
         Route::post('/courts/{court}/control', [$c, 'control'])->whereNumber('court')->name('.control');
         Route::post('/courts/{court}/streams', [$c, 'streams'])->whereNumber('court')->name('.streams');

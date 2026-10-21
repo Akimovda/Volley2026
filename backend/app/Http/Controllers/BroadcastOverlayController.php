@@ -24,7 +24,9 @@ class BroadcastOverlayController extends Controller
         /** @var BroadcastLink $link */
         $link = $request->attributes->get('broadcast_link');
         $court = $link->court;
-        abort_unless($court && $court->is_active, 404);
+        if (!$court || !$court->is_active) {
+            return \App\Http\Middleware\BroadcastLinkAccess::blank($request);
+        }
 
         // Язык — RU по умолчанию, ?lang=en переопределяет (сессии/SetLocale на этом роуте нет)
         $lang = $request->query('lang') === 'en' ? 'en' : 'ru';
@@ -43,13 +45,15 @@ class BroadcastOverlayController extends Controller
             self::HEADERS + ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 
-    public function state(Request $request, CourtStateBroadcaster $broadcaster): JsonResponse
+    public function state(Request $request, CourtStateBroadcaster $broadcaster): Response|JsonResponse
     {
         $this->noDebugbar();
         /** @var BroadcastLink $link */
         $link = $request->attributes->get('broadcast_link');
         $court = $link->court;
-        abort_unless($court && $court->is_active, 404);
+        if (!$court || !$court->is_active) {
+            return \App\Http\Middleware\BroadcastLinkAccess::blank($request);
+        }
 
         return response()->json($broadcaster->cached($court), 200, self::HEADERS + [
             // CORS: оверлей может открываться из WebView/другого домена

@@ -161,6 +161,13 @@
             </div>
             @endforeach
 
+            @if($dayCourtPending)
+            <div class="bc-court">
+                <p>{{ __('stream.day_court_pending') }}</p>
+                <div class="bc-actions"><button type="button" class="btn btn-small" id="bc-issue-day">{{ __('stream.link_issue') }}</button></div>
+            </div>
+            @endif
+
             @unless($isFriendly)
             <div class="bc-actions" style="margin-top:1.5rem">
                 <input type="text" id="bc-new-court" maxlength="100" placeholder="{{ __('stream.court_add_ph') }}" style="max-width:24rem" aria-label="{{ __('stream.court_name') }}">
@@ -429,6 +436,9 @@
             });
 
             /* ---------- ссылки оверлея ---------- */
+            $('#bc-issue-day').on('click', function () {
+                call('POST', CFG.base + '/day-court/link', { occurrence_id: CFG.occurrenceId }, reload);
+            });
             $(document).on('click', '.bc-issue', function () {
                 call('POST', CFG.base + '/courts/' + $(this).closest('[data-court]').data('court') + '/link', {}, reload);
             });

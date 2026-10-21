@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::middleware(['throttle:120,1', 'broadcast.link:overlay'])->group(function () {
     Route::get('/o/{token}', [BroadcastOverlayController::class, 'page'])
-        ->where('token', '[A-Za-z0-9]{40}')->name('broadcast.overlay');
+        ->where('token', '[^/]+')->name('broadcast.overlay');
     Route::get('/o/{token}/state', [BroadcastOverlayController::class, 'state'])
-        ->where('token', '[A-Za-z0-9]{40}')->name('broadcast.overlay.state');
+        ->where('token', '[^/]+')->name('broadcast.overlay.state');
 });
