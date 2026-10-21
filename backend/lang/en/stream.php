@@ -176,4 +176,10 @@ return [
     'cam_copy' => 'Copy',
     'cam_error' => 'Could not start the broadcast',
     'cam_to_setup' => 'Go to setup',
+    'beta' => 'Beta',
+    'beta_note' => 'This feature is in testing. Please report any problems to the platform organizer.',
+    'beta_note_link' => 'Message the project channel',
+    'cam_no_plugin_app' => 'Camera broadcasting will be available in the next app version. For now you can stream via PRISM or OBS.',
+    'cam_no_plugin_browser' => 'Open this page in the VolleyClub app. For now you can stream via PRISM or OBS.',
+    'cam_prism_hint' => 'Paste the overlay link (or scan the QR) as a "Web widget" in PRISM or a "Browser" source in OBS.',
 ];

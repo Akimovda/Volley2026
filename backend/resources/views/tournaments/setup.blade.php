@@ -316,7 +316,7 @@ $tourNumber = $seasonData
 				</div>
 				@endif
 				<div class="mt-1">
-					<a href="{{ route('broadcast.setup', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small">📡 {{ __('stream.btn_setup') }}</a>
+					<a href="{{ route('broadcast.setup', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
 				</div>
 			</div>
 		</div>

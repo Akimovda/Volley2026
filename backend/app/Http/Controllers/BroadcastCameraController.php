@@ -25,9 +25,10 @@ class BroadcastCameraController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        $hasLink = BroadcastLink::where('role', BroadcastLink::ROLE_OVERLAY)->whereNotNull('court_id')->whereNull('revoked_at')
+        $linkByCourt = BroadcastLink::where('role', BroadcastLink::ROLE_OVERLAY)->whereNotNull('court_id')->whereNull('revoked_at')
             ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
-            ->pluck('court_id')->all();
+            ->orderBy('id')->get()->keyBy('court_id');
+        $hasLink = $linkByCourt->keys()->all();
 
         $courts = EventCourt::with(['event', 'occurrence', 'override', 'destinations'])
             ->whereIn('id', $hasLink)->where('is_active', true)
@@ -36,7 +37,7 @@ class BroadcastCameraController extends Controller
             ->filter(fn (EventCourt $c) => $c->event && $this->access->canManageEvent($user, (int) $c->event->organizer_id));
 
         $now = now();
-        $rows = $courts->map(function (EventCourt $c) use ($now) {
+        $rows = $courts->map(function (EventCourt $c) use ($now, $linkByCourt) {
             $e = $c->event;
             $tz = $c->occurrence?->timezone ?: ($e->timezone ?: 'Europe/Moscow');
             $at = $c->occurrence?->starts_at ?: $e->starts_at;
@@ -50,6 +51,7 @@ class BroadcastCameraController extends Controller
                 'status'  => CourtStatusLine::of($this->broadcaster->cached($c), $tz),
                 // платформа/подпись — без ключа и без адреса сервера
                 'dest'    => $dest ? ['platform' => $dest->platform, 'label' => $dest->label] : null,
+                'overlay_url' => route('broadcast.overlay', ['token' => $linkByCourt[$c->id]->token]),
                 'setup_url' => route('broadcast.setup', $e) . ($c->occurrence_id ? '?occurrence_id=' . $c->occurrence_id : ''),
             ];
         })->filter(fn ($r) => !$r['past'])->sortBy('sort')->take(60)->values();

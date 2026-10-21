@@ -469,7 +469,7 @@
 								</a>
 								{{-- Трансляция (камера в приложении) --}}
 								<a href="{{ route('broadcast.camera') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_broadcast') }}</span>
+									<span class="menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></span>
 								</a>
 								@if(!$isStaffHelper)
 								<a href="{{ route('placeholders.index') }}" class="menu-item">

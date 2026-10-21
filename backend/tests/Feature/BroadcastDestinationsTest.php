@@ -171,4 +171,23 @@ class BroadcastDestinationsTest extends TestCase
         $id = $this->add()->json('destination.id');
         $this->as($this->owner)->postJson("/events/{$this->event->id}/broadcast/courts/{$other->id}/destinations/$id/reveal")->assertNotFound();
     }
+
+    public function test_beta_badge_notes_and_no_plugin_hint(): void
+    {
+        $this->add();
+        $this->as($this->owner)->postJson("/broadcast/camera/{$this->court->id}/start")->assertOk();
+        $html = $this->as($this->owner)->get('/broadcast/camera')->assertOk()->getContent();
+        $this->assertStringContainsString('beta-badge', $html);
+        $this->assertStringContainsString(__('stream.beta_note'), $html);
+        $this->assertStringContainsString('cam-fallback', $html);
+        $this->assertStringContainsString('/o/', $html, 'ссылка оверлея для PRISM/OBS');
+        $this->assertStringContainsString('assets/qrcode.js', $html);
+        $this->assertStringContainsString('beta-badge', $this->as($this->owner)->get("/events/{$this->event->id}/broadcast")->getContent());
+
+        config(['broadcast.beta' => false]);
+        $off = $this->as($this->owner)->get('/broadcast/camera')->getContent();
+        $this->assertStringNotContainsString('class="beta-badge"', $off);
+        $this->assertStringNotContainsString(__('stream.beta_note'), $off);
+    }
 }
+

@@ -68,7 +68,7 @@
                     </form>
                     @endif
                     <a class="btn btn-outline" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
-                    <a class="btn btn-outline" href="{{ route('broadcast.setup', $event) }}?occurrence_id={{ $occurrence->id }}">📡 {{ __('stream.btn_setup') }}</a>
+                    <a class="btn btn-outline" href="{{ route('broadcast.setup', $event) }}?occurrence_id={{ $occurrence->id }}">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
                     <a class="btn btn-outline" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
                 </div>
             </div>

@@ -32,7 +32,7 @@
 <x-voll-layout body_class="stream-setup-page">
 
     <x-slot name="title">{{ __('stream.title') }} — {{ $event->title }}</x-slot>
-    <x-slot name="h1">📡 {{ __('stream.title') }}</x-slot>
+    <x-slot name="h1">📡 {{ __('stream.title') }} <x-beta-badge /></x-slot>
     <x-slot name="h2">{{ $event->title }}</x-slot>
 
     <x-slot name="breadcrumbs">
@@ -407,6 +407,7 @@
         <div class="ramka" id="bc-dest">
             <h2 class="-mt-05">{{ __('stream.dest_h') }}</h2>
             <div class="bc-hint">{{ __('stream.dest_hint') }}</div>
+            <x-beta-note />
             @if($courts->isEmpty())
             <p>{{ __('stream.pult_no_courts') }}</p>
             @else

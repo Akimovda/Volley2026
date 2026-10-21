@@ -233,9 +233,9 @@
                 <a href="{{ route('broadcast.camera') }}"
                    class="menu-item {{ $activeMenu === 'broadcast_camera' ? 'active' : '' }}">
                     @if($activeMenu === 'broadcast_camera')
-                        <strong class="cd menu-text">{{ __('ui.org_broadcast') }}</strong>
+                        <strong class="cd menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_broadcast') }}</span>
+                        <span class="menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></span>
                     @endif
                 </a>
                 {{-- Аккаунты-пустышки (не для помощника) --}}
