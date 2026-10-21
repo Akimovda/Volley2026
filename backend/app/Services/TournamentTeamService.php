@@ -1199,23 +1199,12 @@ final class TournamentTeamService
      */
     private function resolveScheme(Event $event, ?EventTournamentSetting $settings): string
     {
-        if ($settings) {
-            return $settings->getGameScheme();
-        }
-
-        $gs = $event->gameSettings;
-        $subtype = (string) ($gs?->subtype ?? '5x1');
-
-        if ($subtype === '5x1' && (string) ($gs?->libero_mode ?? '') === 'with_libero') {
-            return '5x1_libero';
-        }
-
-        return $subtype;
+        return MatchSchemeProfile::resolveScheme($event, $settings);
     }
 
     private function requiresLibero(?EventTournamentSetting $settings, string $scheme): bool
     {
-        return (bool) ($settings?->require_libero) || $scheme === '5x1_libero';
+        return MatchSchemeProfile::requiresLibero($settings, $scheme);
     }
 
     private function getSettings(Event $event): ?EventTournamentSetting

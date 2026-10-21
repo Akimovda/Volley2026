@@ -204,6 +204,11 @@ class EventGameSettingsService
                 'teams_count' => $data['tournament_teams_count'] ?? 4,
         
                 'require_libero' => (bool)($data['tournament_require_libero'] ?? false),
+                ...$this->trackLineupPayload(
+                    EventTournamentSetting::where('event_id', $event->id)->exists(),
+                    $isTournamentClassic,
+                    $data
+                ),
                 'max_rating_sum' => $data['tournament_max_rating_sum'] ?? null,
                 'allow_reserves' => ((int)($data['tournament_reserve_players_max'] ?? 0) > 0),
                 'captain_confirms_members' => (bool)($data['tournament_captain_confirms_members'] ?? true),
@@ -881,10 +886,30 @@ class EventGameSettingsService
                 ($rawDays === null || $rawDays === '') ? null : (int) $rawDays;
         }
     
+        $egsPayload += $this->trackLineupPayload(
+            EventGameSetting::where('event_id', $event->id)->exists(),
+            $direction === 'classic' && (string) $event->format === 'game',
+            $data
+        );
+
         EventGameSetting::updateOrCreate(
             ['event_id' => $event->id],
             $egsPayload
         );
+    }
+
+    /**
+     * «Вести стартовый состав и замены»: у НОВЫХ классических событий включён по умолчанию,
+     * у существующих (строка настроек уже есть) значение не трогаем, пока форма не передала его явно.
+     * Пляж и прочие форматы — выключено (учёт состава там не поддерживается).
+     */
+    private function trackLineupPayload(bool $rowExists, bool $classicEligible, array $data): array
+    {
+        if (array_key_exists('track_lineup', $data)) {
+            return ['track_lineup' => $classicEligible && (bool) $data['track_lineup']];
+        }
+
+        return $rowExists ? [] : ['track_lineup' => $classicEligible];
     }
 
 }

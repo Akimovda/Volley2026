@@ -3401,7 +3401,7 @@ class TournamentController extends Controller
         ]);
 
         try {
-            $this->rallyService->undoLastPoint($match, (int) $validated['set_number']);
+            $this->rallyService->undoLastPoint($match, (int) $validated['set_number'], $request->user());
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);

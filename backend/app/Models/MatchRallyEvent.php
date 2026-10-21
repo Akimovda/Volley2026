@@ -65,11 +65,13 @@ class MatchRallyEvent extends Model
     protected $fillable = [
         'match_id', 'set_number', 'team_id', 'team_point_number', 'action_type',
         'player_id', 'stat_team_id', 'dig_user_id', 'assist_user_id', 'recorded_by_user_id',
+        'seq', 'recorded_by_name', 'recorded_by_link_id',
     ];
 
     protected $casts = [
         'set_number'        => 'integer',
         'team_point_number' => 'integer',
+        'seq'               => 'integer',
     ];
 
     public function match(): BelongsTo

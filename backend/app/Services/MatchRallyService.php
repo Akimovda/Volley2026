@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\MatchActionLog;
+use App\Models\MatchLineupEvent;
 use App\Models\MatchPlayerStats;
 use App\Models\MatchRallyEvent;
 use App\Models\TournamentMatch;
@@ -14,6 +16,7 @@ class MatchRallyService
 {
     public function __construct(
         protected PlayerMatchStatsService $playerStatsService,
+        protected MatchLineupService $lineupService,
     ) {}
 
     /**
@@ -102,6 +105,8 @@ class MatchRallyService
                 throw new InvalidArgumentException('Эта партия уже завершена.');
             }
 
+            $this->assertPlayersOnCourt($locked, $setNumber, $scoringTeamId, $actionType, $playerId, $digUserId, $assistUserId);
+
             $teamPointNumber = MatchRallyEvent::where('match_id', $locked->id)
                 ->where('set_number', $setNumber)
                 ->where('team_id', $scoringTeamId)
@@ -119,6 +124,7 @@ class MatchRallyService
                     'dig_user_id'         => $digUserId,
                     'assist_user_id'      => $assistUserId,
                     'recorded_by_user_id' => $recordedBy?->id,
+                    'seq'                 => $this->lineupService->nextSeq($locked),
                 ]);
             } catch (QueryException $e) {
                 // Гонка по уникальному индексу — кто-то уже вставил этот же team_point_number
@@ -145,26 +151,57 @@ class MatchRallyService
         return $event;
     }
 
-    public function undoLastPoint(TournamentMatch $match, int $setNumber): bool
+    /** Совместимость: отмена последнего действия партии (очко ИЛИ событие состава). */
+    public function undoLastPoint(TournamentMatch $match, int $setNumber, ?User $by = null): bool
     {
+        return $this->undoLast($match, $setNumber, null, $by);
+    }
+
+    /**
+     * Единая отмена: берёт действие с максимальным seq среди очков и событий состава партии,
+     * физически удаляет его и пишет копию в match_action_log.
+     * $expectedLastSeq (если передан) — seq, который видел оператор; не совпал — данные устарели.
+     */
+    public function undoLast(
+        TournamentMatch $match,
+        int $setNumber,
+        ?int $expectedLastSeq = null,
+        ?User $by = null,
+        ?string $byName = null,
+    ): bool {
         if ($match->isCompleted()) {
             throw new InvalidArgumentException('Матч уже завершён.');
         }
 
-        $undone = DB::transaction(function () use ($match, $setNumber) {
-            TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+        $undone = DB::transaction(function () use ($match, $setNumber, $expectedLastSeq, $by, $byName) {
+            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
-            $last = MatchRallyEvent::where('match_id', $match->id)
-                ->where('set_number', $setNumber)
-                ->orderByDesc('id')
-                ->first();
+            $point = MatchRallyEvent::where('match_id', $locked->id)->where('set_number', $setNumber)
+                ->orderByDesc('seq')->first();
+            $lineup = MatchLineupEvent::where('match_id', $locked->id)->where('set_number', $setNumber)
+                ->orderByDesc('seq')->first();
+
+            $last = $point && (!$lineup || $point->seq > $lineup->seq) ? $point : $lineup;
+
+            if ($expectedLastSeq !== null && (int) ($last?->seq ?? 0) !== $expectedLastSeq) {
+                throw new InvalidArgumentException('Данные устарели, обновите экран.');
+            }
 
             if (!$last) {
                 return false;
             }
 
+            MatchActionLog::create([
+                'match_id'            => $locked->id,
+                'set_number'          => $setNumber,
+                'action'              => $last instanceof MatchRallyEvent ? 'undo_point' : 'undo_lineup_event',
+                'payload'             => $last->toArray(),
+                'recorded_by_user_id' => $by?->id,
+                'recorded_by_name'    => $byName,
+            ]);
+
             $last->delete();
-            $this->syncPlayerStats($match, $setNumber);
+            $this->syncPlayerStats($locked, $setNumber);
 
             return true;
         });
@@ -174,6 +211,48 @@ class MatchRallyService
         }
 
         return $undone;
+    }
+
+    /**
+     * Игроки очка — только те, кто сейчас на площадке (своя команда; для opp_* — соперник).
+     * Состав партии не задан: при включённом учёте — запрет, иначе проверка по ростеру уже прошла выше.
+     */
+    private function assertPlayersOnCourt(
+        TournamentMatch $locked,
+        int $setNumber,
+        int $scoringTeamId,
+        string $actionType,
+        ?int $playerId,
+        ?int $digUserId,
+        ?int $assistUserId,
+    ): void {
+        $state = $this->lineupService->state($locked, $setNumber);
+
+        if (!$state['has_start']) {
+            if ($this->lineupService->profile($locked)['enabled']) {
+                throw new InvalidArgumentException('Сначала задайте стартовый состав.');
+            }
+            return;
+        }
+
+        $opponentTeamId = $scoringTeamId === (int) $locked->team_home_id ? (int) $locked->team_away_id : (int) $locked->team_home_id;
+        $own = $state['teams'][$scoringTeamId]['court'] ?? [];
+        $opp = $state['teams'][$opponentTeamId]['court'] ?? [];
+
+        if ($playerId !== null) {
+            if (in_array($actionType, MatchRallyEvent::SELF_ACTIONS, true) && !isset($own[$playerId])) {
+                throw new InvalidArgumentException('Этот игрок сейчас не на площадке (он на скамейке или заменён).');
+            }
+            if (in_array($actionType, MatchRallyEvent::OPP_ERROR_ACTIONS, true) && !isset($opp[$playerId])) {
+                throw new InvalidArgumentException('Игрок соперника сейчас не на площадке.');
+            }
+        }
+        if ($digUserId !== null && !isset($own[$digUserId])) {
+            throw new InvalidArgumentException('Игрок приёма сейчас не на площадке.');
+        }
+        if ($assistUserId !== null && !isset($own[$assistUserId])) {
+            throw new InvalidArgumentException('Игрок передачи сейчас не на площадке.');
+        }
     }
 
     public function getBoard(TournamentMatch $match, int $setNumber): array
@@ -213,7 +292,9 @@ class MatchRallyService
             'is_deciding_set' => $setInfo['isDecidingSet'] ?? false,
             'decided'         => $decided,
             'score'           => ['home' => $home, 'away' => $away],
-            'can_undo'        => $events->isNotEmpty(),
+            'can_undo'        => $events->isNotEmpty()
+                || MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)->exists(),
+            'last_seq'        => (int) $match->fresh()->last_seq,
             'columns'         => [
                 'home' => $decided ? $home : max($target, $home + 1),
                 'away' => $decided ? $away : max($target, $away + 1),
@@ -304,7 +385,7 @@ class MatchRallyService
         ];
     }
 
-    protected function syncPlayerStats(TournamentMatch $match, int $setNumber): void
+    public function syncPlayerStats(TournamentMatch $match, int $setNumber): void
     {
         $players = $this->playerStatsService->getMatchPlayers($match);
         $roster = [
@@ -318,6 +399,9 @@ class MatchRallyService
         // Агрегат за весь матч (set_number=0) — сумма по всем сетам
         $allEvents = MatchRallyEvent::where('match_id', $match->id)->get();
         $this->upsertAggregates($match, 0, $allEvents, $roster);
+
+        // positions/played — только для партий, где велся состав
+        $this->lineupService->syncParticipation($match, $setNumber);
     }
 
     /**

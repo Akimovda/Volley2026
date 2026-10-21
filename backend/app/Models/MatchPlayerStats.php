@@ -16,10 +16,13 @@ class MatchPlayerStats extends Model
         'blocks', 'block_errors',
         'digs', 'reception_errors',
         'assists', 'points_scored',
+        'positions', 'played',
     ];
 
     protected $casts = [
         'set_number' => 'integer',
+        'positions'  => 'array',
+        'played'     => 'boolean',
     ];
 
     public function match(): BelongsTo
