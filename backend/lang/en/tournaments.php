@@ -1052,4 +1052,12 @@ return [
     'lineup_stat_subs_played' => 'Substitutes who played',
     'lineup_stat_libero' => 'Libero',
     'lineup_ev_point' => 'Point',
+    'lineup_saving' => 'Saving…',
+    'lineup_ok' => 'OK',
+    'lineup_done_sub' => 'Substitution done',
+    'lineup_done_libero_in' => 'Libero is on the court',
+    'lineup_done_libero_out' => 'Libero left the court',
+    'lineup_tab_ok' => 'filled',
+    'lineup_tab_missing_one' => 'missing: zone :z',
+    'lineup_tab_missing_many' => 'missing: zones :z',
 ];

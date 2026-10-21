@@ -5,12 +5,12 @@
 </div>
 @endif
 <div class="card mb-2" id="ls-panel" style="{{ $lineup['needs_start'] ? '' : 'display:none' }}">
-	<div class="b-700 f-16 mb-1">{{ __('tournaments.lineup_setup_title', ['n' => $setNumber]) }}</div>
+	<div class="b-700 f-16 mb-1" id="ls-title">{{ __('tournaments.lineup_setup_title', ['n' => $setNumber]) }}</div>
 	<div class="f-13 mb-2" style="opacity:.7">{{ __('tournaments.lineup_setup_hint') }}</div>
 
 	<div class="ls-tabs mb-1">
 		@foreach($sides as $sk => $sd)
-		<button type="button" class="btn btn-small ls-tab" data-side="{{ $sk }}">{{ $sd['team']->name ?? 'TBD' }}</button>
+		<button type="button" class="btn btn-small ls-tab" data-side="{{ $sk }}"><span class="ls-tab-name">{{ $sd['team']->name ?? 'TBD' }}</span><span class="ls-tab-state"></span></button>
 		@endforeach
 	</div>
 

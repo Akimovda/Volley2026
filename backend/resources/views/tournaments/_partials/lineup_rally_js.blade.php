@@ -36,6 +36,12 @@
 		'missServe' => __('tournaments.lineup_missing_serve'),
 		'back' => __('tournaments.rally_wiz_back'), 'cancel' => __('tournaments.rally_wiz_cancel'),
 		'net_err' => __('tournaments.lineup_err_network'),
+		'saving' => __('tournaments.lineup_saving'), 'ok' => __('tournaments.lineup_ok'),
+		'doneSub' => __('tournaments.lineup_done_sub'), 'doneLiberoIn' => __('tournaments.lineup_done_libero_in'),
+		'doneLiberoOut' => __('tournaments.lineup_done_libero_out'),
+		'tabOk' => __('tournaments.lineup_tab_ok'), 'tabMissOne' => __('tournaments.lineup_tab_missing_one'),
+		'tabMissMany' => __('tournaments.lineup_tab_missing_many'),
+		'setupTitle' => __('tournaments.lineup_setup_title', ['n' => $setNumber]),
 	];
 @endphp
 <script>
@@ -74,6 +80,20 @@
 		if (disabled) { b.disabled = true; } else { b.addEventListener('click', fn); }
 		return b;
 	}
+	/* кнопка игрока: 1-я строка — Фамилия Имя, 2-я — бейдж позиции + зона (мелко) */
+	function mkP(name, posText, zoneText, cls, fn, wide) {
+		var b = document.createElement('button');
+		b.type = 'button'; b.className = 'btn rw-player ' + cls + (wide ? ' rw-wide' : '');
+		var n = document.createElement('span'); n.className = 'rw-pname'; n.textContent = name; b.appendChild(n);
+		if (posText || zoneText) {
+			var m = document.createElement('span'); m.className = 'rw-psub';
+			if (posText) { var g = document.createElement('span'); g.className = 'rw-pbadge'; g.textContent = posText; m.appendChild(g); }
+			if (zoneText) { m.appendChild(document.createTextNode(zoneText)); }
+			b.appendChild(m);
+		}
+		if (fn) { b.addEventListener('click', fn); } else { b.disabled = true; }
+		return b;
+	}
 	function closeOv() { ov.classList.remove('rw-open'); }
 	function resetOv(title, sub) {
 		oTitle.textContent = title; oSub.textContent = sub || ''; oChips.innerHTML = ''; oNote.textContent = ''; oGrid.innerHTML = ''; oFoot.innerHTML = '';
@@ -84,20 +104,37 @@
 
 	/* ---------- замена / либеро ---------- */
 	var sub = null;
-	function sendEvent(body) {
-		oNote.textContent = '';
+	var busy = false;
+	function lockOv(on) {
+		busy = on;
+		ov.querySelectorAll('button').forEach(function (b) { b.disabled = on; });
+	}
+	function doneText() {
+		var t = C.teams[sub.side], o = sub.out ? surname(sub.out.name) : '', i = sub.inName || '';
+		return t.name + ' · ' + o + ' → ' + i;
+	}
+	function sendEvent(body, inName, doneKey) {
+		if (busy) { return; }
+		sub.inName = inName;
+		oNote.style.color = 'inherit'; oNote.textContent = T.saving;
+		lockOv(true);
 		body.set_number = C.setNumber; body.team_id = C.teams[sub.side].team_id;
-		post(C.eventUrl, body, function () { location.reload(); }, function (m) { oNote.textContent = m; });
+		post(C.eventUrl, body, function () {
+			resetOv('✓ ' + T[doneKey], doneText());
+			oNote.style.color = '#16a34a';
+			oFoot.appendChild(mk(T.ok, 'btn-primary', function () { location.reload(); }));
+			busy = true; // повторные нажатия не нужны — страница сейчас перезагрузится
+			setTimeout(function () { location.reload(); }, 1300);
+		}, function (m) { lockOv(false); oNote.style.color = ''; oNote.textContent = m; });
 	}
 	function stepOut() {
 		var t = C.teams[sub.side];
 		resetOv(T.whoOut, t.name);
 		t.court.forEach(function (p) {
-			var label = p.name + ' · ' + (p.libero ? posLabel('libero') : posLabel(p.position)) + (p.zone ? ' · ' + zoneLabel(p.zone) : '');
-			oGrid.appendChild(mk(label, 'btn-primary', function () { sub.out = p; stepIn(); }));
+			oGrid.appendChild(mkP(p.name, p.libero ? posLabel('libero') : posLabel(p.position), zoneLabel(p.zone), 'btn-primary', function () { sub.out = p; stepIn(); }));
 		});
 		t.held.forEach(function (h) {
-			oGrid.appendChild(mk(h.name + ' (' + T.forLibero + ')', 'btn-secondary', null, false, true));
+			oGrid.appendChild(mkP(h.name, '', T.forLibero, 'btn-secondary', null));
 		});
 		oFoot.appendChild(mk(T.cancel, 'btn-secondary', closeOv));
 	}
@@ -107,22 +144,22 @@
 		if (out.libero) {
 			var partner = t.held.filter(function (h) { return h.id === out.for_user_id; })[0];
 			if (partner) {
-				oGrid.appendChild(mk(partner.name + ' — ' + T.insteadLibero, 'btn-primary', function () {
-					sendEvent({type: 'libero_out'});
+				oGrid.appendChild(mkP(partner.name, '', T.insteadLibero, 'btn-primary', function () {
+					sendEvent({type: 'libero_out'}, surname(partner.name), 'doneLiberoOut');
 				}, true));
 			}
 		} else {
 			var libero = null, others = [];
 			t.bench.forEach(function (b) { if (b.is_libero) { libero = b; } else { others.push(b); } });
 			if (libero && C.hasLibero && !t.libero_on_court) {
-				var lb = mk(T.liberoFirst + ': ' + libero.name, 'btn-primary rw-hl', function () {
-					sendEvent({type: 'libero_in', out_user_id: out.id});
+				var lb = mkP(libero.name, posLabel('libero'), T.liberoFirst, 'btn-primary rw-hl', function () {
+					sendEvent({type: 'libero_in', out_user_id: out.id}, surname(libero.name), 'doneLiberoIn');
 				}, true);
 				oGrid.appendChild(lb);
 			}
 			others.forEach(function (b) {
-				oGrid.appendChild(mk(b.name + (b.position ? ' · ' + posLabel(b.position) : ''), 'btn-primary', function () {
-					sendEvent({type: 'substitution', out_user_id: out.id, in_user_id: b.id});
+				oGrid.appendChild(mkP(b.name, posLabel(b.position), '', 'btn-primary', function () {
+					sendEvent({type: 'substitution', out_user_id: out.id, in_user_id: b.id}, surname(b.name), 'doneSub');
 				}));
 			});
 			if (!oGrid.children.length) { oNote.textContent = T.noBench; }
@@ -159,9 +196,23 @@
 	function validPos(p) { return p && C.positions.indexOf(p) !== -1 ? p : null; }
 	function zoneOrder() { return C.size === 6 ? [4, 3, 2, 5, 6, 1] : Array.apply(null, Array(C.size)).map(function (_, i) { return i + 1; }); }
 
+	var ACCENT = {home: ['#2967BA', '41,103,186'], away: ['#E7612F', '231,97,47']};
+	function missingZones(side) {
+		return zoneOrder().filter(function (z) { return !S[side].zones[z]; }).sort(function (a, b) { return a - b; });
+	}
 	function render() {
 		var st = S[cur];
-		panel.querySelectorAll('.ls-tab').forEach(function (b) { b.classList.toggle('ls-on', b.dataset.side === cur); });
+		panel.style.setProperty('--ls-accent', ACCENT[cur][0]);
+		panel.style.setProperty('--ls-accent-rgb', ACCENT[cur][1]);
+		var titleEl = document.getElementById('ls-title');
+		if (titleEl) { titleEl.textContent = T.setupTitle + ' · ' + C.teams[cur].name; }
+		panel.querySelectorAll('.ls-tab').forEach(function (b) {
+			var sd = b.dataset.side, miss = missingZones(sd), stEl = b.querySelector('.ls-tab-state');
+			b.classList.toggle('ls-on', sd === cur);
+			b.classList.toggle('ls-done', miss.length === 0);
+			b.style.setProperty('--ls-tab-accent', ACCENT[sd][0]);
+			if (stEl) { stEl.textContent = miss.length === 0 ? '✓ ' + T.tabOk : (miss.length === 1 ? T.tabMissOne : T.tabMissMany).replace(':z', miss.join(', ')); }
+		});
 		panel.querySelectorAll('.ls-serve').forEach(function (b) { b.classList.toggle('ls-on', b.dataset.side === first); });
 		courtEl.className = 'ls-court' + (C.size === 6 ? '' : ' ls-court--flat');
 		courtEl.innerHTML = '';
@@ -211,7 +262,7 @@
 			Object.keys(R[cur]).forEach(function (id) { id = parseInt(id, 10); if (placed.indexOf(id) === -1) { add(id); } });
 			list.forEach(function (id) {
 				var p = R[cur][id], dp = validPos(p.position);
-				var b = mk(p.name + (dp ? ' · ' + posLabel(dp) : ''), 'btn-primary' + (occ && occ.uid === id ? ' rw-hl' : ''), function () {
+				var b = mkP(p.name, posLabel(dp), '', 'btn-primary' + (occ && occ.uid === id ? ' rw-hl' : ''), function () {
 					var pos = touched ? chosen : ((occ && occ.uid === id && occ.pos) || dp || chosen);
 					if (!pos) { oNote.textContent = T.pickPos + '?'; return; }
 					st.zones[z] = {uid: id, pos: pos};
@@ -233,7 +284,7 @@
 				id = parseInt(id, 10);
 				if (placed.indexOf(id) !== -1) { return; }
 				var p = R[cur][id];
-				oGrid.appendChild(mk(p.name + (p.position === 'libero' ? ' · ' + posLabel('libero') : ''), 'btn-primary' + (st.libero === id ? ' rw-hl' : ''), function () {
+				oGrid.appendChild(mkP(p.name, p.position === 'libero' ? posLabel('libero') : '', '', 'btn-primary' + (st.libero === id ? ' rw-hl' : ''), function () {
 					st.libero = id; closeOv(); render();
 				}));
 			});

@@ -1071,4 +1071,12 @@ return [
     'lineup_stat_subs_played' => 'Вышли на замену',
     'lineup_stat_libero' => 'Либеро',
     'lineup_ev_point' => 'Очко',
+    'lineup_saving' => 'Сохраняю…',
+    'lineup_ok' => 'Готово',
+    'lineup_done_sub' => 'Замена выполнена',
+    'lineup_done_libero_in' => 'Либеро вышел на площадку',
+    'lineup_done_libero_out' => 'Либеро ушёл с площадки',
+    'lineup_tab_ok' => 'заполнено',
+    'lineup_tab_missing_one' => 'не хватает: зона :z',
+    'lineup_tab_missing_many' => 'не хватает: зоны :z',
 ];
