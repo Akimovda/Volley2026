@@ -637,6 +637,27 @@ class MatchLineupService
     }
 
     /**
+     * Для статистики матча: кто выходил в стартовом составе (любой партии), кто — только либеро,
+     * кто выходил на замену (событие substitution).
+     *
+     * @return array{starters:int[], liberos:int[], subbed_in:int[]}
+     */
+    public function participationSummary(int $matchId): array
+    {
+        $lineups = MatchSetLineup::where('match_id', $matchId)->get(['user_id', 'position']);
+        $events = MatchLineupEvent::where('match_id', $matchId)->get(['type', 'in_user_id']);
+
+        $starters = $lineups->where('position', '!=', self::LIBERO)->pluck('user_id')->map(fn ($v) => (int) $v)->unique()->values()->all();
+        $liberos = $lineups->where('position', self::LIBERO)->pluck('user_id')
+            ->merge($events->where('type', MatchLineupEvent::TYPE_LIBERO_IN)->pluck('in_user_id'))
+            ->filter()->map(fn ($v) => (int) $v)->unique()->values()->all();
+        $subbed = $events->where('type', MatchLineupEvent::TYPE_SUBSTITUTION)->pluck('in_user_id')
+            ->filter()->map(fn ($v) => (int) $v)->unique()->values()->all();
+
+        return ['starters' => $starters, 'liberos' => $liberos, 'subbed_in' => $subbed];
+    }
+
+    /**
      * Обновить positions/played у УЖЕ существующих строк match_player_stats (партия и итог матча).
      * Партии без состава не трогаются (positions/played остаются NULL — «не вели»).
      */

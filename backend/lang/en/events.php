@@ -1253,4 +1253,8 @@ return [
     'intl_level_short_5' => 'Int+',
     'intl_level_short_6' => 'Adv',
     'intl_level_short_7' => 'Pro',
+
+    // — Замены/либеро/расстановка (поочковый ввод) —
+    'track_lineup_label' => 'Track starting lineup and substitutions',
+    'track_lineup_hint' => 'In point-by-point entry: lineup at the start of each set, substitutions and libero.',
 ];

@@ -48,16 +48,37 @@ $awayTeam = $match->teamAway;
 $homeMembers = $homeTeam?->members->keyBy('user_id') ?? collect();
 $awayMembers = $awayTeam?->members->keyBy('user_id') ?? collect();
 
-$enrichSide = function (array $rows, $membersByUser) use ($getVal, $resolvePosition) {
+// Учёт состава: у матчей с учётом в итоговой строке игрока есть played (true/false), у остальных — NULL
+$luTracked = false;
+foreach (array_merge($statsData['home'] ?? [], $statsData['away'] ?? []) as $r0) {
+    if (is_object($r0['totals'] ?? null) && $r0['totals']->played !== null) { $luTracked = true; break; }
+}
+$luSum = $luTracked ? app(\App\Services\MatchLineupService::class)->participationSummary($match->id) : null;
+
+$enrichSide = function (array $rows, $membersByUser) use ($getVal, $resolvePosition, $luTracked, $luSum, $posAbbr) {
     $out = [];
     foreach ($rows as $row) {
         $member = $membersByUser->get($row['user_id']);
         $user = $member?->user ?: \App\Models\User::find($row['user_id']);
+        $tot = $row['totals'] ?? null;
+        $played = (is_object($tot) && $luTracked) ? $tot->played : null;
+        $badges = [];
+        if ($luTracked && is_object($tot) && is_array($tot->positions)) {
+            foreach ($tot->positions as $pc) { if (isset($posAbbr[$pc])) { $badges[] = $posAbbr[$pc]; } }
+        } elseif ($resolvePosition($member)) {
+            $badges[] = $resolvePosition($member);
+        }
+        $uid = (int) $row['user_id'];
         $out[] = [
             'user_id'       => $row['user_id'],
             'user_name'     => $row['user_name'],
             'user'          => $user,
-            'badge'         => $resolvePosition($member),
+            'badge'         => $badges[0] ?? null,
+            'badges'        => $badges,
+            'played'        => $played,
+            'starter'       => $luSum ? in_array($uid, $luSum['starters'], true) : false,
+            'libero_only'   => $luSum ? (in_array($uid, $luSum['liberos'], true) && !in_array($uid, $luSum['starters'], true)) : false,
+            'subbed'        => $luSum ? in_array($uid, $luSum['subbed_in'], true) : false,
             'is_reserve'    => $member?->role_code === 'reserve',
             'is_libero'     => $member?->position_code === 'libero',
             'attack'        => (int) $getVal($row['totals'], 'kills'),
@@ -90,16 +111,31 @@ $bars = [
     ['label' => 'Ошибки',     'error' => true,  'home' => $sumField($homePlayers, 'errors'),       'away' => $sumField($awayPlayers, 'errors')],
 ];
 
-$splitSections = function (array $players): array {
+$splitSections = function (array $players) use ($luTracked): array {
+    if ($luTracked) {
+        // По факту игры: основа / либеро / запасные, которые выходили; не выходившие — отдельной строкой
+        $played = array_filter($players, fn($p) => $p['played']);
+        return [
+            'main'    => array_values(array_filter($played, fn($p) => $p['starter'] || (!$p['libero_only'] && !$p['subbed']))),
+            'libero'  => array_values(array_filter($played, fn($p) => $p['libero_only'])),
+            'reserve' => array_values(array_filter($played, fn($p) => !$p['starter'] && !$p['libero_only'] && $p['subbed'])),
+            'idle'    => array_values(array_filter($players, fn($p) => $p['played'] === false)),
+        ];
+    }
     return [
         'main'    => array_values(array_filter($players, fn($p) => !$p['is_reserve'] && !$p['is_libero'])),
         'libero'  => array_values(array_filter($players, fn($p) => $p['is_libero'] && !$p['is_reserve'])),
         'reserve' => array_values(array_filter($players, fn($p) => $p['is_reserve'])),
+        'idle'    => [],
     ];
 };
 $homeSections = $splitSections($homePlayers);
 $awaySections = $splitSections($awayPlayers);
-$sectionLabels = ['main' => null, 'libero' => 'Либеро', 'reserve' => 'Запасные'];
+$sectionLabels = [
+    'main' => null,
+    'libero' => 'Либеро',
+    'reserve' => $luTracked ? __('tournaments.lineup_stat_subs_played') : 'Запасные',
+];
 
 $tz = $event->timezone ?? 'Europe/Moscow';
 
@@ -214,7 +250,7 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
     {{-- Блок 4: таблицы игроков --}}
     <div class="ms-tables">
         @foreach(['home' => ['team' => $homeTeam, 'sections' => $homeSections], 'away' => ['team' => $awayTeam, 'sections' => $awaySections]] as $side => $d)
-        @php $nonEmpty = count(array_filter($d['sections'], fn($s) => count($s) > 0)); @endphp
+        @php $nonEmpty = count(array_filter(array_diff_key($d['sections'], ['idle' => 1]), fn($s) => count($s) > 0)); @endphp
         <div class="ms-team-table ms-team-table--{{ $side }}">
             <div class="ms-team-table-title ms-team-table-title--{{ $side }}">{{ $d['team']->name ?? '?' }}</div>
             <table class="ms-ptable">
@@ -229,7 +265,7 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
                 </thead>
                 <tbody>
                     @foreach($d['sections'] as $secKey => $players)
-                    @continue(empty($players))
+                    @continue(empty($players) || $secKey === 'idle')
                     @if($nonEmpty > 1 && $sectionLabels[$secKey])
                     <tr><td colspan="5" class="ms-section-label">{{ $sectionLabels[$secKey] }}</td></tr>
                     @endif
@@ -238,8 +274,9 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
                         <td class="ms-td-player">
                             <div class="ms-player-cell">
                                 <img src="{{ $p['user']?->profile_photo_url }}" class="ms-player-avatar-mini" alt="" loading="lazy">
-                                @if($p['badge'])<span class="ms-badge">{{ $p['badge'] }}</span>@endif
+                                @foreach($p['badges'] as $bdg)<span class="ms-badge">{{ $bdg }}</span>@endforeach
                                 <a href="{{ route('users.show', $p['user_id']) }}" class="blink ms-player-name">{{ $p['user_name'] }}</a>
+                                @if($p['subbed'])<span class="lu-badge-sub" title="{{ __('tournaments.lineup_stat_subbed_in') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 14])</span>@endif
                             </div>
                         </td>
                         <td class="ms-points-cell">{{ $p['points'] }}</td>
@@ -254,6 +291,9 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
                     @endif
                 </tbody>
             </table>
+            @if(!empty($d['sections']['idle']))
+            <div class="ms-notplayed">{{ __('tournaments.lineup_stat_not_played', ['names' => implode(', ', array_column($d['sections']['idle'], 'user_name'))]) }}</div>
+            @endif
         </div>
         @endforeach
     </div>

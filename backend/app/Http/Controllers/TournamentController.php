@@ -3335,8 +3335,10 @@ class TournamentController extends Controller
 
         $board = $this->rallyService->getBoard($match, $setNumber);
         $matchReady = $this->rallyService->isMatchReadyToFinalize($match);
+        $lineup = app(\App\Services\MatchLineupView::class)->forRally($match, $setNumber, $board['decided']);
+        $journal = app(\App\Services\MatchProgressService::class)->build($match->id, true)['sets'][$setNumber]['rallies'] ?? [];
 
-        return view('tournaments.score_rally', compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady'));
+        return view('tournaments.score_rally', compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal'));
     }
 
     public function rallyRecordPoint(Request $request, TournamentMatch $match)
@@ -3397,11 +3399,17 @@ class TournamentController extends Controller
         }
 
         $validated = $request->validate([
-            'set_number' => 'required|integer|min:1|max:5',
+            'set_number'        => 'required|integer|min:1|max:5',
+            'expected_last_seq' => 'nullable|integer|min:0',
         ]);
 
         try {
-            $this->rallyService->undoLastPoint($match, (int) $validated['set_number'], $request->user());
+            $this->rallyService->undoLast(
+                $match,
+                (int) $validated['set_number'],
+                isset($validated['expected_last_seq']) ? (int) $validated['expected_last_seq'] : null,
+                $request->user(),
+            );
         } catch (\InvalidArgumentException $e) {
             if ($request->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 422);
@@ -3419,6 +3427,97 @@ class TournamentController extends Controller
         }
 
         return redirect()->route('tournament.matches.rally.form', [$match, 'set' => $validated['set_number']]);
+    }
+
+    /** Расстановка партии: составы обеих команд + кто подаёт первым. */
+    public function rallySetStart(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                : $redirect;
+        }
+
+        $validated = $request->validate([
+            'set_number'               => 'required|integer|min:1|max:5',
+            'first_serve_team_id'      => 'required|integer',
+            'lineups'                  => 'required|array',
+            'lineups.*.court'          => 'required|array',
+            'lineups.*.court.*.user_id'  => 'required|integer',
+            'lineups.*.court.*.position' => 'required|string|max:20',
+            'lineups.*.court.*.zone'     => 'required|integer|min:1|max:12',
+            'lineups.*.libero'         => 'nullable|integer',
+        ]);
+
+        $lineups = [];
+        foreach ($validated['lineups'] as $teamId => $team) {
+            $lineups[(int) $teamId] = [
+                'court'  => array_values($team['court']),
+                'libero' => $team['libero'] ?? null,
+            ];
+        }
+
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $lineups, $request) {
+            app(\App\Services\MatchLineupService::class)->setSetStart(
+                $match, (int) $validated['set_number'], $lineups, (int) $validated['first_serve_team_id'], $request->user()
+            );
+        });
+    }
+
+    /** Замена / выход либеро / уход либеро (одним endpoint, тип в поле type). */
+    public function rallyLineupEvent(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                : $redirect;
+        }
+
+        $validated = $request->validate([
+            'set_number'  => 'required|integer|min:1|max:5',
+            'team_id'     => 'required|integer',
+            'type'        => 'required|in:substitution,libero_in,libero_out',
+            'out_user_id' => 'nullable|integer',
+            'in_user_id'  => 'nullable|integer',
+        ]);
+
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
+            $svc = app(\App\Services\MatchLineupService::class);
+            $set = (int) $validated['set_number'];
+            $team = (int) $validated['team_id'];
+            $out = isset($validated['out_user_id']) ? (int) $validated['out_user_id'] : 0;
+            $in = isset($validated['in_user_id']) ? (int) $validated['in_user_id'] : 0;
+
+            match ($validated['type']) {
+                'substitution' => $svc->substitute($match, $set, $team, $out, $in, $request->user()),
+                'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $request->user()),
+                'libero_out'   => $svc->liberoOut($match, $set, $team, $request->user()),
+            };
+        });
+    }
+
+    /** Общий хвост действий состава: JSON-ответ или редирект с flash-ошибкой. */
+    private function rallyLineupAction(Request $request, TournamentMatch $match, int $setNumber, \Closure $action)
+    {
+        try {
+            $action();
+        } catch (\InvalidArgumentException $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+            return redirect()
+                ->route('tournament.matches.rally.form', [$match, 'set' => $setNumber])
+                ->with('error', $e->getMessage());
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'board'   => $this->rallyService->getBoard($match->fresh(), $setNumber),
+            ]);
+        }
+
+        return redirect()->route('tournament.matches.rally.form', [$match, 'set' => $setNumber]);
     }
 
     public function rallyFinalize(Request $request, TournamentMatch $match)

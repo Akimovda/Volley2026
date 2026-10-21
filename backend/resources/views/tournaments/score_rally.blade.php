@@ -43,13 +43,23 @@
 		'away' => ['team' => $match->teamAway, 'team_id' => (int) $match->team_away_id, 'opp_id' => (int) $match->team_home_id],
 	];
 
+	$luOn = !empty($lineup['enabled']);
+	$luStarted = $luOn && $lineup['has_start'];
+	// Для матчей с учётом состава в попапе очка — только игроки НА ПЛОЩАДКЕ сейчас (включая вышедшего либеро)
+	$courtPlayers = function (string $sk) use ($lineup, $board) {
+		return array_map(
+			fn ($c) => ['id' => $c['id'], 'name' => $c['name']],
+			$lineup['teams'][$sk]['court']
+		);
+	};
 	$rwData = [];
 	foreach ($sides as $sk => $sd) {
+		$oppSk = $sk === 'home' ? 'away' : 'home';
 		$rwData[$sk] = [
 			'teamId'     => $sd['team_id'],
 			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
-			'players'    => array_values($board['players'][$sk]),
-			'oppPlayers' => array_values($board['players'][$sk === 'home' ? 'away' : 'home']),
+			'players'    => $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]),
+			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
 		];
 	}
 	$rwText = [
@@ -163,6 +173,10 @@
 			</div>
 		</div>
 
+		@if($luOn && !$board['decided'])
+		@include('tournaments._partials.lineup_setup_panel')
+		@endif
+
 		@foreach($sides as $sideKey => $side)
 		@php
 			$teamId = $side['team_id'];
@@ -172,13 +186,18 @@
 		<div class="card mb-2">
 			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
 
-			@if(!$board['decided'])
+			@if(!$board['decided'] && $luOn && $lineup['needs_start'])
+			<div class="alert alert-info f-13 mt-2">{{ __('tournaments.lineup_need_setup') }}</div>
+			@elseif(!$board['decided'])
 			<div class="mt-2">
 				<div class="f-13 b-600 mb-1">{{ __('tournaments.rally_add_point_title') }}</div>
 				<div class="d-flex gap-1" style="flex-wrap:wrap">
 
 					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem">🏐 {{ __('tournaments.rally_own_action_btn') }}</button>
 					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</button>
+					@if($luStarted)
+					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
+					@endif
 
 				</div>
 			</div>
@@ -186,12 +205,17 @@
 		</div>
 		@endforeach
 
+		@if($luOn)
+		@include('tournaments._partials.lineup_journal')
+		@endif
+
 		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
 			<form method="POST" action="{{ route('tournament.matches.rally.undo', $match) }}" style="flex:1">
 				@csrf
 				<input type="hidden" name="set_number" value="{{ $setNumber }}">
+				@if($luOn)<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">@endif
 				<button type="submit" class="btn btn-secondary w-100" {{ $board['can_undo'] ? '' : 'disabled' }}>
-					↩ {{ __('tournaments.rally_btn_undo') }}
+					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
 				</button>
 			</form>
 			<form method="POST" action="{{ route('tournament.matches.rally.finalize', $match) }}" style="flex:1">
@@ -361,4 +385,9 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 	document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && st) close(); });
 })();
 </script>
+
+@if($luOn)
+@include('tournaments._partials.lineup_popup_js')
+@include('tournaments._partials.lineup_rally_js')
+@endif
 </x-voll-layout>

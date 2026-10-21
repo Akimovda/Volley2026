@@ -295,6 +295,11 @@ class MatchRallyService
             'can_undo'        => $events->isNotEmpty()
                 || MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)->exists(),
             'last_seq'        => (int) $match->fresh()->last_seq,
+            // seq последнего действия ИМЕННО этой партии (очко или событие состава) — его сверяет undoLast()
+            'last_action_seq' => max(
+                (int) MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)->max('seq'),
+                (int) MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)->max('seq'),
+            ),
             'columns'         => [
                 'home' => $decided ? $home : max($target, $home + 1),
                 'away' => $decided ? $away : max($target, $away + 1),

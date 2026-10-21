@@ -168,6 +168,18 @@
 												</script>
 												
 												
+												{{-- Вести стартовый состав и замены (только классика, игра/турнир; для пляжа не показывается) --}}
+												<div class="mt-1" id="track_lineup_block" data-show-if="direction=classic,format=game|tournament">
+													<label class="checkbox-item">
+														<input type="hidden" name="track_lineup" value="0">
+														<input type="checkbox" name="track_lineup" value="1" id="track_lineup"
+														@checked(old('track_lineup', $prefill['track_lineup'] ?? true))>
+														<div class="custom-checkbox"></div>
+														<span>{{ __('events.track_lineup_label') }}</span>
+													</label>
+													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.track_lineup_hint') }}</div>
+												</div>
+
 												{{-- ✅ TRAINER (только training/training_game) --}}
 												@php
 												$fmt0 = (string)old('format', $prefill['format'] ?? 'game');
