@@ -28,7 +28,13 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 .logo{flex:none;width:calc(var(--u)*56);height:calc(var(--u)*56);object-fit:cover;border-radius:50%;margin-left:calc(var(--u)*14)}
 .hide{display:none!important}
 .logo.only{width:calc(var(--u)*64);height:calc(var(--u)*64);margin:0 calc(var(--u)*14) 0 calc(var(--u)*18)}
-.name.sp{flex:1}
+.name.sp{padding:0 calc(var(--u)*6)}
+/* названия скрыты: блоки сжимаются по содержимому */
+#board.nn,#board.wide.nn{width:auto;min-width:0}
+#board.nn .name{min-width:calc(var(--u)*60)}
+#board.nn .name.sp{min-width:0}
+#setsum.nn{width:calc(var(--u)*760);margin-left:calc(var(--u)*-380)}
+#matchsum.nn{width:calc(var(--u)*760);margin-left:calc(var(--u)*-380)}
 .sum-score .tn img.lg2{width:calc(var(--u)*64);height:calc(var(--u)*64);border-radius:50%;object-fit:cover;flex:none}
 
 /* ---- метка платформы ---- */
@@ -157,7 +163,7 @@ window.__BC = @json($config);
     function renderBoard(p) {
         var th = p.theme || {}, tpl = th.template || 'compact', corner = th.corner || 'top-left';
         var cls = {'top-left': 'tl', 'top-right': 'tr', 'bottom-left': 'bl', 'bottom-right': 'br'}[corner] || 'tl';
-        els.board.className = 'p card ' + cls + (tpl === 'sets_table' ? ' wide' : '') + (els.board.classList.contains('on') ? ' on' : '');
+        els.board.className = 'p card ' + cls + (tpl === 'sets_table' ? ' wide' : '') + (th.show_team_names === false ? ' nn' : '') + (els.board.classList.contains('on') ? ' on' : '');
         var cs = p.set || {n: 1, home: 0, away: 0};
         if (p.mode === 'set_summary' && p.summary && p.summary.set_number) {
             // под плашкой итогов табло остаётся на только что сыгранной партии
@@ -234,12 +240,14 @@ window.__BC = @json($config);
     }
     function renderSetSum(p) {
         var sm = p.summary; if (!sm || sm.scope !== 'set') { return; }
+        els.setsum.classList.toggle('nn', (p.theme || {}).show_team_names === false);
         var set = (p.sets || []).filter(function (s) { return s.n === sm.set_number; })[0] || {home: 0, away: 0};
         els.setsum.innerHTML = '<div class="sum-title">' + esc(fmt(S.set_summary, sm.set_number)) + '</div>' +
             '<div class="sum-score">' + nameChip(p, 'home', false) + '<div class="big">' + set.home + ' : ' + set.away + '</div>' + nameChip(p, 'away', true) + '</div>' + statRows(sm);
     }
     function renderMatchSum(p) {
         var sm = p.summary; if (!sm || sm.scope !== 'match') { return; }
+        els.matchsum.classList.toggle('nn', (p.theme || {}).show_team_names === false);
         var sets = (p.sets || []).map(function (s) { return '<i>' + s.home + ':' + s.away + '</i>'; }).join('');
         var nx = p.next_match && p.next_match.home ? '<div class="sum-next">' + esc(S.next) + ': <b>' + esc(p.next_match.home) + ' — ' + esc(p.next_match.away) + '</b></div>' : '';
         els.matchsum.innerHTML = '<div class="sum-title">' + esc(S.match_summary) + '</div>' +
