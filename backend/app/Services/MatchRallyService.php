@@ -93,26 +93,29 @@ class MatchRallyService
             throw new InvalidArgumentException('Игрок передачи должен быть из выигравшей команды.');
         }
 
-        $event = DB::transaction(function () use (
-            $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
-            $digUserId, $assistUserId, $recordedBy
-        ) {
-            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+        try {
+            $event = DB::transaction(function () use (
+                $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
+                $digUserId, $assistUserId, $recordedBy
+            ) {
+                $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
-            $state = $this->computeMatchState($locked);
-            $setInfo = $state['sets'][$setNumber] ?? null;
-            if ($setInfo && $setInfo['decided']) {
-                throw new InvalidArgumentException('Эта партия уже завершена.');
-            }
+                $state = $this->computeMatchState($locked);
+                $setInfo = $state['sets'][$setNumber] ?? null;
+                if ($setInfo && $setInfo['decided']) {
+                    throw new InvalidArgumentException('Эта партия уже завершена.');
+                }
 
-            $this->assertPlayersOnCourt($locked, $setNumber, $scoringTeamId, $actionType, $playerId, $digUserId, $assistUserId);
+                $this->assertPlayersOnCourt($locked, $setNumber, $scoringTeamId, $actionType, $playerId, $digUserId, $assistUserId);
 
-            $teamPointNumber = MatchRallyEvent::where('match_id', $locked->id)
-                ->where('set_number', $setNumber)
-                ->where('team_id', $scoringTeamId)
-                ->count() + 1;
+                $teamPointNumber = MatchRallyEvent::where('match_id', $locked->id)
+                    ->where('set_number', $setNumber)
+                    ->where('team_id', $scoringTeamId)
+                    ->count() + 1;
 
-            try {
+                // Гонку исключает lockForUpdate матча; уникальные индексы (match_id, seq) и
+                // (match_id, team_id, set_number, team_point_number) — только страховка: при срабатывании
+                // откатывается вся транзакция (см. catch снаружи), а не «ловится» ошибка внутри неё.
                 $event = MatchRallyEvent::create([
                     'match_id'            => $locked->id,
                     'set_number'          => $setNumber,
@@ -126,23 +129,21 @@ class MatchRallyService
                     'recorded_by_user_id' => $recordedBy?->id,
                     'seq'                 => $this->lineupService->nextSeq($locked),
                 ]);
-            } catch (QueryException $e) {
-                // Гонка по уникальному индексу — кто-то уже вставил этот же team_point_number
-                $event = MatchRallyEvent::where('match_id', $locked->id)
-                    ->where('set_number', $setNumber)
-                    ->where('team_id', $scoringTeamId)
-                    ->where('team_point_number', $teamPointNumber)
-                    ->firstOrFail();
+
+                $this->syncPlayerStats($locked, $setNumber);
+
+                if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
+                    $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
+                }
+
+                return $event;
+            });
+        } catch (QueryException $e) {
+            if ((string) $e->getCode() === '23505') {
+                throw new InvalidArgumentException('Повторите действие.');
             }
-
-            $this->syncPlayerStats($locked, $setNumber);
-
-            if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
-                $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
-            }
-
-            return $event;
-        });
+            throw $e;
+        }
 
         // После commit — публичная страница турнира узнаёт по WebSocket, что нужно
         // перечитать ленту "ход матча" (см. TournamentMatchRallyUpdated).
