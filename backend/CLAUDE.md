@@ -46,6 +46,12 @@
 - Признак: код новый, `php artisan` (CLI) видит правильно, но веб-запросы ведут себя как со старой версией
 - supervisorctl restart НЕ заменяет reload php-fpm
 
+## Прод «504 / CPU 100%» — сканер уязвимостей (2026-10-22)
+- Сервер 2-ядерный, `pm.max_children=20`, один пул `www` на dev и prod. Алерт Kuma «Down 504» + load average 22 + `/` отвечает 14 с — причина: один IP (`193.138.7.163`, 7464 запроса за ~12 мин, nuclei: `/nuclei.svg`, `/wp-admin/`, `/manager/html`, `/jmx-console/`, `/realms/…`) держался ровно на пороге старого лимита `10r/s`. Каждый несуществующий URL проходит весь Laravel (boot+Sentry+404) ≈0,2 с CPU → 10 запросов/с занимают оба ядра. Оверлей `/o/{token}/state` и Reverb к инциденту не причастны (WS на проде работает, 101 Upgrade).
+- Защита (настроена вручную в nginx/fail2ban, **в git не входит**, при переезде сервера воссоздать): `/etc/nginx/conf.d/limit-req.conf` — `rate=4r/s` (было 10; localhost и backup-сервер `185.225.232.210` исключены), в vhost `burst=40 nodelay`, статус 429; fail2ban-джейл `/etc/fail2ban/jail.d/nginx-limit-req.local` (фильтр `nginx-limit-req` из коробки, `maxretry=50`/`findtime=60`/`bantime=3600`, `ignoreip` localhost+backup). **Ловушка**: в `jail.d/defaults-debian.conf` глобально `backend=systemd` — для джейла с `logpath` нужен `backend = auto`, иначе он молча ничего не читает. Лимит без бана почти бесполезен (сканер на пороге не получает 429), бан без снижения порога — тоже; нужны оба.
+- Диагностика: логи `/var/log/nginx/access.log` (общий для dev и prod, формат combined) и `/var/log/php8.3-fpm-slow.log` читает только root/`adm` — запускать `sudo` пользователю в СВОЁМ терминале. Порядок: Kuma `/metrics` → `uptime`/`top` → разбивка access.log по минутам и по IP за окно инцидента (`awk '$4 ~ /22\/Oct\/2026:(18:5[89]|19:0)/ {print $1}' … | sort | uniq -c | sort -rn`) → slow log. Ручной бан: `sudo fail2ban-client set nginx-limit-req banip <IP>`. `nginx` — только `restart`, не `reload`.
+- Побочная находка (не исправлена): `PublishOccurrenceRegistrationOpenJob` каждую минуту падает в `403 bot was kicked from the supergroup chat` — Telegram-канал, откуда выгнали бота, не отвязан; на CPU почти не влияет, но засоряет очередь и лог.
+
 ## JS файлы
 - lib.js — везде, script.js — логика+swal, fas.js — fancybox+swiper, org.js — орг. панель
 - swal: класс .btn-alert + data-атрибуты
