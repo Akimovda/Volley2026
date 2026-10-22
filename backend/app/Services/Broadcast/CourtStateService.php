@@ -165,6 +165,7 @@ class CourtStateService
             'aspect'     => $settings->aspect ?: '16:9',
             'event'      => ['title' => $court->event?->title, 'logo_url' => $this->styles->organizerAvatarUrl($court->event?->organizer)],
             'theme'      => $this->theme($settings),
+            'music'      => $this->music($settings, $mode),
             'now_ms'     => (int) round($now->getPreciseTimestamp(3)),
             'ts'         => $now->toIso8601String(),
         ];
@@ -535,6 +536,7 @@ class CourtStateService
             'aspect' => $settings->aspect ?: '16:9',
             'event' => ['title' => $court->event?->title, 'logo_url' => $this->styles->organizerAvatarUrl($court->event?->organizer)],
             'theme' => $this->theme($settings),
+            'music' => $this->music($settings, $kind === 'sub' ? 'live' : $kind),
             'now_ms' => (int) round($now->getPreciseTimestamp(3)),
             'ts' => $now->toIso8601String(),
         ];
@@ -623,6 +625,21 @@ class CourtStateService
         $v = (int) round(((int) $v) / 10) * 10;
 
         return max(50, min(150, $v));
+    }
+
+    /** Фоновая музыка: play — включена и текущий режим входит в выбранные (клиент пересчитывает по modes при локальной смене режима). */
+    public function music(BroadcastSetting $settings, string $mode): array
+    {
+        $c = $settings->musicConfig();
+
+        return [
+            'enabled' => $c['enabled'],
+            'url'     => $settings->musicUrl(),
+            'play'    => $c['enabled'] && in_array($mode, $c['modes'], true),
+            'modes'   => $c['modes'],
+            'volume'  => $c['volume'],
+            'fade_ms' => $c['fade_ms'],
+        ];
     }
 
     public function theme(BroadcastSetting $settings): array

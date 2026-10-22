@@ -37,6 +37,7 @@ class BroadcastOverlayController extends Controller
             'channel'  => 'court.' . $court->channel_key,
             'key'      => (string) config('reverb.apps.apps.0.key'),
             'preview'  => $request->boolean('preview'),
+            'audio'    => $request->query('audio') !== '0',
             'strings'  => trans('broadcast'),
             'initial'  => $broadcaster->cached($court),
             'demo'     => null,
@@ -51,7 +52,7 @@ class BroadcastOverlayController extends Controller
             $config['stateUrl'] = null;
         }
 
-        return response(view('broadcast.overlay', ['config' => $config, 'preview' => $config['preview']])->render(), 200,
+        return response(view('broadcast.overlay', ['config' => $config, 'preview' => $config['preview'], 'audio' => $config['audio']])->render(), 200,
             self::HEADERS + ['Content-Type' => 'text/html; charset=UTF-8']);
     }
 

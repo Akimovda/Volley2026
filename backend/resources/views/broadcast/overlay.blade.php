@@ -126,6 +126,7 @@ body.tpl-light_tv .sum-score .big{color:#16264a}
 </style>
 </head>
 <body class="{{ $preview ? 'preview' : '' }}">
+@if($audio)<audio id="bgm" loop preload="auto" playsinline></audio>@if($preview)<button type="button" id="bgm-btn" style="position:fixed;right:8px;bottom:8px;z-index:50;font:12px sans-serif;padding:6px 10px">🔊 {{ __('broadcast.enable_sound') }}</button>@endif @endif
 <div id="stage">
     <div id="board" class="p card tl"></div>
     <div id="sub" class="p card r"></div>
@@ -304,6 +305,42 @@ window.__BC = @json($config);
         el.innerHTML = esc(S.starts_in) + '<b>' + (h ? h + ':' : '') + pad(m) + ':' + pad(s) + '</b>';
     }
 
+
+    /* ---------- фоновая музыка ---------- */
+    var bgm = document.getElementById('bgm'), bgmBtn = document.getElementById('bgm-btn');
+    var bgmTarget = 0, bgmFrom = 0, bgmT0 = 0, bgmDur = 0, bgmTimer = null, bgmUnlocked = !C.preview, bgmSrc = null;
+    function bgmStep() {
+        var k = bgmDur > 0 ? Math.min(1, (Date.now() - bgmT0) / bgmDur) : 1;
+        try { bgm.volume = Math.max(0, Math.min(1, bgmFrom + (bgmTarget - bgmFrom) * k)); } catch (e) {}
+        if (k >= 1) { clearInterval(bgmTimer); bgmTimer = null; if (bgmTarget === 0) { try { bgm.pause(); } catch (e) {} } }
+    }
+    function bgmFade(to, ms) {
+        bgmFrom = bgm.volume; bgmTarget = to; bgmT0 = Date.now(); bgmDur = ms;
+        if (!bgmTimer) { bgmTimer = setInterval(bgmStep, 50); }
+    }
+    function setMusic(p) {
+        if (!bgm || !bgmUnlocked) { return; }
+        try {
+            var mu = p.music;
+            var play = !!(mu && mu.enabled && mu.url && (Array.isArray(mu.modes) ? mu.modes.indexOf(p.mode) >= 0 : mu.play));
+            if (play) {
+                if (bgmSrc !== mu.url) { bgmSrc = mu.url; bgm.src = mu.url; }
+                var pr = bgm.paused ? bgm.play() : null;
+                if (pr && pr.catch) { pr.catch(function () { /* автозапуск запрещён браузером — молча */ }); }
+                bgmFade((mu.volume || 0) / 100, mu.fade_ms || 0);
+            } else if (!bgm.paused) {
+                bgmFade(0, (mu && mu.fade_ms) || 2000);
+            }
+        } catch (e) {}
+    }
+    if (bgm) { bgm.volume = 0; }
+    if (bgmBtn) {
+        bgmBtn.addEventListener('click', function () {
+            bgmUnlocked = true; bgmBtn.style.display = 'none';
+            try { bgm.play().then(function () { bgm.pause(); if (cur) { setMusic(cur); } }).catch(function () {}); } catch (e) {}
+        });
+    }
+
     /* ---------- применение состояния ---------- */
     function render(p) {
         var m = p.mode;
@@ -314,6 +351,7 @@ window.__BC = @json($config);
         show(els.setsum, m === 'set_summary' ? (renderSetSum(p), true) : false);
         show(els.matchsum, m === 'match_summary' ? (renderMatchSum(p), true) : false);
         show(els.splash, m === 'splash' ? (renderSplash(p), true) : false);
+        setMusic(p);
     }
 
     // Ссылка недоступна / площадка скрыта: полностью прозрачный кадр, редкий опрос (оживёт, если вернут)

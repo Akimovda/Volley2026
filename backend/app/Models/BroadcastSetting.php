@@ -31,6 +31,36 @@ class BroadcastSetting extends Model implements HasMedia
         'match_summary_seconds' => 'integer',
     ];
 
+    public const MUSIC_MODES = ['splash', 'set_summary', 'match_summary'];
+    public const DEFAULT_MUSIC_PATH = 'assets/broadcast/volleyclub_calm_loop.mp3';
+
+    /** Музыка оверлея (theme.music) с дефолтами и ограничениями. */
+    public function musicConfig(): array
+    {
+        $m = (array) (((array) $this->theme)['music'] ?? []);
+        $modes = array_key_exists('modes', $m) && is_array($m['modes'])
+            ? array_values(array_intersect(self::MUSIC_MODES, $m['modes']))
+            : self::MUSIC_MODES;
+
+        return [
+            'enabled' => (bool) ($m['enabled'] ?? true),
+            'track'   => ($m['track'] ?? 'default') === 'custom' ? 'custom' : 'default',
+            'modes'   => $modes,
+            'volume'  => max(0, min(100, (int) ($m['volume'] ?? 60))),
+            'fade_ms' => max(0, min(10000, (int) ($m['fade_ms'] ?? 2000))),
+        ];
+    }
+
+    /** Адрес трека: свой (если выбран и загружен), иначе стандартный. */
+    public function musicUrl(): string
+    {
+        if ($this->musicConfig()['track'] === 'custom' && $this->exists && ($m = $this->getFirstMedia('stream_music'))) {
+            return $m->getUrl() . '?v=' . $m->id;
+        }
+
+        return asset(self::DEFAULT_MUSIC_PATH);
+    }
+
     /** Настройки тура, иначе события; нет записи — дефолты (без сохранения). */
     public static function resolve(int $eventId, ?int $occurrenceId): self
     {
@@ -60,6 +90,11 @@ class BroadcastSetting extends Model implements HasMedia
             ->singleFile()
             ->useDisk('public')
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+
+        $this->addMediaCollection('stream_music')
+            ->singleFile()
+            ->useDisk('public')
+            ->acceptsMimeTypes(['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/m4a', 'audio/aac', 'audio/x-aac']);
     }
 
     public function registerMediaConversions(?Media $media = null): void

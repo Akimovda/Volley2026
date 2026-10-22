@@ -47,4 +47,5 @@ return [
     'scorer_invite_title'        => 'You were assigned as a match scorer',
     'scorer_invite_body'         => 'You were assigned as scorer of court “:court” — tournament “:event”. Open the link and enter the score point by point.',
     'scorer_invite_button'       => 'Open score entry',
+    'enable_sound' => 'Enable preview sound',
 ];
