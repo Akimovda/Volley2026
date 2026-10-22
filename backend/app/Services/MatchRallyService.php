@@ -168,6 +168,7 @@ class MatchRallyService
         // После commit — публичная страница турнира узнаёт по WebSocket, что нужно
         // перечитать ленту "ход матча" (см. TournamentMatchRallyUpdated).
         broadcast(new \App\Events\TournamentMatchRallyUpdated($match->id, $setNumber));
+        app(\App\Services\Broadcast\BroadcastControlService::class)->releaseSplashOnPlay($match);
         app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatch($match->id);
 
         return $event;

@@ -60,7 +60,7 @@ return [
     'mode_caption_auto' => 'Mode: auto · now :m',
     'manual_banner'    => 'Manual mode: :m',
     'manual_back'      => 'Back to auto',
-    'manual_note'      => 'Manual mode never switches off by itself.',
+    'manual_note'      => 'Splash switches off by itself when play starts. Other manual modes never switch off by themselves.',
     'match_label'      => 'Match',
     'match_auto'       => 'auto',
     'match_pick'       => 'pick another',
