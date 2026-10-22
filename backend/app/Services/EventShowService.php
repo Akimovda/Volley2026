@@ -38,12 +38,18 @@ class EventShowService
                     $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                 });
 
-            // ближайшая будущая occurrence; если нет — последняя прошедшая
+            // ближайшая будущая occurrence; если нет — последняя прошедшая;
+            // если нет и таких (все туры отменены) — последний отменённый:
+            // страница открывается со статусом «Мероприятие отменено», не 404.
             $occurrenceId = (clone $baseQuery)
                 ->where('starts_at', '>=', now())
                 ->orderBy('starts_at')
                 ->value('id')
-                ?? $baseQuery->orderByDesc('starts_at')->value('id');
+                ?? (clone $baseQuery)->orderByDesc('starts_at')->value('id')
+                ?? EventOccurrence::query()
+                    ->where('event_id', $event->id)
+                    ->orderByDesc('starts_at')
+                    ->value('id');
         }
 
         if (!$occurrenceId) {
@@ -175,10 +181,6 @@ class EventShowService
             ])
             ->where('id', $occurrenceId)
             ->where('event_id', $event->id)
-            ->whereNull('cancelled_at')
-            ->where(function ($q) {
-                $q->whereNull('is_cancelled')->orWhere('is_cancelled', false);
-            })
             ->first();
 
         if (!$occurrence) {

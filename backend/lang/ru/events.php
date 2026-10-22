@@ -1196,6 +1196,7 @@ return [
     'sp_free_spots_label'   => 'Свободных мест:',
     'sp_setup_btn'          => '⚙️ Управление турниром →',
 
+    'sp_status_cancelled_event' => '⛔️ Мероприятие отменено.',
     'sp_status_no_quorum'   => '⛔️ Отменено❗️ Мероприятие не состоится в связи с отсутствием кворума.',
     'sp_status_finished'    => '🏁 Мероприятие завершено!',
     'sp_status_in_progress' => '⚠️ Мероприятие уже идет!',

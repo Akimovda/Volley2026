@@ -27,36 +27,6 @@
 		
        public function show(Request $request, Event $event)
         {
-            // Явно запрошенный отменённый тур — страница «Мероприятие отменено» вместо 404
-            // (ссылки из уведомлений/анонсов живут дольше самого тура).
-            $reqOccId = (int) $request->query('occurrence');
-            if ($reqOccId > 0) {
-                $cancelledOcc = EventOccurrence::where('id', $reqOccId)
-                    ->where('event_id', $event->id)
-                    ->where(fn ($q) => $q->whereNotNull('cancelled_at')->orWhere('is_cancelled', true))
-                    ->first();
-
-                if ($cancelledOcc) {
-                    $vis = app(EventVisibilityService::class);
-                    if ($vis->isPrivateEventRow($event) && !$vis->canViewPrivateEvent($event, auth()->user())) {
-                        abort(404);
-                    }
-
-                    $hasOther = EventOccurrence::where('event_id', $event->id)
-                        ->where('id', '!=', $cancelledOcc->id)
-                        ->whereNull('cancelled_at')
-                        ->where(fn ($q) => $q->whereNull('is_cancelled')->orWhere('is_cancelled', false))
-                        ->where('starts_at', '>=', now())
-                        ->exists();
-
-                    return view('events.cancelled', [
-                        'event'      => $event,
-                        'occurrence' => $cancelledOcc,
-                        'hasOther'   => $hasOther,
-                    ]);
-                }
-            }
-
             $data = app(\App\Services\EventShowService::class)
                 ->handle($request, $event);
         
