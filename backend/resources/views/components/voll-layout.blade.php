@@ -151,7 +151,7 @@
         {{ $style }}
 		@endif
 	</head>
-	<body @class([$body_class ?? null])>
+	<body @class([$body_class ?? null]) @if(!$brand->is_default) data-brand="{{ $brand->slug }}" data-path="{{ request()->getPathInfo() }}" @endif>
 		<script>
 			/* App banner via swal — runs after lib.js is loaded */
 			(function() {
@@ -1253,6 +1253,12 @@
 				<polyline points="15 18 9 12 15 6"></polyline>
 			</svg>
 		</button>
-		
+		@if(!$brand->is_default && $brand->customJs() !== '')
+		{{-- Свой JS белого приложения (Настройка App → «Свой CSS и JS»); ошибки гасим, чтобы не ломать страницу --}}
+		<script id="brand-custom-js">(function (brand) { try {
+{!! preg_replace('~</\s*script~i', '<\\/script', $brand->customJs()) !!}
+
+		} catch (e) { console.error('[brand custom js]', e); } })({slug: @json($brand->slug), path: location.pathname});</script>
+		@endif
 	</body>
 </html>					

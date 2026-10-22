@@ -52,6 +52,8 @@ class AdminAppController extends Controller
                 $rules["theme.$mode.$key"] = $hex;
             }
         }
+        $rules['theme.custom_css'] = ['nullable', 'string', 'max:30000'];
+        $rules['theme.custom_js']  = ['nullable', 'string', 'max:30000'];
         $rules['theme.font_scale'] = ['nullable', 'integer', Rule::in(BrandThemeService::FONT_SCALES)];
         $rules['theme.font'] = ['nullable', Rule::in(array_keys((array) config('brand_tokens.fonts')))];
         $rules['menu.visible']         = ['nullable', 'array'];
@@ -88,6 +90,13 @@ class AdminAppController extends Controller
         $scale = (int) ($data['theme']['font_scale'] ?? 100);
         if ($scale !== 100) {
             $theme['font_scale'] = $scale;
+        }
+        // Свои CSS/JS этого приложения (у каждого бренда свои; основной бренд сюда не попадает — для него экран закрыт)
+        foreach (['custom_css', 'custom_js'] as $code) {
+            $v = trim(str_replace("\r\n", "\n", (string) ($data['theme'][$code] ?? '')));
+            if ($v !== '') {
+                $theme[$code] = $v;
+            }
         }
         $brand->theme = $theme ?: null;
 
@@ -153,6 +162,12 @@ class AdminAppController extends Controller
         $scale = (int) $request->input('theme.font_scale', 100);
         if ($scale !== 100 && in_array($scale, BrandThemeService::FONT_SCALES, true)) {
             $theme['font_scale'] = $scale;
+        }
+
+        // В предпросмотре — свой CSS (виден сразу); JS не выполняем: он применяется только после сохранения
+        $customCss = trim((string) $request->input('theme.custom_css', ''));
+        if ($customCss !== '') {
+            $theme['custom_css'] = mb_substr($customCss, 0, 30000);
         }
 
         $copy = $brand->replicate();
