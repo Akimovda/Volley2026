@@ -33,7 +33,7 @@
     $canOrgDash = auth()->check() && in_array(auth()->user()->role, ['organizer', 'admin'], true);
     $orgApplyUrl = route('profile.show') . '#organizer-request';
     // Порядок секций и кнопки под ними (тексты — lang/*/pages.php → about.sections.<id>)
-    $sectionOrder = ['players', 'premium', 'rating', 'activity', 'tournaments', 'stats_game', 'leagues', 'club', 'org', 'pro', 'white_label', 'school', 'app'];
+    $sectionOrder = ['players', 'premium', 'rating', 'activity', 'tournaments', 'stats_game', 'broadcast', 'leagues', 'club', 'org', 'pro', 'white_label', 'school', 'app'];
     $sectionButtons = [
         'premium'     => [[route('premium.index'), 'btn_premium', 'link']],
         'rating'      => [[route('players.rating'), 'btn_rating', 'link'], [route('players.teams'), 'btn_teams', 'link'], [route('pages.rating_info'), 'btn_rating_info', 'link']],
