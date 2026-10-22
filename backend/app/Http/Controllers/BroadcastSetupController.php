@@ -105,7 +105,7 @@ class BroadcastSetupController extends Controller
             'unassigned'  => $isFriendly ? collect() : $this->unassignedMatches($event, $occId),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
             'form'        => [
-                'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table'], true) ? $theme['template'] : 'compact',
+                'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table', 'glass', 'neon', 'light_tv'], true) ? $theme['template'] : 'compact',
                 'corner'          => in_array($theme['corner'] ?? '', ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $theme['corner'] : 'top-left',
                 'show_set_scores' => (bool) ($theme['show_set_scores'] ?? true),
                 'show_logos'      => (bool) ($theme['show_logos'] ?? true),
@@ -441,7 +441,7 @@ class BroadcastSetupController extends Controller
         $this->authorizeEvent($request, $event);
         $data = $request->validate([
             'occurrence_id'   => ['required', 'integer'],
-            'template'        => ['required', Rule::in(['compact', 'sets_table'])],
+            'template'        => ['required', Rule::in(['compact', 'sets_table', 'glass', 'neon', 'light_tv'])],
             'corner'          => ['required', Rule::in(['top-left', 'top-right', 'bottom-left', 'bottom-right'])],
             'show_set_scores' => ['required', 'boolean'],
             'show_logos'      => ['required', 'boolean'],
