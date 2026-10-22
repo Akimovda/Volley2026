@@ -277,11 +277,11 @@ $hasCoords =
 					@else
 					{{-- Запись отключена — статус мероприятия всё равно показываем --}}
 					@if($occurrence->isCancelled())
-					<div class="alert alert-danger">{{ __('events.sp_status_cancelled_event') }}</div>
+					<div class="event-status event-status--cancelled">{{ __('events.sp_status_cancelled_event') }}</div>
 					@elseif($occurrence->isFinished())
-					<div class="alert alert-info">{{ __('events.sp_status_finished') }}</div>
+					<div class="event-status event-status--finished">{{ __('events.sp_status_finished') }}</div>
 					@elseif($occurrence->isRunning())
-					<div class="alert alert-warning">{{ __('events.sp_status_in_progress') }}</div>
+					<div class="event-status event-status--running">{{ __('events.sp_status_in_progress') }}</div>
 					@endif
 					@php
 					$isOwner = auth()->check() && auth()->id() === (int)($event->organizer_id ?? 0);
