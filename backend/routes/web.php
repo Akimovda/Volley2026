@@ -1662,6 +1662,18 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     Route::get('/org/players/audience/export/pdf', [\App\Http\Controllers\OrgPlayersController::class, 'audienceExportPdf'])
         ->middleware('organizer.pro')
         ->name('org.players.audience.export_pdf');
+    Route::get('/org/players/history/search', [\App\Http\Controllers\OrgPlayersController::class, 'historySearch'])
+        ->middleware('organizer.pro')
+        ->name('org.players.history.search');
+    Route::get('/org/players/history', [\App\Http\Controllers\OrgPlayersController::class, 'historyData'])
+        ->middleware('organizer.pro')
+        ->name('org.players.history');
+    Route::get('/org/players/history/export/pdf', [\App\Http\Controllers\OrgPlayersController::class, 'historyExportPdf'])
+        ->middleware('organizer.pro')
+        ->name('org.players.history.export_pdf');
+    Route::get('/org/players/history/export/xlsx', [\App\Http\Controllers\OrgPlayersController::class, 'historyExportXlsx'])
+        ->middleware('organizer.pro')
+        ->name('org.players.history.export_xlsx');
     Route::get('/org/tournament-analytics', [\App\Http\Controllers\OrgTournamentAnalyticsController::class, 'index'])
         ->middleware('organizer.pro')
         ->name('org.tournament-analytics');

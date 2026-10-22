@@ -130,6 +130,37 @@
             </div>
         </div>
 
+        {{-- ИСТОРИЯ ПОСЕЩЕНИЙ --}}
+        <div class="ramka" style="overflow:visible">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h2 class="-mt-05">🕘 История посещений</h2>
+                <div class="d-flex gap-1 flex-wrap" id="hist-export" style="display:none">
+                    <a href="#" id="hist-export-pdf" data-file-download class="btn btn-sm btn-secondary" target="_blank">📄 PDF</a>
+                    <a href="#" id="hist-export-xlsx" data-file-download class="btn btn-sm btn-secondary" target="_blank">📊 Excel</a>
+                </div>
+            </div>
+
+            <div class="form mt-2">
+                <div style="position:relative">
+                    <input type="text" id="hist-search" placeholder="Начните вводить ФИО игрока" autocomplete="off">
+                    <div id="hist-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap mt-2">
+                    <label class="f-13">С <input type="date" id="hist-from"></label>
+                    <label class="f-13">По <input type="date" id="hist-to"></label>
+                </div>
+            </div>
+
+            <div class="f-13 mt-2" style="opacity:.6" id="hist-total-line">Выберите игрока, чтобы увидеть историю.</div>
+            <div class="mt-2" id="hist-list"></div>
+
+            <div class="d-flex justify-content-between align-items-center mt-2" id="hist-pagination" style="display:none">
+                <button class="btn btn-sm btn-secondary" id="hist-prev">← Назад</button>
+                <span class="f-13" style="opacity:.6" id="hist-page-info"></span>
+                <button class="btn btn-sm btn-secondary" id="hist-next">Вперёд →</button>
+            </div>
+        </div>
+
         {{-- НОВЫЕ ИГРОКИ --}}
         <div class="ramka">
             <h2 class="-mt-05">🆕 Новые игроки за 30 дней</h2>
@@ -434,6 +465,91 @@
 
             updateExportLinks();
             load();
+        })();
+
+        // ИСТОРИЯ ПОСЕЩЕНИЙ — игрок + диапазон дат + пагинация
+        (function() {
+            const input = document.getElementById('hist-search');
+            const dd    = document.getElementById('hist-dd');
+            const fromEl = document.getElementById('hist-from');
+            const toEl   = document.getElementById('hist-to');
+            const listEl = document.getElementById('hist-list');
+            const totalEl = document.getElementById('hist-total-line');
+            const pagEl  = document.getElementById('hist-pagination');
+            const pageInfo = document.getElementById('hist-page-info');
+            const prevBtn = document.getElementById('hist-prev');
+            const nextBtn = document.getElementById('hist-next');
+            const expBox = document.getElementById('hist-export');
+            const pdfLink = document.getElementById('hist-export-pdf');
+            const xlsLink = document.getElementById('hist-export-xlsx');
+            if (!input) return;
+            const state = { user: null, page: 1 };
+            let timer = null;
+            const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+            function qs() {
+                return 'user_id=' + state.user + '&from=' + encodeURIComponent(fromEl.value)
+                    + '&to=' + encodeURIComponent(toEl.value);
+            }
+            function load() {
+                if (!state.user) return;
+                pdfLink.href = '{{ route('org.players.history.export_pdf') }}?' + qs();
+                xlsLink.href = '{{ route('org.players.history.export_xlsx') }}?' + qs();
+                expBox.style.display = '';
+                listEl.innerHTML = '<div class="text-center" style="opacity:.4;padding:2rem">Загрузка...</div>';
+                pagEl.style.display = 'none';
+                fetch('{{ route('org.players.history') }}?' + qs() + '&page=' + state.page, { headers: { 'Accept': 'application/json' } })
+                    .then(r => r.json())
+                    .then(data => {
+                        totalEl.textContent = 'Всего посещений: ' + data.total;
+                        if (!data.items.length) {
+                            listEl.innerHTML = '<div class="text-center" style="opacity:.5;padding:1rem">Нет посещений за выбранный период</div>';
+                            return;
+                        }
+                        const offset = (data.current_page - 1) * 10;
+                        listEl.innerHTML = data.items.map((p, i) => `
+                            <div class="d-flex between fvc py-1 ${i > 0 ? 'border-top' : ''}">
+                                <div class="d-flex fvc gap-2">
+                                    <span class="f-13 b-600" style="width:28px;opacity:.4">${offset + i + 1}</span>
+                                    <span class="f-15">${esc(p.title)}, ${esc(p.when)} - ${esc(p.position)}</span>
+                                </div>
+                            </div>`).join('');
+                        if (data.last_page > 1) {
+                            pagEl.style.display = '';
+                            pageInfo.textContent = 'Стр. ' + data.current_page + ' из ' + data.last_page;
+                            prevBtn.disabled = data.current_page <= 1;
+                            nextBtn.disabled = data.current_page >= data.last_page;
+                        }
+                    });
+            }
+            function closeDd() { dd.style.display = 'none'; }
+            input.addEventListener('input', function() {
+                clearTimeout(timer);
+                const q = input.value.trim();
+                if (q.length < 2) { closeDd(); return; }
+                timer = setTimeout(function() {
+                    fetch('{{ route('org.players.history.search') }}?q=' + encodeURIComponent(q), { headers: { 'Accept': 'application/json' } })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (!data.items.length) { dd.innerHTML = '<div class="py-1" style="padding:.8rem 1.2rem;cursor:pointer" style="opacity:.5">Не найдено</div>'; }
+                            else dd.innerHTML = data.items.map(p => `<div class="py-1" style="padding:.8rem 1.2rem;cursor:pointer" data-id="${p.id}" data-label="${esc(p.label)}">${esc(p.label)}</div>`).join('');
+                            dd.style.display = 'block';
+                        });
+                }, 250);
+            });
+            dd.addEventListener('click', function(e) {
+                const o = e.target.closest('[data-id]');
+                if (!o) return;
+                state.user = o.dataset.id;
+                input.value = o.dataset.label;
+                state.page = 1;
+                closeDd();
+                load();
+            });
+            document.addEventListener('click', function(e) { if (!e.target.closest('#hist-dd, #hist-search')) closeDd(); });
+            [fromEl, toEl].forEach(el => el.addEventListener('change', function() { state.page = 1; load(); }));
+            prevBtn.addEventListener('click', function() { if (state.page > 1) { state.page--; load(); } });
+            nextBtn.addEventListener('click', function() { state.page++; load(); });
         })();
 
         // ГРАФИКИ УРОВНЕЙ
