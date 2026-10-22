@@ -56,6 +56,15 @@ class EventShowService
             abort(404);
         }
 
+        // Приватность — ДО кеша: ключ кеша (тур+пользователь) общий для гостя с токеном и без него,
+        // проверка только внутри buildEventPage отдавала бы закешированную страницу гостю без доступа.
+        if (
+            $this->visibility->isPrivateEventRow($event)
+            && !$this->visibility->canViewPrivateEvent($event, auth()->user())
+        ) {
+            abort(404);
+        }
+
         $userId = auth()->id() ?? 0;
         $cacheKey = "event_page:{$occurrenceId}:u{$userId}";
 
