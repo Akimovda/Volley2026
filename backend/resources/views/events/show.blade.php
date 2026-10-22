@@ -275,6 +275,14 @@ $hasCoords =
 					@if($event->allow_registration ?? true)
 					@include('events.show.players')
 					@else
+					{{-- Запись отключена — статус мероприятия всё равно показываем --}}
+					@if($occurrence->isCancelled())
+					<div class="alert alert-danger">{{ __('events.sp_status_cancelled_event') }}</div>
+					@elseif($occurrence->isFinished())
+					<div class="alert alert-info">{{ __('events.sp_status_finished') }}</div>
+					@elseif($occurrence->isRunning())
+					<div class="alert alert-warning">{{ __('events.sp_status_in_progress') }}</div>
+					@endif
 					@php
 					$isOwner = auth()->check() && auth()->id() === (int)($event->organizer_id ?? 0);
 					$adStatus = $event->ad_payment_status ?? null;
