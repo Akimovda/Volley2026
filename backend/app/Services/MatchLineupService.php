@@ -336,6 +336,11 @@ class MatchLineupService
 
             $this->syncParticipation($locked, $setNumber);
 
+            // Расстановка = игра началась: как и первое очко (MatchRallyService::recordPoint), scheduled → live
+            if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
+                $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
+            }
+
             return $start;
         });
 
