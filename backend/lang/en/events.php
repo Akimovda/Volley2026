@@ -362,6 +362,7 @@ return [
     'show_pl_no_teams'            => 'No teams yet',
     'cancelled_page_title'        => 'Event cancelled',
     'cancelled_page_text'         => 'The organizer has cancelled this event.',
+    'sp_status_cancelled_event'   => '⛔️ This event has been cancelled.',
     'cancelled_page_other'        => 'Other dates of this event',
     'cancelled_page_list'         => 'Find another event',
     'show_pl_my_team'             => 'Your team',

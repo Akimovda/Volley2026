@@ -199,7 +199,7 @@
     =============================== --}}
     @if($occurrence->isCancelled())
 	<div class="alert alert-danger">
-		{{ __('events.sp_status_no_quorum') }}
+		{{ __('events.sp_status_cancelled_event') }}
 	</div>
 	
     @elseif($occurrence->isFinished())
@@ -655,7 +655,7 @@ $regMode       = (string)($event->registration_mode ?? 'single');
 $isTournament  = in_array($regMode, ['team_classic','team_beach'], true);
 $isFinished    = $occurrence->isFinished();
 $isRunning     = $occurrence->isRunning();
-$eventStarted  = $isFinished || $isRunning;
+$eventStarted  = $isFinished || $isRunning || $occurrence->isCancelled();
 
 $maxPlayers       = $occurrence->effectiveMaxPlayers();
 $reserveMaxFull   = (int) ($event->gameSettings?->reserve_players_max ?? 0);
