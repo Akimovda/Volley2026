@@ -90,6 +90,28 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 .sum-next{padding:calc(var(--u)*16) calc(var(--u)*30);text-align:center;font-size:calc(var(--u)*28);color:var(--muted);background:rgba(255,255,255,.06)}
 .sum-next b{color:var(--text);font-weight:600}
 
+/* ---- готовые стили: glass / neon / light_tv (табло, замена, итоги) ---- */
+body.tpl-glass .card{background:linear-gradient(135deg,rgba(255,255,255,calc(var(--pa,.85)*.28)),rgba(255,255,255,calc(var(--pa,.85)*.10)));border:1px solid rgba(255,255,255,.38);backdrop-filter:blur(calc(var(--u)*14)) saturate(1.4);-webkit-backdrop-filter:blur(calc(var(--u)*14)) saturate(1.4);box-shadow:0 calc(var(--u)*10) calc(var(--u)*30) rgba(0,0,0,.35);border-radius:calc(var(--u)*22)}
+body.tpl-glass .card .name,body.tpl-glass .card .pts,body.tpl-glass .card .sum-score,body.tpl-glass #sub .t2{text-shadow:0 1px calc(var(--u)*4) rgba(0,0,0,.55)}
+body.tpl-glass .pts{background:rgba(255,255,255,.18)}
+body.tpl-glass .foot,body.tpl-glass .sum-title,body.tpl-glass .sum-next{background:rgba(255,255,255,.14)}
+body.tpl-neon .card{background:rgba(6,4,22,var(--pa,.85));border:calc(var(--u)*3) solid #19f0ff;border-radius:calc(var(--u)*6);box-shadow:0 0 calc(var(--u)*18) rgba(25,240,255,.65),inset 0 0 calc(var(--u)*14) rgba(25,240,255,.18)}
+body.tpl-neon{--muted:rgba(190,240,255,.72)}
+body.tpl-neon .name{text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+body.tpl-neon .pts{background:rgba(25,240,255,.12);color:#19f0ff;text-shadow:0 0 calc(var(--u)*12) #19f0ff}
+body.tpl-neon .wins{background:transparent;border:calc(var(--u)*2) solid #ff2fd0;color:#ff7be6;box-shadow:0 0 calc(var(--u)*10) rgba(255,47,208,.6)}
+body.tpl-neon .stripe{box-shadow:0 0 calc(var(--u)*12) currentColor}
+body.tpl-neon .row,body.tpl-neon .stat{border-color:rgba(25,240,255,.25)}
+body.tpl-neon .foot,body.tpl-neon .sum-title,body.tpl-neon .sum-next{background:rgba(25,240,255,.1);color:#9ff7ff}
+body.tpl-neon .sum-score .big,body.tpl-neon #sub .t2{color:#19f0ff;text-shadow:0 0 calc(var(--u)*14) #19f0ff}
+body.tpl-light_tv .card{--text:#10141c;--muted:#566070;color:var(--text);background:rgba(255,255,255,var(--pa,.85));border-radius:calc(var(--u)*8);box-shadow:0 calc(var(--u)*6) calc(var(--u)*20) rgba(0,0,0,.4)}
+body.tpl-light_tv .row,body.tpl-light_tv .stat{border-color:rgba(16,20,28,.12)}
+body.tpl-light_tv .pts{background:#16264a;color:#fff}
+body.tpl-light_tv .wins{background:rgba(16,20,28,.1);color:#10141c}
+body.tpl-light_tv .foot,body.tpl-light_tv .sum-title,body.tpl-light_tv .sum-next{background:rgba(16,20,28,.08)}
+body.tpl-light_tv .sv svg,body.tpl-light_tv #sub svg{filter:invert(1)}
+body.tpl-light_tv .sum-score .big{color:#16264a}
+
 /* ---- заставка ---- */
 #splash{left:0;top:0;width:calc(var(--u)*1920);height:calc(var(--u)*1080);background:#10141c center/cover no-repeat;display:flex;align-items:center;justify-content:center;transform:none}
 #splash::before{content:"";position:absolute;inset:0;background:rgba(8,10,16,.45)}
@@ -156,6 +178,7 @@ window.__BC = @json($config);
         var pa = Math.max(30, Math.min(100, parseInt(th.opacity, 10) || 85)) / 100;
         ['board', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
         document.getElementById('stage').style.setProperty('--edge', EDGES[th.edge_margin] || 48);
+        ['glass', 'neon', 'light_tv'].forEach(function (n) { document.body.classList.toggle('tpl-' + n, th.template === n); });
     }
     function team(p, side) { return (p.teams && p.teams[side]) || {name: '', color: null, logo_url: null}; }
 

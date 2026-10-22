@@ -633,7 +633,7 @@ class CourtStateService
 
         return [
             'corner'          => in_array($corner, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $corner : 'top-left',
-            'template'        => in_array($template, ['compact', 'sets_table'], true) ? $template : 'compact',
+            'template'        => in_array($template, ['compact', 'sets_table', 'glass', 'neon', 'light_tv'], true) ? $template : 'compact',
             'show_set_scores' => (bool) ($t['show_set_scores'] ?? true),
             'show_logos'      => (bool) ($t['show_logos'] ?? true),
             'scale'           => self::clampScale($t['scale'] ?? null),

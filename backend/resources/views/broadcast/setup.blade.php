@@ -309,6 +309,9 @@
                         <select id="bc-template" name="template">
                             <option value="compact" @selected($form['template'] === 'compact')>{{ __('stream.tpl_compact') }}</option>
                             <option value="sets_table" @selected($form['template'] === 'sets_table')>{{ __('stream.tpl_sets_table') }}</option>
+                            <option value="glass" @selected($form['template'] === 'glass')>{{ __('stream.tpl_glass') }}</option>
+                            <option value="neon" @selected($form['template'] === 'neon')>{{ __('stream.tpl_neon') }}</option>
+                            <option value="light_tv" @selected($form['template'] === 'light_tv')>{{ __('stream.tpl_light_tv') }}</option>
                         </select>
                     </div>
                     <div class="bc-field">
