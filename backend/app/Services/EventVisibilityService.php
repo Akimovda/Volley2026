@@ -58,6 +58,14 @@ class EventVisibilityService
         $role = strtolower(trim((string) ($user->role ?? 'user')));
         $uid  = (int) $user->id;
 
+        // Раньше открывал приватное по ссылке /e/{token} — доступ сохранён (как и в ленте /events),
+        // иначе ссылки из уведомлений/анонсов на /events/{id} дают 404.
+        if (Schema::hasTable('event_private_accesses')
+            && DB::table('event_private_accesses')
+                ->where('user_id', $uid)->where('event_id', (int) $event->id)->exists()) {
+            return true;
+        }
+
         if (in_array($role, ['admin', 'superadmin', 'owner', 'root'], true)) {
             return true;
         }
