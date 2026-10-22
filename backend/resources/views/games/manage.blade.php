@@ -145,12 +145,12 @@
                 </div>
 
                 <div class="gm-color-row mb-2">
-                    <label>{{ __('games.team_a') }}:
+                    <div class="gm-color-field">{{ __('games.team_a') }}:
                         <select name="home_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('home_color', 'red') === $k)>{{ $label }}</option>@endforeach</select>
-                    </label>
-                    <label>{{ __('games.team_b') }}:
+                    </div>
+                    <div class="gm-color-field">{{ __('games.team_b') }}:
                         <select name="away_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('away_color', 'blue') === $k)>{{ $label }}</option>@endforeach</select>
-                    </label>
+                    </div>
                     <span class="f-14" style="align-self:center">
                         {{ __('games.count_home') }}: <b id="gm-cnt-home">0</b> · {{ __('games.count_away') }}: <b id="gm-cnt-away">0</b>
                     </span>
