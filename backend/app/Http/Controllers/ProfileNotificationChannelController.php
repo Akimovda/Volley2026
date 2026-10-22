@@ -39,6 +39,10 @@ class ProfileNotificationChannelController extends Controller
             'channels'                   => $channels,
             'bindRequests'               => $bindRequests,
             'isPro'                      => $user->isOrganizerPro(),
+            'personalBots'               => $channels->where('bot_type', 'user')
+                ->filter(fn ($c) => !empty($c->user_bot_username))
+                ->groupBy('platform')
+                ->map(fn ($g) => $g->first()->user_bot_username),
             'notifyPlayerRegistrations'  => (bool) ($user->notify_player_registrations ?? false),
         ]);
     }

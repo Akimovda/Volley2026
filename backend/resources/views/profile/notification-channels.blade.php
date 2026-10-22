@@ -197,6 +197,18 @@
                     <h3 class="mt-0">📡 Подключить канал</h3>
                     <p class="f-15 text-muted">Системный бот отправляет анонсы в ваш чат или канал.</p>
 
+                    @if(($isPro ?? false) && ($personalBots ?? collect())->isNotEmpty())
+                        <div class="alert alert-warning mb-1 f-14">
+                            ⚠️ У вас подключён свой бот
+                            @foreach($personalBots as $pf => $pu)
+                                {{ strtoupper($pf) }}: <strong>&#64;{{ $pu }}</strong>@if(!$loop->last),@endif
+                            @endforeach.
+                            Ссылка ниже привяжет чат к <strong>системному</strong> боту. Чтобы анонсы шли от вашего бота —
+                            используйте блок <a href="#personal-bot-tabs-wrap" class="link">«Организатор Pro — Свой бот»</a>
+                            (токен вводить повторно не нужно — достаточно ID чата).
+                        </div>
+                    @endif
+
                     <form method="POST" action="{{ route('profile.notification_channels.bind') }}" class="form">
                         @csrf
                         <div class="card">
@@ -253,6 +265,12 @@
                                     @endif
                                 </div>
                                 <div class="nch-actions">
+                                    @if(($channel->bot_type ?? 'system') === 'user' && !$channel->is_verified)
+                                        <form method="POST" action="{{ route('profile.personal_bot.recheck', $channel) }}">
+                                            @csrf
+                                            <button type="submit" class="btn btn-small btn-primary">🔄 Перепроверить</button>
+                                        </form>
+                                    @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
                                         <button onclick="document.getElementById('upd-{{ $channel->id }}').classList.toggle('d-none')"
                                                 class="btn btn-small btn-secondary">🔑</button>
@@ -393,10 +411,13 @@
                     <form method="POST" action="{{ route('profile.personal_bot.telegram') }}" class="form">
                         @csrf
                         <div class="card">
-                            <label class="f-15 b-600 mb-05">Токен бота <span class="red">*</span></label>
+                            <label class="f-15 b-600 mb-05">Токен бота @if(!isset($personalBots['telegram']))<span class="red">*</span>@endif</label>
                             <input type="text" name="bot_token" value="{{ old('bot_token') }}"
                                    placeholder="123456789:AAF..." class="w-100"
                                    style="font-family:monospace">
+                            @if(isset($personalBots['telegram']))
+                                <div class="f-13 text-muted mt-05">Оставьте пустым — будет использован уже подключённый &#64;{{ $personalBots["telegram"] }}.</div>
+                            @endif
                             @error('bot_token')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                         </div>
                         <div class="card">
@@ -427,7 +448,7 @@
                     <form method="POST" action="{{ route('profile.personal_bot.max') }}" class="form">
                         @csrf
                         <div class="card">
-                            <label class="f-15 b-600 mb-05">Токен бота MAX <span class="red">*</span></label>
+                            <label class="f-15 b-600 mb-05">Токен бота MAX @if(!isset($personalBots['max']))<span class="red">*</span>@endif</label>
                             <input type="text" name="bot_token" value="{{ old('bot_token') }}"
                                    placeholder="Токен от платформы MAX" class="w-100"
                                    style="font-family:monospace">

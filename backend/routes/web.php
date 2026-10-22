@@ -926,6 +926,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::patch('/profile/channels/{channel}/update-token',
 	        [\App\Http\Controllers\PersonalBotController::class, 'updateToken'])
 	        ->name('profile.personal_bot.update_token');
+
+	    Route::post('/profile/channels/{channel}/recheck',
+	        [\App\Http\Controllers\PersonalBotController::class, 'recheck'])
+	        ->name('profile.personal_bot.recheck');
 	});
 
 	/*
