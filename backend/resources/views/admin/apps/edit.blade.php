@@ -5,8 +5,12 @@
     $colorLabels = [
         'primary'   => __('admin.app_c_primary'),
         'secondary' => __('admin.app_c_secondary'),
-        'bg_page'   => __('admin.app_c_bg_page'),
-        'bg_page_to' => __('admin.app_c_bg_page_to'),
+        'hdr_from'  => __('admin.app_c_hdr_from'),
+        'hdr_to'    => __('admin.app_c_hdr_to'),
+        'body_from' => __('admin.app_c_body_from'),
+        'body_to'   => __('admin.app_c_body_to'),
+        'ftr_from'  => __('admin.app_c_ftr_from'),
+        'ftr_to'    => __('admin.app_c_ftr_to'),
         'orb_main'   => __('admin.app_c_orb_main'),
         'orb_center' => __('admin.app_c_orb_center'),
         'bg_card'   => __('admin.app_c_bg_card'),
@@ -102,7 +106,7 @@
                             <button type="button" class="btn btn-small" data-color-reset>{{ __('admin.app_reset') }}</button>
                             <span style="flex:1; min-width:20rem;">{{ $label }}</span>
                         </div>
-                        @if($gi === 0 && $key === 'bg_page_to')
+                        @if($gi === 0 && $key === 'ftr_to')
                             <p style="opacity:.7; margin:-0.4rem 0 1.2rem;">{{ __('admin.app_bg_overlay_hint') }}</p>
                         @endif
                     @endforeach
@@ -159,6 +163,22 @@
                     @endforeach
                 </div>
             @endforeach
+
+            {{-- Свой CSS и JS (только для этого приложения) --}}
+            <div class="ramka">
+                <h2 class="-mt-05">{{ __('admin.app_custom_h2') }}</h2>
+                <p>{{ __('admin.app_custom_hint') }}</p>
+                <h3 style="margin:2rem 0 1rem;">CSS</h3>
+                <textarea name="theme[custom_css]" rows="12" maxlength="30000" spellcheck="false" autocomplete="off"
+                          placeholder="body[data-path=&quot;/events&quot;] .card { border-radius: 2rem; }"
+                          style="width:100%; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.3rem; white-space:pre; overflow:auto;">{{ old('theme.custom_css', $brand->theme['custom_css'] ?? '') }}</textarea>
+                <p style="opacity:.7;">{{ __('admin.app_custom_css_hint') }}</p>
+                <h3 style="margin:2rem 0 1rem;">JavaScript</h3>
+                <textarea name="theme[custom_js]" rows="12" maxlength="30000" spellcheck="false" autocomplete="off"
+                          placeholder="if (brand.path === '/events') { /* ... */ }"
+                          style="width:100%; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:1.3rem; white-space:pre; overflow:auto;">{{ old('theme.custom_js', $brand->theme['custom_js'] ?? '') }}</textarea>
+                <div class="alert alert-warning" style="margin-top:1.5rem;">{{ __('admin.app_custom_js_warn') }}</div>
+            </div>
 
             {{-- Пункты меню --}}
             @php

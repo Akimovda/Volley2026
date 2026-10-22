@@ -78,7 +78,7 @@ class Brand extends Model
 
     public function hasTheme(): bool
     {
-        if (!empty($this->theme['font']) || !empty($this->theme['font_scale'])) {
+        if (!empty($this->theme['font']) || !empty($this->theme['font_scale']) || $this->customCss() !== '') {
             return true;
         }
 
@@ -89,6 +89,18 @@ class Brand extends Model
         }
 
         return false;
+    }
+
+    /** Пользовательский CSS приложения (хранится в theme.custom_css). */
+    public function customCss(): string
+    {
+        return trim((string) ($this->theme['custom_css'] ?? ''));
+    }
+
+    /** Пользовательский JS приложения (theme.custom_js) — выполняется на каждой странице этого приложения. */
+    public function customJs(): string
+    {
+        return trim((string) ($this->theme['custom_js'] ?? ''));
     }
 
     /** @return string[] пути скрытых пунктов меню */

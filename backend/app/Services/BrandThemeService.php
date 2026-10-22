@@ -25,7 +25,11 @@ class BrandThemeService
             'primary'   => '#2967BA',
             'secondary' => '#E7612F',
             'bg_page'   => '#C8DCFF',
-            'bg_page_to' => '#C8DCFF', // конец градиента фона; совпадает с bg_page => сплошной фон
+            'bg_page_to' => '#C8DCFF', // устарело (в форме нет): конец градиента body; осталось для ранее сохранённых тем
+            // Три слоя фона страницы (как в style.css), у каждого градиент «от → до»; одинаковые цвета = сплошной
+            'hdr_from'  => '#C8DCFF', 'hdr_to'  => '#E7F0FF', // шапка (.top-section)
+            'body_from' => '#E7F0FF', 'body_to' => '#FFFFFF', // центр (.main-container)
+            'ftr_from'  => '#C8DCFF', 'ftr_to'  => '#E7F0FF', // подвал (footer)
             'orb_main'   => '#2967BA', // два больших размытых шара фона (десктоп)
             'orb_center' => '#FFFFFF', // центральный пульсирующий шар
             'bg_card'   => '#FFFFFF',
@@ -42,6 +46,9 @@ class BrandThemeService
             'secondary' => '#E7612F',
             'bg_page'   => '#161721',
             'bg_page_to' => '#161721',
+            'hdr_from'  => '#0E0E15', 'hdr_to'  => '#1A1B27',
+            'body_from' => '#1A1B27', 'body_to' => '#222333',
+            'ftr_from'  => '#0E0E15', 'ftr_to'  => '#1A1B27',
             'orb_main'   => '#E7612F',
             'orb_center' => '#000000',
             'bg_card'   => '#222333',
@@ -73,10 +80,18 @@ class BrandThemeService
         $cssFile = public_path('assets/style.css');
         $key = 'brand.theme.css.' . md5(json_encode([$brand->theme, $hidden, url('/')]) . '|' . @filemtime($cssFile) . '|' . @filemtime(__FILE__));
 
-        $make = fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) . $this->fontScaleCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden);
+        $make = fn () => ($brand->hasTheme() ? $this->build((array) $brand->theme, $cssFile) . $this->tokenCss((array) $brand->theme) . $this->fontCss((array) $brand->theme) . $this->fontScaleCss((array) $brand->theme) : '') . $this->hiddenMenuCss($hidden) . $this->customCss($brand);
 
         // Предпросмотр несохранённой темы — без записи в кэш (иначе каждое нажатие клавиши оседало бы навсегда)
         return $cache ? Cache::rememberForever($key, $make) : $make();
+    }
+
+    /** Пользовательский CSS бренда — выводится ПОСЛЕДНИМ (перебивает всё остальное). Закрывающий </style не пропускаем. */
+    private function customCss(Brand $brand): string
+    {
+        $css = $brand->customCss();
+
+        return $css === '' ? '' : "\n" . preg_replace('~</\s*style~i', '<\\/style', $css);
     }
 
     /** Подпись временной ссылки предпросмотра: бренд + срок (без сессии — DetectBrand работает до StartSession). */
@@ -419,6 +434,7 @@ class BrandThemeService
         $night = (array) ($theme['night'] ?? []);
 
         $out .= $this->pageBackgroundCss('body', 'day', $day);
+        $out .= $this->zonesCss('day', $day) . $this->zonesCss('night', $night);
         if ($this->validHex($day['text'] ?? '')) {
             $out .= 'body{color:' . $day['text'] . '}';
         }
@@ -480,6 +496,30 @@ class BrandThemeService
                 $out .= $pfx . '.menu-item::after{background:' . $v['menu_accent'] . '}'
                     . $pfx . '.fix-header-user.active{color:' . $v['menu_accent'] . '!important}';
             }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Три слоя фона (шапка / центр / подвал): у каждого градиент «от → до» сверху вниз, одинаковые цвета = сплошной.
+     * Селекторы специфичнее правил style.css (там голые .top-section / .main-container / footer).
+     */
+    private function zonesCss(string $mode, array $v): string
+    {
+        $pfx = $mode === 'night' ? 'body.dark ' : 'body ';
+        $out = '';
+        foreach (['hdr' => '.top-section', 'body' => '.main-container', 'ftr' => 'footer'] as $z => $sel) {
+            $from = $this->validHex($v[$z . '_from'] ?? '') ? $v[$z . '_from'] : null;
+            $to = $this->validHex($v[$z . '_to'] ?? '') ? $v[$z . '_to'] : null;
+            if (!$from && !$to) {
+                continue;
+            }
+            $from = $from ?: self::BASE[$mode][$z . '_from'];
+            $to = $to ?: self::BASE[$mode][$z . '_to'];
+            $out .= $pfx . $sel . '{background:' . (strcasecmp($from, $to) === 0
+                ? $from
+                : 'linear-gradient(to bottom,' . $from . ',' . $to . ')') . '}';
         }
 
         return $out;
