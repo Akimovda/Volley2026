@@ -263,5 +263,5 @@ return [
     'o_stream_li3' => '<strong>Control panel</strong> — "Splash", "Scoreboard" and "Hide" modes are switched manually, "Auto" returns to automatic switching during the match',
     'o_stream_li4' => '<strong>Scorer by link</strong> — you can issue a separate link for entering points: no account needed, just a name. The link is tied to a court and stops working after the playing day; it can also be issued to a specific user',
     'o_stream_li5' => '<strong>Streaming from the VolleyClub app camera</strong> — "📡 Broadcast" → court → "Go live". In the court settings enter the server address (rtmp:// or rtmps://) and the stream key from your platform; the key is never shown in links or logs. If the connection drops, the app reconnects by itself',
-    'o_stream_p2' => 'The feature is in beta. The tournament and court names appear in the video only on the splash screen; the stream itself has its own title on the platform.',
+    'o_stream_p2' => 'The tournament and court names appear in the video only on the splash screen; the stream itself has its own title on the platform.',
 ];

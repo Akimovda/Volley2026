@@ -19,6 +19,9 @@
         .help-store-logo img { display: block; width: auto; height: 5.5rem; border-radius: 1rem; border: 1px solid rgba(41, 103, 186, .3); transition: transform .25s ease, box-shadow .25s ease; }
         .help-store-logo:hover img { transform: translateY(-.2rem); box-shadow: 0 .4rem 1.2rem rgba(41, 103, 186, .2); }
         body.dark .help-store-logo img { filter: invert(94%); }
+        /* Компактное боковое меню (вкладки «Игрок»/«Организатор»): вертикальные отступы и интервал вдвое меньше */
+        body.help .tabs-content .tab-pane .menu-item { padding-top: .5rem; padding-bottom: .5rem; line-height: 1.15; }
+        body.help .tabs-content .tab-pane .menu-item::after { bottom: .2rem; }
     </style>
 </x-slot>
 

@@ -428,7 +428,7 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
             ],
             'broadcast' => [
                 'title' => '📡 Match broadcasting',
-                'intro' => 'Go live from a tournament or a game with statistics: the video carries a real-time scoreboard. The feature is in beta.',
+                'intro' => 'Go live from a tournament or a game with statistics: the video carries a real-time scoreboard.',
                 'blocks' => [
                     [
                         'left' => [
