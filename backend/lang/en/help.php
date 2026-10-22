@@ -255,4 +255,13 @@ return [
     'shot_org_participants' => 'Managing participants',
     'shot_org_tournament_setup' => 'Tournament management page',
     'shot_org_dashboard' => 'Organizer panel',
+    'menu_o_stream' => 'Match broadcasting',
+    'o_stream_h' => 'Match broadcasting',
+    'o_stream_p1' => 'For a tournament or a game with statistics you can go live: a scoreboard is overlaid on the video and viewers watch it on VK, RuTube, YouTube or Telegram. Set it up on the event\'s <strong>"Broadcast"</strong> page (organizer menu).',
+    'o_stream_li1' => '<strong>Courts</strong> — each court has its own overlay link. Add it as a "Browser" source in OBS or a "Web widget" in PRISM Live Studio on top of the camera video; a QR code for quick transfer is on the page',
+    'o_stream_li2' => '<strong>Scoreboard</strong> — score, sets, serve and set / match summaries. Corner, template, scale, opacity, logos and team names are configurable; between matches a splash screen with a countdown is shown',
+    'o_stream_li3' => '<strong>Control panel</strong> — "Splash", "Scoreboard" and "Hide" modes are switched manually, "Auto" returns to automatic switching during the match',
+    'o_stream_li4' => '<strong>Scorer by link</strong> — you can issue a separate link for entering points: no account needed, just a name. The link is tied to a court and stops working after the playing day; it can also be issued to a specific user',
+    'o_stream_li5' => '<strong>Streaming from the VolleyClub app camera</strong> — "📡 Broadcast" → court → "Go live". In the court settings enter the server address (rtmp:// or rtmps://) and the stream key from your platform; the key is never shown in links or logs. If the connection drops, the app reconnects by itself',
+    'o_stream_p2' => 'The feature is in beta. The tournament and court names appear in the video only on the splash screen; the stream itself has its own title on the platform.',
 ];

@@ -506,6 +506,8 @@ sudo systemctl reload php8.3-fpm   # ← обязательно при изме�
 ## Мониторинг и бэкапы
 Ops-документация (GlitchTip/Sentry SDK, Uptime Kuma, система бэкапов backup-сервера) перенесена в пользовательский `~/.claude/CLAUDE.md` — там она общая для всех сессий/проектов на этом сервере, не дублируем здесь.
 
+- **`/help` и `/about`: раздел «Трансляция матчей» (2026-10-22)** — `help.blade.php` (`#o-stream`, вкладка организатора, ключи `help.o_stream_*`/`menu_o_stream`) и секция `broadcast` в `pages.about.sections` (RU+EN); тексты про эфир с камеры — в настоящем времени, сверять с релизом плагина.
+
 ## Инструмент скриншотов `tools/shot.mjs` (2026-10-18)
 - Проверка вёрстки dev-сайта глазами: `node tools/shot.mjs /events --vp 390x844,1280x800 --theme both [--app] [--measure ".btn"] [--full] [--click sel] [--hide sel] [--cookie name=val]`, справка — `--help`. PNG по умолчанию в `/tmp/shots` (вне репозитория), смотреть инструментом Read.
 - Сам: puppeteer-core + Chrome из `storage/app/chromium/`, host → 127.0.0.1, каждый кадр в отдельном browser context, Twemoji, автозакрытие баннера «установить приложение», `.phpdebugbar` скрыт, ночь = `body.dark`, предупреждение о горизонтальном overflow и JS-ошибки в выводе. Закрытые страницы — только с cookie демо-пользователя dev (см. раздел про тестовые данные для скриншотов); прод и реальные сессии не трогать.

@@ -426,6 +426,24 @@ Website: <a href="https://volleyplay.club">volleyplay.club</a>',
                     ],
                 ]],
             ],
+            'broadcast' => [
+                'title' => '📡 Match broadcasting',
+                'intro' => 'Go live from a tournament or a game with statistics: the video carries a real-time scoreboard. The feature is in beta.',
+                'blocks' => [
+                    [
+                        'left' => [
+                            '📺 An overlay link for OBS and PRISM — the scoreboard on top of your camera video',
+                            '🎨 Corner, template, scale, logos and team names — to match your tournament',
+                            '⏱ A splash screen with a countdown between matches, set and match summaries',
+                        ],
+                        'right' => [
+                            '✍️ A scorer by link enters points without an account — just a name',
+                            '📱 Stream straight from the camera in the VolleyClub app — to VK, RuTube, YouTube or Telegram',
+                            '🔄 If the connection drops, the app reconnects by itself',
+                        ],
+                    ],
+                ],
+            ],
             'leagues' => [
                 'title' => '🏅 Leagues and seasons',
                 'intro' => 'A long-term competition system with divisions, promotion and accumulated statistics.',

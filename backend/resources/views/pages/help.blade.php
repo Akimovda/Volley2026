@@ -61,6 +61,7 @@
     <a href="#o2" class="menu-item"><span class="menu-text">{{ __('help.menu_o2') }}</span></a>
     <a href="#o3" class="menu-item"><span class="menu-text">{{ __('help.menu_o3') }}</span></a>
     <a href="#o-staff" class="menu-item"><span class="menu-text">{{ __('help.menu_o_staff') }}</span></a>
+    <a href="#o-stream" class="menu-item"><span class="menu-text">{{ __('help.menu_o_stream') }}</span></a>
     <a href="#o-waitlist" class="menu-item"><span class="menu-text">{{ __('help.menu_o_waitlist') }}</span></a>
     <a href="#o-tournament" class="menu-item"><span class="menu-text">{{ __('help.menu_o_tournament') }}</span></a>
     <a href="#o-stats" class="menu-item"><span class="menu-text">{{ __('help.menu_o_stats') }}</span></a>
@@ -271,6 +272,17 @@
     <li>{!! __('help.o_stats_li3') !!}</li>
 </ul>
 <p>{!! __('help.o_stats_p2') !!}</p>
+
+<h2 id="o-stream">{{ __('help.o_stream_h') }}</h2>
+<p>{!! __('help.o_stream_p1') !!}</p>
+<ul class="list">
+    <li>{!! __('help.o_stream_li1') !!}</li>
+    <li>{!! __('help.o_stream_li2') !!}</li>
+    <li>{!! __('help.o_stream_li3') !!}</li>
+    <li>{!! __('help.o_stream_li4') !!}</li>
+    <li>{!! __('help.o_stream_li5') !!}</li>
+</ul>
+<p>{!! __('help.o_stream_p2') !!}</p>
 
 <h2 id="o-league">{{ __('help.o_league_h') }}</h2>
 <p>{!! __('help.o_league_p1') !!}</p>
