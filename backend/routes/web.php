@@ -1175,6 +1175,9 @@ Route::middleware([
         Route::post('/matches/{match}/court', [$c, 'assignMatch'])->whereNumber('match')->name('.match.court');
         Route::post('/theme', [$c, 'saveTheme'])->name('.theme');
         Route::post('/splash', [$c, 'saveSplash'])->name('.splash');
+        Route::post('/music', [$c, 'saveMusic'])->name('.music');
+        Route::post('/music/file', [$c, 'uploadMusic'])->name('.music.upload');
+        Route::delete('/music/file', [$c, 'deleteMusic'])->name('.music.delete');
         Route::post('/bg', [$c, 'uploadBg'])->name('.bg.upload');
         Route::delete('/bg', [$c, 'deleteBg'])->name('.bg.delete');
         Route::post('/teams/{team}/color', [$c, 'teamColor'])->whereNumber('team')->name('.team.color');

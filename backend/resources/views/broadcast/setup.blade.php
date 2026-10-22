@@ -12,6 +12,7 @@
     $destPlatforms = [];
     foreach (['vk','rutube','youtube','telegram','custom'] as $dp) { $destPlatforms[$dp] = __('stream.dest_p_' . $dp); }
     $jsStrings = [
+        'musicListen' => __('stream.music_listen'), 'musicStop' => __('stream.music_stop'),
         'saved' => __('stream.saved'), 'error' => __('stream.error'), 'copied' => __('stream.link_copied'),
         'regenQ' => __('stream.link_regen_q'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
         'captionAuto' => __('stream.mode_caption_auto'), 'manualBanner' => __('stream.manual_banner'),
@@ -437,6 +438,42 @@
             </form>
         </div>
 
+        {{-- 4b. Музыка --}}
+        <div class="ramka" id="bc-music">
+            <h2 class="-mt-05">{{ __('stream.music_h') }}</h2>
+            <form id="bc-music-form" onsubmit="return false">
+                <div style="margin-bottom:1rem">
+                    <label style="cursor:pointer"><input type="checkbox" id="bc-music-enabled" @checked($form['music']['enabled'])><span style="margin-left:.6rem">{{ __('stream.music_enabled') }}</span></label>
+                </div>
+                <div class="bc-field">
+                    <span class="bc-l" style="display:block;font-weight:600;font-size:1.4rem;margin-bottom:.4rem">{{ __('stream.music_modes') }}</span>
+                    @foreach(\App\Models\BroadcastSetting::MUSIC_MODES as $mm)
+                    <div><label style="cursor:pointer"><input type="checkbox" class="bc-music-mode" value="{{ $mm }}" @checked(in_array($mm, $form['music']['modes'], true))><span style="margin-left:.6rem">{{ __('stream.music_m_' . $mm) }}</span></label></div>
+                    @endforeach
+                </div>
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-music-volume">{{ __('stream.music_volume') }}: <b id="bc-music-volume-v">{{ $form['music']['volume'] }}</b>%</label>
+                    <input type="range" id="bc-music-volume" min="0" max="100" step="5" value="{{ $form['music']['volume'] }}" style="width:100%;max-width:32rem">
+                </div>
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-music-track">{{ __('stream.music_track') }}</label>
+                    <select id="bc-music-track">
+                        <option value="default" @selected($form['music']['track'] === 'default' || !$form['music_custom'])>{{ __('stream.music_track_default') }}</option>
+                        <option value="custom" @selected($form['music']['track'] === 'custom' && $form['music_custom'])>{{ __('stream.music_track_custom') }}</option>
+                    </select>
+                </div>
+                <div class="bc-field">
+                    <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer">{{ __('stream.music_upload') }}<input type="file" id="bc-music-file" accept="audio/mpeg,audio/mp4,audio/aac,.mp3,.m4a,.aac" style="display:none"></label>
+                    <button type="button" class="btn btn-small btn-outline" id="bc-music-del" @if(!$form['music_custom']) style="display:none" @endif>{{ __('stream.music_delete') }}</button>
+                    <button type="button" class="btn btn-small btn-outline" id="bc-music-listen">{{ __('stream.music_listen') }}</button>
+                    <div class="bc-hint" style="margin-top:.5rem">{{ __('stream.music_file_hint') }}</div>
+                </div>
+                <audio id="bc-music-audio" preload="none" data-default="{{ asset(\App\Models\BroadcastSetting::DEFAULT_MUSIC_PATH) }}" data-custom="{{ $form['music_custom'] ? $form['music_url'] : '' }}"></audio>
+                <button type="button" class="btn btn-small" id="bc-music-save">{{ __('stream.save') }}</button>
+                <div class="bc-hint" style="margin-top:.8rem">{{ __('stream.music_hint') }}</div>
+            </form>
+        </div>
+
         {{-- 5. Ссылки на эфир --}}
         <div class="ramka" id="bc-streams">
             <h2 class="-mt-05">{{ __('stream.streams_h') }}</h2>
@@ -843,6 +880,39 @@
             });
             $('#bc-bg-del').on('click', function () {
                 call('DELETE', CFG.base + '/bg', { occurrence_id: CFG.occurrenceId }, function () { $('#bc-bg-img').hide(); $('#bc-bg-del').hide(); toast(S.saved); });
+            });
+
+            /* ---------- музыка ---------- */
+            var mAudio = document.getElementById('bc-music-audio');
+            function musicSrc() { return $('#bc-music-track').val() === 'custom' && $(mAudio).data('custom') ? $(mAudio).data('custom') : $(mAudio).data('default'); }
+            $('#bc-music-volume').on('input', function () { $('#bc-music-volume-v').text(this.value); mAudio.volume = this.value / 100; });
+            $('#bc-music-listen').on('click', function () {
+                if (!mAudio.paused) { mAudio.pause(); $(this).text(S.musicListen); return; }
+                mAudio.src = musicSrc(); mAudio.volume = $('#bc-music-volume').val() / 100;
+                mAudio.play(); $(this).text(S.musicStop);
+            });
+            $(mAudio).on('ended pause', function () { $('#bc-music-listen').text(S.musicListen); });
+            $('#bc-music-track').on('change', function () { mAudio.pause(); });
+            $('#bc-music-save').on('click', function () {
+                var modes = $('.bc-music-mode:checked').map(function () { return this.value; }).get();
+                call('POST', CFG.base + '/music', {
+                    occurrence_id: CFG.occurrenceId, enabled: $('#bc-music-enabled').is(':checked') ? 1 : 0,
+                    track: $('#bc-music-track').val(), modes: modes, volume: $('#bc-music-volume').val()
+                }, function () { toast(S.saved); });
+            });
+            $('#bc-music-file').on('change', function () {
+                if (!this.files.length) { return; }
+                var fd = new FormData(); fd.append('file', this.files[0]); fd.append('occurrence_id', CFG.occurrenceId);
+                call('POST', CFG.base + '/music/file', fd, function (r) {
+                    $(mAudio).data('custom', r.url); mAudio.pause();
+                    $('#bc-music-track').val('custom').trigger('change'); $('#bc-music-del').show(); toast(S.saved);
+                });
+                this.value = '';
+            });
+            $('#bc-music-del').on('click', function () {
+                call('DELETE', CFG.base + '/music/file', { occurrence_id: CFG.occurrenceId }, function () {
+                    $(mAudio).data('custom', ''); mAudio.pause(); $('#bc-music-track').val('default'); $('#bc-music-del').hide(); toast(S.saved);
+                });
             });
 
             /* ---------- ссылки на эфир ---------- */

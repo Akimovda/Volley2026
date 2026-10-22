@@ -119,6 +119,9 @@ class BroadcastSetupController extends Controller
                 'summary_mode'    => $settings->summary_mode ?: BroadcastSetting::SUMMARY_EVERY_SET,
                 'set_secs'        => (int) $settings->set_summary_seconds,
                 'match_secs'      => (int) $settings->match_summary_seconds,
+                'music'           => $settings->musicConfig(),
+                'music_url'       => $settings->musicUrl(),
+                'music_custom'    => $settings->exists && $settings->getFirstMedia('stream_music') !== null,
                 'bg_url'          => $bg ? ($bg->hasGeneratedConversion('hd') ? $bg->getUrl('hd') : $bg->getUrl()) : null,
             ],
             'palette'     => BroadcastTeamStyle::PALETTE,
@@ -498,6 +501,71 @@ class BroadcastSetupController extends Controller
         return response()->json(['ok' => true]);
     }
 
+    public function saveMusic(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $data = $request->validate([
+            'occurrence_id' => ['required', 'integer'],
+            'enabled'       => ['required', 'boolean'],
+            'track'         => ['required', Rule::in(['default', 'custom'])],
+            'modes'         => ['nullable', 'array'],
+            'modes.*'       => [Rule::in(BroadcastSetting::MUSIC_MODES)],
+            'volume'        => ['required', 'integer', 'between:0,100'],
+        ]);
+        $occ = $this->ownOccurrence($event, (int) $data['occurrence_id']);
+        $s = $this->settingsRow($event, $occ);
+        abort_if($data['track'] === 'custom' && !$s->getFirstMedia('stream_music'), 422, 'Сначала загрузите свой трек.');
+        $theme = (array) $s->theme;
+        $theme['music'] = [
+            'enabled' => (bool) $data['enabled'], 'track' => $data['track'],
+            'modes' => array_values(array_intersect(BroadcastSetting::MUSIC_MODES, (array) ($data['modes'] ?? []))),
+            'volume' => (int) $data['volume'], 'fade_ms' => $s->musicConfig()['fade_ms'],
+        ];
+        $s->theme = $theme;
+        $s->save();
+        $this->refreshCourts($event, $occ->id);
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function uploadMusic(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $request->validate([
+            'occurrence_id' => ['required', 'integer'],
+            'file'          => ['required', 'file', 'mimes:mp3,m4a,aac', 'mimetypes:audio/mpeg,audio/mp3,audio/mp4,audio/x-m4a,audio/m4a,audio/aac,audio/x-aac', 'max:15360'],
+        ]);
+        $occ = $this->ownOccurrence($event, (int) $request->input('occurrence_id'));
+        $s = $this->settingsRow($event, $occ);
+        $ext = strtolower($request->file('file')->guessExtension() ?: $request->file('file')->getClientOriginalExtension());
+        $ext = in_array($ext, ['mp3', 'm4a', 'aac', 'mp4'], true) ? $ext : 'mp3';
+        $s->addMediaFromRequest('file')->usingFileName('music_' . uniqid() . '.' . $ext)->toMediaCollection('stream_music');
+        $theme = (array) $s->theme;
+        $theme['music'] = array_merge($s->musicConfig(), ['track' => 'custom']);
+        $s->theme = $theme;
+        $s->save();
+        $this->refreshCourts($event, $occ->id);
+
+        return response()->json(['ok' => true, 'url' => $s->fresh()->musicUrl()]);
+    }
+
+    public function deleteMusic(Request $request, Event $event): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $occ = $this->ownOccurrence($event, (int) $request->input('occurrence_id'));
+        $row = $this->settingsQuery($event, $this->settingsScope($event, (int) $occ->id))->first();
+        if ($row) {
+            $row->clearMediaCollection('stream_music');
+            $theme = (array) $row->theme;
+            $theme['music'] = array_merge($row->musicConfig(), ['track' => 'default']);
+            $row->theme = $theme;
+            $row->save();
+        }
+        $this->refreshCourts($event, $occ->id);
+
+        return response()->json(['ok' => true, 'url' => asset(BroadcastSetting::DEFAULT_MUSIC_PATH)]);
+    }
+
     public function uploadBg(Request $request, Event $event): JsonResponse
     {
         $this->authorizeEvent($request, $event);
@@ -687,6 +755,9 @@ class BroadcastSetupController extends Controller
         ]);
         if ($base->exists && ($bg = $base->getFirstMedia('stream_bg'))) {
             $bg->copy($row, 'stream_bg');
+        }
+        if ($base->exists && ($mu = $base->getFirstMedia('stream_music'))) {
+            $mu->copy($row, 'stream_music');
         }
         return $row;
     }
