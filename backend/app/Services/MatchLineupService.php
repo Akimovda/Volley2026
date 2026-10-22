@@ -340,6 +340,7 @@ class MatchLineupService
         });
 
         broadcast(new TournamentMatchRallyUpdated($match->id, $setNumber));
+        app(\App\Services\Broadcast\BroadcastControlService::class)->releaseSplashOnPlay($match);
         app(\App\Services\Broadcast\CourtStateBroadcaster::class)->forMatch($match->id);
 
         return $start;

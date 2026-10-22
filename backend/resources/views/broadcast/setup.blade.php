@@ -764,7 +764,10 @@
                 if (!cur || !cur.link) { return; }
                 var c = cur, stateUrl = c.link.url.replace(/\/?(\?.*)?$/, '') + '/state';
                 $.ajax({ url: stateUrl, dataType: 'json', cache: false }).done(function (st) {
-                    if (cur === c && !c.manual_mode) { c.mode = st.mode; c.match = st.match; renderPult(); }
+                    if (cur !== c) { return; }
+                    if (c.manual_mode && st.manual === false) { c.manual_mode = null; }
+                    if (!c.manual_mode) { c.mode = st.mode; c.match = st.match; }
+                    renderPult();
                 }).always(function () { pollTimer = setTimeout(poll, 5000); });
             }
             renderPult(); poll();

@@ -4,6 +4,8 @@ namespace App\Services\Broadcast;
 
 use App\Models\BroadcastCourtOverride;
 use App\Models\EventCourt;
+use App\Models\TournamentMatch;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 /** Ручное управление площадкой (пульт): режим и выбор матча. Права проверяет вызывающий. */
@@ -46,5 +48,23 @@ class BroadcastControlService
         BroadcastCourtOverride::updateOrCreate(['court_id' => $court->id], ['manual_match_id' => $matchId]);
 
         return $this->broadcaster->forCourt($court);
+    }
+
+    /**
+     * Игра на матче площадки началась (старт партии / очко): ручная «Заставка» снимается.
+     * Остальные ручные режимы (Скрыть, Табло, итоги) не трогаем, manual_match_id сохраняется.
+     * Рассылку состояния делает вызывающий сразу после. Сбой не должен ломать ввод счёта.
+     */
+    public function releaseSplashOnPlay(TournamentMatch $match): void
+    {
+        try {
+            $court = app(CourtRegistry::class)->courtOfMatch($match);
+            if ($court) {
+                BroadcastCourtOverride::where('court_id', $court->id)->where('manual_mode', 'splash')
+                    ->update(['manual_mode' => null, 'manual_mode_at' => null]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('broadcast.release_splash_failed', ['match_id' => $match->id, 'error' => $e->getMessage()]);
+        }
     }
 }
