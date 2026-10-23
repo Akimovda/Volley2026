@@ -14,7 +14,6 @@
 <x-voll-layout body_class="stream-camera-page">
     <x-slot name="title">{{ __('stream.cam_title') }}</x-slot>
     <x-slot name="h1">📡 {{ __('stream.cam_title') }} <x-beta-badge /></x-slot>
-    <x-slot name="h2">{{ __('stream.cam_hint') }}</x-slot>
 
     <x-slot name="style">
         <style>
@@ -41,6 +40,7 @@
 
     <div class="container form">
         <x-beta-note />
+        <div class="alert alert-info" style="margin-bottom:1.6rem">{{ __('stream.cam_hint') }}</div>
         @if(auth()->user()->isAdmin() || auth()->user()->role === 'organizer')
         <p><a class="blink b-600" href="{{ route('broadcast.channels') }}">{{ __('stream.ch_my') }}</a></p>
         @endif
