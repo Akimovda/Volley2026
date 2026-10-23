@@ -16,7 +16,6 @@
 <x-voll-layout body_class="stream-channels-page">
     <x-slot name="title">{{ __('stream.ch_h') }}</x-slot>
     <x-slot name="h1">📡 {{ __('stream.ch_h') }} <x-beta-badge /></x-slot>
-    <x-slot name="h2">{{ __('stream.ch_hint') }}</x-slot>
 
     <x-slot name="style">
         <style>
@@ -28,6 +27,7 @@
     </x-slot>
 
     <div class="container form">
+        <div class="alert alert-info mb-2">{{ __('stream.ch_hint') }}</div>
         <div class="ramka">
             @forelse($channels as $c)
             <div class="ch-row" data-ch="{{ $c['id'] }}" data-platform="{{ $c['platform'] }}" data-label="{{ $c['label'] }}" data-server="{{ $c['server_url'] }}" data-courts="{{ $c['courts'] }}" style="margin-bottom:1.4rem">
