@@ -101,6 +101,10 @@
             body.dark .bc-matchlist button { border-color: rgba(255,255,255,.2); }
             .bc-matchlist button.sel { border-color:#E7612F; font-weight:700; }
             .bc-field { margin-bottom:1.3rem; }
+            .bc-music-opt { display:flex; align-items:center; gap:.8rem; }
+            .bc-music-line { margin:0; align-items:center; }
+            .bc-music-line .custom-checkbox, .bc-music-line .custom-radio { margin:.5rem 1.2rem .5rem 0; }
+            .bc-page.form .bc-field input[type="range"] { width:100%; max-width:32rem; height:auto; padding:0; border:0; background:transparent; box-shadow:none; accent-color:#2967BA; }
             .bc-field label.bc-l { display:block; font-weight:600; font-size:1.4rem; margin-bottom:.4rem; }
             .bc-grid { display:grid; grid-template-columns:1fr; gap:0 2rem; }
             @media (min-width: 768px) { .bc-grid { grid-template-columns:1fr 1fr; } }
@@ -445,31 +449,45 @@
         <div class="ramka" id="bc-music">
             <h2 class="-mt-05">{{ __('stream.music_h') }}</h2>
             <form id="bc-music-form" onsubmit="return false">
-                <div style="margin-bottom:1rem">
-                    <label style="cursor:pointer"><input type="checkbox" id="bc-music-enabled" @checked($form['music']['enabled'])><span style="margin-left:.6rem">{{ __('stream.music_enabled') }}</span></label>
-                </div>
+                <label class="checkbox-item bc-field">
+                    <input type="checkbox" id="bc-music-enabled" @checked($form['music']['enabled'])>
+                    <div class="custom-checkbox"></div>
+                    <span>{{ __('stream.music_enabled') }}</span>
+                </label>
                 <div class="bc-field">
                     <span class="bc-l" style="display:block;font-weight:600;font-size:1.4rem;margin-bottom:.4rem">{{ __('stream.music_modes') }}</span>
                     @foreach(\App\Models\BroadcastSetting::MUSIC_MODES as $mm)
-                    <div><label style="cursor:pointer"><input type="checkbox" class="bc-music-mode" value="{{ $mm }}" @checked(in_array($mm, $form['music']['modes'], true))><span style="margin-left:.6rem">{{ __('stream.music_m_' . $mm) }}</span></label></div>
+                    <label class="checkbox-item bc-music-line">
+                        <input type="checkbox" class="bc-music-mode" value="{{ $mm }}" @checked(in_array($mm, $form['music']['modes'], true))>
+                        <div class="custom-checkbox"></div>
+                        <span>{{ __('stream.music_m_' . $mm) }}</span>
+                    </label>
                     @endforeach
                 </div>
                 <div class="bc-field">
                     <label class="bc-l" for="bc-music-volume">{{ __('stream.music_volume') }}: <b id="bc-music-volume-v">{{ $form['music']['volume'] }}</b>%</label>
-                    <input type="range" id="bc-music-volume" min="0" max="100" step="5" value="{{ $form['music']['volume'] }}" style="width:100%;max-width:32rem">
+                    <input type="range" id="bc-music-volume" min="0" max="100" step="5" value="{{ $form['music']['volume'] }}">
                 </div>
                 <div class="bc-field">
                     <label class="bc-l" for="bc-music-track">{{ __('stream.music_track') }}</label>
                     @php $curTrack = $form['music']['track']; if ($curTrack === 'custom' && !$form['music_custom']) { $curTrack = 'calm'; } @endphp
                     <input type="hidden" id="bc-music-track" value="{{ $curTrack }}">
                     @foreach(array_keys(\App\Models\BroadcastSetting::MUSIC_TRACKS) as $tk)
-                    <div class="bc-music-opt" style="display:flex;align-items:center;gap:.8rem;margin-bottom:.4rem">
-                        <label style="cursor:pointer;margin:0"><input type="radio" name="bc-music-tr" class="bc-music-tr" value="{{ $tk }}" @checked($curTrack === $tk)><span style="margin-left:.6rem">{{ __('stream.music_track_' . $tk) }}</span></label>
+                    <div class="bc-music-opt">
+                        <label class="radio-item bc-music-line">
+                            <input type="radio" name="bc-music-tr" class="bc-music-tr" value="{{ $tk }}" @checked($curTrack === $tk)>
+                            <div class="custom-radio"></div>
+                            <span>{{ __('stream.music_track_' . $tk) }}</span>
+                        </label>
                         <button type="button" class="btn btn-small btn-outline bc-music-play" data-url="{{ asset(\App\Models\BroadcastSetting::MUSIC_TRACKS[$tk]) }}" title="{{ __('stream.music_listen') }}">▶</button>
                     </div>
                     @endforeach
-                    <div class="bc-music-opt" style="display:flex;align-items:center;gap:.8rem">
-                        <label style="cursor:pointer;margin:0"><input type="radio" name="bc-music-tr" class="bc-music-tr" value="custom" @checked($curTrack === 'custom')><span style="margin-left:.6rem">{{ __('stream.music_track_custom') }}</span></label>
+                    <div class="bc-music-opt">
+                        <label class="radio-item bc-music-line">
+                            <input type="radio" name="bc-music-tr" class="bc-music-tr" value="custom" @checked($curTrack === 'custom')>
+                            <div class="custom-radio"></div>
+                            <span>{{ __('stream.music_track_custom') }}</span>
+                        </label>
                         <button type="button" class="btn btn-small btn-outline bc-music-play" id="bc-music-play-custom" data-url="{{ $form['music_custom'] ? $form['music_url'] : '' }}" title="{{ __('stream.music_listen') }}" @if(!$form['music_custom']) style="display:none" @endif>▶</button>
                     </div>
                 </div>
@@ -485,31 +503,7 @@
             </form>
         </div>
 
-        {{-- 5. Ссылки на эфир --}}
-        <div class="ramka" id="bc-streams">
-            <h2 class="-mt-05">{{ __('stream.streams_h') }}</h2>
-            <div class="bc-hint">{{ __('stream.streams_hint') }}</div>
-            @if($courts->isEmpty())
-            <p>{{ __('stream.pult_no_courts') }}</p>
-            @else
-            <div class="bc-chips" id="bc-stream-chips" style="margin-top:1rem">
-                @foreach($courts as $c)
-                <button type="button" class="btn btn-small btn-secondary" data-stream-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
-                @endforeach
-            </div>
-            <form id="bc-streams-form" onsubmit="return false">
-                @foreach($platformLabels as $k => $label)
-                <div class="bc-field">
-                    <label class="bc-l" for="bc-s-{{ $k }}">{{ $label }}</label>
-                    <input type="url" id="bc-s-{{ $k }}" data-platform="{{ $k }}" maxlength="300" placeholder="https://">
-                </div>
-                @endforeach
-                <button type="button" class="btn btn-small" id="bc-streams-save">{{ __('stream.save') }}</button>
-            </form>
-            @endif
-        </div>
-
-        {{-- 5б. Эфир из приложения VolleyClub: куда отправлять видео --}}
+        {{-- 5. Эфир из приложения VolleyClub: куда отправлять видео --}}
         <div class="ramka" id="bc-dest">
             <h2 class="-mt-05">{{ __('stream.dest_h') }}</h2>
             <div class="bc-hint">{{ __('stream.dest_hint') }}</div>
@@ -568,6 +562,30 @@
                 <div class="bc-hint" style="opacity:.85;margin-top:.5rem">{!! __('stream.dest_where_' . $pk) !!}</div>
             </details>
             @endforeach
+            @endif
+        </div>
+
+        {{-- 5б. Ссылки на эфир --}}
+        <div class="ramka" id="bc-streams">
+            <h2 class="-mt-05">{{ __('stream.streams_h') }}</h2>
+            <div class="bc-hint">{{ __('stream.streams_hint') }}</div>
+            @if($courts->isEmpty())
+            <p>{{ __('stream.pult_no_courts') }}</p>
+            @else
+            <div class="bc-chips" id="bc-stream-chips" style="margin-top:1rem">
+                @foreach($courts as $c)
+                <button type="button" class="btn btn-small btn-secondary" data-stream-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
+                @endforeach
+            </div>
+            <form id="bc-streams-form" onsubmit="return false">
+                @foreach($platformLabels as $k => $label)
+                <div class="bc-field">
+                    <label class="bc-l" for="bc-s-{{ $k }}">{{ $label }}</label>
+                    <input type="url" id="bc-s-{{ $k }}" data-platform="{{ $k }}" maxlength="300" placeholder="https://">
+                </div>
+                @endforeach
+                <button type="button" class="btn btn-small" id="bc-streams-save">{{ __('stream.save') }}</button>
+            </form>
             @endif
         </div>
 
@@ -967,6 +985,8 @@
                     sel.append($('<option>').val(c.id).prop('selected', String(c.id) === String(chosen))
                         .text((S.destPlatforms[c.platform] || c.platform) + (c.label ? ' · ' + c.label : '') + (c.is_default ? ' ★' : '')));
                 });
+                // option'ы пересобраны — обёртку кастомного select нужно создать заново, иначе select схлопнут в 1px (.form select)
+                if (window.customSelect && window.createCustomSelect) { window.customSelect.destroy('bc-d-channel'); window.createCustomSelect(jQuery('#bc-d-channel')); }
                 $('#bc-dest-form').toggle(!chosen);
                 var box = $('#bc-dest-list').empty();
                 if (!curDest.destinations.length) {
