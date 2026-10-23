@@ -8,11 +8,12 @@ use Illuminate\Support\Facades\Route;
 | Трансляция: публичные страницы по токен-ссылке. Регистрируются в bootstrap/app.php БЕЗ группы web —
 | нет сессии/кук/CSRF/SetLocale/EnsureProfileCompleted. Доступ — middleware broadcast.link:{role}.
 */
-Route::middleware(['throttle:120,1', 'broadcast.link:overlay'])->group(function () {
+// Лимитеры overlay-page / overlay-state — в AppServiceProvider (счётчик на токен+IP, не общий на IP)
+Route::middleware(['broadcast.link:overlay'])->group(function () {
     Route::get('/o/{token}', [BroadcastOverlayController::class, 'page'])
-        ->where('token', '[^/]+')->name('broadcast.overlay');
+        ->middleware('throttle:overlay-page')->where('token', '[^/]+')->name('broadcast.overlay');
     Route::get('/o/{token}/state', [BroadcastOverlayController::class, 'state'])
-        ->where('token', '[^/]+')->name('broadcast.overlay.state');
+        ->middleware('throttle:overlay-state')->where('token', '[^/]+')->name('broadcast.overlay.state');
 });
 
 /*

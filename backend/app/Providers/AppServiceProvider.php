@@ -31,6 +31,8 @@ public function boot(): void
         // со всеми такими же, и трафик ввода душил бы оверлей (120/мин) на той же сети. Здесь, а не в routes: при route:cache файл роутов не исполняется.
         \Illuminate\Support\Facades\RateLimiter::for('scorer-ip', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(900)->by('scorer-ip:' . $request->ip()));
         \Illuminate\Support\Facades\RateLimiter::for('scorer', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(240)->by('scorer:' . (string) $request->route('token')));
+        \Illuminate\Support\Facades\RateLimiter::for('overlay-page', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(30)->by('overlay-page:' . (string) $request->route('token') . ':' . $request->ip()));
+        \Illuminate\Support\Facades\RateLimiter::for('overlay-state', fn ($request) => \Illuminate\Cache\RateLimiting\Limit::perMinute(300)->by('overlay-state:' . (string) $request->route('token') . ':' . $request->ip()));
 
     EventRegistration::observe(EventRegistrationObserver::class);
         User::observe(UserObserver::class);
