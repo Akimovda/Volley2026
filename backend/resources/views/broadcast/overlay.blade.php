@@ -20,7 +20,7 @@ html,body{margin:0;padding:0;overflow:hidden;background:transparent;width:100%;h
 body.preview{background:#5b6068}
 body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
 #board,#sub,#setsum,#matchsum{--u:calc(var(--u0)*var(--k,.7))}
-#stage{position:absolute;left:0;top:0;width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
+#stage{position:absolute;left:calc((100vw - var(--u0)*1920)/2);top:calc((100vh - var(--u0)*1080)/2);width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
 .card{background:rgba(12,16,24,var(--pa,.85));border-radius:calc(var(--u)*14);overflow:hidden}
