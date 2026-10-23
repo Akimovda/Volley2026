@@ -538,6 +538,11 @@
                 }
             }
 
+            // Игра со статистикой — матч строго между двумя командами
+            if (($data['format'] ?? '') === 'game' && !empty($data['collect_stats']) && (int) ($data['teams_count'] ?? 2) > 2) {
+                $v->errors()->add('teams_count', __('events.stats_teams_limit'));
+            }
+
             $format = (string) ($data['format'] ?? '');
             $direction = (string) ($data['direction'] ?? 'classic');
             $policy = (string) ($data['game_gender_policy'] ?? '');
