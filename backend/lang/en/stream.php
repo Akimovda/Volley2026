@@ -237,4 +237,12 @@ return [
     'ch_edit' => 'Edit',
     'ch_key_keep' => 'Leave empty to keep the current key',
     'ch_courts' => 'courts: :n',
+    'cam_vk_hint' => 'If the picture does not appear in VK and it keeps loading, create a new broadcast in VK, paste the new key here and start the stream again. To avoid changing the key every time, you can use a permanent VK key.',
+    'cam_key_current' => 'Current key',
+    'cam_key_replace' => 'Replace key',
+    'cam_key_new' => 'New VK stream key',
+    'cam_key_save' => 'Save key',
+    'cam_key_saved' => 'Key replaced. Start the stream again.',
+    'cam_key_error' => 'Could not save the key',
+    'cam_key_forbidden' => 'Only the channel owner can change the channel key.',
 ];

@@ -15,7 +15,7 @@ class BroadcastTargetResolver
     public const NONE = 'none';             // ничего не настроено
     public const NEED_CHANNEL = 'need_channel'; // был канал, его удалили, замены нет
 
-    /** @return array{ok:bool, error:?string, platform:?string, label:?string, server_url:?string, stream_key:?string, channel_id:?int, via:?string} */
+    /** @return array{ok:bool, error:?string, platform:?string, label:?string, server_url:?string, stream_key:?string, channel_id:?int, via:?string, destination_id:?int} */
     public function resolve(EventCourt $court, Event $event): array
     {
         $dests = $court->destinations()->with('channel')->orderBy('id')->get();
@@ -24,7 +24,7 @@ class BroadcastTargetResolver
 
         if ($dest) {
             $ch = $dest->channel;
-            return $this->ok($ch ?: $dest, $ch ? (int) $ch->id : null, $ch ? 'channel' : 'own');
+            return $this->ok($ch ?: $dest, $ch ? (int) $ch->id : null, $ch ? 'channel' : 'own', (int) $dest->id);
         }
 
         $default = BroadcastChannel::where('organizer_id', (int) $event->organizer_id)->where('is_default', true)->first();
@@ -39,11 +39,11 @@ class BroadcastTargetResolver
     }
 
     /** @param \App\Models\BroadcastChannel|\App\Models\BroadcastDestination $src */
-    private function ok($src, ?int $channelId, string $via): array
+    private function ok($src, ?int $channelId, string $via, ?int $destId = null): array
     {
         return [
             'ok' => true, 'error' => null, 'platform' => $src->platform, 'label' => $src->label,
-            'server_url' => $src->server_url, 'stream_key' => $src->stream_key, 'channel_id' => $channelId, 'via' => $via,
+            'server_url' => $src->server_url, 'stream_key' => $src->stream_key, 'channel_id' => $channelId, 'via' => $via, 'destination_id' => $destId,
         ];
     }
 }
