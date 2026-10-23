@@ -33,6 +33,17 @@ class BroadcastSetting extends Model implements HasMedia
 
     public const MUSIC_MODES = ['splash', 'set_summary', 'match_summary'];
     public const DEFAULT_MUSIC_PATH = 'assets/broadcast/volleyclub_calm_loop.mp3';
+    public const MUSIC_TRACKS = [
+        'calm'   => 'assets/broadcast/volleyclub_calm_loop.mp3',
+        'warm'   => 'assets/broadcast/volleyclub_warm_loop.mp3',
+        'bright' => 'assets/broadcast/volleyclub_bright_loop.mp3',
+    ];
+
+    /** Допустимые значения track при сохранении. */
+    public static function musicTrackKeys(): array
+    {
+        return [...array_keys(self::MUSIC_TRACKS), 'custom'];
+    }
 
     /** Музыка оверлея (theme.music) с дефолтами и ограничениями. */
     public function musicConfig(): array
@@ -44,7 +55,8 @@ class BroadcastSetting extends Model implements HasMedia
 
         return [
             'enabled' => (bool) ($m['enabled'] ?? true),
-            'track'   => ($m['track'] ?? 'default') === 'custom' ? 'custom' : 'default',
+            // legacy 'default' и любое неизвестное значение читаются как calm
+            'track'   => in_array($m['track'] ?? null, self::musicTrackKeys(), true) ? $m['track'] : 'calm',
             'modes'   => $modes,
             'volume'  => max(0, min(100, (int) ($m['volume'] ?? 60))),
             'fade_ms' => max(0, min(10000, (int) ($m['fade_ms'] ?? 2000))),
@@ -58,7 +70,9 @@ class BroadcastSetting extends Model implements HasMedia
             return $m->getUrl() . '?v=' . $m->id;
         }
 
-        return asset(self::DEFAULT_MUSIC_PATH);
+        $t = $this->musicConfig()['track'];
+
+        return asset(self::MUSIC_TRACKS[$t] ?? self::DEFAULT_MUSIC_PATH);
     }
 
     /** Настройки тура, иначе события; нет записи — дефолты (без сохранения). */
