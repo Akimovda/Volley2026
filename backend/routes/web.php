@@ -1168,6 +1168,7 @@ Route::middleware([
         Route::delete('/courts/{court}/scorer-links/{link}', [$c, 'revokeScorerLink'])->whereNumber(['court', 'link'])->name('.scorer.revoke');
         Route::post('/courts/{court}/control', [$c, 'control'])->whereNumber('court')->name('.control');
         Route::post('/courts/{court}/streams', [$c, 'streams'])->whereNumber('court')->name('.streams');
+        Route::post('/courts/{court}/channel', [$c, 'selectChannel'])->whereNumber('court')->name('.channel.select');
         Route::post('/courts/{court}/destinations', [$c, 'storeDestination'])->whereNumber('court')->name('.dest.store');
         Route::post('/courts/{court}/destinations/{destination}/default', [$c, 'defaultDestination'])->whereNumber(['court', 'destination'])->name('.dest.default');
         Route::post('/courts/{court}/destinations/{destination}/reveal', [$c, 'revealDestination'])->whereNumber(['court', 'destination'])->name('.dest.reveal');
@@ -1186,6 +1187,15 @@ Route::middleware([
         Route::delete('/teams/{team}/logo', [$c, 'deleteTeamLogo'])->whereNumber('team')->name('.team.logo.delete');
     });
     // Трансляция из приложения: экран выбора площадки и старт эфира. Права — canManageEvent внутри контроллера.
+    Route::prefix('/broadcast/channels')->name('broadcast.channels')->group(function () {
+        $c = \App\Http\Controllers\BroadcastChannelController::class;
+        Route::get('/', [$c, 'index']);
+        Route::post('/', [$c, 'store'])->name('.store');
+        Route::patch('/{channel}', [$c, 'update'])->whereNumber('channel')->name('.update');
+        Route::post('/{channel}/default', [$c, 'makeDefault'])->whereNumber('channel')->name('.default');
+        Route::post('/{channel}/reveal', [$c, 'reveal'])->whereNumber('channel')->name('.reveal');
+        Route::delete('/{channel}', [$c, 'destroy'])->whereNumber('channel')->name('.destroy');
+    });
     Route::get('/broadcast/camera', [\App\Http\Controllers\BroadcastCameraController::class, 'index'])->name('broadcast.camera');
     Route::post('/broadcast/camera/{court}/start', [\App\Http\Controllers\BroadcastCameraController::class, 'start'])
         ->whereNumber('court')->name('broadcast.camera.start');

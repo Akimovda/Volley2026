@@ -36,6 +36,9 @@
 
     <div class="container form">
         <x-beta-note />
+        @if(auth()->user()->isAdmin() || auth()->user()->role === 'organizer')
+        <p><a class="blink b-600" href="{{ route('broadcast.channels') }}">{{ __('stream.ch_my') }}</a></p>
+        @endif
         <div class="ramka" id="cam-noplugin" style="display:none"><p id="cam-noplugin-text"></p><p class="cam-event">{{ __('stream.cam_prism_hint') }}</p></div>
         @forelse($rows as $r)
         <div class="ramka cam-card" data-court="{{ $r['court_id'] }}">
@@ -45,6 +48,8 @@
             <div class="cam-dest">
                 @if($r['dest'])
                 {{ __('stream.cam_to', ['p' => ($platformNames[$r['dest']['platform']] ?? $r['dest']['platform']) . ($r['dest']['label'] ? ' · ' . $r['dest']['label'] : '')]) }}
+                @elseif($r['need_channel'])
+                {{ __('stream.cam_no_channel') }} — <a class="blink b-600" href="{{ $r['setup_url'] }}">{{ __('stream.cam_setup') }}</a>
                 @else
                 {{ __('stream.cam_no_dest') }} — <a class="blink b-600" href="{{ $r['setup_url'] }}">{{ __('stream.cam_setup') }}</a>
                 @endif
