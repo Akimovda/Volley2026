@@ -6,6 +6,7 @@ use App\Models\BroadcastLink;
 use App\Models\Event;
 use App\Models\EventCourt;
 use App\Services\Broadcast\BroadcastLinkService;
+use App\Services\Broadcast\BroadcastTargetResolver;
 use App\Services\Broadcast\CourtStateBroadcaster;
 use App\Services\Broadcast\CourtStatusLine;
 use App\Services\EventAccessService;
@@ -20,6 +21,7 @@ class BroadcastCameraController extends Controller
         protected EventAccessService $access,
         protected BroadcastLinkService $links,
         protected CourtStateBroadcaster $broadcaster,
+        protected BroadcastTargetResolver $targets,
     ) {}
 
     public function index(Request $request): View
@@ -30,7 +32,7 @@ class BroadcastCameraController extends Controller
             ->orderBy('id')->get()->keyBy('court_id');
         $hasLink = $linkByCourt->keys()->all();
 
-        $courts = EventCourt::with(['event', 'occurrence', 'override', 'destinations'])
+        $courts = EventCourt::with(['event', 'occurrence', 'override'])
             ->whereIn('id', $hasLink)->where('is_active', true)
             ->whereHas('event', fn ($q) => $q->where(fn ($w) => $w->where('format', 'tournament')->orWhere('collect_stats', true)))
             ->get()
@@ -41,7 +43,7 @@ class BroadcastCameraController extends Controller
             $e = $c->event;
             $tz = $c->occurrence?->timezone ?: ($e->timezone ?: 'Europe/Moscow');
             $at = $c->occurrence?->starts_at ?: $e->starts_at;
-            $dest = $c->destinations->firstWhere('is_default', true) ?: $c->destinations->sortBy('id')->first();
+            $t = $this->targets->resolve($c, $e);
             return [
                 'sort'    => $at ? abs($at->getTimestamp() - $now->getTimestamp()) : PHP_INT_MAX,
                 'past'    => $at ? $at->copy()->addHours(12)->lt($now) : false,
@@ -50,7 +52,8 @@ class BroadcastCameraController extends Controller
                 'today'   => $at ? $at->copy()->setTimezone($tz)->isSameDay($now->copy()->setTimezone($tz)) : false,
                 'status'  => CourtStatusLine::of($this->broadcaster->cached($c), $tz),
                 // платформа/подпись — без ключа и без адреса сервера
-                'dest'    => $dest ? ['platform' => $dest->platform, 'label' => $dest->label] : null,
+                'dest'    => $t['ok'] ? ['platform' => $t['platform'], 'label' => $t['label']] : null,
+                'need_channel' => $t['error'] === BroadcastTargetResolver::NEED_CHANNEL,
                 'overlay_url' => route('broadcast.overlay', ['token' => $linkByCourt[$c->id]->token]),
                 'setup_url' => route('broadcast.setup', $e) . ($c->occurrence_id ? '?occurrence_id=' . $c->occurrence_id : ''),
             ];
@@ -67,10 +70,12 @@ class BroadcastCameraController extends Controller
         abort_unless($this->access->canManageEvent($user, (int) $event->organizer_id), 403);
         abort_unless($event->format === 'tournament' || $event->collect_stats, 404);
 
-        $dest = $court->destinations()->where('is_default', true)->first() ?: $court->destinations()->orderBy('id')->first();
-        if (!$dest) {
+        $t = $this->targets->resolve($court, $event);
+        if (!$t['ok']) {
+            $needChannel = $t['error'] === BroadcastTargetResolver::NEED_CHANNEL;
             return $this->noStore(response()->json([
-                'ok' => false, 'code' => 'no_destination', 'message' => __('stream.cam_no_destination'),
+                'ok' => false, 'code' => $needChannel ? 'no_channel' : 'no_destination',
+                'message' => __($needChannel ? 'stream.cam_no_channel' : 'stream.cam_no_destination'),
                 'setup_url' => route('broadcast.setup', $event) . ($court->occurrence_id ? '?occurrence_id=' . $court->occurrence_id : ''),
             ], 422));
         }
@@ -82,8 +87,8 @@ class BroadcastCameraController extends Controller
         return $this->noStore(response()->json([
             'ok' => true,
             'overlay_url' => route('broadcast.overlay', ['token' => $link->token]),
-            'server_url'  => $dest->server_url,
-            'stream_key'  => $dest->stream_key,
+            'server_url'  => $t['server_url'],
+            'stream_key'  => $t['stream_key'],
             'court_name'  => $court->name,
             'event_title' => $event->title,
         ]));

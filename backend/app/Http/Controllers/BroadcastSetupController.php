@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BroadcastCourtOverride;
+use App\Models\BroadcastChannel;
 use App\Models\BroadcastDestination;
 use App\Models\BroadcastLink;
 use App\Models\BroadcastSetting;
@@ -53,7 +54,7 @@ class BroadcastSetupController extends Controller
         $occurrence = $this->resolveOccurrence($event, $occurrences, (int) $request->query('occurrence_id', $request->query('occurrence', 0)));
         $occId = $occurrence?->id;
 
-        $courts = $this->courtsOf($event, $occId)->load(['override', 'destinations']);
+        $courts = $this->courtsOf($event, $occId)->load(['override', 'destinations.channel']);
         $activeLinks = BroadcastLink::where('event_id', $event->id)->where('role', BroadcastLink::ROLE_OVERLAY)
             ->whereNull('revoked_at')->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->get()->keyBy('court_id');
@@ -64,7 +65,9 @@ class BroadcastSetupController extends Controller
             ->whereNull('revoked_at')->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
             ->orderBy('id')->get()->groupBy('court_id');
 
-        $courtData = $courts->map(function (EventCourt $c) use ($activeLinks, $tz, $scorerLinks) {
+        $canManageChannels = (bool) ($request->user()->isAdmin() || (int) $request->user()->id === (int) $event->organizer_id);
+        $channels = BroadcastChannel::where('organizer_id', (int) $event->organizer_id)->orderBy('id')->get()->map(fn ($c) => $c->publicRow())->values();
+        $courtData = $courts->map(function (EventCourt $c) use ($activeLinks, $tz, $scorerLinks, $canManageChannels) {
             $state = $this->broadcaster->cached($c);
             $link = $activeLinks[$c->id] ?? null;
             $o = $c->override;
@@ -79,7 +82,7 @@ class BroadcastSetupController extends Controller
                 'mode'      => $state['mode'],
                 'match'     => $state['match'] ?? null,
                 'streams'   => (array) ($o?->stream_urls ?? []),
-                'destinations' => $c->destinations->sortBy('id')->map(fn ($d) => $this->destinationRow($d))->values()->all(),
+                'destinations' => $c->destinations->sortBy('id')->map(fn ($d) => $this->destinationRow($d, $canManageChannels))->values()->all(),
                 'matches'   => $this->matchesOfCourt($c),
                 'scorer'    => $this->scorerRows($scorerLinks->get($c->id, collect()), $tz),
             ];
@@ -101,6 +104,8 @@ class BroadcastSetupController extends Controller
             'occurrences' => $occurrences,
             'occurrence'  => $occurrence,
             'courts'      => $courtData,
+            'channels'    => $channels,
+            'canManageChannels' => $canManageChannels,
             'dayCourtPending' => $isFriendly && $occId && $courts->isEmpty(),
             'unassigned'  => $isFriendly ? collect() : $this->unassignedMatches($event, $occId),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
@@ -395,6 +400,31 @@ class BroadcastSetupController extends Controller
         return response()->json(['ok' => true, 'destination' => $this->destinationRow($d)]);
     }
 
+    /** Выбор канала организатора для площадки (channel_id) либо возврат к разовому ключу (пусто). Помощник тоже может выбирать — ключа он не получает. */
+    public function selectChannel(Request $request, Event $event, EventCourt $court): JsonResponse
+    {
+        $this->authorizeEvent($request, $event);
+        $this->ownCourt($event, $court);
+        $data = $request->validate(['channel_id' => ['nullable', 'integer']]);
+        $channel = null;
+        if (!empty($data['channel_id'])) {
+            $channel = BroadcastChannel::where('id', $data['channel_id'])->where('organizer_id', (int) $event->organizer_id)->first();
+            abort_unless($channel, 422, __('stream.ch_not_found'));
+        }
+        DB::transaction(function () use ($court, $channel) {
+            // у площадки не больше одного назначения-канала; осиротевшие (канал удалён) убираем
+            $court->destinations()->where(fn ($q) => $q->whereNotNull('channel_id')->orWhereNull('server_url'))->delete();
+            if ($channel) {
+                $court->destinations()->update(['is_default' => false]);
+                $court->destinations()->create(['channel_id' => $channel->id, 'platform' => $channel->platform, 'label' => $channel->label, 'is_default' => true]);
+            } elseif (!$court->destinations()->where('is_default', true)->exists() && ($next = $court->destinations()->orderBy('id')->first())) {
+                $next->forceFill(['is_default' => true])->save();
+            }
+        });
+
+        return response()->json(['ok' => true]);
+    }
+
     public function defaultDestination(Request $request, Event $event, EventCourt $court, BroadcastDestination $destination): JsonResponse
     {
         $this->authorizeEvent($request, $event);
@@ -430,8 +460,16 @@ class BroadcastSetupController extends Controller
         $this->authorizeEvent($request, $event);
         $this->ownCourt($event, $court);
         abort_unless((int) $destination->court_id === (int) $court->id, 404);
+        $key = $destination->stream_key;
+        if ($destination->channel_id) {
+            // ключ канала — только владельцу и админу, помощнику нет
+            $u = $request->user();
+            abort_unless($u->isAdmin() || (int) $u->id === (int) $event->organizer_id, 403);
+            $key = $destination->channel?->stream_key;
+        }
+        abort_if($key === null || $key === '', 404);
 
-        return response()->json(['ok' => true, 'stream_key' => $destination->stream_key])
+        return response()->json(['ok' => true, 'stream_key' => $key])
             ->header('Cache-Control', 'no-store, private');
     }
 
@@ -647,11 +685,21 @@ class BroadcastSetupController extends Controller
     /* ------------------------------------------------------------------ */
 
     /** Строка для страницы: ключ НЕ отдаём — только маска; сам ключ — отдельным запросом (revealDestination). */
-    private function destinationRow(BroadcastDestination $d): array
+    private function destinationRow(BroadcastDestination $d, bool $canManageChannels = true): array
     {
+        $ch = $d->channel;
+        if ($d->channel_id && $ch) {
+            // канал: платформа/подпись из канала; адрес сервера и ключ в строку не попадают
+            return [
+                'id' => (int) $d->id, 'platform' => $ch->platform, 'label' => $ch->label, 'server_url' => null,
+                'is_default' => (bool) $d->is_default, 'channel_id' => (int) $ch->id, 'orphan' => false, 'can_reveal' => $canManageChannels,
+            ];
+        }
+
         return [
             'id' => (int) $d->id, 'platform' => $d->platform, 'label' => $d->label,
-            'server_url' => $d->server_url, 'is_default' => (bool) $d->is_default,
+            'server_url' => $d->isOrphan() ? null : $d->server_url, 'is_default' => (bool) $d->is_default,
+            'channel_id' => null, 'orphan' => $d->isOrphan(), 'can_reveal' => !$d->isOrphan(),
         ];
     }
 

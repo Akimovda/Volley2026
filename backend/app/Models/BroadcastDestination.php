@@ -11,7 +11,7 @@ class BroadcastDestination extends Model
     public const PLATFORMS = ['vk', 'rutube', 'youtube', 'telegram', 'custom'];
     public const YOUTUBE_SERVER = 'rtmp://a.rtmp.youtube.com/live2';
 
-    protected $fillable = ['court_id', 'platform', 'label', 'server_url', 'stream_key', 'is_default'];
+    protected $fillable = ['court_id', 'channel_id', 'platform', 'label', 'server_url', 'stream_key', 'is_default'];
 
     protected $hidden = ['stream_key'];
 
@@ -20,6 +20,17 @@ class BroadcastDestination extends Model
     public function court(): BelongsTo
     {
         return $this->belongsTo(EventCourt::class, 'court_id');
+    }
+
+    public function channel(): BelongsTo
+    {
+        return $this->belongsTo(BroadcastChannel::class, 'channel_id');
+    }
+
+    /** Канал был удалён: ссылка обнулилась, своих адреса/ключа у назначения нет. */
+    public function isOrphan(): bool
+    {
+        return $this->channel_id === null && ($this->server_url === null || $this->server_url === '');
     }
 
     public static function validServer(string $url): bool

@@ -21,6 +21,7 @@
         'destDeleteQ' => __('stream.dest_delete_q'), 'destShow' => __('stream.dest_show'), 'destHide' => __('stream.dest_hide'),
         'destDefault' => __('stream.dest_default'), 'destDelete' => __('stream.dest_delete'), 'destNone' => __('stream.dest_none'),
         'destPlatforms' => $destPlatforms,
+        'chOnce' => __('stream.ch_once'), 'chOrphan' => __('stream.ch_orphan'), 'chDefaultUsed' => __('stream.ch_default_used'),
         'scorerRegenQ' => __('stream.scorer_regen_q'), 'scorerRevokeQ' => __('stream.scorer_revoke_q'),
         'scorerInvited' => __('stream.scorer_invited'), 'scorerInviteQ' => __('stream.scorer_invite_q'), 'scorerNoUsers' => __('stream.scorer_no_users'),
     ];
@@ -29,6 +30,8 @@
         'base' => route('broadcast.setup', $event),
         'occurrenceId' => $occurrence?->id,
         'courts' => $courts,
+        'channels' => $channels,
+        'chDefault' => optional($channels->firstWhere('is_default', true)),
         's' => $jsStrings,
     ];
 @endphp
@@ -519,6 +522,13 @@
                 <button type="button" class="btn btn-small btn-secondary" data-dest-chip="{{ $c['id'] }}">{{ $c['name'] }}</button>
                 @endforeach
             </div>
+            <div class="bc-field" style="margin-top:1rem">
+                <label class="bc-l" for="bc-d-channel">{{ __('stream.ch_select') }}</label>
+                <select id="bc-d-channel" name="bc_d_channel"></select>
+                @if($canManageChannels)
+                <div class="bc-hint"><a class="blink b-600" href="{{ route('broadcast.channels') }}">{{ __('stream.ch_manage') }}</a></div>
+                @endif
+            </div>
             <div id="bc-dest-list" style="margin-top:1rem"></div>
             <form id="bc-dest-form" onsubmit="return false" autocomplete="off" style="margin-top:1.2rem">
                 <div class="bc-field">
@@ -951,17 +961,31 @@
             function renderDests() {
                 if (!curDest) { return; }
                 $('#bc-dest-chips [data-dest-chip]').each(function () { $(this).toggleClass('btn-secondary', $(this).data('dest-chip') !== curDest.id); });
+                var sel = $('#bc-d-channel').empty().append($('<option value="">').text(S.chOnce));
+                var chosen = (curDest.destinations.filter(function (d) { return d.channel_id; })[0] || {}).channel_id || '';
+                (CFG.channels || []).forEach(function (c) {
+                    sel.append($('<option>').val(c.id).prop('selected', String(c.id) === String(chosen))
+                        .text((S.destPlatforms[c.platform] || c.platform) + (c.label ? ' · ' + c.label : '') + (c.is_default ? ' ★' : '')));
+                });
+                $('#bc-dest-form').toggle(!chosen);
                 var box = $('#bc-dest-list').empty();
-                if (!curDest.destinations.length) { box.append($('<p class="bc-hint">').text(S.destNone)); return; }
+                if (!curDest.destinations.length) {
+                    box.append($('<p class="bc-hint">').text(CFG.chDefault && CFG.chDefault.id ? S.chDefaultUsed : S.destNone));
+                    return;
+                }
                 curDest.destinations.forEach(function (d) {
                     var row = $('<div class="bc-row" data-dest>').attr('data-dest', d.id);
                     var info = $('<div>');
+                    if (d.orphan) {
+                        row.append($('<div>').append($('<b>').text(S.chOrphan)), $('<div class="bc-actions" style="margin-top:0">').append($('<button type="button" class="btn btn-small btn-outline bc-d-del">').text(S.destDelete)));
+                        box.append(row); return;
+                    }
                     info.append($('<b>').text((S.destPlatforms[d.platform] || d.platform) + (d.label ? ' · ' + d.label : '')));
                     if (d.is_default) { info.append($('<span class="bc-tag">').text(S.destDefault)); }
-                    info.append($('<div class="bc-hint">').text(d.server_url));
-                    info.append($('<div class="bc-hint bc-key">').text('••••••••'));
+                    if (d.server_url) { info.append($('<div class="bc-hint">').text(d.server_url)); }
+                    if (d.can_reveal) { info.append($('<div class="bc-hint bc-key">').text('••••••••')); }
                     var act = $('<div class="bc-actions" style="margin-top:0">');
-                    act.append($('<button type="button" class="btn btn-small btn-secondary bc-d-show">').text(S.destShow));
+                    if (d.can_reveal) { act.append($('<button type="button" class="btn btn-small btn-secondary bc-d-show">').text(S.destShow)); }
                     if (!d.is_default) { act.append($('<button type="button" class="btn btn-small btn-secondary bc-d-def">').text(S.destDefault)); }
                     act.append($('<button type="button" class="btn btn-small btn-outline bc-d-del">').text(S.destDelete));
                     box.append(row.append(info, act));
@@ -969,6 +993,10 @@
             }
             function destUrl(id, tail) { return CFG.base + '/courts/' + curDest.id + '/destinations' + (id ? '/' + id : '') + (tail || ''); }
             $('#bc-dest-chips').on('click', '[data-dest-chip]', function () { curDest = byId[$(this).data('dest-chip')]; renderDests(); });
+            $('#bc-d-channel').on('change', function () {
+                if (!curDest) { return; }
+                call('POST', CFG.base + '/courts/' + curDest.id + '/channel', { channel_id: $(this).val() || '' }, function () { toast(S.saved); setTimeout(reload, 400); });
+            });
             $('#bc-d-platform').on('change', function () {
                 var srv = $('#bc-d-server');
                 if ($(this).val() === 'youtube') { if (!srv.val()) { srv.val(YT_SERVER); } }
