@@ -507,7 +507,7 @@ class BroadcastSetupController extends Controller
         $data = $request->validate([
             'occurrence_id' => ['required', 'integer'],
             'enabled'       => ['required', 'boolean'],
-            'track'         => ['required', Rule::in(['default', 'custom'])],
+            'track'         => ['required', Rule::in(BroadcastSetting::musicTrackKeys())],
             'modes'         => ['nullable', 'array'],
             'modes.*'       => [Rule::in(BroadcastSetting::MUSIC_MODES)],
             'volume'        => ['required', 'integer', 'between:0,100'],
@@ -557,13 +557,13 @@ class BroadcastSetupController extends Controller
         if ($row) {
             $row->clearMediaCollection('stream_music');
             $theme = (array) $row->theme;
-            $theme['music'] = array_merge($row->musicConfig(), ['track' => 'default']);
+            $theme['music'] = array_merge($row->musicConfig(), ['track' => 'calm']);
             $row->theme = $theme;
             $row->save();
         }
         $this->refreshCourts($event, $occ->id);
 
-        return response()->json(['ok' => true, 'url' => asset(BroadcastSetting::DEFAULT_MUSIC_PATH)]);
+        return response()->json(['ok' => true, 'url' => asset(BroadcastSetting::MUSIC_TRACKS['calm'])]);
     }
 
     public function uploadBg(Request $request, Event $event): JsonResponse
