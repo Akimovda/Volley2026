@@ -1199,6 +1199,8 @@ Route::middleware([
     Route::get('/broadcast/camera', [\App\Http\Controllers\BroadcastCameraController::class, 'index'])->name('broadcast.camera');
     Route::post('/broadcast/camera/{court}/start', [\App\Http\Controllers\BroadcastCameraController::class, 'start'])
         ->whereNumber('court')->name('broadcast.camera.start');
+    Route::post('/broadcast/camera/{court}/key', [\App\Http\Controllers\BroadcastCameraController::class, 'replaceKey'])
+        ->whereNumber('court')->name('broadcast.camera.key');
     Route::post('/events/{event}/tournament/sync-league', [TournamentController::class, 'syncAllTeamsToLeague'])
         ->name('tournament.syncLeague');
 

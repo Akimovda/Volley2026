@@ -7,7 +7,7 @@
         'start' => url('/broadcast/camera'),
         's'     => [
             'openInApp' => __('stream.cam_open_in_app'), 'alt' => __('stream.cam_alt'), 'overlay' => __('stream.cam_overlay_link'),
-            'copy' => __('stream.cam_copy'), 'noPluginApp' => __('stream.cam_no_plugin_app'), 'noPluginBrowser' => __('stream.cam_no_plugin_browser'), 'error' => __('stream.cam_error'), 'toSetup' => __('stream.cam_to_setup'),
+            'copy' => __('stream.cam_copy'), 'keySaved' => __('stream.cam_key_saved'), 'keyError' => __('stream.cam_key_error'), 'noPluginApp' => __('stream.cam_no_plugin_app'), 'noPluginBrowser' => __('stream.cam_no_plugin_browser'), 'error' => __('stream.cam_error'), 'toSetup' => __('stream.cam_to_setup'),
         ],
     ];
 @endphp
@@ -30,6 +30,11 @@
             .cam-fallback input { width:100%; font-size:1.3rem; margin:.5rem 0; }
             .cam-qr { margin-top:1rem; }
             .cam-qr svg { width:18rem; height:18rem; background:#fff; padding:1rem; border-radius:1rem; }
+            .cam-vk { margin:.6rem 0 1rem; padding:1rem 1.2rem; border-radius:1rem; background:rgba(41,103,186,.12); font-size:1.3rem; line-height:1.4; }
+            .cam-vk .cam-keyline { margin-top:.6rem; opacity:.8; }
+            .cam-keyform { display:none; margin-top:.6rem; }
+            .cam-keyform.on { display:block; }
+            .cam-keymsg { margin-top:.4rem; }
             .cam-box input { width:100%; font-size:1.3rem; margin:.5rem 0; }
         </style>
     </x-slot>
@@ -54,6 +59,20 @@
                 {{ __('stream.cam_no_dest') }} — <a class="blink b-600" href="{{ $r['setup_url'] }}">{{ __('stream.cam_setup') }}</a>
                 @endif
             </div>
+            @if($r['vk'])
+            <div class="cam-vk">
+                <div>{{ __('stream.cam_vk_hint') }}</div>
+                @if($r['key_masked'])<div class="cam-keyline">{{ __('stream.cam_key_current') }}: <span class="cam-keymasked">{{ $r['key_masked'] }}</span></div>@endif
+                @if($r['can_replace'])
+                <button type="button" class="btn btn-small btn-outline cam-key-toggle" style="margin-top:.6rem">{{ __('stream.cam_key_replace') }}</button>
+                <div class="cam-keyform">
+                    <input type="password" class="cam-key-input" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="{{ __('stream.cam_key_new') }}">
+                    <button type="button" class="btn btn-small cam-key-save">{{ __('stream.cam_key_save') }}</button>
+                    <div class="cam-keymsg"></div>
+                </div>
+                @endif
+            </div>
+            @endif
             <button type="button" class="btn cam-start">{{ __('stream.cam_start') }}</button>
             <div class="cam-fallback" style="display:none" data-url="{{ $r['overlay_url'] }}">
                 <div class="cam-event">{{ __('stream.cam_overlay_link') }}</div>
@@ -98,6 +117,22 @@
                     if (navigator.clipboard) { navigator.clipboard.writeText(inp.value); } else { document.execCommand('copy'); }
                 });
             }
+            $(document).on('click', '.cam-key-toggle', function () { $(this).siblings('.cam-keyform').toggleClass('on'); });
+            $(document).on('click', '.cam-key-save', function () {
+                var card = $(this).closest('[data-court]'), inp = card.find('.cam-key-input'), msg = card.find('.cam-keymsg'), key = $.trim(inp.val());
+                if (!key) { return; }
+                $.ajax({
+                    url: CFG.start + '/' + card.data('court') + '/key', type: 'POST', dataType: 'json', data: { stream_key: key },
+                    headers: { 'X-CSRF-TOKEN': CFG.csrf, 'Accept': 'application/json' }, xhrFields: { withCredentials: true },
+                    success: function (r) {
+                        inp.val(''); key = null;
+                        card.find('.cam-keymasked').text(r.key_masked);
+                        card.find('.cam-keyform').removeClass('on');
+                        card.find('.cam-box').empty().addClass('on').append($('<p>').text(S.keySaved));
+                    },
+                    error: function (xhr) { msg.text((xhr.responseJSON && xhr.responseJSON.message) || S.keyError); }
+                });
+            });
             $(document).on('click', '.cam-start', function () {
                 var card = $(this).closest('[data-court]'), id = card.data('court');
                 // Ключ не логируем и в URL не кладём: только тело ответа → в плагин
