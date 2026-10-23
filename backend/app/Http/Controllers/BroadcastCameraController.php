@@ -96,6 +96,9 @@ class BroadcastCameraController extends Controller
             'stream_key'  => $t['stream_key'],
             'court_name'  => $court->name,
             'event_title' => $event->title,
+            'channel_key' => $court->channel_key,
+            'channel'     => 'court.' . $court->channel_key,
+            'reverb'      => \App\Services\Broadcast\ReverbClientConfig::get(),
         ]));
     }
 

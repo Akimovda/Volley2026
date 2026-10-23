@@ -36,6 +36,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'scorer.link'         => \App\Http\Middleware\ScorerLinkAccess::class,
         ]);
         $middleware->append(\App\Http\Middleware\DetectBrand::class);
+        $middleware->prependToGroup('web', \App\Http\Middleware\SkipSessionForBots::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SetLocale::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\EnsureProfileCompleted::class);
         $middleware->appendToGroup('web', \App\Http\Middleware\SavePushToken::class);
