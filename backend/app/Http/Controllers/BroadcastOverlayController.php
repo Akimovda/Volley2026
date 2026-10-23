@@ -66,7 +66,12 @@ class BroadcastOverlayController extends Controller
             return \App\Http\Middleware\BroadcastLinkAccess::blank($request);
         }
 
-        return response()->json($broadcaster->cached($court), 200, self::HEADERS + [
+        return response()->json($broadcaster->cached($court) + [
+            // Имя публичного канала Reverb (court.{channel_key}) — для подписки приложения; в рассылку состояния не входит
+            'channel_key' => $court->channel_key,
+            'channel'     => 'court.' . $court->channel_key,
+            'reverb'      => \App\Services\Broadcast\ReverbClientConfig::get(),
+        ], 200, self::HEADERS + [
             // CORS: оверлей может открываться из WebView/другого домена
             'Access-Control-Allow-Origin' => '*',
         ]);
