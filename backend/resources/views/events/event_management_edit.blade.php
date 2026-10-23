@@ -1408,9 +1408,25 @@
                                 document.addEventListener('DOMContentLoaded', function () {
                                     var cs = document.getElementById('collect_stats_edit'), wrap = document.getElementById('stats_rated_wrap_edit'), rated = document.getElementById('stats_rated_edit');
                                     if (!cs || !wrap) return;
+                                    var teamsInp = document.getElementById('mgmt_teams_count');
+                                    var limitMsg = @json(__('events.stats_teams_limit'));
+                                    function warnLimit() {
+                                        if (typeof swal === 'function') swal({ text: limitMsg, icon: 'warning' }); else alert(limitMsg);
+                                    }
                                     cs.addEventListener('change', function () {
+                                        if (cs.checked && teamsInp && parseInt(teamsInp.value, 10) > 2) {
+                                            cs.checked = false;
+                                            warnLimit();
+                                            return;
+                                        }
                                         wrap.style.display = cs.checked ? '' : 'none';
                                         if (!cs.checked && rated) rated.checked = false;
+                                    });
+                                    if (teamsInp) teamsInp.addEventListener('change', function () {
+                                        if (cs.checked && parseInt(teamsInp.value, 10) > 2) {
+                                            teamsInp.value = 2;
+                                            warnLimit();
+                                        }
                                     });
                                 });
                                 </script>

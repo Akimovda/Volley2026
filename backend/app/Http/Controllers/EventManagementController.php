@@ -1040,6 +1040,11 @@ if ($role === 'admin') {
             $data['format'] = $event->format;
         }
 
+        // Игра со статистикой — матч строго между двумя командами
+        if (($data['format'] ?? $event->format) === 'game' && !empty($data['collect_stats']) && (int) ($data['teams_count'] ?? 2) > 2) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['teams_count' => __('events.stats_teams_limit')]);
+        }
+
         // Тренеры серии — обязательны для форматов, где это уже требуется при создании
         // события (EventStoreService), UI-редактор показан для того же набора форматов,
         // что и в create-форме (step1.blade.php: data-show-if=training|training_game|camp|coach_student).

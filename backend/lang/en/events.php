@@ -590,6 +590,7 @@ return [
     'climate_outdoor_hint'  => 'For outdoor events the card shows a weather forecast.',
     'stats_label' => 'Match statistics',
     'stats_collect' => 'Track match scores and statistics',
+    'stats_teams_limit' => 'In the "Keep score and match statistics" mode only 2 teams can register. To keep score and statistics for more teams, change the event type to "Tournament".',
     'stats_collect_hint' => 'The organizer forms teams from registered players and keeps the score; players see the results and statistics.',
     'stats_rated' => 'Rated event',
     'stats_rated_hint' => 'Game results will count in the players\' overall ratings. Off by default.',
