@@ -41,7 +41,7 @@ class BroadcastCameraController extends Controller
             ->filter(fn (EventCourt $c) => $c->event && $this->access->canManageEvent($user, (int) $c->event->organizer_id));
 
         $now = now();
-        $rows = $courts->map(function (EventCourt $c) use ($now, $linkByCourt) {
+        $rows = $courts->map(function (EventCourt $c) use ($now, $linkByCourt, $user) {
             $e = $c->event;
             $tz = $c->occurrence?->timezone ?: ($e->timezone ?: 'Europe/Moscow');
             $at = $c->occurrence?->starts_at ?: $e->starts_at;
