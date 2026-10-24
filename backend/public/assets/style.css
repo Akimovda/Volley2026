@@ -7794,3 +7794,123 @@ body.dark .beta-note a{color:#ff8a80}
 body.dark .event-status--cancelled { background: #B8312A; }
 body.dark .event-status--finished  { background: #2F5FA8; }
 body.dark .event-status--running   { background: #C9531F; }
+
+/* ===== ПОЛЗУНКИ (input[type=range]) — единый стиль для всего сайта ===== */
+/* Заливку до ручки рисует градиент на --fill; --fill обновляет script.js (syncRangeFill). Без JS заливки нет, остальное работает. */
+input[type="range"],
+.form input[type="range"]:not([type="radio"]):not([type="checkbox"]) {
+    --rg-fill: #2967BA;
+    --rg-track: #D3DCEA;
+    --rg-line: #B5C3D9;
+    --rg-thumb-line: #2967BA;
+    --rg-thumb-shadow: 0 1px 4px rgba(20, 48, 107, .35);
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 100%;
+    height: 32px;               /* зона касания */
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    cursor: pointer;
+}
+input[type="range"]:focus:not(:focus-visible) { outline: none; }
+/* перебивает «Фокус состояние» полей формы (.form input:focus — outline:none, рамка, тень) */
+.form input[type="range"]:focus:not([type="radio"]):not([type="checkbox"]) {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+.form input[type="range"]:focus-visible:not([type="radio"]):not([type="checkbox"]) {
+    outline: 2px solid #2967BA;
+    outline-offset: 2px;
+}
+body.dark .form input[type="range"]:focus-visible:not([type="radio"]):not([type="checkbox"]) { outline-color: #E7612F; }
+body.dark input[type="range"],
+body.dark .form input[type="range"]:not([type="radio"]):not([type="checkbox"]) {
+    --rg-fill: #E7612F;
+    --rg-track: rgba(255, 255, 255, .16);
+    --rg-line: rgba(255, 255, 255, .38);
+    --rg-thumb-line: #E7612F;
+    --rg-thumb-shadow: 0 1px 4px rgba(0, 0, 0, .6);
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+}
+input[type="range"]:disabled,
+.form input[type="range"]:disabled:not([type="radio"]):not([type="checkbox"]) {
+    --rg-fill: #C4CAD4;
+    --rg-track: #E5E8EE;
+    --rg-line: #CDD3DD;
+    --rg-thumb-line: #A8B0BD;
+    --rg-thumb-shadow: none;
+    cursor: not-allowed;
+}
+body.dark input[type="range"]:disabled {
+    --rg-fill: #5A6070;
+    --rg-track: rgba(255, 255, 255, .08);
+    --rg-line: rgba(255, 255, 255, .18);
+    --rg-thumb-line: #6B7280;
+}
+input[type="range"]:focus-visible {
+    outline: 2px solid #2967BA;
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+body.dark input[type="range"]:focus-visible { outline-color: #E7612F; }
+
+/* WebKit / Blink / WKWebView */
+input[type="range"]::-webkit-slider-runnable-track {
+    box-sizing: border-box;
+    height: 6px;
+    border: 1px solid var(--rg-line);
+    border-radius: 3px;
+    background: linear-gradient(to right, var(--rg-fill) 0, var(--rg-fill) var(--fill, 0%), var(--rg-track) var(--fill, 0%), var(--rg-track) 100%);
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    margin-top: -9px;           /* (6 − 22) / 2 − 1px рамки трека */
+    border: 2px solid var(--rg-thumb-line);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--rg-thumb-shadow);
+    transition: transform .12s ease;
+}
+input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.1); }
+input[type="range"]:disabled:active::-webkit-slider-thumb { transform: none; }
+
+/* Firefox */
+input[type="range"]::-moz-range-track {
+    box-sizing: border-box;
+    height: 6px;
+    border: 1px solid var(--rg-line);
+    border-radius: 3px;
+    background: var(--rg-track);
+}
+input[type="range"]::-moz-range-progress {
+    box-sizing: border-box;
+    height: 6px;
+    border: 1px solid var(--rg-line);
+    border-right: 0;
+    border-radius: 3px 0 0 3px;
+    background: var(--rg-fill);
+}
+input[type="range"]::-moz-range-thumb {
+    box-sizing: border-box;
+    width: 22px;
+    height: 22px;
+    border: 2px solid var(--rg-thumb-line);
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--rg-thumb-shadow);
+    transition: transform .12s ease;
+}
+input[type="range"]:active::-moz-range-thumb { transform: scale(1.1); }
+input[type="range"]:disabled:active::-moz-range-thumb { transform: none; }

@@ -222,6 +222,7 @@ return [
     'music_track_custom'  => 'Custom track',
     'music_upload'     => 'Upload track',
     'music_delete'     => 'Delete custom track',
+    'music_upload_short' => 'Upload',
     'music_listen'     => 'Listen',
     'music_stop'       => 'Stop',
     'music_copyright'  => 'You are responsible for the rights to your own track: music on air may infringe copyright, and the platform (YouTube, VK, etc.) may block the stream or mute the audio. Upload only music you are allowed to use.',
