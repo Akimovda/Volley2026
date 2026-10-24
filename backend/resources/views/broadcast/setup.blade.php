@@ -120,6 +120,14 @@
             .bc-hint { font-size:1.25rem; opacity:.65; }
             .bc-bg { max-width:24rem; width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:.8rem; display:block; margin-bottom:.8rem; }
             .bc-howto li { margin-bottom:.7rem; font-size:1.45rem; line-height:1.4; }
+            .bc-dim { opacity:.45; }
+            .bc-dim-note { text-align:center; font-weight:700; font-size:1.5rem; margin:-1rem 0 1.4rem; color:#E7612F; }
+            .bc-cl-step { display:flex; align-items:flex-start; gap:1.2rem; padding:1rem 0; border-bottom:1px solid rgba(128,128,128,.2); flex-wrap:wrap; }
+            .bc-cl-step:last-of-type { border-bottom:0; }
+            .bc-cl-mark { flex:0 0 2.8rem; height:2.8rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; background:rgba(128,128,128,.25); }
+            .bc-cl-step.done .bc-cl-mark { background:#2e7d32; color:#fff; }
+            .bc-cl-body { flex:1 1 20rem; min-width:0; font-size:1.5rem; }
+            .bc-cl-ready { font-weight:700; font-size:1.7rem; color:#2e7d32; cursor:pointer; }
             .bc-toast { position:fixed; left:50%; bottom:3rem; transform:translateX(-50%) translateY(2rem); background:#2e7d32; color:#fff; padding:1rem 2rem; border-radius:3rem; font-size:1.5rem; opacity:0; pointer-events:none; transition:.25s; z-index:99999; }
             .bc-toast.on { opacity:1; transform:translateX(-50%); }
             .bc-toast.err { background:#c62828; }
@@ -148,6 +156,37 @@
         @if(!$occurrence)
         <div class="ramka"><p>{{ __('stream.court_none') }}</p></div>
         @else
+
+        @php
+            $cl = $checklist;
+            $clMatchesUrl = $isFriendly
+                ? route('game.manage', $event) . '?occurrence=' . $occurrence->id
+                : route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id;
+            $clSteps = [
+                ['key' => 'matches', 'done' => $cl['matches']['done'], 'title' => __('stream.cl_matches'),
+                    'note' => (!$cl['matches']['done'] && $cl['matches']['unassigned'] > 0) ? __('stream.cl_matches_unassigned') : null],
+                ['key' => 'link', 'done' => $cl['link']['done'], 'title' => __('stream.cl_link'),
+                    'note' => ($cl['link']['total'] > 1 && !$cl['link']['done']) ? __('stream.cl_of_courts', ['a' => $cl['link']['have'], 'b' => $cl['link']['total']]) : null],
+                ['key' => 'channel', 'done' => $cl['channel']['done'], 'title' => __('stream.cl_channel'),
+                    'note' => ($cl['channel']['total'] > 1 && !$cl['channel']['done']) ? __('stream.cl_of_courts', ['a' => $cl['channel']['have'], 'b' => $cl['channel']['total']]) : null],
+            ];
+        @endphp
+        <div class="ramka bc-checklist" id="bc-checklist">
+            @if($cl['ready'])
+            <details>
+                <summary class="bc-cl-ready">✓ {{ __('stream.cl_ready') }}</summary>
+                @include('broadcast._checklist_steps')
+            </details>
+            @else
+            <h2 class="-mt-05">{{ __('stream.cl_h') }}</h2>
+            @include('broadcast._checklist_steps')
+            @endif
+        </div>
+
+        @unless($cl['matches']['done'])
+        <div class="bc-dim-note">{{ __('stream.cl_create_match_first') }}</div>
+        @endunless
+        <div class="bc-rest {{ $cl['matches']['done'] ? '' : 'bc-dim' }}">
 
         {{-- 1. Площадки --}}
         <div class="ramka">
@@ -598,6 +637,7 @@
                 <li>{{ __('stream.howto_quality') }}</li>
             </ul>
         </div>
+        </div>{{-- /bc-rest --}}
 
         @endif
     </div>
@@ -672,6 +712,13 @@
             });
 
             /* ---------- ссылки оверлея ---------- */
+            // Чек-лист, шаг «Выдать ссылку»: та же кнопка, что и в блоке площадок (площадка дня / первая без ссылки)
+            $('#bc-cl-issue').on('click', function () {
+                var t = $('#bc-issue-day');
+                if (!t.length) { t = $('.bc-issue').first(); }
+                if (t.length) { t.trigger('click'); }
+                else { var f = $('#bc-new-court'); $('html,body').animate({scrollTop: f.offset().top - 120}, 300); f.trigger('focus'); }
+            });
             $('#bc-issue-day').on('click', function () {
                 call('POST', CFG.base + '/day-court/link', { occurrence_id: CFG.occurrenceId }, reload);
             });

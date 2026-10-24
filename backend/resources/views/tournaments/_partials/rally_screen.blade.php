@@ -4,6 +4,8 @@
 	$finTxt = [
 		'confirm' => __('broadcast.scorer_finalize_confirm'), 'unattr' => __('broadcast.scorer_finalize_unattr'),
 		'yes' => __('broadcast.scorer_finalize_yes'), 'no' => __('broadcast.scorer_finalize_no'),
+		'startConfirm' => __('broadcast.match_start_confirm'), 'startYes' => __('broadcast.match_start_yes'), 'startNo' => __('broadcast.match_start_no'),
+		'unstartConfirm' => __('broadcast.match_unstart_confirm'),
 	];
 	$luOn = !empty($lineup['enabled']);
 	$rwText = [
@@ -156,9 +158,9 @@ window.RallyLive = (function () {
 	}
 
 	var FIN = @json($finTxt);
-	function confirmDo(msg, onYes) {
+	function confirmDo(msg, onYes, yesText, noText) {
 		if (window.swal) {
-			swal({text: msg, icon: 'warning', buttons: {cancel: {text: FIN.no, value: null, visible: true}, confirm: {text: FIN.yes, value: true}}})
+			swal({text: msg, icon: 'warning', buttons: {cancel: {text: noText || FIN.no, value: null, visible: true}, confirm: {text: yesText || FIN.yes, value: true}}})
 				.then(function (v) { if (v) { onYes(); } });
 		} else if (window.confirm(msg)) { onYes(); }
 	}
@@ -178,6 +180,24 @@ window.RallyLive = (function () {
 				toast(m);
 				refresh(); // расхождение (чужая отмена/очко) — показать актуальное состояние
 			});
+		} else if (f.classList.contains('js-rw-match-start') || f.classList.contains('js-rw-match-unstart')) {
+			// «Матч начался» (с подтверждением; uuid на нажатие — повтор запроса безвреден) и «Отменить начало»
+			e.preventDefault();
+			if (f.dataset.busy === '1') { return; }
+			var isStart = f.classList.contains('js-rw-match-start');
+			var rid = f.dataset.rid || (f.dataset.rid = uuid());
+			var go = function () {
+				f.dataset.busy = '1';
+				busy(true);
+				send(f.action, {set_number: f.dataset.set, client_request_id: rid}, {retry: true}, function (j) {
+					busy(false); swap(j.html);
+				}, function (m) {
+					busy(false); f.dataset.busy = '';
+					toast(m);
+					refresh();
+				});
+			};
+			confirmDo(isStart ? FIN.startConfirm : FIN.unstartConfirm, go, isStart ? FIN.startYes : null, isStart ? FIN.startNo : null);
 		} else if (f.classList.contains('js-rw-finalize-ajax')) {
 			// Ведущий по токен-ссылке: запись итога с подтверждением, ответ JSON → экран площадки
 			e.preventDefault();

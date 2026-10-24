@@ -149,7 +149,7 @@ class MatchRallyService
                 $this->syncPlayerStats($locked, $setNumber);
 
                 if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
-                    $locked->update(['status' => TournamentMatch::STATUS_LIVE]);
+                    $locked->update(['status' => TournamentMatch::STATUS_LIVE, 'started_at' => $locked->started_at ?? now()]);
                 }
 
                 return [$event, false];

@@ -3185,6 +3185,33 @@ class TournamentController extends Controller
         });
     }
 
+    /** «Матч начался» / «Отменить начало» — статус матча без записи очков (табло 0:0 в эфире). */
+    public function rallyMatchStart(Request $request, TournamentMatch $match)
+    {
+        return $this->rallyMatchState($request, $match, 'matchStart');
+    }
+
+    public function rallyMatchUnstart(Request $request, TournamentMatch $match)
+    {
+        return $this->rallyMatchState($request, $match, 'matchUnstart');
+    }
+
+    private function rallyMatchState(Request $request, TournamentMatch $match, string $method)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                : $redirect;
+        }
+
+        $validated = $request->validate(\App\Services\RallyInputService::matchStateRules());
+        $setNumber = (int) ($validated['set_number'] ?? $this->rallyService->getActiveSetNumber($match));
+
+        return $this->rallyLineupAction($request, $match, $setNumber, function () use ($match, $validated, $request, $method) {
+            app(\App\Services\RallyInputService::class)->$method($match, $validated, \App\Support\RallyActor::user($request->user()));
+        });
+    }
+
     /** Замена / выход либеро / уход либеро (одним endpoint, тип в поле type). */
     public function rallyLineupEvent(Request $request, TournamentMatch $match)
     {

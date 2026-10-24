@@ -68,7 +68,10 @@
                     </form>
                     @endif
                     <a class="btn btn-outline" href="{{ route('game.results', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.btn_results') }}</a>
-                    <a class="btn btn-outline" href="{{ route('broadcast.setup', $event) }}?occurrence_id={{ $occurrence->id }}">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
+                    <span class="d-inline-flex" style="flex-direction:column;align-items:flex-start;gap:.2rem">
+                        <a class="btn btn-outline" href="{{ route('broadcast.setup', $event) }}?occurrence_id={{ $occurrence->id }}">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
+                        @unless(\App\Services\Broadcast\StreamChecklist::hasMatches($event, $occurrence->id))<span class="bc-hint f-13" style="opacity:.7">{{ __('stream.cl_create_match_first') }}</span>@endunless
+                    </span>
                     <a class="btn btn-outline" href="{{ route('events.registrations.index', $event) }}?occurrence={{ $occurrence->id }}">{{ __('games.roster_add_link') }}</a>
                 </div>
             </div>

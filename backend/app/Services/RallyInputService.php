@@ -2,8 +2,17 @@
 
 namespace App\Services;
 
+use App\Events\TournamentMatchRallyUpdated;
+use App\Models\MatchLineupEvent;
+use App\Models\MatchRallyEvent;
+use App\Models\MatchSetStart;
 use App\Models\TournamentMatch;
+use App\Services\Broadcast\BroadcastControlService;
+use App\Services\Broadcast\CourtStateBroadcaster;
 use App\Support\RallyActor;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 /**
  * Действия экрана поочкового ввода (очко, отмена, старт партии, замены): правила валидации и вызовы сервисов —
@@ -16,6 +25,15 @@ class RallyInputService
         private MatchRallyService $rally,
         private MatchLineupService $lineupService,
     ) {}
+
+    /** «Матч начался» / «Отменить начало»: партия не нужна — set_number только для возврата фрагмента экрана. */
+    public static function matchStateRules(): array
+    {
+        return [
+            'set_number'        => 'nullable|integer|min:1|max:5',
+            'client_request_id' => 'nullable|uuid',
+        ];
+    }
 
     public static function pointRules(): array
     {
@@ -123,5 +141,92 @@ class RallyInputService
             'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $actor->user, $actor->name, $rid, $actor->linkId),
             'libero_out'   => $svc->liberoOut($match, $set, $team, $actor->user, $actor->name, $rid, $actor->linkId),
         };
+    }
+
+    /**
+     * «Матч начался»: scheduled → live, started_at, снятие ручной заставки, табло 0:0 в эфире.
+     * Идемпотентно: уже live — тихий успех; client_request_id защищает от запоздалого повтора после «Отменить начало».
+     */
+    public function matchStart(TournamentMatch $match, array $v, RallyActor $actor): void
+    {
+        $rid = $v['client_request_id'] ?? null;
+        $cacheKey = $rid ? "rally:match-start:{$match->id}:{$rid}" : null;
+        if ($cacheKey && Cache::has($cacheKey)) {
+            return;
+        }
+
+        $changed = DB::transaction(function () use ($match) {
+            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+            if ($locked->isCompleted()) {
+                throw new InvalidArgumentException('Матч уже завершён.');
+            }
+            if (!$locked->hasTeams()) {
+                throw new InvalidArgumentException('У матча не назначены команды.');
+            }
+            if ($locked->status === TournamentMatch::STATUS_LIVE) {
+                return false;
+            }
+            if ($locked->status !== TournamentMatch::STATUS_SCHEDULED) {
+                throw new InvalidArgumentException('Матч нельзя начать в текущем статусе.');
+            }
+            $locked->update(['status' => TournamentMatch::STATUS_LIVE, 'started_at' => now()]);
+
+            return true;
+        });
+
+        if ($cacheKey) {
+            Cache::put($cacheKey, 1, 600);
+        }
+        if ($changed) {
+            $this->afterMatchStateChange($match, true);
+        }
+    }
+
+    /** «Отменить начало»: live → scheduled, started_at = null — только пока нет очков/замен/расстановки. Идемпотентно. */
+    public function matchUnstart(TournamentMatch $match, array $v, RallyActor $actor): void
+    {
+        $changed = DB::transaction(function () use ($match) {
+            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+            if ($locked->isCompleted()) {
+                throw new InvalidArgumentException('Матч уже завершён.');
+            }
+            if ($locked->status === TournamentMatch::STATUS_SCHEDULED) {
+                return false;
+            }
+            if ($locked->status !== TournamentMatch::STATUS_LIVE) {
+                throw new InvalidArgumentException('Матч нельзя вернуть в ожидание.');
+            }
+            if (self::hasPlay($locked)) {
+                throw new InvalidArgumentException('В матче уже есть очки — отменить начало нельзя.');
+            }
+            $locked->update(['status' => TournamentMatch::STATUS_SCHEDULED, 'started_at' => null]);
+
+            return true;
+        });
+
+        if ($changed) {
+            $this->afterMatchStateChange($match, false);
+        }
+    }
+
+    /** Есть очки, замены или расстановка партии (то, что «Отменить начало» затереть не должна). */
+    public static function hasPlay(TournamentMatch $match): bool
+    {
+        return MatchRallyEvent::where('match_id', $match->id)->exists()
+            || MatchLineupEvent::where('match_id', $match->id)->exists()
+            || MatchSetStart::where('match_id', $match->id)->exists();
+    }
+
+    private function afterMatchStateChange(TournamentMatch $match, bool $started): void
+    {
+        try {
+            broadcast(new TournamentMatchRallyUpdated($match->id, 1));
+        } catch (\Throwable $e) {
+            report($e);
+        }
+        if ($started) {
+            app(BroadcastControlService::class)->releaseSplashOnPlay($match);
+        }
+        app(CourtStateBroadcaster::class)->forMatch($match->id);
     }
 }
