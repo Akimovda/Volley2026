@@ -112,4 +112,11 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    | Ссылка «Войти по email» в приложении (.is-app) на /login и в поп-апе —
+    | для App Review. Включается REVIEW_LOGIN_LINK=true на время ревью.
+    | Сам маршрут /auth/review-login от флага не зависит.
+    */
+    'review_login_link' => (bool) env('REVIEW_LOGIN_LINK', false),
+
 ];

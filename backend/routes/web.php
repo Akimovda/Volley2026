@@ -393,7 +393,7 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
-	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->name('auth.review.login');
+	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->middleware('throttle:5,1')->name('auth.review.login');
 
 	Route::middleware(['auth:sanctum', config('jetstream.auth_session')])->group(function () {
 		Route::post('/auth/biometric-register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])
