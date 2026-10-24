@@ -13,8 +13,8 @@ composer install --no-dev --optimize-autoloader
 npm install --legacy-peer-deps && npm run build
 php artisan livewire:publish --assets
 php artisan migrate --force
-php artisan config:clear && php artisan config:cache
-php artisan route:clear && php artisan route:cache
+php artisan config:cache
+php artisan route:cache
 php artisan view:clear && php artisan view:cache
 sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb
 sudo systemctl reload php8.3-fpm   # ← обязательно при изменении PHP-классов/config
