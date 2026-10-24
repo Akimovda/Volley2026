@@ -1062,4 +1062,6 @@ return [
     'lineup_tab_ok' => 'filled',
     'lineup_tab_missing_one' => 'missing: zone :z',
     'lineup_tab_missing_many' => 'missing: zones :z',
+    'setup_court_select_aria' => 'Match court',
+    'setup_court_unassigned' => '— not assigned —',
 ];

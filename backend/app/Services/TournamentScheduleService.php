@@ -18,6 +18,11 @@ class TournamentScheduleService
         return $this->courtRegistry ??= new \App\Services\Broadcast\CourtRegistry();
     }
 
+    private function assigner(): \App\Services\Broadcast\CourtAutoAssigner
+    {
+        return app(\App\Services\Broadcast\CourtAutoAssigner::class);
+    }
+
     /**
      * Назначить расписание для матчей стадии.
      *
@@ -39,12 +44,16 @@ class TournamentScheduleService
             $courts = $stage->cfg('courts', []);
         }
 
-        // Гарантируем минимум 1 корт
-        if (empty($courts)) {
-            $courts = ['Корт 1'];
+        // Названные организатором площадки становятся площадками мероприятия; сколько матчей идёт
+        // параллельно в одном слоте — по числу активных площадок (нет ни одной — создаётся «Площадка 1»).
+        $eventId = (int) $stage->event_id;
+        $occId = $stage->occurrence_id ? (int) $stage->occurrence_id : null;
+        foreach ($courts as $name) {
+            if (is_string($name) && trim($name) !== '') {
+                $this->courtRegistry()->ensure($eventId, $occId, trim($name));
+            }
         }
-
-        $courtsCount = count($courts);
+        $courtsCount = max(1, $this->assigner()->pool($eventId, $occId)->count());
         $slotDuration = $matchDurationMin + $breakMin;
 
         // $onlyUnscheduled=true — инкрементальный режим (используется триггером
@@ -67,6 +76,7 @@ class TournamentScheduleService
             ->get();
 
         if ($matches->isEmpty()) {
+            $this->assigner()->assignStage($stage); // матчи без команд (сетка) тоже получают площадку
             return 0;
         }
 
@@ -85,24 +95,26 @@ class TournamentScheduleService
             }
         }
 
+        // Групповой этап без собственных списков кортов у групп: группа целиком на одной площадке,
+        // поэтому время считаем по занятости площадки и команд, а не «слотами по числу кортов».
+        if (empty($groupCourts) && $stage->isGroupStage() && $matches->whereNotNull('group_id')->isNotEmpty()) {
+            return $this->scheduleByCourt($stage, $startTime, $slotDuration, $onlyUnscheduled);
+        }
+
         foreach ($byRound as $round => $roundMatches) {
             $courtIdx = 0;
             $groupCourtIdx = []; // отдельный счётчик для каждой группы
 
             foreach ($roundMatches as $match) {
-                // Если матч привязан к группе и у группы есть свои корты
-                $matchCourts = $courts;
+                // Если матч привязан к группе со своими кортами — слоты считаем по ним
                 $matchCourtsCount = $courtsCount;
                 $gid = $match->group_id;
 
                 if ($gid && isset($groupCourts[$gid]) && count($groupCourts[$gid]) > 0) {
-                    $matchCourts = $groupCourts[$gid];
-                    $matchCourtsCount = count($matchCourts);
+                    $matchCourtsCount = count($groupCourts[$gid]);
                     if (!isset($groupCourtIdx[$gid])) $groupCourtIdx[$gid] = 0;
                     $courtIdx = $groupCourtIdx[$gid];
                 }
-
-                $court = $matchCourts[$courtIdx % $matchCourtsCount];
 
                 // Проверяем пересечения
                 $conflict = $this->checkConflict($match, $currentTime, $slotDuration);
@@ -110,21 +122,10 @@ class TournamentScheduleService
                     // Сдвигаем на следующий слот
                     $currentTime = $currentTime->copy()->addMinutes($slotDuration);
                     $courtIdx = 0;
-                    $court = $courts[0];
                 }
 
-                // Площадка трансляции (event_courts) — рядом со строкой court, которую не трогаем
-                $courtModel = $this->courtRegistry()->ensure(
-                    (int) $stage->event_id,
-                    $stage->occurrence_id ? (int) $stage->occurrence_id : null,
-                    (string) $court
-                );
-
-                $match->update([
-                    'scheduled_at' => $currentTime,
-                    'court'        => $court,
-                    'court_id'     => $courtModel->id,
-                ]);
+                // Площадку (court_id/court) ставит CourtAutoAssigner после расстановки времени
+                $match->update(['scheduled_at' => $currentTime]);
 
                 $courtIdx++;
                 if ($gid && isset($groupCourts[$gid])) {
@@ -157,6 +158,53 @@ class TournamentScheduleService
             if ($courtIdx > 0) {
                 $currentTime = $currentTime->copy()->addMinutes($slotDuration);
             }
+        }
+
+        // Площадки по единым правилам (ручные и начатые матчи не трогаются)
+        $this->assigner()->assignStage($stage);
+
+        return $scheduled;
+    }
+
+    /**
+     * Расписание «по площадкам»: сначала площадки (CourtAutoAssigner), затем время — матч встаёт, когда свободны
+     * его площадка и обе команды. Раунды идут друг за другом (как в обычной раскладке слотами).
+     */
+    private function scheduleByCourt(TournamentStage $stage, Carbon $startTime, int $slotMinutes, bool $onlyUnscheduled): int
+    {
+        $this->assigner()->assignStage($stage);
+
+        $matches = $stage->matches()
+            ->where('status', TournamentMatch::STATUS_SCHEDULED)
+            ->whereNotNull('team_home_id')->whereNotNull('team_away_id')
+            ->when($onlyUnscheduled, fn ($q) => $q->whereNull('scheduled_at'))
+            ->orderBy('round')->orderBy('match_number')->get();
+
+        $courtNext = [];
+        $teamNext = [];
+        $barrier = $startTime->copy();
+        $scheduled = 0;
+
+        foreach ($matches->groupBy('round') as $roundMatches) {
+            $roundEnd = $barrier->copy();
+            foreach ($roundMatches as $m) {
+                $cid = (int) $m->court_id;
+                $t = $barrier->copy();
+                foreach ([$courtNext[$cid] ?? null, $teamNext[$m->team_home_id] ?? null, $teamNext[$m->team_away_id] ?? null] as $busyUntil) {
+                    if ($busyUntil && $busyUntil->gt($t)) {
+                        $t = $busyUntil->copy();
+                    }
+                }
+                $m->update(['scheduled_at' => $t]);
+
+                $end = $t->copy()->addMinutes($slotMinutes);
+                $courtNext[$cid] = $teamNext[$m->team_home_id] = $teamNext[$m->team_away_id] = $end;
+                if ($end->gt($roundEnd)) {
+                    $roundEnd = $end;
+                }
+                $scheduled++;
+            }
+            $barrier = $roundEnd;
         }
 
         return $scheduled;
@@ -222,10 +270,14 @@ class TournamentScheduleService
             );
         }
 
-        $match->update([
-            'scheduled_at' => $time,
-            'court'        => $court,
-        ]);
+        $match->update(['scheduled_at' => $time]);
+
+        // Площадка, названная вручную — это 'manual'
+        if ($court !== null && trim($court) !== '') {
+            $stage = $match->stage ?? TournamentStage::find($match->stage_id);
+            $courtModel = $this->courtRegistry()->ensure((int) $stage->event_id, $stage->occurrence_id ? (int) $stage->occurrence_id : null, trim($court));
+            $this->assigner()->assignManual($match, $courtModel);
+        }
 
         return $match->fresh();
     }

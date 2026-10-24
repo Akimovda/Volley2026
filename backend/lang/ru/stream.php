@@ -269,4 +269,11 @@ return [
     'cl_howto_app' => 'В приложении VolleyClub: «Трансляция» → выберите площадку → старт.',
     'cl_howto_obs' => 'Или в PRISM/OBS: добавьте ссылку оверлея как «Браузер» (Browser Source).',
     'cl_create_match_first' => 'Сначала создайте матч',
+    'court_default_name' => 'Площадка 1',
+    'court_conflict' => 'На площадке :court в это время уже стоит матч :match.',
+    'court_delete' => 'Удалить площадку',
+    'court_delete_confirm' => 'Удалить площадку? Не начатые матчи будут распределены по оставшимся площадкам.',
+    'court_delete_live' => 'Нельзя удалить площадку: на ней идёт матч :match.',
+    'cl_matches_auto' => 'Матчи распределены по площадкам автоматически',
+    'cl_matches_auto_change' => 'Изменить',
 ];

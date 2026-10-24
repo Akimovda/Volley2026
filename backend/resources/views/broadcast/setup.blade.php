@@ -14,7 +14,7 @@
     $jsStrings = [
         'musicListen' => __('stream.music_listen'), 'musicStop' => __('stream.music_stop'),
         'saved' => __('stream.saved'), 'error' => __('stream.error'), 'copied' => __('stream.link_copied'),
-        'regenQ' => __('stream.link_regen_q'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
+        'regenQ' => __('stream.link_regen_q'), 'delCourtQ' => __('stream.court_delete_confirm'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
         'captionAuto' => __('stream.mode_caption_auto'), 'manualBanner' => __('stream.manual_banner'),
         'matchAuto' => __('stream.match_auto'), 'matchNone' => __('stream.match_none'),
         'modes' => $modeLabels, 'pick' => __('stream.assign_pick'),
@@ -164,7 +164,8 @@
                 : route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id;
             $clSteps = [
                 ['key' => 'matches', 'done' => $cl['matches']['done'], 'title' => __('stream.cl_matches'),
-                    'note' => (!$cl['matches']['done'] && $cl['matches']['unassigned'] > 0) ? __('stream.cl_matches_unassigned') : null],
+                    'note' => (!$cl['matches']['done'] && $cl['matches']['unassigned'] > 0) ? __('stream.cl_matches_unassigned') : null,
+                    'auto' => $cl['matches']['done'] && !empty($cl['matches']['auto'])],
                 ['key' => 'link', 'done' => $cl['link']['done'], 'title' => __('stream.cl_link'),
                     'note' => ($cl['link']['total'] > 1 && !$cl['link']['done']) ? __('stream.cl_of_courts', ['a' => $cl['link']['have'], 'b' => $cl['link']['total']]) : null],
                 ['key' => 'channel', 'done' => $cl['channel']['done'], 'title' => __('stream.cl_channel'),
@@ -272,6 +273,7 @@
                     <button type="button" class="btn btn-small btn-outline bc-rename">{{ __('stream.court_rename') }}</button>
                     @unless($isFriendly)
                     <button type="button" class="btn btn-small btn-outline bc-toggle" data-active="{{ $c['is_active'] ? 1 : 0 }}">{{ $c['is_active'] ? __('stream.court_hide') : __('stream.court_show') }}</button>
+                    @unless($isFriendly)<button type="button" class="btn btn-small btn-outline bc-del-court">{{ __('stream.court_delete') }}</button>@endunless
                     @endunless
                 </div>
             </div>
@@ -722,6 +724,10 @@
                 var box = $(this).closest('[data-court]');
                 call('PATCH', CFG.base + '/courts/' + box.data('court'), { name: $.trim(box.find('.bc-rename-input').val()) }, reload);
             });
+            $(document).on('click', '.bc-del-court', function () {
+                var box = $(this).closest('[data-court]');
+                confirmThen(S.delCourtQ, function () { call('DELETE', CFG.base + '/courts/' + box.data('court'), {}, reload); });
+            });
             $(document).on('click', '.bc-toggle', function () {
                 var box = $(this).closest('[data-court]');
                 call('PATCH', CFG.base + '/courts/' + box.data('court'), { is_active: $(this).data('active') ? 0 : 1 }, reload);
@@ -729,7 +735,7 @@
             $(document).on('click', '.bc-assign', function () {
                 var row = $(this).closest('[data-match]');
                 call('POST', CFG.base + '/matches/' + row.data('match') + '/court', { court_id: row.find('.bc-assign-select').val() },
-                    function () { toast(S.saved); setTimeout(reload, 500); });
+                    function (r) { toast(S.saved); if (r && r.warning) { fail({ responseJSON: { message: r.warning } }); } else { setTimeout(reload, 500); } });
             });
 
             /* ---------- ссылки оверлея ---------- */

@@ -595,6 +595,7 @@ class TournamentSetupService
         }
 
         $this->initStandings($stage, $group);
+        app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
         return $matches;
     }
@@ -691,6 +692,7 @@ class TournamentSetupService
                 $this->autoAdvanceBye($match, $match->team_away_id);
             }
         }
+        app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
         return $matches;
     }

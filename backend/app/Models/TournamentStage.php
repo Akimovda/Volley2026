@@ -361,6 +361,11 @@ class TournamentStage extends Model
         return $this->belongsTo(Event::class);
     }
 
+    public function occurrence(): BelongsTo
+    {
+        return $this->belongsTo(EventOccurrence::class, 'occurrence_id');
+    }
+
     public function groups(): HasMany
     {
         return $this->hasMany(TournamentGroup::class, 'stage_id')->orderBy('sort_order');

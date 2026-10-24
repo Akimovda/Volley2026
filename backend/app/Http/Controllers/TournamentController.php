@@ -3403,6 +3403,7 @@ class TournamentController extends Controller
             'status'         => TournamentMatch::STATUS_SCHEDULED,
             'is_tiebreaker'  => true,
         ]);
+        app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
         $tiebreaker->update([
             'method'   => 'match',
@@ -3545,6 +3546,7 @@ class TournamentController extends Controller
                 'method'         => 'match',
                 'match_settings' => $matchSettings,
             ]);
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
         });
 
         return $this->redirectToSetup($event, 'Тайбрейк-матчи созданы. Введите их счёт.');

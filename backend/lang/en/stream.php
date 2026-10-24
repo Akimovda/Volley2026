@@ -269,4 +269,11 @@ return [
     'cl_howto_app' => 'In the VolleyClub app: “Broadcast” → pick the court → start.',
     'cl_howto_obs' => 'Or in PRISM/OBS: add the overlay link as a Browser Source.',
     'cl_create_match_first' => 'Create a match first',
+    'court_default_name' => 'Court 1',
+    'court_conflict' => 'Court :court already has a match scheduled at this time: :match.',
+    'court_delete' => 'Delete court',
+    'court_delete_confirm' => 'Delete this court? Matches that have not started will be redistributed across the remaining courts.',
+    'court_delete_live' => 'Cannot delete the court: a match is in progress there (:match).',
+    'cl_matches_auto' => 'Matches were distributed across courts automatically',
+    'cl_matches_auto_change' => 'Change',
 ];

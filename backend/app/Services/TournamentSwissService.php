@@ -74,6 +74,7 @@ class TournamentSwissService
                 ]);
                 $matches->push($match);
             }
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
             return $matches;
         });

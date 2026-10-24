@@ -20,6 +20,7 @@ class TournamentMatch extends Model
         'team_away_id',
         'court',
         'court_id',
+        'court_assigned_by',
         'scheduled_at',
         'started_at',
         'status',
@@ -55,6 +56,9 @@ class TournamentMatch extends Model
         'is_tiebreaker'          => 'boolean',
         'meta'                   => 'array',
     ];
+
+    public const COURT_BY_AUTO   = 'auto';
+    public const COURT_BY_MANUAL = 'manual';
 
     public const STATUS_SCHEDULED = 'scheduled';
     public const STATUS_LIVE      = 'live';

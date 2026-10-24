@@ -5,6 +5,7 @@
     <div class="bc-cl-body">
         <div class="b-600">{{ $st['title'] }}</div>
         @if(!$st['done'] && $st['note'])<div class="bc-hint">{{ $st['note'] }}</div>@endif
+        @if($st['done'] && !empty($st['auto']))<div class="bc-hint">{{ __('stream.cl_matches_auto') }} · <a href="{{ $clMatchesUrl }}">{{ __('stream.cl_matches_auto_change') }}</a></div>@endif
     </div>
     @unless($st['done'])
     <div class="bc-actions" style="margin:0">
