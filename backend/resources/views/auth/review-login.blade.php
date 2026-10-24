@@ -13,6 +13,8 @@
             <div class="col-md-5">
                 <div class="card mt-4">
                     <div class="card-body p-4">
+                        <p class="mb-3" style="font-size:.9rem;opacity:.8;">{{ __('auth.review_login_note') }}</p>
+
                         @if ($errors->any())
                             <div class="alert alert-danger mb-3">
                                 {{ $errors->first() }}
@@ -35,6 +37,8 @@
 
                             <button type="submit" class="btn btn-primary w-100">Войти</button>
                         </form>
+
+                        <p style="text-align:center;margin-top:12px;"><a href="{{ route('login') }}">{{ __('auth.review_login_back') }}</a></p>
                     </div>
                 </div>
             </div>

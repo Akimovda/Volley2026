@@ -16,5 +16,9 @@ return [
 
     // Guest login popup (the "Join" button on an event card/page)
     'login_popup_title'    => 'Sign in to continue',
+    'login_by_email'        => 'Sign in with email',
+    'review_login_note'     => 'Password sign-in is for service accounts. If you signed up with Apple, VK, Yandex or Telegram, sign in the same way.',
+    'review_login_back'     => 'Back to sign in',
+    'review_login_failed'   => 'Incorrect email or password',
     'login_popup_subtitle' => 'After signing in you\'ll return to this event and can join.',
 ];

@@ -7,6 +7,7 @@
     $returnUrl = $returnUrl ?? url()->full();
     $ua = request()->userAgent() ?? '';
     $isAndroidUa = str_contains($ua, 'Android');
+    $isNativeApp = preg_match('/VolleyPlayApp|SVSVolleyApp/', $ua) === 1;
     $isAppleUa   = str_contains($ua, 'iPhone') || str_contains($ua, 'iPad') || str_contains($ua, 'Macintosh');
 @endphp
 <div class="social-auth">
@@ -64,5 +65,10 @@
         <span class="auth-text">{{ __('ui.auth_google') }}</span>
     </a>
     @endunless
+    @endif
+
+    @if($isNativeApp && config('auth.review_login_link'))
+    {{-- Вход по email/паролю — только в приложении и за флагом REVIEW_LOGIN_LINK (App Review). --}}
+    <a href="{{ route('auth.review.show') }}" class="auth-email-link" style="display:block;text-align:center;margin-top:12px;font-size:.9rem;opacity:.75;">{{ __('auth.login_by_email') }}</a>
     @endif
 </div>
