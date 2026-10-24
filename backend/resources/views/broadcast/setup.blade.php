@@ -108,6 +108,7 @@
             .bc-music-opt.is-sel .bc-music-name { font-weight:700; }
             body.dark .bc-music-opt.is-sel { background:rgba(255,255,255,.08); }
             .bc-music-play, .bc-music-up { flex:none; display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:40px; padding:0; margin:0; border:0; background:transparent; box-shadow:none; color:#2967BA; cursor:pointer; font:inherit; font-size:1.4rem; font-weight:600; }
+            .bc-music-opt .bc-music-up { display:inline-flex; align-items:center; align-self:center; margin:0; padding:0 .4rem; line-height:1; text-decoration:underline; }
             .bc-music-play svg { width:24px; height:24px; fill:currentColor; display:block; }
             .bc-music-play .ic-stop, .bc-music-play.is-playing .ic-play { display:none; }
             .bc-music-play.is-playing .ic-stop { display:block; }
