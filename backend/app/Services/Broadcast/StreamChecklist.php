@@ -25,10 +25,19 @@ class StreamChecklist
                 ->where('type', TournamentStage::TYPE_FRIENDLY)->when($occurrenceId, fn ($w) => $w->where('occurrence_id', $occurrenceId)))->exists();
         }
 
-        $courtIds = EventCourt::where('event_id', $event->id)->when($occurrenceId, fn ($q) => $q->where('occurrence_id', $occurrenceId))->pluck('id');
+        $courtIds = EventCourt::where('event_id', $event->id)
+            ->when($occurrenceId, fn ($q) => $q->where(fn ($w) => $w->where('occurrence_id', $occurrenceId)->orWhereNull('occurrence_id')))->pluck('id');
 
         return $courtIds->isNotEmpty() && (clone $base)->whereIn('court_id', $courtIds)
             ->whereHas('stage', fn ($q) => $q->where('event_id', $event->id))->exists();
+    }
+
+    /** Есть матчи, площадки которым поставила система (не организатор). */
+    private function hasAutoAssigned(Event $event, ?int $occurrenceId): bool
+    {
+        return TournamentMatch::where('court_assigned_by', TournamentMatch::COURT_BY_AUTO)
+            ->whereHas('stage', fn ($q) => $q->where('event_id', $event->id)->when($occurrenceId, fn ($w) => $w->where('occurrence_id', $occurrenceId)))
+            ->exists();
     }
 
     /**
@@ -45,7 +54,7 @@ class StreamChecklist
         $hasMatches = self::hasMatches($event, $occurrenceId);
 
         $steps = [
-            'matches' => ['done' => $hasMatches, 'unassigned' => $unassigned],
+            'matches' => ['done' => $hasMatches, 'unassigned' => $unassigned, 'auto' => $hasMatches && $this->hasAutoAssigned($event, $occurrenceId)],
             'link'    => ['done' => $total > 0 && $linkOk === $total, 'have' => $linkOk, 'total' => $total],
             'channel' => ['done' => $total > 0 && $chanOk === $total, 'have' => $chanOk, 'total' => $total],
         ];

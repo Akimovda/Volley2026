@@ -54,5 +54,6 @@ return [
     'match_start_no'             => 'Отмена',
     'match_unstart_link'         => 'Отменить начало',
     'match_unstart_confirm'      => 'Отменить начало матча? Табло исчезнет из эфира, вернётся заставка.',
+    'serve_mark_label'           => 'Подаёт:',
     'match_started_note'         => 'Матч идёт, табло 0:0 в эфире.',
 ];

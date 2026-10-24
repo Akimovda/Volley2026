@@ -193,7 +193,7 @@ class FriendlyGameService
             $home = $existing['home'] ?? $this->createTeam($event, $occurrenceId, $homeUserIds, self::COLORS[$homeColor] . ' · №' . $number, $homeColor);
             $away = $existing['away'] ?? $this->createTeam($event, $occurrenceId, $awayUserIds, self::COLORS[$awayColor] . ' · №' . $number, $awayColor);
 
-            return TournamentMatch::create([
+            $created = TournamentMatch::create([
                 'stage_id'      => $stage->id,
                 'round'         => $number,
                 'match_number'  => $number,
@@ -202,6 +202,9 @@ class FriendlyGameService
                 'status'        => TournamentMatch::STATUS_SCHEDULED,
                 'is_tiebreaker' => false,
             ]);
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
+
+            return $created->fresh();
         });
     }
 

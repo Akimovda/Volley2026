@@ -123,6 +123,20 @@
 		</div>
 		@endif
 
+		@if(!empty($canServeMark))
+		<div class="card mb-2" style="text-align:center">
+			<div class="f-13 mb-1" style="opacity:.8">{{ __('broadcast.serve_mark_label') }}</div>
+			<div class="d-flex gap-1" style="justify-content:center;flex-wrap:wrap">
+				@foreach($sides as $sd)
+				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
+					@csrf
+					<button type="submit" class="btn w-100 {{ (int) $serveMarkTeamId === $sd['team_id'] ? 'btn-primary' : 'btn-secondary' }}" style="padding:10px 8px">{{ (int) $serveMarkTeamId === $sd['team_id'] ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
+				</form>
+				@endforeach
+			</div>
+		</div>
+		@endif
+
 		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
 		<div class="alert alert-info f-13 mb-2">{{ __('tournaments.rally_no_attempts_note') }}</div>
 

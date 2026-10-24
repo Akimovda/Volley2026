@@ -2660,6 +2660,7 @@ $tourNumber = $seasonData
 			@if($stage->matches->isNotEmpty())
 			@php
 			$matchesByGroup = $stage->matches->sortBy(["round", "match_number"])->groupBy('group_id');
+			$evCourts = $evCourts ?? app(\App\Services\Broadcast\CourtAutoAssigner::class)->pool((int) $event->id, $stage->occurrence_id ? (int) $stage->occurrence_id : null, false);
 			$hasGroups = $stage->groups->count() > 1;
 			@endphp
 			
@@ -2754,11 +2755,18 @@ $tourNumber = $seasonData
 											<td style="text-align:center">{{ $match->detailedScore() ?: '—' }}</td>
 											<td style="text-align:center">{{ $match->scheduled_at ? $match->scheduled_at->setTimezone($event->timezone ?? 'Europe/Moscow')->format('H:i') : '—' }}</td>
 											<td style="text-align:center">
+												@if(!$match->isCompleted() && $match->status !== 'cancelled' && $evCourts->isNotEmpty())
+												<select class="match-court-select" data-url="{{ route('broadcast.setup.match.court', [$event, $match]) }}" aria-label="{{ __('tournaments.setup_court_select_aria') }}">
+													@unless($match->court_id)<option value="">{{ __('tournaments.setup_court_unassigned') }}</option>@endunless
+													@foreach($evCourts as $ec)<option value="{{ $ec->id }}" @selected((int) $match->court_id === (int) $ec->id)>{{ $ec->name }}</option>@endforeach
+												</select>
+												@else
 												{{ match($match->court) {
 													'Grand Final' => 'Финал',
 													'Grand Final Reset' => 'Решающий матч',
 													default => $match->court ?? '—',
 												} }}
+												@endif
 											</td>
 											<td style="text-align:center">
 												<div class="text-center d-flex gap-1">
@@ -4160,6 +4168,37 @@ $tourNumber = $seasonData
 				setView(btn.dataset.group, btn.dataset.view);
 			});
 		})();
+	</script>
+	{{-- Смена площадки отдельного матча: сохранение сразу, ручное назначение ('manual') автоматика не трогает --}}
+	<style>
+		.form-select-wrapper:has(+ .match-court-select) { min-width: 8rem; }
+		#mc-toast { position: fixed; left: 50%; bottom: 1.5rem; transform: translateX(-50%); z-index: 9999; padding: .6rem 1.1rem; border-radius: .6rem; background: #1f2937; color: #fff; opacity: 0; pointer-events: none; transition: opacity .2s; }
+		#mc-toast.on { opacity: 1; }
+		#mc-toast.err { background: #b91c1c; }
+	</style>
+	<script>
+	(function () {
+		var CSRF = @json(csrf_token()), T_SAVED = @json(__('stream.saved')), T_ERR = @json(__('stream.error'));
+		var el = null, timer = null;
+		function toast(msg, err, ms) {
+			if (!el) { el = document.createElement('div'); el.id = 'mc-toast'; el.setAttribute('role', 'status'); document.body.appendChild(el); }
+			el.textContent = msg; el.classList.toggle('err', !!err); el.classList.add('on');
+			clearTimeout(timer); timer = setTimeout(function () { el.classList.remove('on'); }, ms || 2200);
+		}
+		document.addEventListener('change', function (e) {
+			var sel = e.target.closest ? e.target.closest('.match-court-select') : null;
+			if (!sel || !sel.value) { return; }
+			var body = new URLSearchParams({ court_id: sel.value });
+			fetch(sel.dataset.url, { method: 'POST', body: body, credentials: 'same-origin',
+				headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' } })
+				.then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+				.then(function (x) {
+					if (!x.ok) { toast((x.j && x.j.message) || T_ERR, true); return; }
+					if (x.j.warning) { toast(T_SAVED + '. ' + x.j.warning, false, 6000); } else { toast(T_SAVED); }
+				})
+				.catch(function () { toast(T_ERR, true); });
+		});
+	})();
 	</script>
 	<style>
 		.ct-view-btn { opacity: .55; }

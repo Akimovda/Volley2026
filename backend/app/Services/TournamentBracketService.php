@@ -118,6 +118,7 @@ class TournamentBracketService
 
             // Авто-проводим BYE-матчи (где одна команда null)
             $this->resolveByes($matchesByRound[1]);
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
             return $allMatches;
         });
@@ -464,6 +465,7 @@ class TournamentBracketService
                     }
                 }
             }
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
             return $allMatches;
         });
@@ -633,6 +635,7 @@ class TournamentBracketService
             }
             return $matches;
         });
+        app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($playoffStage);
 
         // Источник правды для TournamentStatsService::calculateFinalClassification() —
         // явный finals_mode в config, а не угадывание по названию корта/раунду

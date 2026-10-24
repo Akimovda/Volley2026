@@ -3212,6 +3212,22 @@ class TournamentController extends Controller
         });
     }
 
+    /** Ручная отметка «подаёт первым» для табло (до первого очка партии). */
+    public function rallyServeMark(Request $request, TournamentMatch $match)
+    {
+        if ($redirect = $this->guardRallyMode($request, $match)) {
+            return $request->expectsJson()
+                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                : $redirect;
+        }
+
+        $validated = $request->validate(\App\Services\RallyInputService::serveMarkRules());
+
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
+            app(\App\Services\RallyInputService::class)->serveMark($match, $validated, \App\Support\RallyActor::user($request->user()));
+        });
+    }
+
     /** Замена / выход либеро / уход либеро (одним endpoint, тип в поле type). */
     public function rallyLineupEvent(Request $request, TournamentMatch $match)
     {
@@ -3387,6 +3403,7 @@ class TournamentController extends Controller
             'status'         => TournamentMatch::STATUS_SCHEDULED,
             'is_tiebreaker'  => true,
         ]);
+        app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
 
         $tiebreaker->update([
             'method'   => 'match',
@@ -3529,6 +3546,7 @@ class TournamentController extends Controller
                 'method'         => 'match',
                 'match_settings' => $matchSettings,
             ]);
+            app(\App\Services\Broadcast\CourtAutoAssigner::class)->assignStage($stage);
         });
 
         return $this->redirectToSetup($event, 'Тайбрейк-матчи созданы. Введите их счёт.');

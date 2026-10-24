@@ -14,7 +14,7 @@
     $jsStrings = [
         'musicListen' => __('stream.music_listen'), 'musicStop' => __('stream.music_stop'),
         'saved' => __('stream.saved'), 'error' => __('stream.error'), 'copied' => __('stream.link_copied'),
-        'regenQ' => __('stream.link_regen_q'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
+        'regenQ' => __('stream.link_regen_q'), 'delCourtQ' => __('stream.court_delete_confirm'), 'revokeQ' => __('stream.link_revoke_q'), 'yes' => __('stream.yes'), 'cancel' => __('stream.cancel'),
         'captionAuto' => __('stream.mode_caption_auto'), 'manualBanner' => __('stream.manual_banner'),
         'matchAuto' => __('stream.match_auto'), 'matchNone' => __('stream.match_none'),
         'modes' => $modeLabels, 'pick' => __('stream.assign_pick'),
@@ -101,10 +101,23 @@
             body.dark .bc-matchlist button { border-color: rgba(255,255,255,.2); }
             .bc-matchlist button.sel { border-color:#E7612F; font-weight:700; }
             .bc-field { margin-bottom:1.3rem; }
-            .bc-music-opt { display:flex; align-items:center; gap:.8rem; }
+            .bc-music-opt { display:flex; align-items:center; justify-content:space-between; gap:.8rem; min-height:4.4rem; padding:0 .4rem 0 1rem; border-radius:.8rem; cursor:pointer; }
+            .bc-music-opt .radio-item { flex:1; min-width:0; display:flex; align-items:center; align-self:stretch; margin:0; }
+            .bc-music-opt .radio-item .bc-music-name { line-height:1.2; }
+            .bc-music-opt.is-sel { background:#EEF3FB; }
+            .bc-music-opt.is-sel .bc-music-name { font-weight:700; }
+            body.dark .bc-music-opt.is-sel { background:rgba(255,255,255,.08); }
+            .bc-music-play, .bc-music-up { flex:none; display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:40px; padding:0; margin:0; border:0; background:transparent; box-shadow:none; color:#2967BA; cursor:pointer; font:inherit; font-size:1.4rem; font-weight:600; }
+            .bc-music-opt .bc-music-up { display:inline-flex; align-items:center; align-self:center; margin:0; padding:0 .4rem; line-height:1; text-decoration:underline; }
+            .bc-music-play svg { width:24px; height:24px; fill:currentColor; display:block; }
+            .bc-music-play .ic-stop, .bc-music-play.is-playing .ic-play { display:none; }
+            .bc-music-play.is-playing .ic-stop { display:block; }
+            .bc-music-play:focus-visible, .bc-music-up:focus-within { outline:2px solid #2967BA; outline-offset:-2px; border-radius:.8rem; }
+            .bc-music-up { padding:0 1rem; text-decoration:underline; }
+            body.dark .bc-music-play, body.dark .bc-music-up { color:#8DB4F0; }
             .bc-music-line { margin:0; align-items:center; }
             .bc-music-line .custom-checkbox, .bc-music-line .custom-radio { margin:.5rem 1.2rem .5rem 0; }
-            .bc-page.form .bc-field input[type="range"] { width:100%; max-width:32rem; height:auto; padding:0; border:0; background:transparent; box-shadow:none; accent-color:#2967BA; }
+            .bc-page.form .bc-field input[type="range"] { max-width:32rem; }
             .bc-field label.bc-l { display:block; font-weight:600; font-size:1.4rem; margin-bottom:.4rem; }
             .bc-grid { display:grid; grid-template-columns:1fr; gap:0 2rem; }
             @media (min-width: 768px) { .bc-grid { grid-template-columns:1fr 1fr; } }
@@ -164,7 +177,8 @@
                 : route('tournament.setup', $event) . '?occurrence_id=' . $occurrence->id;
             $clSteps = [
                 ['key' => 'matches', 'done' => $cl['matches']['done'], 'title' => __('stream.cl_matches'),
-                    'note' => (!$cl['matches']['done'] && $cl['matches']['unassigned'] > 0) ? __('stream.cl_matches_unassigned') : null],
+                    'note' => (!$cl['matches']['done'] && $cl['matches']['unassigned'] > 0) ? __('stream.cl_matches_unassigned') : null,
+                    'auto' => $cl['matches']['done'] && !empty($cl['matches']['auto'])],
                 ['key' => 'link', 'done' => $cl['link']['done'], 'title' => __('stream.cl_link'),
                     'note' => ($cl['link']['total'] > 1 && !$cl['link']['done']) ? __('stream.cl_of_courts', ['a' => $cl['link']['have'], 'b' => $cl['link']['total']]) : null],
                 ['key' => 'channel', 'done' => $cl['channel']['done'], 'title' => __('stream.cl_channel'),
@@ -272,6 +286,7 @@
                     <button type="button" class="btn btn-small btn-outline bc-rename">{{ __('stream.court_rename') }}</button>
                     @unless($isFriendly)
                     <button type="button" class="btn btn-small btn-outline bc-toggle" data-active="{{ $c['is_active'] ? 1 : 0 }}">{{ $c['is_active'] ? __('stream.court_hide') : __('stream.court_show') }}</button>
+                    @unless($isFriendly)<button type="button" class="btn btn-small btn-outline bc-del-court">{{ __('stream.court_delete') }}</button>@endunless
                     @endunless
                 </div>
             </div>
@@ -334,7 +349,7 @@
             </div></div>
             <div class="bc-pultrow"><div class="bc-rl">{{ __('stream.demo_h') }}</div>
             <div class="bc-demos" id="bc-demos">
-                @foreach(['splash', 'live', 'sub', 'set_summary', 'match_summary'] as $d)
+                @foreach(['splash', 'live', 'sub', 'set_summary', 'match_summary', 'beach', 'classic5', 'serve'] as $d)
                 <button type="button" class="btn btn-small" data-demo="{{ $d }}">{{ __('stream.demo_' . $d) }}</button>
                 @endforeach
                 <button type="button" class="btn btn-small on" data-demo="">{{ __('stream.demo_live_air') }}</button>
@@ -359,6 +374,7 @@
                             <option value="glass" @selected($form['template'] === 'glass')>{{ __('stream.tpl_glass') }}</option>
                             <option value="neon" @selected($form['template'] === 'neon')>{{ __('stream.tpl_neon') }}</option>
                             <option value="light_tv" @selected($form['template'] === 'light_tv')>{{ __('stream.tpl_light_tv') }}</option>
+                            <option value="tabs" @selected($form['template'] === 'tabs')>{{ __('stream.tpl_tabs') }}</option>
                         </select>
                     </div>
                     <div class="bc-field">
@@ -366,6 +382,26 @@
                         <select id="bc-corner" name="corner">
                             @foreach(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as $k)
                             <option value="{{ $k }}" @selected($form['corner'] === $k)>{{ __('stream.corner_' . $k) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="bc-grid" id="bc-tabs-opts" @if($form['template'] !== 'tabs') style="display:none" @endif>
+                    <div class="bc-field">
+                        <label class="bc-l">{{ __('stream.tabs_color') }}</label>
+                        <div class="bc-swatches">
+                            <button type="button" class="bc-sw {{ $form['tabs_color'] ? '' : 'sel' }}" id="bc-tabs-default" style="background:linear-gradient(90deg,#E7612F,#2967BA)" data-color="" aria-label="{{ __('stream.tabs_color_default') }}" title="{{ __('stream.tabs_color_default') }}"></button>
+                            @foreach(['#E7612F', '#2967BA', '#1E8E5A', '#7A3FB5', '#C0392B', '#222831'] as $c)
+                            <button type="button" class="bc-sw {{ $form['tabs_color'] === $c ? 'sel' : '' }}" style="background:{{ $c }}" data-color="{{ $c }}" aria-label="{{ $c }}"></button>
+                            @endforeach
+                            <input type="text" id="bc-tabs-hex" maxlength="7" placeholder="#RRGGBB" value="{{ $form['tabs_color'] }}" style="width:9rem">
+                        </div>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-tabs-logo">{{ __('stream.tabs_logo') }}</label>
+                        <select id="bc-tabs-logo" name="tabs_logo">
+                            @foreach(['volleyclub', 'organizer', 'hidden'] as $k)
+                            <option value="{{ $k }}" @selected($form['tabs_logo'] === $k)>{{ __('stream.tabs_logo_' . $k) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -516,22 +552,24 @@
                         <label class="radio-item bc-music-line">
                             <input type="radio" name="bc-music-tr" class="bc-music-tr" value="{{ $tk }}" @checked($curTrack === $tk)>
                             <div class="custom-radio"></div>
-                            <span>{{ __('stream.music_track_' . $tk) }}</span>
+                            <span class="bc-music-name">{{ __('stream.music_track_' . $tk) }}</span>
                         </label>
-                        <button type="button" class="btn btn-small btn-outline bc-music-play" data-url="{{ asset(\App\Models\BroadcastSetting::MUSIC_TRACKS[$tk]) }}" title="{{ __('stream.music_listen') }}">▶</button>
+                        @include('broadcast._music_play', ['url' => asset(\App\Models\BroadcastSetting::MUSIC_TRACKS[$tk])])
                     </div>
                     @endforeach
                     <div class="bc-music-opt">
                         <label class="radio-item bc-music-line">
                             <input type="radio" name="bc-music-tr" class="bc-music-tr" value="custom" @checked($curTrack === 'custom')>
                             <div class="custom-radio"></div>
-                            <span>{{ __('stream.music_track_custom') }}</span>
+                            <span class="bc-music-name">{{ __('stream.music_track_custom') }}</span>
                         </label>
-                        <button type="button" class="btn btn-small btn-outline bc-music-play" id="bc-music-play-custom" data-url="{{ $form['music_custom'] ? $form['music_url'] : '' }}" title="{{ __('stream.music_listen') }}" @if(!$form['music_custom']) style="display:none" @endif>▶</button>
+                        @include('broadcast._music_play', ['url' => $form['music_url'] ?? '', 'id' => 'bc-music-play-custom', 'hidden' => !$form['music_custom']])
+                        <label class="bc-music-up" id="bc-music-up" for="bc-music-file" @if($form['music_custom']) style="display:none" @endif>{{ __('stream.music_upload_short') }}</label>
                     </div>
                 </div>
                 <div class="bc-field">
-                    <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer">{{ __('stream.music_upload') }}<input type="file" id="bc-music-file" accept="audio/mpeg,audio/mp4,audio/aac,.mp3,.m4a,.aac" style="display:none"></label>
+                    <label class="btn btn-small btn-outline" for="bc-music-file" style="margin:0;cursor:pointer">{{ __('stream.music_upload') }}</label>
+                    <input type="file" id="bc-music-file" accept="audio/mpeg,audio/mp4,audio/aac,.mp3,.m4a,.aac" style="display:none">
                     <button type="button" class="btn btn-small btn-outline" id="bc-music-del" @if(!$form['music_custom']) style="display:none" @endif>{{ __('stream.music_delete') }}</button>
                     <div class="bc-hint" style="margin-top:.5rem">{{ __('stream.music_file_hint') }}</div>
                     <div class="bc-hint" style="margin-top:.4rem;color:#c0392b">⚠️ {{ __('stream.music_copyright') }}</div>
@@ -701,6 +739,10 @@
                 var box = $(this).closest('[data-court]');
                 call('PATCH', CFG.base + '/courts/' + box.data('court'), { name: $.trim(box.find('.bc-rename-input').val()) }, reload);
             });
+            $(document).on('click', '.bc-del-court', function () {
+                var box = $(this).closest('[data-court]');
+                confirmThen(S.delCourtQ, function () { call('DELETE', CFG.base + '/courts/' + box.data('court'), {}, reload); });
+            });
             $(document).on('click', '.bc-toggle', function () {
                 var box = $(this).closest('[data-court]');
                 call('PATCH', CFG.base + '/courts/' + box.data('court'), { is_active: $(this).data('active') ? 0 : 1 }, reload);
@@ -708,7 +750,7 @@
             $(document).on('click', '.bc-assign', function () {
                 var row = $(this).closest('[data-match]');
                 call('POST', CFG.base + '/matches/' + row.data('match') + '/court', { court_id: row.find('.bc-assign-select').val() },
-                    function () { toast(S.saved); setTimeout(reload, 500); });
+                    function (r) { toast(S.saved); if (r && r.warning) { fail({ responseJSON: { message: r.warning } }); } else { setTimeout(reload, 500); } });
             });
 
             /* ---------- ссылки оверлея ---------- */
@@ -899,8 +941,21 @@
             function themeNow() {
                 return { template: $('#bc-template').val(), corner: $('#bc-corner').val(),
                     show_set_scores: $('#bc-set-scores').is(':checked'), show_logos: $('#bc-show-logos').is(':checked'),
-                    scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked') };
+                    scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked'),
+                    tabs_color: tabsColor(), tabs_logo: $('#bc-tabs-logo').val() };
             }
+            function tabsColor() { var v = $.trim($('#bc-tabs-hex').val()); return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null; }
+            $('#bc-template').on('change', function () { $('#bc-tabs-opts').toggle($(this).val() === 'tabs'); });
+            $('#bc-tabs-opts').on('click', '.bc-sw', function () {
+                $('#bc-tabs-opts .bc-sw').removeClass('sel'); $(this).addClass('sel');
+                $('#bc-tabs-hex').val($(this).data('color') || '').trigger('input');
+            });
+            $('#bc-tabs-hex').on('input', function () {
+                var v = tabsColor(); $('#bc-tabs-opts .bc-sw').removeClass('sel');
+                if (v) { $('#bc-tabs-opts .bc-sw').filter(function () { return String($(this).data('color')).toUpperCase() === v; }).addClass('sel'); }
+                else if (!$.trim($(this).val())) { $('#bc-tabs-default').addClass('sel'); }
+                pushTheme();
+            });
             function pushTheme() {
                 $('#bc-scale-v').text($('#bc-scale').val() + ' %'); $('#bc-opacity-v').text($('#bc-opacity').val() + ' %');
                 var f = document.getElementById('bc-frame');
@@ -918,7 +973,8 @@
                     show_set_scores: $('#bc-set-scores').is(':checked') ? 1 : 0,
                     show_logos: $('#bc-show-logos').is(':checked') ? 1 : 0,
                     scale: $('#bc-scale').val(), opacity: $('#bc-opacity').val(), edge_margin: $('#bc-edge').val(),
-                    show_team_names: $('#bc-team-names').is(':checked') ? 1 : 0
+                    show_team_names: $('#bc-team-names').is(':checked') ? 1 : 0,
+                    tabs_color: tabsColor() || '', tabs_logo: $('#bc-tabs-logo').val()
                 }, function () { toast(S.saved); });
             });
 
@@ -968,17 +1024,33 @@
             /* ---------- музыка ---------- */
             var mAudio = document.getElementById('bc-music-audio');
             var mPlaying = null;
-            function mReset() { $('.bc-music-play').text('▶'); mPlaying = null; }
+            function mReset() {
+                $('.bc-music-play').removeClass('is-playing').attr({ 'aria-label': S.musicListen, title: S.musicListen });
+                mPlaying = null;
+            }
+            function mStopAll() { mAudio.pause(); mReset(); }
+            function mSyncSel() { $('.bc-music-opt').each(function () { $(this).toggleClass('is-sel', $(this).find('.bc-music-tr').prop('checked')); }); }
             $('#bc-music-volume').on('input', function () { $('#bc-music-volume-v').text(this.value); mAudio.volume = this.value / 100; });
-            $(document).on('click', '.bc-music-play', function () {
+            // Иконка: старт/стоп предпрослушивания, выбор трека не меняет. Играет один трек — запуск другого останавливает предыдущий
+            $(document).on('click', '.bc-music-play', function (e) {
+                e.stopPropagation();
                 var btn = this;
-                if (mPlaying === btn) { mAudio.pause(); mReset(); return; }
-                mAudio.pause(); mReset();
+                if (mPlaying === btn) { mStopAll(); return; }
+                mStopAll();
                 mAudio.src = $(btn).data('url'); mAudio.volume = $('#bc-music-volume').val() / 100;
-                mAudio.play(); $(btn).text('■'); mPlaying = btn;
+                $(btn).addClass('is-playing').attr({ 'aria-label': S.musicStop, title: S.musicStop }); mPlaying = btn;
+                var pr = mAudio.play(); if (pr && pr.catch) { pr.catch(function () { if (mPlaying === btn) { mReset(); } }); }
             });
-            $(mAudio).on('ended', mReset);
-            $('.bc-music-tr').on('change', function () { $('#bc-music-track').val(this.value); });
+            $(mAudio).on('ended error', mReset);
+            $(window).on('pagehide beforeunload', function () { mAudio.pause(); mReset(); });
+            // Клик по строке = выбор трека
+            $(document).on('click', '.bc-music-opt', function (e) {
+                if ($(e.target).closest('.bc-music-play, .bc-music-up').length) { return; }
+                var r = $(this).find('.bc-music-tr');
+                if (!r.prop('checked')) { r.prop('checked', true).trigger('change'); }
+            });
+            $('.bc-music-tr').on('change', function () { $('#bc-music-track').val(this.value); mSyncSel(); });
+            mSyncSel();
             $('#bc-music-save').on('click', function () {
                 var modes = $('.bc-music-mode:checked').map(function () { return this.value; }).get();
                 call('POST', CFG.base + '/music', {
@@ -990,17 +1062,17 @@
                 if (!this.files.length) { return; }
                 var fd = new FormData(); fd.append('file', this.files[0]); fd.append('occurrence_id', CFG.occurrenceId);
                 call('POST', CFG.base + '/music/file', fd, function (r) {
-                    mAudio.pause(); mReset();
-                    $('#bc-music-play-custom').data('url', r.url).show();
-                    $('#bc-music-track').val('custom'); $('.bc-music-tr[value=custom]').prop('checked', true);
+                    mStopAll();
+                    $('#bc-music-play-custom').data('url', r.url).show(); $('#bc-music-up').hide();
+                    $('#bc-music-track').val('custom'); $('.bc-music-tr[value=custom]').prop('checked', true); mSyncSel();
                     $('#bc-music-del').show(); toast(S.saved);
                 });
                 this.value = '';
             });
             $('#bc-music-del').on('click', function () {
                 call('DELETE', CFG.base + '/music/file', { occurrence_id: CFG.occurrenceId }, function () {
-                    mAudio.pause(); mReset(); $('#bc-music-play-custom').data('url', '').hide();
-                    $('#bc-music-track').val('calm'); $('.bc-music-tr[value=calm]').prop('checked', true);
+                    mStopAll(); $('#bc-music-play-custom').data('url', '').hide(); $('#bc-music-up').show();
+                    $('#bc-music-track').val('calm'); $('.bc-music-tr[value=calm]').prop('checked', true); mSyncSel();
                     $('#bc-music-del').hide(); toast(S.saved);
                 });
             });

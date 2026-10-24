@@ -1081,4 +1081,6 @@ return [
     'lineup_tab_ok' => 'заполнено',
     'lineup_tab_missing_one' => 'не хватает: зона :z',
     'lineup_tab_missing_many' => 'не хватает: зоны :z',
+    'setup_court_select_aria' => 'Площадка матча',
+    'setup_court_unassigned' => '— не назначена —',
 ];

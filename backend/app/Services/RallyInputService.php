@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Events\TournamentMatchRallyUpdated;
+use App\Models\MatchActionLog;
 use App\Models\MatchLineupEvent;
 use App\Models\MatchRallyEvent;
+use App\Models\MatchServeMark;
 use App\Models\MatchSetStart;
 use App\Models\TournamentMatch;
 use App\Services\Broadcast\BroadcastControlService;
@@ -206,6 +208,86 @@ class RallyInputService
 
         if ($changed) {
             $this->afterMatchStateChange($match, false);
+        }
+    }
+
+    public static function serveMarkRules(): array
+    {
+        return [
+            'set_number'        => 'required|integer|min:1|max:5',
+            'team_id'           => 'required|integer',
+            'client_request_id' => 'nullable|uuid',
+        ];
+    }
+
+    /**
+     * Ручная отметка «подаёт первым» для табло: только пока в партии нет очков, меняется до первого очка.
+     * Не очко и не событие состава: без seq, не затрагивает undoLast. Идемпотентность — client_request_id
+     * (кеш 10 мин, как у matchStart) + сравнение с текущим состоянием; каждое реальное изменение — в match_action_log.
+     */
+    public function serveMark(TournamentMatch $match, array $v, RallyActor $actor): void
+    {
+        $set = (int) $v['set_number'];
+        $teamId = (int) $v['team_id'];
+        $rid = $v['client_request_id'] ?? null;
+        $cacheKey = $rid ? "rally:serve-mark:{$match->id}:{$rid}" : null;
+        if ($cacheKey && Cache::has($cacheKey)) {
+            return;
+        }
+
+        $changed = DB::transaction(function () use ($match, $set, $teamId, $rid, $actor) {
+            $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
+            if ($locked->isCompleted()) {
+                throw new InvalidArgumentException('Матч уже завершён.');
+            }
+            if (!$locked->hasTeams()) {
+                throw new InvalidArgumentException('У матча не назначены команды.');
+            }
+            if (!in_array($teamId, [(int) $locked->team_home_id, (int) $locked->team_away_id], true)) {
+                throw new InvalidArgumentException('Команда не участвует в этом матче.');
+            }
+            if ($set !== $this->rally->getActiveSetNumber($locked)) {
+                throw new InvalidArgumentException('Подачу можно отметить только в текущей партии.');
+            }
+            if (MatchRallyEvent::where('match_id', $locked->id)->where('set_number', $set)->exists()) {
+                throw new InvalidArgumentException('В партии уже есть очки — подача определяется по ним.');
+            }
+
+            $mark = MatchServeMark::where('match_id', $locked->id)->where('set_number', $set)->first();
+            if ($mark && (int) $mark->team_id === $teamId) {
+                return false;
+            }
+
+            MatchActionLog::create([
+                'match_id'            => $locked->id,
+                'set_number'          => $set,
+                'action'              => 'serve_mark',
+                'payload'             => ['team_id' => $teamId, 'previous_team_id' => $mark?->team_id, 'client_request_id' => $rid],
+                'recorded_by_user_id' => $actor->user?->id,
+                'recorded_by_link_id' => $actor->linkId,
+                'recorded_by_name'    => $actor->name,
+            ]);
+
+            $mark ??= new MatchServeMark(['match_id' => $locked->id, 'set_number' => $set]);
+            $mark->team_id = $teamId;
+            $mark->client_request_id = $rid;
+            $mark->recorded_by_user_id = $actor->user?->id;
+            $mark->recorded_by_link_id = $actor->linkId;
+            $mark->recorded_by_name = $actor->name;
+            $mark->save();
+
+            return true;
+        });
+
+        if ($cacheKey) {
+            Cache::put($cacheKey, 1, 600);
+        }
+        if ($changed) {
+            try {
+                app(CourtStateBroadcaster::class)->forMatch($match->id);
+            } catch (\Throwable $e) {
+                report($e);
+            }
         }
     }
 

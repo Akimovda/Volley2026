@@ -1468,3 +1468,28 @@ jQuery(document).on('click', '.js-like-toggle', function (e) {
 		});
 	}, true);
 })();
+
+/* ===== Ползунки: заливка трека до ручки (--fill), см. input[type="range"] в style.css ===== */
+(function () {
+	function syncRangeFill(el) {
+		var min = parseFloat(el.min); if (isNaN(min)) min = 0;
+		var max = parseFloat(el.max); if (isNaN(max)) max = 100;
+		var v = parseFloat(el.value); if (isNaN(v)) v = min;
+		var p = max > min ? Math.min(1, Math.max(0, (v - min) / (max - min))) : 0;
+		// центр ручки (22px) не доходит до краёв трека на 11px
+		el.style.setProperty('--fill', 'calc(11px + (100% - 22px) * ' + p.toFixed(4) + ')');
+	}
+	window.syncRangeFill = syncRangeFill;
+	function syncAll(root) {
+		(root || document).querySelectorAll('input[type="range"]').forEach(syncRangeFill);
+	}
+	document.addEventListener('input', function (e) {
+		if (e.target && e.target.type === 'range') syncRangeFill(e.target);
+	}, true);
+	document.addEventListener('change', function (e) {
+		if (e.target && e.target.type === 'range') syncRangeFill(e.target);
+	}, true);
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { syncAll(); });
+	else syncAll();
+	window.addEventListener('pageshow', function () { syncAll(); });
+})();

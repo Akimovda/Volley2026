@@ -1160,6 +1160,7 @@ Route::middleware([
         Route::get('/', [$c, 'show']);
         Route::post('/courts', [$c, 'storeCourt'])->name('.courts.store');
         Route::patch('/courts/{court}', [$c, 'updateCourt'])->whereNumber('court')->name('.courts.update');
+        Route::delete('/courts/{court}', [$c, 'destroyCourt'])->whereNumber('court')->name('.courts.destroy');
         Route::post('/courts/{court}/link', [$c, 'issueLink'])->whereNumber('court')->name('.link.issue');
         Route::post('/day-court/link', [$c, 'issueDayLink'])->name('.daylink.issue');
         Route::delete('/courts/{court}/link', [$c, 'revokeLink'])->whereNumber('court')->name('.link.revoke');
@@ -1263,6 +1264,8 @@ Route::middleware([
         ->name('tournament.matches.rally.match.start');
     Route::post('/tournament-matches/{match}/score/rally/match-unstart', [TournamentController::class, 'rallyMatchUnstart'])
         ->name('tournament.matches.rally.match.unstart');
+    Route::post('/tournament-matches/{match}/score/rally/serve-mark', [TournamentController::class, 'rallyServeMark'])
+        ->name('tournament.matches.rally.serve.mark');
     Route::post('/tournament-matches/{match}/score/rally/finalize', [TournamentController::class, 'rallyFinalize'])
         ->name('tournament.matches.rally.finalize');
     Route::post('/tournament-matches/{match}/score/rally/reopen', [TournamentController::class, 'rallyReopen'])
