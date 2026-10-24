@@ -39,7 +39,8 @@ class RoutesCheckUsage extends Command
                 continue;
             }
 
-            $finder = (new Finder())->files()->in($dir)->name(['*.php', '*.blade.php']);
+            // Каталоги/файлы с пометкой «delete …» (напр. views/delete event_templates) — выведенный из эксплуатации код, недостижим
+            $finder = (new Finder())->files()->in($dir)->name(['*.php', '*.blade.php'])->notPath('#(^|/)delete #');
 
             foreach ($finder as $file) {
                 $lines = file($file->getRealPath());
