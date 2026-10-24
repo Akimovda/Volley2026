@@ -334,7 +334,7 @@
             </div></div>
             <div class="bc-pultrow"><div class="bc-rl">{{ __('stream.demo_h') }}</div>
             <div class="bc-demos" id="bc-demos">
-                @foreach(['splash', 'live', 'sub', 'set_summary', 'match_summary'] as $d)
+                @foreach(['splash', 'live', 'sub', 'set_summary', 'match_summary', 'beach', 'classic5', 'serve'] as $d)
                 <button type="button" class="btn btn-small" data-demo="{{ $d }}">{{ __('stream.demo_' . $d) }}</button>
                 @endforeach
                 <button type="button" class="btn btn-small on" data-demo="">{{ __('stream.demo_live_air') }}</button>
@@ -359,6 +359,7 @@
                             <option value="glass" @selected($form['template'] === 'glass')>{{ __('stream.tpl_glass') }}</option>
                             <option value="neon" @selected($form['template'] === 'neon')>{{ __('stream.tpl_neon') }}</option>
                             <option value="light_tv" @selected($form['template'] === 'light_tv')>{{ __('stream.tpl_light_tv') }}</option>
+                            <option value="tabs" @selected($form['template'] === 'tabs')>{{ __('stream.tpl_tabs') }}</option>
                         </select>
                     </div>
                     <div class="bc-field">
@@ -366,6 +367,26 @@
                         <select id="bc-corner" name="corner">
                             @foreach(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as $k)
                             <option value="{{ $k }}" @selected($form['corner'] === $k)>{{ __('stream.corner_' . $k) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="bc-grid" id="bc-tabs-opts" @if($form['template'] !== 'tabs') style="display:none" @endif>
+                    <div class="bc-field">
+                        <label class="bc-l">{{ __('stream.tabs_color') }}</label>
+                        <div class="bc-swatches">
+                            <button type="button" class="bc-sw {{ $form['tabs_color'] ? '' : 'sel' }}" id="bc-tabs-default" style="background:linear-gradient(90deg,#E7612F,#2967BA)" data-color="" aria-label="{{ __('stream.tabs_color_default') }}" title="{{ __('stream.tabs_color_default') }}"></button>
+                            @foreach(['#E7612F', '#2967BA', '#1E8E5A', '#7A3FB5', '#C0392B', '#222831'] as $c)
+                            <button type="button" class="bc-sw {{ $form['tabs_color'] === $c ? 'sel' : '' }}" style="background:{{ $c }}" data-color="{{ $c }}" aria-label="{{ $c }}"></button>
+                            @endforeach
+                            <input type="text" id="bc-tabs-hex" maxlength="7" placeholder="#RRGGBB" value="{{ $form['tabs_color'] }}" style="width:9rem">
+                        </div>
+                    </div>
+                    <div class="bc-field">
+                        <label class="bc-l" for="bc-tabs-logo">{{ __('stream.tabs_logo') }}</label>
+                        <select id="bc-tabs-logo" name="tabs_logo">
+                            @foreach(['volleyclub', 'organizer', 'hidden'] as $k)
+                            <option value="{{ $k }}" @selected($form['tabs_logo'] === $k)>{{ __('stream.tabs_logo_' . $k) }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -899,8 +920,21 @@
             function themeNow() {
                 return { template: $('#bc-template').val(), corner: $('#bc-corner').val(),
                     show_set_scores: $('#bc-set-scores').is(':checked'), show_logos: $('#bc-show-logos').is(':checked'),
-                    scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked') };
+                    scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked'),
+                    tabs_color: tabsColor(), tabs_logo: $('#bc-tabs-logo').val() };
             }
+            function tabsColor() { var v = $.trim($('#bc-tabs-hex').val()); return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null; }
+            $('#bc-template').on('change', function () { $('#bc-tabs-opts').toggle($(this).val() === 'tabs'); });
+            $('#bc-tabs-opts').on('click', '.bc-sw', function () {
+                $('#bc-tabs-opts .bc-sw').removeClass('sel'); $(this).addClass('sel');
+                $('#bc-tabs-hex').val($(this).data('color') || '').trigger('input');
+            });
+            $('#bc-tabs-hex').on('input', function () {
+                var v = tabsColor(); $('#bc-tabs-opts .bc-sw').removeClass('sel');
+                if (v) { $('#bc-tabs-opts .bc-sw').filter(function () { return String($(this).data('color')).toUpperCase() === v; }).addClass('sel'); }
+                else if (!$.trim($(this).val())) { $('#bc-tabs-default').addClass('sel'); }
+                pushTheme();
+            });
             function pushTheme() {
                 $('#bc-scale-v').text($('#bc-scale').val() + ' %'); $('#bc-opacity-v').text($('#bc-opacity').val() + ' %');
                 var f = document.getElementById('bc-frame');
@@ -918,7 +952,8 @@
                     show_set_scores: $('#bc-set-scores').is(':checked') ? 1 : 0,
                     show_logos: $('#bc-show-logos').is(':checked') ? 1 : 0,
                     scale: $('#bc-scale').val(), opacity: $('#bc-opacity').val(), edge_margin: $('#bc-edge').val(),
-                    show_team_names: $('#bc-team-names').is(':checked') ? 1 : 0
+                    show_team_names: $('#bc-team-names').is(':checked') ? 1 : 0,
+                    tabs_color: tabsColor() || '', tabs_logo: $('#bc-tabs-logo').val()
                 }, function () { toast(S.saved); });
             });
 

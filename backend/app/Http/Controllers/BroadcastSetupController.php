@@ -113,7 +113,9 @@ class BroadcastSetupController extends Controller
             'checklist'   => app(\App\Services\Broadcast\StreamChecklist::class)->build($event, $occId, $courts, $activeLinks, $unassigned->count()),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
             'form'        => [
-                'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table', 'glass', 'neon', 'light_tv'], true) ? $theme['template'] : 'compact',
+                'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table', 'glass', 'neon', 'light_tv', 'tabs'], true) ? $theme['template'] : 'compact',
+                'tabs_color'      => CourtStateService::cleanTabsColor($theme['tabs_color'] ?? null),
+                'tabs_logo'       => in_array($theme['tabs_logo'] ?? '', CourtStateService::TABS_LOGOS, true) ? $theme['tabs_logo'] : 'volleyclub',
                 'corner'          => in_array($theme['corner'] ?? '', ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $theme['corner'] : 'top-left',
                 'show_set_scores' => (bool) ($theme['show_set_scores'] ?? true),
                 'show_logos'      => (bool) ($theme['show_logos'] ?? true),
@@ -485,7 +487,9 @@ class BroadcastSetupController extends Controller
         $this->authorizeEvent($request, $event);
         $data = $request->validate([
             'occurrence_id'   => ['required', 'integer'],
-            'template'        => ['required', Rule::in(['compact', 'sets_table', 'glass', 'neon', 'light_tv'])],
+            'template'        => ['required', Rule::in(['compact', 'sets_table', 'glass', 'neon', 'light_tv', 'tabs'])],
+            'tabs_color'      => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
+            'tabs_logo'       => ['nullable', Rule::in(CourtStateService::TABS_LOGOS)],
             'corner'          => ['required', Rule::in(['top-left', 'top-right', 'bottom-left', 'bottom-right'])],
             'show_set_scores' => ['required', 'boolean'],
             'show_logos'      => ['required', 'boolean'],
@@ -501,6 +505,8 @@ class BroadcastSetupController extends Controller
             'show_set_scores' => (bool) $data['show_set_scores'], 'show_logos' => (bool) $data['show_logos'],
             'scale' => (int) $data['scale'], 'opacity' => (int) $data['opacity'], 'edge_margin' => $data['edge_margin'],
             'show_team_names' => (bool) $data['show_team_names'],
+            'tabs_color' => CourtStateService::cleanTabsColor($data['tabs_color'] ?? null),
+            'tabs_logo' => $data['tabs_logo'] ?? 'volleyclub',
         ]);
         $s->save();
         $this->refreshCourts($event, $occ->id);

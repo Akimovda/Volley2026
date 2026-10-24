@@ -19,7 +19,7 @@
 html,body{margin:0;padding:0;overflow:hidden;background:transparent;width:100%;height:100%}
 body.preview{background:#5b6068}
 body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
-#board,#sub,#setsum,#matchsum{--u:calc(var(--u0)*var(--k,.7))}
+#board,#sub,#setsum,#matchsum,#tabs{--u:calc(var(--u0)*var(--k,.7))}
 #stage{position:absolute;left:calc((100vw - var(--u0)*1920)/2);top:calc((100vh - var(--u0)*1080)/2);width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
@@ -36,6 +36,8 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 #setsum.nn{width:calc(var(--u)*760);margin-left:calc(var(--u)*-380)}
 #matchsum.nn{width:calc(var(--u)*760);margin-left:calc(var(--u)*-380)}
 .sum-score .tn img.lg2{width:calc(var(--u)*64);height:calc(var(--u)*64);border-radius:50%;object-fit:cover;flex:none}
+
+@include('broadcast.tabs.style')
 
 /* ---- метка платформы ---- */
 #tag{left:50%;bottom:calc(var(--u)*14);width:calc(var(--u)*700);margin-left:calc(var(--u)*-350);text-align:center;font-size:calc(var(--u)*22);font-weight:500;color:#fff;opacity:0;text-shadow:0 0 calc(var(--u)*6) rgba(0,0,0,.75),0 calc(var(--u)*1) calc(var(--u)*2) rgba(0,0,0,.6);letter-spacing:.02em;transform:none;z-index:5}
@@ -129,6 +131,7 @@ body.tpl-light_tv .sum-score .big{color:#16264a}
 @if($audio)<audio id="bgm" loop preload="auto" playsinline></audio>@if($preview)<button type="button" id="bgm-btn" style="position:fixed;right:8px;bottom:8px;z-index:50;font:12px sans-serif;padding:6px 10px">🔊 {{ __('broadcast.enable_sound') }}</button>@endif @endif
 <div id="stage">
     <div id="board" class="p card tl"></div>
+    <div id="tabs" class="p tl"></div>
     <div id="sub" class="p card r"></div>
     <div id="setsum" class="p card"></div>
     <div id="matchsum" class="p card"></div>
@@ -147,7 +150,7 @@ window.__BC = @json($config);
     var cur = null, offset = 0, wsOk = false, pollFrom = Date.now() + 5000;
     var lastFetch = 0, switched = null, subKey = null, subTimer = null;
     var els = {
-        board: document.getElementById('board'), sub: document.getElementById('sub'),
+        board: document.getElementById('board'), tabs: document.getElementById('tabs'), sub: document.getElementById('sub'),
         setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'),
         splash: document.getElementById('splash'), tag: document.getElementById('tag')
     };
@@ -177,7 +180,7 @@ window.__BC = @json($config);
         th = th || {};
         var k = Math.max(50, Math.min(150, parseInt(th.scale, 10) || 70)) / 100;
         var pa = Math.max(30, Math.min(100, parseInt(th.opacity, 10) || 85)) / 100;
-        ['board', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
+        ['board', 'tabs', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
         document.getElementById('stage').style.setProperty('--edge', EDGES[th.edge_margin] || 48);
         ['glass', 'neon', 'light_tv'].forEach(function (n) { document.body.classList.toggle('tpl-' + n, th.template === n); });
     }
@@ -213,7 +216,7 @@ window.__BC = @json($config);
             }
             html += '<div class="row"><i class="stripe" style="background:' + color(t.color) + '"></i>' + logo +
                 '<div class="name' + (lb.only ? ' sp' : '') + '">' + esc(lb.text) + '</div>' +
-                '<div class="sv' + (p.serving === side ? ' on' : '') + '">' + BALL + '</div>' + extra +
+                '<div class="sv' + (p.serving_lineup && p.serving === (side === 'home' ? 'A' : 'B') ? ' on' : '') + '">' + BALL + '</div>' + extra +
                 '<div class="pts"><span data-side="' + side + '">' + pts + '</span></div></div>';
         });
         html += '<div class="foot"><span>' + esc(fmt(S.set_n, cs.n)) + '</span></div>';
@@ -227,6 +230,8 @@ window.__BC = @json($config);
             prevPts[k] = cs[side];
         });
     }
+
+@include('broadcast.tabs.script')
 
     /* ---------- замена ---------- */
     function renderSub(p) {
@@ -346,7 +351,9 @@ window.__BC = @json($config);
         var m = p.mode;
         if (p.theme) { applyTheme(p.theme); }
         show(els.tag, m !== 'off');
-        show(els.board, m === 'live' || m === 'set_summary' ? (renderBoard(p), true) : false);
+        var isTabs = (p.theme || {}).template === 'tabs', onAir = m === 'live' || m === 'set_summary';
+        show(els.board, onAir && !isTabs ? (renderBoard(p), true) : false);
+        show(els.tabs, onAir && isTabs ? (renderTabs(p), true) : false);
         if (m === 'live') { renderSub(p); } else { show(els.sub, false); }
         show(els.setsum, m === 'set_summary' ? (renderSetSum(p), true) : false);
         show(els.matchsum, m === 'match_summary' ? (renderMatchSum(p), true) : false);

@@ -32,5 +32,6 @@ Route::middleware(['web', 'throttle:scorer-ip', 'throttle:scorer', 'scorer.link'
     Route::post('/m/{match}/lineup/event', [ScorerController::class, 'lineupEvent'])->name('scorer.lineup.event');
     Route::post('/m/{match}/match-start', [ScorerController::class, 'matchStart'])->name('scorer.match.start');
     Route::post('/m/{match}/match-unstart', [ScorerController::class, 'matchUnstart'])->name('scorer.match.unstart');
+    Route::post('/m/{match}/serve-mark', [ScorerController::class, 'serveMark'])->name('scorer.serve.mark');
     Route::post('/m/{match}/finalize', [ScorerController::class, 'finalize'])->name('scorer.finalize');
 });

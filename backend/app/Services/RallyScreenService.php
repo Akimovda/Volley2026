@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\MatchRallyEvent;
+use App\Models\MatchServeMark;
 use App\Models\TournamentMatch;
 
 /** Данные и HTML-фрагмент экрана поочкового ввода — общие для организатора и ведущего по токен-ссылке. */
@@ -32,7 +33,16 @@ class RallyScreenService
         $canMatchStart = empty($lineup['enabled']) && $match->status === TournamentMatch::STATUS_SCHEDULED && !$hasRallies;
         $canMatchUnstart = $match->status === TournamentMatch::STATUS_LIVE && !RallyInputService::hasPlay($match);
 
-        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore', 'canMatchStart', 'canMatchUnstart');
+        // «Подаёт: [A] [B]» — только в текущей партии, пока в ней нет очков; при учёте состава подачу задаёт расстановка
+        $setHasPoints = MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)->exists();
+        $canServeMark = !empty($urls['serve_mark']) && !$match->isCompleted() && $match->hasTeams()
+            && !$setHasPoints && !$board['decided'] && empty($lineup['enabled'])
+            && $setNumber === $this->rally->getActiveSetNumber($match);
+        $serveMarkTeamId = $canServeMark
+            ? MatchServeMark::where('match_id', $match->id)->where('set_number', $setNumber)->value('team_id')
+            : null;
+
+        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore', 'canMatchStart', 'canMatchUnstart', 'canServeMark', 'serveMarkTeamId');
     }
 
     public function fragmentHtml(TournamentMatch $match, int $setNumber, array $urls): string

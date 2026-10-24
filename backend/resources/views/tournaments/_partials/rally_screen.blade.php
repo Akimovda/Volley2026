@@ -198,6 +198,19 @@ window.RallyLive = (function () {
 				});
 			};
 			confirmDo(isStart ? FIN.startConfirm : FIN.unstartConfirm, go, isStart ? FIN.startYes : null, isStart ? FIN.startNo : null);
+		} else if (f.classList.contains('js-rw-serve-mark')) {
+			// Отметка «подаёт первым»: без подтверждения, uuid на нажатие; повтор запроса безвреден
+			e.preventDefault();
+			if (f.dataset.busy === '1') { return; }
+			f.dataset.busy = '1';
+			busy(true);
+			send(f.action, {set_number: f.dataset.set, team_id: f.dataset.team, client_request_id: uuid()}, {retry: true}, function (j) {
+				busy(false); swap(j.html);
+			}, function (m) {
+				busy(false); f.dataset.busy = '';
+				toast(m);
+				refresh();
+			});
 		} else if (f.classList.contains('js-rw-finalize-ajax')) {
 			// Ведущий по токен-ссылке: запись итога с подтверждением, ответ JSON → экран площадки
 			e.preventDefault();

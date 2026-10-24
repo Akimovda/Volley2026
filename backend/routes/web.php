@@ -1263,6 +1263,8 @@ Route::middleware([
         ->name('tournament.matches.rally.match.start');
     Route::post('/tournament-matches/{match}/score/rally/match-unstart', [TournamentController::class, 'rallyMatchUnstart'])
         ->name('tournament.matches.rally.match.unstart');
+    Route::post('/tournament-matches/{match}/score/rally/serve-mark', [TournamentController::class, 'rallyServeMark'])
+        ->name('tournament.matches.rally.serve.mark');
     Route::post('/tournament-matches/{match}/score/rally/finalize', [TournamentController::class, 'rallyFinalize'])
         ->name('tournament.matches.rally.finalize');
     Route::post('/tournament-matches/{match}/score/rally/reopen', [TournamentController::class, 'rallyReopen'])
