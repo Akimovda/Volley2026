@@ -106,6 +106,23 @@
 			</div>
 		</div>
 
+		@if(!empty($canMatchStart) && !empty($urls['match_start']))
+		<div class="card mb-2" style="text-align:center">
+			<form method="POST" action="{{ $urls['match_start'] }}" class="js-rw-match-start" data-set="{{ $setNumber }}">
+				@csrf
+				<button type="submit" class="btn btn-primary w-100" style="font-size:16px;padding:14px 8px">{{ __('broadcast.match_start_btn') }}</button>
+			</form>
+		</div>
+		@elseif(!empty($canMatchUnstart) && !empty($urls['match_unstart']))
+		<div class="f-13 mb-2" style="text-align:center;opacity:.8">
+			{{ __('broadcast.match_started_note') }}
+			<form method="POST" action="{{ $urls['match_unstart'] }}" class="js-rw-match-unstart" data-set="{{ $setNumber }}" style="display:inline">
+				@csrf
+				<button type="submit" class="link-btn" style="background:none;border:0;padding:0;color:inherit;text-decoration:underline;cursor:pointer;font-size:inherit">{{ __('broadcast.match_unstart_link') }}</button>
+			</form>
+		</div>
+		@endif
+
 		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
 		<div class="alert alert-info f-13 mb-2">{{ __('tournaments.rally_no_attempts_note') }}</div>
 

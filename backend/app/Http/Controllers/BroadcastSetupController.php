@@ -98,6 +98,8 @@ class BroadcastSetupController extends Controller
         }
         $bg = $settings->exists ? $settings->getFirstMedia('stream_bg') : null;
 
+        $unassigned = $isFriendly ? collect() : $this->unassignedMatches($event, $occId);
+
         return view('broadcast.setup', [
             'event'       => $event,
             'isFriendly'  => $isFriendly,
@@ -107,7 +109,8 @@ class BroadcastSetupController extends Controller
             'channels'    => $channels,
             'canManageChannels' => $canManageChannels,
             'dayCourtPending' => $isFriendly && $occId && $courts->isEmpty(),
-            'unassigned'  => $isFriendly ? collect() : $this->unassignedMatches($event, $occId),
+            'unassigned'  => $unassigned,
+            'checklist'   => app(\App\Services\Broadcast\StreamChecklist::class)->build($event, $occId, $courts, $activeLinks, $unassigned->count()),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
             'form'        => [
                 'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table', 'glass', 'neon', 'light_tv'], true) ? $theme['template'] : 'compact',

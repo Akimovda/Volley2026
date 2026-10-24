@@ -27,7 +27,12 @@ class RallyScreenService
             ? implode(', ', array_map(fn ($s) => $s[0] . ':' . $s[1], $this->rally->buildFinalSets($match)))
             : '';
 
-        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore');
+        // «▶ Матч начался» — пока в матче нет очков; при учёте состава эту роль играет «Начать партию»
+        $hasRallies = MatchRallyEvent::where('match_id', $match->id)->exists();
+        $canMatchStart = empty($lineup['enabled']) && $match->status === TournamentMatch::STATUS_SCHEDULED && !$hasRallies;
+        $canMatchUnstart = $match->status === TournamentMatch::STATUS_LIVE && !RallyInputService::hasPlay($match);
+
+        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore', 'canMatchStart', 'canMatchUnstart');
     }
 
     public function fragmentHtml(TournamentMatch $match, int $setNumber, array $urls): string

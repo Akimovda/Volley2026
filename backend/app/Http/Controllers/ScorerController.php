@@ -259,7 +259,7 @@ class ScorerController extends Controller
         }
         $this->touchActor($link, $actor);
 
-        return $this->jsonState($link, $match, (int) $v['set_number']);
+        return $this->jsonState($link, $match, (int) ($v['set_number'] ?? $this->rally->getActiveSetNumber($match->fresh())));
     }
 
     public function point(Request $request, string $token, TournamentMatch $match)
@@ -275,6 +275,16 @@ class ScorerController extends Controller
     public function lineupStart(Request $request, string $token, TournamentMatch $match)
     {
         return $this->act($request, $match, RallyInputService::startRules(), fn ($m, $v, $a) => $this->input->setStart($m, $v, $a));
+    }
+
+    public function matchStart(Request $request, string $token, TournamentMatch $match)
+    {
+        return $this->act($request, $match, RallyInputService::matchStateRules(), fn ($m, $v, $a) => $this->input->matchStart($m, $v, $a));
+    }
+
+    public function matchUnstart(Request $request, string $token, TournamentMatch $match)
+    {
+        return $this->act($request, $match, RallyInputService::matchStateRules(), fn ($m, $v, $a) => $this->input->matchUnstart($m, $v, $a));
     }
 
     public function lineupEvent(Request $request, string $token, TournamentMatch $match)

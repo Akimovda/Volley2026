@@ -317,6 +317,7 @@ $tourNumber = $seasonData
 				@endif
 				<div class="mt-1">
 					<a href="{{ route('broadcast.setup', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
+					@unless(\App\Services\Broadcast\StreamChecklist::hasMatches($event, $selectedOccurrence?->id))<div class="f-13" style="opacity:.7;margin-top:.3rem">{{ __('stream.cl_create_match_first') }}</div>@endunless
 				</div>
 			</div>
 		</div>

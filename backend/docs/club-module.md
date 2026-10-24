@@ -1,0 +1,21 @@
+# Клубный модуль, школы, локации
+
+_Вынесено из CLAUDE.md 2026-10-23 без изменения содержания. Полный исходник: docs/archive/CLAUDE.full-2026-10-23.md_
+
+## Школы (volleyball_school)
+- **Баг (исправлен 2026-07-15): 404 при сохранении чужой школы админом**. `VolleyballSchoolController::update()` для админа ищет школу по `$request->input('school_id', 0)` (`findOrFail(0)` → 404 при отсутствии поля), для обычного организатора — по `organizer_id`. В `edit.blade.php` не было скрытого поля `school_id` → админ, редактирующий школу другого организатора через `/volleyball_school/my/edit?id=X`, ловил 404 при сохранении (сама форма грузилась нормально). Фикс: `<input type="hidden" name="school_id" value="{{ $school->id }}">`.
+
+## Создание локации организатором из мастера мероприятия (2026-10-02)
+- Шаг 2 мастера: у админа прежняя ссылка на `/admin/locations/create`, у организатора — кнопка `#org_location_create_btn`, открывающая **модалку (fancybox iframe)** `/organizer/locations/create?embed=1&city_id=…` (`OrganizerLocationController`, вью `locations/organizer_create|organizer_created`). Данные мастера не теряются (ухода со страницы нет). После сохранения iframe шлёт `postMessage({type:'location-created'})`, `events-create.js` (внутри IIFE автокомплита города) перезагружает `/ajax/locations/by-city`, выбирает новую локацию, пересоздаёт кастомный select (`customSelect.destroy`+`createCustomSelect`) и закрывает модалку.
+- Город в модалке фиксирован (берётся из шага 2). Обязательны: название, адрес, lat, lng (без координат карта на мероприятии не показывается) — то же правило теперь и в админском `store`/`update`. Дубль «тот же город + то же название» отсекается сравнением в PHP (`LOWER()` в PostgreSQL на этой БД НЕ понижает кириллицу — не использовать для сравнения регистра).
+- Локация создаётся **общей** (`organizer_id = NULL` — `EventLocationService` разрешает организатору выбирать только такие), `locations.created_by_user_id` хранит автора. Видна всем сразу (решение владельца, без модерации). Всем админам (`role=admin`, кроме автора) уходит уведомление `location_created_by_organizer` (in_app/tg/vk/max/push, шаблон неактивный, содержимое из кода) со ссылкой на `admin.locations.edit` — админ дозаполняет фото/описание/корты. Роут POST с `throttle:15,60`.
+- Карта-пикер (`locations/_map_picker.blade.php`, Яндекс.Карты JS 2.1, ключ `YANDEX_MAPS_API_KEY`): клик/перетаскивание метки заполняет `name="lat"`/`name="lng"` ближайшей формы, «Найти по адресу» геокодирует адрес (с городом), пустой адрес заполняется обратным геокодированием. Подключён в админских `create`/`edit` локации и в форме организатора. На `event_management_edit` та же кнопка у организатора (`#org_location_create_btn_edit`, обработчик в IIFE автокомплита города рядом с `loadLocations`: на `message` вызывает `loadLocations(cityId, newId)` с preselect).
+- **Ловушка тестирования**: сквозной тест в headless-Chrome пишет в БД по-настоящему, а `create()` уведомлений на dev шлёт РЕАЛЬНЫЕ сообщения (Telegram/push админам dev) — 2026-10-02 так ушло уведомление владельцу. Для тестов, создающих уведомления, использовать транзакцию с откатом (afterCommit-джобы не уйдут), в браузерном тесте — тестового админа без привязанных каналов.
+
+## Клубный модуль (Timeline, аналитика, брони кортов, оплата ЮKassa)
+Полная документация — [claude_docs/claude_club_module.md](claude_docs/claude_club_module.md). См. также память `project_club_module_phases.md`.
+- **TimelineService** (`app/Services/TimelineService.php`) — единый partial `club/_partials/timeline.blade.php`, не дублировать. `EventOccurrence.ends_at`/`timezone` — не колонки/не заданы по умолчанию в тестовых occurrence → молча теряются слоты, см. файл.
+- **ClubAnalyticsService** — переиспользует `TimelineService::day()` для числителя загрузки; выручка — отдельный SQL по `payment_mode`.
+- **Фаза 5** (бронь корта игроком) — `CourtBookingService::createByPlayer()`, `route('login', ['return' => ...])` (параметр `return`, не `return_to`!), `/my/bookings`.
+- **Карточка шаринга матча (Browsershot)** — Chrome ставить ТОЛЬКО в `storage/app/chromium/` (не `~/.cache/puppeteer` — туда `www-data` не имеет доступа).
+- **Фазы 4+6** (оплата ЮKassa за бронь + уведомления) — `payments.court_booking_id`, `YookassaService::makeClientFor()/verifyPayment()/createRefund()`, `locations.refund_policy`/`refund_deadline_hours`.

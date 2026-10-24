@@ -1259,6 +1259,10 @@ Route::middleware([
         ->name('tournament.matches.rally.lineup.start');
     Route::post('/tournament-matches/{match}/score/rally/lineup/event', [TournamentController::class, 'rallyLineupEvent'])
         ->name('tournament.matches.rally.lineup.event');
+    Route::post('/tournament-matches/{match}/score/rally/match-start', [TournamentController::class, 'rallyMatchStart'])
+        ->name('tournament.matches.rally.match.start');
+    Route::post('/tournament-matches/{match}/score/rally/match-unstart', [TournamentController::class, 'rallyMatchUnstart'])
+        ->name('tournament.matches.rally.match.unstart');
     Route::post('/tournament-matches/{match}/score/rally/finalize', [TournamentController::class, 'rallyFinalize'])
         ->name('tournament.matches.rally.finalize');
     Route::post('/tournament-matches/{match}/score/rally/reopen', [TournamentController::class, 'rallyReopen'])
