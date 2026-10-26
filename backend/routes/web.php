@@ -1092,6 +1092,12 @@ Route::post('/admin/impersonate/leave', [ImpersonationController::class, 'leave'
 Route::get('/events/{event}/game/results', [\App\Http\Controllers\FriendlyGameController::class, 'results'])
     ->name('game.results');
 
+// Расширенная статистика матча (турниры — публично, товарищеские — как game.results)
+Route::get('/matches/{match}/stats', [\App\Http\Controllers\MatchStatsPageController::class, 'show'])
+    ->whereNumber('match')->name('match.stats');
+Route::get('/matches/{match}/stats.pdf', [\App\Http\Controllers\MatchStatsPageController::class, 'pdf'])
+    ->whereNumber('match')->name('match.stats.pdf');
+
 Route::get('/events/{event}/tournament', [TournamentPublicController::class, 'show'])
     ->name('tournament.public.show');
 
