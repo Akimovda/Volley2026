@@ -512,6 +512,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 
     Route::get('/events/{event}/teams/{team}/confirm-reserve/{token}', [TournamentTeamController::class, 'reserveConfirmShow'])
         ->name('tournamentTeams.reserveConfirmShow')->withoutMiddleware(['auth']);
+    // Совместимость: уведомления, разосланные до 2026-10-26, ведут на этот URL по GET (раньше — 405)
+    Route::get('/events/{event}/teams/{team}/confirm-reserve', [TournamentTeamController::class, 'reserveConfirmLegacy'])
+        ->name('tournamentTeams.reserveConfirmLegacy');
     Route::post('/events/{event}/teams/{team}/confirm-reserve', [TournamentTeamController::class, 'reserveConfirm'])
         ->name('tournamentTeams.reserveConfirm');
     Route::post('/events/{event}/teams/{team}/decline-reserve', [TournamentTeamController::class, 'reserveDecline'])

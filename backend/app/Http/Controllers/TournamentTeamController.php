@@ -1197,6 +1197,18 @@ class TournamentTeamController extends Controller
         return view('tournaments.teams.reserve_confirm', compact('event', 'team', 'token', 'expired'));
     }
 
+    public function reserveConfirmLegacy(Request $request, Event $event, EventTeam $team): RedirectResponse
+    {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        $token = (string) $request->query('token', '');
+
+        if ($team->isInReserve() && $token !== '' && $team->confirmation_token === $token) {
+            return redirect()->route('tournamentTeams.reserveConfirmShow', [$event, $team, $token]);
+        }
+
+        return redirect()->route('tournamentTeams.show', [$event, $team]);
+    }
+
     public function reserveConfirm(Request $request, Event $event, EventTeam $team, TournamentTeamService $service): RedirectResponse
     {
         abort_unless((int) $team->event_id === (int) $event->id, 404);
