@@ -67,7 +67,7 @@ class BroadcastSetupController extends Controller
             ->orderBy('id')->get()->groupBy('court_id');
 
         $canManageChannels = (bool) ($request->user()->isAdmin() || (int) $request->user()->id === (int) $event->organizer_id);
-        $channels = BroadcastChannel::where('organizer_id', (int) $event->organizer_id)->orderBy('id')->get()->map(fn ($c) => $c->publicRow())->values();
+        $channels = BroadcastChannel::whereIn('organizer_id', $this->channelOwnerIds($request, $event))->orderBy('id')->get()->map(fn ($c) => $c->publicRow())->values();
         $courtData = $courts->map(function (EventCourt $c) use ($activeLinks, $tz, $scorerLinks, $canManageChannels) {
             $state = $this->broadcaster->cached($c);
             $link = $activeLinks[$c->id] ?? null;
@@ -418,6 +418,16 @@ class BroadcastSetupController extends Controller
         return response()->json(['ok' => true, 'destination' => $this->destinationRow($d)]);
     }
 
+    /** Чьи каналы можно выбрать: владельца события; админу, открывшему чужое событие, — ещё и его собственные. */
+    private function channelOwnerIds(Request $request, Event $event): array
+    {
+        $ids = [(int) $event->organizer_id];
+        if ($request->user()->isAdmin()) {
+            $ids[] = (int) $request->user()->id;
+        }
+        return array_values(array_unique($ids));
+    }
+
     /** Выбор канала организатора для площадки (channel_id) либо возврат к разовому ключу (пусто). Помощник тоже может выбирать — ключа он не получает. */
     public function selectChannel(Request $request, Event $event, EventCourt $court): JsonResponse
     {
@@ -426,7 +436,7 @@ class BroadcastSetupController extends Controller
         $data = $request->validate(['channel_id' => ['nullable', 'integer']]);
         $channel = null;
         if (!empty($data['channel_id'])) {
-            $channel = BroadcastChannel::where('id', $data['channel_id'])->where('organizer_id', (int) $event->organizer_id)->first();
+            $channel = BroadcastChannel::where('id', $data['channel_id'])->whereIn('organizer_id', $this->channelOwnerIds($request, $event))->first();
             abort_unless($channel, 422, __('stream.ch_not_found'));
         }
         DB::transaction(function () use ($court, $channel) {
