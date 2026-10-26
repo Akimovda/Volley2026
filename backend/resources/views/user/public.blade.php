@@ -881,6 +881,29 @@ body.dark .gradient-marker-line,
                 </script>
                 @endif
 
+                {{-- ===== Матчи игрока: ссылки на расширенную статистику матча ===== --}}
+                @if(isset($playerMatches) && $playerMatches->total() > 0)
+                <div class="ramka" id="player-matches">
+                    <h2 class="-mt-05">{{ $isSelf ? __('match_stats.profile_title_self') : __('match_stats.profile_title') }}</h2>
+                    <div class="card">
+                        @foreach($playerMatches as $pm)
+                        <a href="{{ route('match.stats', ['match' => $pm->id, 'player' => $user->id]) }}" class="stat-row f-13" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;text-decoration:none;color:inherit">
+                            <span style="opacity:.6;min-width:7rem">{{ \Illuminate\Support\Carbon::parse($pm->played_at)->format('d.m.Y') }}</span>
+                            <span class="b-600" style="flex:1 1 14rem;min-width:0">{{ $pm->ev_title }}<span style="display:block;font-weight:400;opacity:.65">{{ __('match_stats.profile_vs') }} {{ $pm->opp_name }}</span></span>
+                            @if($pm->status === 'live')
+                            <span class="mx-live-chip" style="background:#ef4444;color:#fff;border-radius:.8rem;padding:.1rem .7rem;font-size:1.1rem;font-weight:800;text-transform:uppercase">{{ __('match_stats.profile_live') }}</span>
+                            @endif
+                            <span class="b-700" style="min-width:4rem;text-align:center;color:{{ $pm->won === null ? 'inherit' : ($pm->won ? '#16a34a' : '#ef4444') }}">{{ $pm->my_sets }}:{{ $pm->opp_sets }}</span>
+                            <span style="min-width:8rem;text-align:right">{{ $pm->my_points }} {{ __('match_stats.profile_points') }} · <span style="color:#ef4444">{{ $pm->my_errors }} {{ __('match_stats.profile_errors') }}</span></span>
+                        </a>
+                        @endforeach
+                    </div>
+                    @if($playerMatches->hasPages())
+                    <div style="margin-top:1rem">{{ $playerMatches->links() }}</div>
+                    @endif
+                </div>
+                @endif
+
                 {{-- ===== OPENSKILL: История, партнёры, соперники ===== --}}
                 @php
                     $hasRatingHistory = isset($ratingHistory) && $ratingHistory->isNotEmpty();

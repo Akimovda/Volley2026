@@ -180,6 +180,7 @@ class UserPublicController extends Controller
             'ratingPartners'   => $ratingPartners,
             'ratingOpponents'  => $ratingOpponents,
             'ratingPositions'  => $ratingPositions,
+            'playerMatches'    => app(\App\Services\PlayerMatchListService::class)->paginate($user, auth()->user())->fragment('player-matches'),
         ]);
     }
 }
