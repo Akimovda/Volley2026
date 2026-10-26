@@ -29,7 +29,7 @@ class MatchAdvancedStatsService
     private const CACHE_VERSION = 'v1';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't1';
+    private const PDF_TEMPLATE_VERSION = 't2';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,

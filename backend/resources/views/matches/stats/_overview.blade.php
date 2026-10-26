@@ -56,7 +56,7 @@
 
 <div class="ramka">
     <h2 class="-mt-05">{{ __('match_stats.origin_title') }}</h2>
-    <div class="ms-bars">
+    <div class="ms-bars mx-origin">
         @foreach($bars as $bar)
         @php
             $hv = $o['home'][$bar['key']]; $av = $o['away'][$bar['key']];
