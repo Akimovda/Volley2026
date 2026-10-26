@@ -1234,6 +1234,9 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 							@endif
 							@if($offerPending)
 							<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#f0fdf4;color:#16a34a">🎉 Место предложено</span>
+							@if((int) $tTeam->captain_user_id === (int) auth()->id())
+							<a href="{{ route('tournamentTeams.reserveConfirmShow', [$event, $tTeam, $tTeam->confirmation_token]) }}" class="btn btn-small">✅ Подтвердить участие</a>
+							@endif
 							@endif
 						</div>
 					</div>
