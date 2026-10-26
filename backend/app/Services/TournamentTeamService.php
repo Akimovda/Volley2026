@@ -2047,8 +2047,10 @@ final class TournamentTeamService
         // Уведомление капитану
         $event     = $team->event;
         $occurrence = $team->occurrence;
-        $confirmUrl = route('tournamentTeams.reserveConfirm', ['event' => $event->id, 'team' => $team->id, 'token' => $token]);
-        $declineUrl = route('tournamentTeams.reserveDecline', ['event' => $event->id, 'team' => $team->id]);
+        // Ссылки ведут на GET-страницу подтверждения (reserveConfirmShow): reserveConfirm/reserveDecline — POST-only,
+        // открытие их по ссылке из уведомления даёт 405. Подтвердить/отказаться можно кнопками на этой странице.
+        $confirmUrl = route('tournamentTeams.reserveConfirmShow', ['event' => $event->id, 'team' => $team->id, 'token' => $token]);
+        $declineUrl = $confirmUrl;
         $expiresStr = $expires->format('d.m.Y H:i');
 
         try {

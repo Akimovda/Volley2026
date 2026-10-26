@@ -118,5 +118,6 @@ _Вынесено из CLAUDE.md 2026-10-23 без изменения содер
 ## Вход по email/паролю для App Review (2026-10-24)
 - Маршрут `GET/POST /auth/review-login` (`ReviewLoginController`, коммит `ceae0632`), аккаунт `review@volleyplay.club` (id=415, `is_hidden=true`). POST — `throttle:5,1` всегда. После входа в приложении (UA `VolleyPlayApp|SVSVolleyApp`) редирект на `/`, в вебе — `/events`.
 - Ссылка «Вход по email» (`auth.login_by_email`) в `auth/_oauth_buttons.blade.php` (на `/login` и в поп-апе) — только в приложении И при `config('auth.review_login_link')` ← `REVIEW_LOGIN_LINK` (по умолчанию false). Сам маршрут от флага не зависит.
-- **После одобрения 1.2.0 — `REVIEW_LOGIN_LINK=false` в `.env` прода + `config:cache` (+ reload php8.3-fpm).**
+- **1.2.0 одобрена 26.10.2026 (App Store и RuStore), флаг выключен** (`REVIEW_LOGIN_LINK=false` на проде, `config:cache`). Маршрут `/auth/review-login` и throttle остались. YouTube-канал review-аккаунта (`broadcast_channels` id=11, organizer 415) удалён — ключ отозван; язык профиля review-аккаунта не трогали.
+- **Для следующего ревью:** включить `REVIEW_LOGIN_LINK=true` (+ `config:cache`, reload php8.3-fpm), завести новый ключ YouTube в review-аккаунте, после одобрения — выключить флаг и удалить ключ/канал.
 - Обычный `/login` — Fortify (`login`, `login.store`); `review-login` — отдельная скрытая форма.
