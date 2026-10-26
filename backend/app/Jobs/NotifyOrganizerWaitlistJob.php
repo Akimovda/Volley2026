@@ -64,10 +64,13 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         if (!$occurrence) return;
 
         $organizer = $occurrence->event?->organizer;
-        if (!$organizer || !$organizer->notify_player_registrations) return;
+        if (!$organizer) return;
 
         $player = User::find($this->playerId);
         if (!$player) return;
+
+        $recipientIds = NotifyOrganizerRegistrationJob::organizerAndStaffRecipients((int) $organizer->id, (int) $player->id);
+        if (!$recipientIds) return;
 
         $playerName = trim(implode(' ', array_filter([
             $player->last_name,
@@ -97,31 +100,36 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
             ? ['organizer_player_waitlist_left', 'Выход из листа ожидания']
             : ['organizer_player_waitlisted', 'Запись в лист ожидания'];
 
-        try {
-            $notificationService->create(
-                userId:   (int) $organizer->id,
-                type:     $type,
-                title:    $title,
-                body:     null,
-                payload:  [
-                    'event_id'       => (int) $event->id,
-                    'occurrence_id'  => (int) $occurrence->id,
-                    'event_title'    => (string) ($event->title ?? ''),
-                    'event_date'     => $eventDate,
-                    'event_time'     => $eventTime,
-                    'player_name'    => $playerName,
-                    'player_phone'   => (string) ($player->phone ?? ''),
-                    'pos_label'      => $posLabel,
-                    'waitlist_count' => $waitlistCount,
-                ],
-                channels: ['in_app', 'telegram', 'vk', 'max'],
-            );
-        } catch (\Throwable $e) {
-            Log::warning('NotifyOrganizerWaitlistJob: create failed', [
-                'occurrence_id' => $this->occurrenceId,
-                'player_id'     => $this->playerId,
-                'error'         => $e->getMessage(),
-            ]);
+        $payload = [
+            'event_id'       => (int) $event->id,
+            'occurrence_id'  => (int) $occurrence->id,
+            'event_title'    => (string) ($event->title ?? ''),
+            'event_date'     => $eventDate,
+            'event_time'     => $eventTime,
+            'player_name'    => $playerName,
+            'player_phone'   => (string) ($player->phone ?? ''),
+            'pos_label'      => $posLabel,
+            'waitlist_count' => $waitlistCount,
+        ];
+
+        foreach ($recipientIds as $recipientId) {
+            try {
+                $notificationService->create(
+                    userId:   $recipientId,
+                    type:     $type,
+                    title:    $title,
+                    body:     null,
+                    payload:  $payload,
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            } catch (\Throwable $e) {
+                Log::warning('NotifyOrganizerWaitlistJob: create failed', [
+                    'occurrence_id' => $this->occurrenceId,
+                    'player_id'     => $this->playerId,
+                    'recipient_id'  => $recipientId,
+                    'error'         => $e->getMessage(),
+                ]);
+            }
         }
     }
 }

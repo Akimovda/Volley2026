@@ -186,7 +186,7 @@ return [
     'notif_vk_command_label' => 'Bot command (copied to clipboard):',
 
     'notif_org_label'  => 'Notifications about player sign-ups',
-    'notif_org_lead'   => 'A personal message from our bot via Telegram, VK or MAX every time someone signs up or cancels for your events.',
+    'notif_org_lead'   => 'A notification on the site and in the app, plus a personal message from our bot via Telegram, VK or MAX (if connected), every time someone signs up or cancels for your events. The organizer\'s assistants get the same notifications.',
     'notif_org_on'     => 'Enabled',
     'notif_org_off'    => 'Disabled',
 

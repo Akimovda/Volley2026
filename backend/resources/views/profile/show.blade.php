@@ -944,7 +944,7 @@
 					})();
 					</script>
 
-					@if(($hasTelegramNotify || $hasVkNotify || $hasMaxNotify) && in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true))
+					@if(in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true))
 					<div class="mt-2 pt-2 form" style="border-top:1px solid var(--border-color, #e0e0e0)">
 						<label>{{ __('profile.notif_org_label') }}</label>
 						<p>

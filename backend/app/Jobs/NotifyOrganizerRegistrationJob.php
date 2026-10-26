@@ -80,10 +80,9 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             };
         } else {
             $organizer = $occurrence->event?->organizer;
-            if (!$organizer || !$organizer->notify_player_registrations) {
+            if (!$organizer) {
                 return;
             }
-            $notifyUserId = (int) $organizer->id;
             [$notificationType, $fallbackTitle] = match ($this->type) {
                 'registered'  => ['organizer_player_registered',  'Регистрация подтверждена'],
                 'auto_booked' => ['organizer_player_auto_booked', 'Авто-запись из листа ожидания'],
@@ -91,26 +90,62 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
             };
         }
 
-        try {
-            $notificationService->create(
-                userId:   $notifyUserId,
-                type:     $notificationType,
-                title:    $fallbackTitle,
-                body:     null,
-                payload:  array_merge(
-                    ['event_id' => (int) $occurrence->event->id, 'occurrence_id' => (int) $occurrence->id],
-                    $this->buildExtra($occurrence, $player)
-                ),
-                channels: ['in_app', 'telegram', 'vk', 'max'],
-            );
-        } catch (\Throwable $e) {
-            Log::warning('NotifyOrganizerRegistrationJob: create failed', [
-                'occurrence_id' => $this->occurrenceId,
-                'player_id'     => $this->playerId,
-                'type'          => $this->type,
-                'error'         => $e->getMessage(),
-            ]);
+        $recipientIds = $isOrgAction
+            ? [$notifyUserId]
+            : self::organizerAndStaffRecipients((int) $organizer->id, (int) $player->id);
+
+        if (!$recipientIds) {
+            return;
         }
+
+        $payload = array_merge(
+            ['event_id' => (int) $occurrence->event->id, 'occurrence_id' => (int) $occurrence->id],
+            $this->buildExtra($occurrence, $player)
+        );
+
+        foreach ($recipientIds as $recipientId) {
+            try {
+                $notificationService->create(
+                    userId:   $recipientId,
+                    type:     $notificationType,
+                    title:    $fallbackTitle,
+                    body:     null,
+                    payload:  $payload,
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            } catch (\Throwable $e) {
+                Log::warning('NotifyOrganizerRegistrationJob: create failed', [
+                    'occurrence_id' => $this->occurrenceId,
+                    'player_id'     => $this->playerId,
+                    'recipient_id'  => $recipientId,
+                    'type'          => $this->type,
+                    'error'         => $e->getMessage(),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Организатор мероприятия + его помощники (organizer_staff); у каждого свой флаг notify_player_registrations.
+     * Сам записавшийся игрок не получает уведомление о собственной записи.
+     *
+     * @return int[]
+     */
+    public static function organizerAndStaffRecipients(int $organizerId, int $playerId): array
+    {
+        $staffIds = DB::table('organizer_staff')
+            ->where('organizer_id', $organizerId)
+            ->pluck('staff_user_id')
+            ->all();
+
+        $ids = array_values(array_unique(array_map('intval', array_merge([$organizerId], $staffIds))));
+
+        return User::whereIn('id', $ids)
+            ->where('id', '!=', $playerId)
+            ->where('notify_player_registrations', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     private static function countBooked(int $occurrenceId): int
