@@ -21,9 +21,9 @@
     .mx-chart-wrap { display:block !important; page-break-inside:avoid; margin-bottom:8px; }
     .mx-set-h { font-weight:700; margin:6px 0 2px; }
     .mx-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:6px 0 4px; }
+    .mx-head { display:flex !important; }
     .mx-head > div { flex:1; }
     .mx-head-score { flex:0 0 auto !important; }
-    .mx-head-team--home { text-align:right; } .mx-head-team--away { text-align:left; }
     h1 { font-size:18px; margin:0 0 4px; }
     .foot { color:#7a8197; font-size:10px; margin-top:6px; }
 </style>
@@ -32,7 +32,7 @@
 <body class="mx-page mx-print">
 <div class="mx-page mx-print">
     <h1>{{ __('match_stats.page_title') }}</h1>
-    <div class="ramka">@include('matches.stats._head', ['isLive' => false])</div>
+    <div class="ramka">@include('matches.stats._head', ['isLive' => false, 'print' => true])</div>
 
     @include('matches.stats._overview', ['uid' => 'pdf', 'print' => true])
 

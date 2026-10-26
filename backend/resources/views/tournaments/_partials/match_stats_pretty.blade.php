@@ -166,7 +166,7 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
         @endif
         @if(\App\Models\MatchRallyEvent::where('match_id', $match->id)->exists())
         <a href="{{ route('match.stats', $match) }}" class="ms-stats-link" aria-label="{{ __('match_stats.stats_link_aria') }}" title="{{ __('match_stats.stats_link_aria') }}">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="3" width="4" height="18" rx="1"/><rect x="17" y="8" width="4" height="13" rx="1"/></svg>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4.5" height="9" rx="1.2" fill="#2967BA"/><rect x="9.75" y="3" width="4.5" height="18" rx="1.2" fill="#E7612F"/><rect x="16.5" y="8" width="4.5" height="13" rx="1.2" fill="#2967BA" fill-opacity=".6"/></svg>
         </a>
         @endif
 

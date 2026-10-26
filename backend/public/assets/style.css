@@ -6957,6 +6957,9 @@ body.dark .club-analytics-summary {
 .ms-share-btn {
 	float: right;
 	margin-left: 10px;
+	height: 2.4rem;
+	display: inline-flex;
+	align-items: center;
 	background: none;
 	border: none;
 	cursor: pointer;
@@ -6969,13 +6972,14 @@ body.dark .club-analytics-summary {
 .ms-stats-link {
 	float: right;
 	margin-left: 10px;
-	line-height: 1;
-	color: inherit;
-	opacity: .7;
+	height: 2.4rem;
 	display: inline-flex;
 	align-items: center;
+	line-height: 1;
+	text-decoration: none;
 }
-.ms-stats-link:hover { opacity: 1; }
+.ms-stats-link svg { display: block; width: 2.2rem; height: 2.2rem; }
+.ms-stats-link:hover { opacity: .8; }
 .ms-header-row {
 	display: flex;
 	align-items: center;
