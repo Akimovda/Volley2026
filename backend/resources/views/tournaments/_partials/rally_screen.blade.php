@@ -75,6 +75,10 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-grid .rw-wide{grid-column:1/-1}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
+/* кнопки «Подаёт»: невыбранная — белая с контуром цвета команды (в тёмной теме прозрачная), выбранная — заливка (inline) */
+#rw-live .rw-serve-btn{box-shadow:none}
+#rw-live .rw-serve-btn:not(.on){background:#fff;color:#2c2c2c}
+body.dark #rw-live .rw-serve-btn:not(.on){background:transparent;color:#cacaca}
 /* белые кнопки выбора: контур и лёгкая тень, чтобы не сливались с белым фоном окна */
 .rw-box .btn-secondary{background:#fff;border:1px solid #B5C3D9;box-shadow:0 1px 2px rgba(20,48,107,.12)}
 .rw-box .btn-secondary:active,.rw-box .btn-secondary:focus-visible{border-color:#2967BA}

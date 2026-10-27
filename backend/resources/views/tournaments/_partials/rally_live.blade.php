@@ -147,7 +147,7 @@
 				@endphp
 				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
 					@csrf
-					<button type="submit" class="btn w-100" style="padding:10px 8px;border:2px solid {{ $svBorder }};background:{{ $svSel ? $svColor : '#fff' }};color:{{ $svSel ? ($svLight ? '#14306B' : '#fff') : '#2c2c2c' }};box-shadow:none">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
+					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
 				</form>
 				@endforeach
 			</div>
