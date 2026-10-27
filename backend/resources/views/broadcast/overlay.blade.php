@@ -23,6 +23,9 @@ body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-f
 #stage{position:absolute;left:calc((100vw - var(--u0)*1920)/2);top:calc((100vh - var(--u0)*1080)/2);width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
+/* Режим приложения (?native=1): страницу снимает WebView без дисплейного цикла — без CSS-переходов/анимаций и без отдельных слоёв композитинга, чтобы новый счёт сразу попадал в кадр */
+body.native *,body.native *::before,body.native *::after{transition:none!important;animation:none!important}
+body.native .p{will-change:auto}
 .card{background:rgba(12,16,24,var(--pa,.85));border-radius:calc(var(--u)*14);overflow:hidden}
 .stripe{flex:none;width:calc(var(--u)*10);align-self:stretch}
 .logo{flex:none;width:calc(var(--u)*56);height:calc(var(--u)*56);object-fit:cover;border-radius:50%;margin-left:calc(var(--u)*14)}
@@ -127,7 +130,7 @@ body.tpl-light_tv .sum-score .big{color:#16264a}
 #splash .cd b{font-size:calc(var(--u)*72);margin-left:calc(var(--u)*16)}
 </style>
 </head>
-<body class="{{ $preview ? 'preview' : '' }}">
+<body class="{{ trim(($preview ? 'preview ' : '') . (!empty($config['native']) ? 'native' : '')) }}">
 @if($audio)<audio id="bgm" loop preload="auto" playsinline></audio>@if($preview)<button type="button" id="bgm-btn" style="position:fixed;right:8px;bottom:8px;z-index:50;font:12px sans-serif;padding:6px 10px">🔊 {{ __('broadcast.enable_sound') }}</button>@endif @endif
 <div id="stage">
     <div id="board" class="p card tl"></div>
