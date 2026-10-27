@@ -133,12 +133,21 @@
 
 		@if(!empty($canServeMark))
 		<div class="card mb-2" style="text-align:center">
-			<div class="f-13 mb-1" style="opacity:.8">{{ __('broadcast.serve_mark_label') }}</div>
+			<div class="f-13 mb-1" style="font-size:calc(1.3rem + 2.5px);font-weight:700">{{ __('broadcast.serve_mark_label') }}</div>
 			<div class="d-flex gap-1" style="justify-content:center;flex-wrap:wrap">
 				@foreach($sides as $sd)
+				@php
+					// цвет команды — тот же, что на табло (стиль команды → цвет friendly-команды → палитра)
+					$svColor  = $sd['team'] ? app(\App\Services\Broadcast\TeamStyleService::class)->colorFor($sd['team']) : '#2967BA';
+					$svHex    = ltrim($svColor, '#');
+					$svLum    = (0.299 * hexdec(substr($svHex, 0, 2)) + 0.587 * hexdec(substr($svHex, 2, 2)) + 0.114 * hexdec(substr($svHex, 4, 2))) / 255;
+					$svLight  = $svLum > 0.8;                      // белая/жёлтая команда: контур цветом не виден — берём тёмно-синий и тёмный текст
+					$svBorder = $svLight ? '#B5C3D9' : $svColor;
+					$svSel    = (int) $serveMarkTeamId === $sd['team_id'];
+				@endphp
 				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
 					@csrf
-					<button type="submit" class="btn w-100 {{ (int) $serveMarkTeamId === $sd['team_id'] ? 'btn-primary' : 'btn-secondary' }}" style="padding:10px 8px">{{ (int) $serveMarkTeamId === $sd['team_id'] ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
+					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
 				</form>
 				@endforeach
 			</div>

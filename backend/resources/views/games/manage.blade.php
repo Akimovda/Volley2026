@@ -40,6 +40,15 @@
             .gm-page .form-select-custom { height:4.2rem; box-sizing:border-box; padding:0 1.4rem; font-size:1.5rem; line-height:3.8rem; }
             @media (hover:none) and (pointer:coarse) { .gm-page .form select { height:4.2rem; box-sizing:border-box; font-size:1.5rem; } }
             .gm-page .btn { height:4.2rem; box-sizing:border-box; padding:0 2rem; font-size:1.5rem; line-height:1; }
+            .gm-cl-step { display:flex; align-items:flex-start; gap:1.2rem; padding:1rem 0; border-bottom:1px solid rgba(128,128,128,.2); flex-wrap:wrap; }
+            .gm-cl-step:last-of-type { border-bottom:0; }
+            .gm-cl-mark { flex:0 0 2.8rem; height:2.8rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; background:rgba(128,128,128,.25); }
+            .gm-cl-step.done .gm-cl-mark { background:#2e7d32; color:#fff; }
+            .gm-cl-body { flex:1 1 20rem; min-width:0; font-size:1.5rem; }
+            .gm-cl-note { font-size:1.3rem; opacity:.7; margin-top:.2rem; }
+            .gm-cl-opt { font-weight:400; font-size:1.3rem; opacity:.6; }
+            .gm-cl-actions { display:flex; gap:.8rem; flex-wrap:wrap; }
+            .gm-cl-ready { font-weight:700; font-size:1.7rem; color:#2e7d32; cursor:pointer; }
             .gm-color-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; }
         </style>
     </x-slot>
@@ -49,6 +58,19 @@
         @if(session('success'))<div class="alert alert-success mb-2">{{ session('success') }}</div>@endif
         @if(session('error'))<div class="alert alert-danger mb-2">{{ session('error') }}</div>@endif
         @if($errors->any())<div class="alert alert-danger mb-2">{{ $errors->first() }}</div>@endif
+
+        {{-- Чек-лист: свёрнут, когда обязательные шаги выполнены --}}
+        <div class="ramka" id="gm-checklist">
+            @if($checklist['ready'])
+            <details>
+                <summary class="gm-cl-ready">✓ {{ __('games.cl_ready') }}</summary>
+                @include('games._checklist')
+            </details>
+            @else
+            <h2 class="-mt-05">{{ __('games.cl_h') }}</h2>
+            @include('games._checklist')
+            @endif
+        </div>
 
         {{-- Тур + ссылки --}}
         <div class="ramka">
@@ -90,10 +112,10 @@
         </div>
 
         {{-- Новый матч: формат + составы --}}
-        <div class="ramka">
+        <div class="ramka" id="gm-new">
             <h2 class="-mt-05">{{ __('games.new_match_title') }}</h2>
 
-            <form method="POST" action="{{ route('game.config.update', $event) }}" class="form gm-color-row gm-cfg-form mb-2" style="align-items:flex-start"> 
+            <form method="POST" action="{{ route('game.config.update', $event) }}" id="gm-cfg" class="form gm-color-row gm-cfg-form mb-2" style="align-items:flex-start"> 
                 @csrf
                 <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
                 <div class="w-100 b-600">{{ __('games.format_title') }}</div>
