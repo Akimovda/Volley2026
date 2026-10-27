@@ -382,8 +382,11 @@ window.__BC = @json($config);
             offMode = false;
             if (cur) {
                 var cm = cur.match ? cur.match.id : null, pm = p.match ? p.match.id : null;
-                if (cm === pm && p.seq < cur.seq) { return false; }
-                if (cm === pm && p.seq === cur.seq && p.mode === cur.mode && p.now_ms < cur.now_ms) { return false; }
+                // Сброс: другой матч, заставка/выкл или seq=0 (новый матч на площадке, seq начинается заново) — применяем БЕЗ проверки seq.
+                // Иначе после итогов страница локально уходит на заставку (match=null, seq=41), а настоящая заставка с seq=0 отбрасывалась как устаревшая.
+                var reset = cm !== pm || p.mode === 'splash' || p.mode === 'off' || p.seq === 0;
+                if (!reset && p.seq < cur.seq) { return false; }
+                if (!reset && p.seq === cur.seq && p.mode === cur.mode && p.now_ms < cur.now_ms) { return false; }
                 if (src === 'safety' && (cm !== pm || p.seq > cur.seq)) {
                     lastMiss = true;
                     try { console.warn('reverb miss, caught up', cur.seq, p.seq); } catch (e) {}
