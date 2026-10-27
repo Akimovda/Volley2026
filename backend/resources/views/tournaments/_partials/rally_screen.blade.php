@@ -75,6 +75,10 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-grid .rw-wide{grid-column:1/-1}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
+/* белые кнопки выбора: контур и лёгкая тень, чтобы не сливались с белым фоном окна */
+.rw-box .btn-secondary{background:#fff;border:1px solid #B5C3D9;box-shadow:0 1px 2px rgba(20,48,107,.12)}
+.rw-box .btn-secondary:active,.rw-box .btn-secondary:focus-visible{border-color:#2967BA}
+body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,195,217,.45);box-shadow:none}
 .rw-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222333;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10002;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;text-align:center}
 .rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
