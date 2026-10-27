@@ -84,13 +84,17 @@
 			</div>
 			<div class="d-flex between fvc mb-2">
 				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+					<div class="b-700 f-18">@include('tournaments._partials.team_pair_names', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamHome))
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
+					@endunless
 				</div>
 				<div class="f-24 b-800 px-2">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
 				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+					<div class="b-700 f-18">@include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamAway))
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'style' => 'opacity:.7'])
+					@endunless
 				</div>
 			</div>
 			<div class="mb-2">

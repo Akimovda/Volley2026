@@ -664,46 +664,25 @@ class CourtStateService
         return ['home' => $side($m->teamHome), 'away' => $side($m->teamAway)];
     }
 
-    /** Подтверждённые игроки команды (по порядку добавления): фамилия, имя, запасное имя. */
+    /** Подтверждённые игроки команды: логика имён — в TeamDisplayNames (единый источник для оверлея, пульта, статистики, PDF, share-card). */
     private function confirmedMembers(EventTeam $t): \Illuminate\Support\Collection
     {
-        return DB::table('event_team_members')
-            ->join('users', 'users.id', '=', 'event_team_members.user_id')
-            ->where('event_team_members.event_team_id', $t->id)
-            ->where('event_team_members.confirmation_status', 'confirmed')
-            ->orderBy('event_team_members.id')
-            ->get(['users.last_name', 'users.first_name', 'users.name']);
+        return app(\App\Services\TeamDisplayNames::class)->confirmedMembers($t);
     }
 
-    /** Фамилии (до двух) подтверждённых игроков команды — для столбика на табло «Вкладки» в пляжке. */
     private function surnames(EventTeam $t): array
     {
-        return $this->confirmedMembers($t)->take(2)
-            ->map(fn ($u) => trim((string) ($u->last_name ?: $u->first_name)))
-            ->filter()->values()->all();
+        return app(\App\Services\TeamDisplayNames::class)->surnames($t);
     }
 
-    /** «Фамилия Имя» (до двух) подтверждённых игроков — для имён пары на табло. */
     private function fullNames(EventTeam $t): array
     {
-        return $this->confirmedMembers($t)->take(2)
-            ->map(fn ($u) => trim(trim((string) $u->last_name) . ' ' . trim((string) $u->first_name)) ?: trim((string) $u->name))
-            ->filter()->values()->all();
+        return app(\App\Services\TeamDisplayNames::class)->fullNames($t);
     }
 
-    /** «Фамилия Имя» капитана команды (event_teams.captain_user_id) или null. */
     private function captainName(EventTeam $t): ?string
     {
-        if (!$t->captain_user_id) {
-            return null;
-        }
-        $u = DB::table('users')->where('id', $t->captain_user_id)->first(['last_name', 'first_name', 'name']);
-        if (!$u) {
-            return null;
-        }
-        $full = trim(trim((string) $u->last_name) . ' ' . trim((string) $u->first_name));
-
-        return ($full !== '' ? $full : trim((string) $u->name)) ?: null;
+        return app(\App\Services\TeamDisplayNames::class)->captainName($t);
     }
 
     public const TABS_LOGOS = ['volleyclub', 'organizer', 'hidden'];
