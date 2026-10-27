@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\EventCourt;
 use App\Models\EventOccurrence;
 use App\Models\TournamentMatch;
 use App\Models\TournamentStage;
@@ -58,20 +59,56 @@ class FriendlyGameController extends Controller
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->orderByDesc('starts_at')->limit(30)->get();
 
+        $eventTeams = $this->games->eventTeams($event, $occurrence->id);
+
         return view('games.manage', [
+            'checklist'   => $this->checklist($event, $occurrence, $stage, $matches, $eventTeams, $roster),
             'event'       => $event,
             'occurrence'  => $occurrence,
             'occurrences' => $occurrences,
             'stage'       => $stage,
             'config'      => $stage?->config ?? $this->games->defaultConfig($event),
             'roster'      => $roster,
-            'eventTeams'  => $this->games->eventTeams($event, $occurrence->id),
+            'eventTeams'  => $eventTeams,
             'positions'   => $this->games->positions($occurrence->id),
             'matches'     => $matches,
             'board'       => $board,
             'prefill'     => $prefill,
             'colors'      => FriendlyGameService::COLORS,
         ]);
+    }
+
+    /**
+     * Пошаговый чек-лист страницы игры (B6): формат → команды → площадка → матч → ведение счёта → трансляция (необязательно).
+     * Статусы считаются по данным; «ready» — обязательные шаги 1–5 выполнены.
+     */
+    private function checklist(Event $event, $occurrence, ?TournamentStage $stage, $matches, $eventTeams, $roster): array
+    {
+        $config   = $stage?->config ?? $this->games->defaultConfig($event);
+        $complete = $eventTeams->filter(fn ($t) => $t->is_complete)->count();
+        $partial  = $eventTeams->count() - $complete;
+
+        $courts = EventCourt::where('event_id', $event->id)->where('occurrence_id', $occurrence->id)
+            ->where('is_active', true)->orderBy('sort_order')->orderBy('id')->get();
+        $resolver  = app(\App\Services\Broadcast\BroadcastTargetResolver::class);
+        $chanOk    = $courts->filter(fn ($c) => $resolver->resolve($c, $event)['ok'])->count();
+        $assigned  = $matches->whereNotNull('court_id');
+        $courtName = $assigned->isNotEmpty() ? optional($courts->firstWhere('id', $assigned->first()->court_id))->name : null;
+        $current   = $matches->first(fn ($m) => $m->status !== 'completed');
+
+        $steps = [
+            ['key' => 'format', 'done' => $stage !== null, 'sentence' => $this->games->formatSentence($config)],
+            ['key' => 'teams', 'done' => $complete >= 2 || $matches->isNotEmpty(), 'complete' => $complete, 'partial' => $partial, 'roster' => $roster->count()],
+            ['key' => 'court', 'done' => $matches->isNotEmpty() && $assigned->count() === $matches->count(), 'name' => $courtName, 'any' => $courts->isNotEmpty()],
+            ['key' => 'match', 'done' => $matches->isNotEmpty(), 'count' => $matches->count()],
+            ['key' => 'score', 'done' => $matches->contains(fn ($m) => $m->status !== TournamentMatch::STATUS_SCHEDULED), 'match' => $current],
+            ['key' => 'stream', 'done' => $courts->isNotEmpty() && $chanOk === $courts->count(), 'optional' => true, 'have' => $chanOk, 'total' => $courts->count()],
+        ];
+
+        return [
+            'steps' => $steps,
+            'ready' => collect($steps)->where('optional', '!=', true)->every(fn ($s) => $s['done']),
+        ];
     }
 
     /** Создать матч из двух составов */
