@@ -96,7 +96,7 @@ class PurgeInactiveUsersJob implements ShouldQueue
             . "Критерии: нет профиля, нет регистраций, нет платежей, создан >14 дней назад.";
 
         try {
-            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            \App\Services\TelegramApi::http()->post(\App\Services\TelegramApi::url($token, 'sendMessage'), [
                 'chat_id'                  => $chatId,
                 'text'                     => $text,
                 'parse_mode'               => 'HTML',

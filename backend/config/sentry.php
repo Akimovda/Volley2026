@@ -62,6 +62,11 @@ return [
     // В контекст события кладём только user.id — см. App\Http\Middleware\SentryUserContext.
     'send_default_pii' => false,
 
+    // Токены Telegram-ботов в тексте исключений/URL/breadcrumbs → «bot<токен>» (App\Support\SecretMasker).
+    // Callable-массивы, а не замыкания — иначе config:cache падает.
+    'before_send' => [\App\Support\SecretMasker::class, 'beforeSend'],
+    'before_breadcrumb' => [\App\Support\SecretMasker::class, 'beforeBreadcrumb'],
+
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_exceptions
     // 'ignore_exceptions' => [],
 

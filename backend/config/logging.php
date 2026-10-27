@@ -67,6 +67,7 @@ return [
         ],
 
         'single' => [
+            'tap' => [\App\Logging\MaskSecretsTap::class],
             'driver' => 'single',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
@@ -74,6 +75,7 @@ return [
         ],
 
         'daily' => [
+            'tap' => [\App\Logging\MaskSecretsTap::class],
             'driver' => 'daily',
             'path' => storage_path('logs/laravel.log'),
             'level' => env('LOG_LEVEL', 'debug'),
@@ -83,6 +85,7 @@ return [
 
         // Журнал вещания состояния площадок для оверлея (CourtStateBroadcaster): по строке на каждое вещание, 7 дней.
         'broadcast' => [
+            'tap' => [\App\Logging\MaskSecretsTap::class],
             'driver' => 'daily',
             'path' => storage_path('logs/broadcast.log'),
             'level' => 'info',

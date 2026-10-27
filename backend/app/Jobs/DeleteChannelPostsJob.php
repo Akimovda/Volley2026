@@ -23,7 +23,10 @@ class DeleteChannelPostsJob implements ShouldQueue
     public int $tries   = 3;
     public int $backoff = 30;
 
-    public function __construct(public array $messages) {}
+    public function __construct(public array $messages) 
+    {
+        $this->onQueue(config('queue.telegram_queue', 'default'));   // отдельная очередь для мессенджеров (см. TELEGRAM_QUEUE)
+    }
 
     public function handle(PublishOccurrenceAnnouncementService $service): void
     {

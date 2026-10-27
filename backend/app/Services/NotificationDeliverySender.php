@@ -156,8 +156,7 @@ final class NotificationDeliverySender
         }
 
         if ($rich['image_url'] !== '') {
-            $resp = Http::timeout(20)->post(
-                "https://api.telegram.org/bot{$token}/sendPhoto",
+            $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendPhoto'),
                 array_filter([
                     'chat_id'      => (string) $user->telegram_notify_chat_id,
                     'photo'        => $rich['image_url'],
@@ -179,8 +178,7 @@ final class NotificationDeliverySender
             return;
         }
 
-        $resp = Http::timeout(20)->post(
-            "https://api.telegram.org/bot{$token}/sendMessage",
+        $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendMessage'),
             array_filter([
                 'chat_id'                  => (string) $user->telegram_notify_chat_id,
                 'text'                     => $text,

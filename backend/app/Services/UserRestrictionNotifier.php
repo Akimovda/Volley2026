@@ -74,7 +74,7 @@ class UserRestrictionNotifier
         }
 
         try {
-            $resp = Http::timeout(8)->post("https://api.telegram.org/bot{$token}/sendMessage", [
+            $resp = \App\Services\TelegramApi::http(8)->post(\App\Services\TelegramApi::url($token, 'sendMessage'), [
                 'chat_id' => $chatId,
                 'text' => $text,
                 'disable_web_page_preview' => true,
