@@ -1083,4 +1083,6 @@ return [
     'lineup_tab_missing_many' => 'не хватает: зоны :z',
     'setup_court_select_aria' => 'Площадка матча',
     'setup_court_unassigned' => '— не назначена —',
+    'rally_match_decided' => 'Матч решён. Нажмите «Записать счёт», чтобы завершить его.',
+    'rally_match_decided_friendly' => 'Матч решён. Нажмите «Записать счёт» — иначе он запишется сам через пару минут (если не будет отмены).',
 ];

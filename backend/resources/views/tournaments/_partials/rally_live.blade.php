@@ -233,6 +233,11 @@
 					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
 				</button>
 			</form>
+			@if($matchReady && !$match->isCompleted())
+			<div class="alert alert-success w-100" style="flex-basis:100%;margin:0 0 .5rem">
+				{{ ($match->stage?->type === \App\Models\TournamentStage::TYPE_FRIENDLY) ? __('tournaments.rally_match_decided_friendly') : __('tournaments.rally_match_decided') }}
+			</div>
+			@endif
 			<form method="POST" action="{{ $urls['finalize'] }}" style="flex:1" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
 				@csrf
 				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>

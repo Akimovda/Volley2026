@@ -403,7 +403,10 @@ class TournamentStage extends Model
 
     public function setPoints(): int
     {
-        return (int) $this->configValue('set_points', 25);
+        // Если в конфиге этапа лимита нет: пляжка — до 21, остальное — до 25. Сохранённый формат всегда главнее.
+        $default = $this->event?->direction === 'beach' ? 21 : 25;
+
+        return (int) $this->configValue('set_points', $default);
     }
 
     public function decidingSetPoints(): int

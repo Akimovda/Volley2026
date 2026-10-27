@@ -52,14 +52,32 @@ class FriendlyGameService
             'name'          => 'Игра со статистикой',
             'sort_order'    => 1,
             'status'        => TournamentStage::STATUS_IN_PROGRESS,
-            'config'        => ['match_format' => 'bo1', 'set_points' => 25, 'deciding_set_points' => 15],
+            'config'        => $this->defaultConfig($event),
         ]);
     }
 
     /** Значения формата матча по умолчанию (пока стадия ещё не создана). */
-    public function defaultConfig(): array
+    public function defaultConfig(?Event $event = null): array
     {
+        // Пляжка: до 2 побед (bo3), сеты до 21, решающий до 15 (разница 2 — общее правило isSetDecided). Остальное — как раньше.
+        if ($event && $event->direction === 'beach') {
+            return ['match_format' => 'bo3', 'set_points' => 21, 'deciding_set_points' => 15];
+        }
+
         return ['match_format' => 'bo1', 'set_points' => 25, 'deciding_set_points' => 15];
+    }
+
+    /** Формат словами: «До 2 побед, сеты до 21, решающий до 15» / «Один сет до 25». */
+    public function formatSentence(array $config): string
+    {
+        $fmt = $config['match_format'] ?? 'bo1';
+        $pts = (int) ($config['set_points'] ?? 25);
+        $dec = (int) ($config['deciding_set_points'] ?? 15);
+        if ($fmt === 'bo1') {
+            return __('games.format_words_one', ['pts' => $pts]);
+        }
+
+        return __('games.format_words_multi', ['wins' => $fmt === 'bo5' ? 3 : 2, 'pts' => $pts, 'dec' => $dec]);
     }
 
     /**

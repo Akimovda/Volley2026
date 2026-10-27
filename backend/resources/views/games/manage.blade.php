@@ -140,6 +140,10 @@
             <form method="POST" action="{{ route('game.matches.store', $event) }}" id="gm-form" class="form">
                 @csrf
                 <input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
+                {{-- Формат из формы выше едет вместе с матчем (синхронизируется скриптом) --}}
+                <input type="hidden" name="match_format" id="gm-fmt-format" value="{{ $config['match_format'] ?? 'bo1' }}">
+                <input type="hidden" name="set_points" id="gm-fmt-set" value="{{ (int) ($config['set_points'] ?? 25) }}">
+                <input type="hidden" name="deciding_set_points" id="gm-fmt-dec" value="{{ (int) ($config['deciding_set_points'] ?? 15) }}">
 
                 <div class="gm-actions mb-2">
                     <button type="button" class="btn btn-outline btn-small" id="gm-split-level">⚖️ {{ __('games.split_level') }}</button>
@@ -220,6 +224,9 @@
                     @endforeach
                 </div>
 
+                @php $fmtText = app(\App\Services\FriendlyGameService::class)->formatSentence($config ?? []); @endphp
+                <div class="f-14 mt-2" style="opacity:.85">{{ __('games.new_match_format') }}: <b id="gm-fmt-text">{{ $fmtText }}</b>
+                    <span id="gm-fmt-saved" style="opacity:0;transition:opacity .3s;color:#16a34a">✓ {{ __('games.format_autosaved') }}</span></div>
                 <button type="submit" class="btn mt-2">▶ {{ __('games.create_match') }}</button>
             </form>
             @endif
@@ -295,6 +302,36 @@
     </div>
 
     <x-slot name="script">
+    @php $fmtJs = ['one' => __('games.format_words_one'), 'multi' => __('games.format_words_multi')]; @endphp
+    <script>
+    // Формат матча: смена в форме «Формат» сразу копируется в форму создания матча и автосохраняется на сервере.
+    (function () {
+        var form = document.querySelector('.gm-cfg-form'), create = document.getElementById('gm-form');
+        if (!form || !create) return;
+        var T = {!! json_encode($fmtJs) !!};
+        var selF = form.querySelector('[name=match_format]'), selS = form.querySelector('[name=set_points]'), selD = form.querySelector('[name=deciding_set_points]');
+        var hF = document.getElementById('gm-fmt-format'), hS = document.getElementById('gm-fmt-set'), hD = document.getElementById('gm-fmt-dec');
+        var txt = document.getElementById('gm-fmt-text'), mark = document.getElementById('gm-fmt-saved'), tmr = null;
+        function sentence() {
+            if (selF.value === 'bo1') return T.one.replace(':pts', selS.value);
+            return T.multi.replace(':wins', selF.value === 'bo5' ? 3 : 2).replace(':pts', selS.value).replace(':dec', selD.value);
+        }
+        function sync() { hF.value = selF.value; hS.value = selS.value; hD.value = selD.value; if (txt) txt.textContent = sentence(); }
+        function save() {
+            sync();
+            clearTimeout(tmr);
+            tmr = setTimeout(function () {
+                fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (j) { if (j && mark) { if (txt && j.text) txt.textContent = j.text; mark.style.opacity = 1; setTimeout(function () { mark.style.opacity = 0; }, 1800); } })
+                    .catch(function () {});
+            }, 400);
+        }
+        [selF, selS, selD].forEach(function (s) { if (s) s.addEventListener('change', save); });
+        sync();
+    })();
+    </script>
     <script>
     (function () {
         var roster = document.getElementById('gm-roster');
