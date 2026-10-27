@@ -46,6 +46,7 @@ class RallyInputService
             'player_id'         => 'nullable|integer',
             'dig_user_id'       => 'nullable|integer',
             'assist_user_id'    => 'nullable|integer',
+            'attack_type'       => 'nullable|in:spike,shot,dump',
             'client_request_id' => 'nullable|uuid',
         ];
     }
@@ -98,6 +99,7 @@ class RallyInputService
             $v['client_request_id'] ?? null,
             $actor->name,
             $actor->linkId,
+            $v['attack_type'] ?? null,
         );
 
         $this->scheduleAutoFinalize($match);

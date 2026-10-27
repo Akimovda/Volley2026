@@ -99,4 +99,9 @@ return [
     'profile_points'     => 'points',
     'profile_errors'     => 'errors',
     'profile_live'       => 'live',
+    'at_breakdown' => 'of which: spike :spike · shot :shot · dump :dump · unspecified :none',
+    'at_spike' => 'spike',
+    'at_shot' => 'shot',
+    'at_dump' => 'dump',
+    'act_kill_t' => 'Attack (:type) — :who',
 ];

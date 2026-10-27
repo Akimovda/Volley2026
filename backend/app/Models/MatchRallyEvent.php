@@ -14,6 +14,9 @@ class MatchRallyEvent extends Model
     public const ACTION_BLOCK                = 'block';
     public const ACTION_OPP_SERVE_ERROR      = 'opp_serve_error';
     public const ACTION_OPP_ATTACK_ERROR     = 'opp_attack_error';
+
+    /** Подтип атаки (только для kill): удар / накат / скидка. */
+    public const ATTACK_TYPES = ['spike', 'shot', 'dump'];
     public const ACTION_OPP_BLOCK_ERROR      = 'opp_block_error';
     public const ACTION_OPP_RECEPTION_ERROR  = 'opp_reception_error';
     public const ACTION_UNATTRIBUTED         = 'unattributed';
@@ -64,7 +67,7 @@ class MatchRallyEvent extends Model
 
     protected $fillable = [
         'match_id', 'set_number', 'team_id', 'team_point_number', 'action_type',
-        'player_id', 'stat_team_id', 'dig_user_id', 'assist_user_id', 'recorded_by_user_id',
+        'player_id', 'stat_team_id', 'dig_user_id', 'assist_user_id', 'attack_type', 'recorded_by_user_id',
         'seq', 'recorded_by_name', 'recorded_by_link_id', 'client_request_id',
     ];
 

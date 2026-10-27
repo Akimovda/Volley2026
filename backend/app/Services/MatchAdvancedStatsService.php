@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v1';
+    private const CACHE_VERSION = 'v2';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't2';
+    private const PDF_TEMPLATE_VERSION = 't3';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
@@ -173,6 +173,7 @@ class MatchAdvancedStatsService
                     'set'         => (int) $sn,
                     'side'        => $winSide,
                     'action'      => $ev->action_type,
+                    'attack_type' => $ev->action_type === MatchRallyEvent::ACTION_KILL ? $ev->attack_type : null,
                     'is_error'    => $isOpp,
                     'player_id'   => $ev->player_id ? (int) $ev->player_id : null,
                     'player'      => $ev->player_id ? ($names[(int) $ev->player_id] ?? null) : null,
@@ -232,7 +233,7 @@ class MatchAdvancedStatsService
             $o = &$origin[$side];
             $o['total']++;
             match ($ev->action_type) {
-                MatchRallyEvent::ACTION_KILL                => $o['attack']++,
+                MatchRallyEvent::ACTION_KILL                => [$o['attack']++, $o['at'][in_array($ev->attack_type, MatchRallyEvent::ATTACK_TYPES, true) ? $ev->attack_type : 'none']++],
                 MatchRallyEvent::ACTION_BLOCK               => $o['block']++,
                 MatchRallyEvent::ACTION_ACE                 => $o['ace']++,
                 MatchRallyEvent::ACTION_OPP_SERVE_ERROR     => [$o['opp_total']++, $o['opp_serve']++],
@@ -277,7 +278,7 @@ class MatchAdvancedStatsService
                 'event_title' => (string) ($event?->title ?? ''),
                 'stage'       => (string) ($stage?->name ?? ''),
                 'venue'       => trim(implode(' · ', array_filter([$event?->location?->name, $court]))),
-                'minutes'     => ($first && $last && $last->gt($first)) ? max(1, (int) round($first->diffInSeconds($last) / 60)) : null,
+                'minutes'     => ($first && $last && $first->diffInSeconds($last) >= 600) ? (int) round($first->diffInSeconds($last) / 60) : null,   // < 10 мин — не показываем
                 'scheduled'   => $match->scheduled_at,
             ],
             'set_numbers' => array_keys($sets),
@@ -304,7 +305,9 @@ class MatchAdvancedStatsService
     private function emptyOrigin(): array
     {
         return ['total' => 0, 'attack' => 0, 'block' => 0, 'ace' => 0, 'opp_total' => 0,
-            'opp_serve' => 0, 'opp_attack' => 0, 'opp_reception' => 0, 'opp_block' => 0, 'unattributed' => 0];
+            'opp_serve' => 0, 'opp_attack' => 0, 'opp_reception' => 0, 'opp_block' => 0, 'unattributed' => 0,
+            // подтип атаки (атака = spike + shot + dump + none)
+            'at' => ['spike' => 0, 'shot' => 0, 'dump' => 0, 'none' => 0]];
     }
 
     /**
@@ -394,7 +397,8 @@ class MatchAdvancedStatsService
     private function playerTables(Collection $events, array $roster, array $names, int $homeId, int $awayId, callable $sideOf): array
     {
         $blank = fn () => ['attack' => 0, 'block' => 0, 'ace' => 0, 'serve_err' => 0, 'attack_err' => 0,
-            'reception_err' => 0, 'block_err' => 0, 'plus' => 0, 'minus' => 0, 'balance' => 0];
+            'reception_err' => 0, 'block_err' => 0, 'plus' => 0, 'minus' => 0, 'balance' => 0,
+            'at' => ['spike' => 0, 'shot' => 0, 'dump' => 0, 'none' => 0]];
 
         $rows = ['home' => [], 'away' => []];
         $ensure = function (string $side, int $uid) use (&$rows, $names, $blank) {
@@ -430,8 +434,12 @@ class MatchAdvancedStatsService
             $ensure($side, $uid);
             $set = (int) $ev->set_number;
             $rows[$side][$uid]['scopes'][$set] ??= $blank();
+            $atKey = in_array($ev->attack_type, MatchRallyEvent::ATTACK_TYPES, true) ? $ev->attack_type : 'none';
             foreach (['all', $set] as $scope) {
                 $rows[$side][$uid]['scopes'][$scope][$field]++;
+                if ($field === 'attack') {
+                    $rows[$side][$uid]['scopes'][$scope]['at'][$atKey]++;
+                }
             }
         }
 

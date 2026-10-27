@@ -18,6 +18,7 @@
 		'dig' => __('tournaments.rally_wiz_dig'), 'assist' => __('tournaments.rally_wiz_assist'),
 		'skip' => __('tournaments.rally_wiz_skip'), 'back' => __('tournaments.rally_wiz_back'), 'cancel' => __('tournaments.rally_wiz_cancel'),
 		'noPlayer' => __('tournaments.rally_no_player_option'),
+		'atkSpike' => __('tournaments.rally_attack_spike'), 'atkShot' => __('tournaments.rally_attack_shot'), 'atkDump' => __('tournaments.rally_attack_dump'),
 	];
 @endphp
 
@@ -73,6 +74,9 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rw-grid .btn{width:100%;font-size:15px;padding:14px 8px;text-align:center;white-space:normal;line-height:1.2}
 .rw-grid .rw-wide{grid-column:1/-1}
+.rw-atk{display:flex;gap:8px}
+.rw-atk .btn{flex:1;font-size:14px;padding:10px 6px}
+.rw-box .rw-atk .btn.on{background:#2967BA!important;color:#fff!important;border-color:#2967BA!important}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
 /* кнопки «Подаёт»: невыбранная — белая с контуром цвета команды (в тёмной теме прозрачная), выбранная — заливка (inline) */
@@ -321,6 +325,7 @@ window.RallyLive = (function () {
 		if (st.player) body.player_id = st.player;
 		if (st.dig) body.dig_user_id = st.dig;
 		if (st.assist) body.assist_user_id = st.assist;
+		if (st.action === 'kill' && st.attackType) body.attack_type = st.attackType;   // подтип атаки (необязательно)
 		setSending(true);
 		RallyLive.send(form.action, body, {retry: true}, function (j) {
 			sending = false; setSending(false);
@@ -380,6 +385,28 @@ window.RallyLive = (function () {
 		} else if (st.step === 'player') {
 			var pl = st.kind === 'own' ? d.players : d.oppPlayers;
 			elTitle.textContent = st.kind === 'own' ? T.whoScored : T.oppWho;
+			if (st.kind === 'own' && st.action === 'kill') {
+				// «Удар · Накат · Скидка» над списком игроков: по умолчанию не выбрано, повторное нажатие снимает выбор; без новых шагов
+				var atk = document.createElement('div');
+				atk.className = 'rw-atk rw-wide';
+				[['spike', T.atkSpike], ['shot', T.atkShot], ['dump', T.atkDump]].forEach(function (a) {
+					var b = document.createElement('button');
+					b.type = 'button';
+					b.className = 'btn btn-secondary' + (st.attackType === a[0] ? ' on' : '');
+					b.textContent = a[1];
+					function paint(x, on) {
+						// inline !important: общие стили .btn-secondary темы иначе перебивают заливку
+						['background', 'color', 'border-color'].forEach(function (pr, k) { if (on) { x.style.setProperty(pr, ['#2967BA', '#fff', '#2967BA'][k], 'important'); } else { x.style.removeProperty(pr); } });
+					}
+					if (st.attackType === a[0]) { paint(b, true); }
+					b.addEventListener('click', function () {
+						st.attackType = st.attackType === a[0] ? '' : a[0];
+						atk.querySelectorAll('button').forEach(function (x, i) { var on = st.attackType === ['spike', 'shot', 'dump'][i]; x.classList.toggle('on', on); paint(x, on); });
+					});
+					atk.appendChild(b);
+				});
+				elGrid.appendChild(atk);
+			}
 			pl.forEach(function (p) {
 				elGrid.appendChild(btn(p.name, 'btn-primary', function () { st.player = String(p.id); nextAfterPlayer(); }));
 			});

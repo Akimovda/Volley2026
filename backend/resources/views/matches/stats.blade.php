@@ -125,6 +125,16 @@
             q('[data-mx-proto-empty]').forEach(function (e) { e.style.display = any ? 'none' : ''; });
         }
 
+        // Протокол: заголовок «Сет N · счёт» раскрывает/сворачивает розыгрыши сета (по умолчанию раскрыт только последний)
+        function toggleSet(h) {
+            var body = h.nextElementSibling; if (!body || !body.classList.contains('mx-set-body')) return;
+            var open = body.classList.toggle('is-collapsed') === false;
+            h.classList.toggle('is-open', open); h.setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+        document.addEventListener('keydown', function (e) {
+            if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('mx-set-toggle')) { e.preventDefault(); toggleSet(e.target); }
+        });
+
         function setTab(t) {
             state.tab = t;
             try { history.replaceState(null, '', '#' + t); } catch (e) {}
@@ -136,7 +146,8 @@
             var tab = t.closest('.mx-tab'); if (tab) { setTab(tab.getAttribute('data-tab')); return; }
             var cs = t.closest('[data-mx-seg="chart"] button'); if (cs) { state.chartSet = cs.getAttribute('data-set'); apply(); return; }
             var ps = t.closest('[data-mx-seg="players"] button'); if (ps) { state.scope = ps.getAttribute('data-scope'); apply(); return; }
-            if (t.closest('[data-mx-sort]')) { state.sortAsc = !state.sortAsc; apply(); }
+            if (t.closest('[data-mx-sort]')) { state.sortAsc = !state.sortAsc; apply(); return; }
+            var sh = t.closest('.mx-set-toggle'); if (sh) { toggleSet(sh); }
         });
         document.addEventListener('change', function (e) {
             var s = e.target.closest ? e.target.closest('[data-mx-filter]') : null; if (!s) return;
