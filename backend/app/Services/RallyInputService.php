@@ -99,6 +99,28 @@ class RallyInputService
             $actor->name,
             $actor->linkId,
         );
+
+        $this->scheduleAutoFinalize($match);
+    }
+
+    /** Секунд до автозавершения решённого матча «Игры со статистикой» (если не нажали «Записать счёт» и не было отмены). */
+    public const AUTO_FINALIZE_DELAY = 90;
+
+    private function scheduleAutoFinalize(TournamentMatch $match): void
+    {
+        try {
+            $fresh = $match->fresh(['stage']);
+            if (!$fresh || $fresh->isCompleted() || $fresh->stage?->type !== \App\Models\TournamentStage::TYPE_FRIENDLY) {
+                return;
+            }
+            if (!$this->rally->isMatchReadyToFinalize($fresh)) {
+                return;
+            }
+            \App\Jobs\FinalizeDecidedFriendlyMatchJob::dispatch($fresh->id, (int) $fresh->last_seq)
+                ->delay(now()->addSeconds(self::AUTO_FINALIZE_DELAY));
+        } catch (\Throwable $e) {
+            report($e); // автозавершение не должно ломать ввод счёта
+        }
     }
 
     public function undo(TournamentMatch $match, array $v, RallyActor $actor): void

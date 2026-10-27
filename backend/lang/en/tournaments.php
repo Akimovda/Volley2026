@@ -1064,4 +1064,6 @@ return [
     'lineup_tab_missing_many' => 'missing: zones :z',
     'setup_court_select_aria' => 'Match court',
     'setup_court_unassigned' => '— not assigned —',
+    'rally_match_decided' => 'The match is decided. Tap “Save score” to finish it.',
+    'rally_match_decided_friendly' => 'The match is decided. Tap “Save score” — otherwise it will be saved automatically in a couple of minutes (unless you undo).',
 ];

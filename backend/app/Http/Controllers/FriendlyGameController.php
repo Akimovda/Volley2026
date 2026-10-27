@@ -63,7 +63,7 @@ class FriendlyGameController extends Controller
             'occurrence'  => $occurrence,
             'occurrences' => $occurrences,
             'stage'       => $stage,
-            'config'      => $stage?->config ?? $this->games->defaultConfig(),
+            'config'      => $stage?->config ?? $this->games->defaultConfig($event),
             'roster'      => $roster,
             'eventTeams'  => $this->games->eventTeams($event, $occurrence->id),
             'positions'   => $this->games->positions($occurrence->id),
@@ -87,9 +87,17 @@ class FriendlyGameController extends Controller
             'away_color'    => ['required', 'string'],
             'team_side'     => ['nullable', 'array'],
             'team_side.*'   => ['nullable', 'in:home,away'],
+            // формат, выбранный на этой же странице: сохраняется вместе с созданием матча («выбрал 21, создал — а сыграли до 25» быть не должно)
+            'match_format'        => ['nullable', 'in:bo1,bo3,bo5'],
+            'set_points'          => ['nullable', 'integer', 'min:5', 'max:50'],
+            'deciding_set_points' => ['nullable', 'integer', 'min:5', 'max:50'],
         ]);
 
         $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
+
+        if (isset($data['match_format'], $data['set_points'], $data['deciding_set_points'])) {
+            $this->saveFormat($event, $occurrence->id, $data);
+        }
 
         $homeTeamId = $awayTeamId = null;
         foreach ((array) ($data['team_side'] ?? []) as $tid => $side) {
@@ -143,7 +151,7 @@ class FriendlyGameController extends Controller
     }
 
     /** Формат матча (партии/очки) — конфиг служебной стадии */
-    public function updateConfig(Request $request, Event $event): RedirectResponse
+    public function updateConfig(Request $request, Event $event): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $this->authorizeManage($request, $event);
 
@@ -155,16 +163,28 @@ class FriendlyGameController extends Controller
         ]);
 
         $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
-        $stage      = $this->games->stageFor($event, $occurrence->id);
+        $stage      = $this->saveFormat($event, $occurrence->id, $data);
 
+        // Автосохранение со страницы (fetch при смене формата)
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'text' => $this->games->formatSentence($stage->config ?? [])]);
+        }
+
+        return redirect()->route('game.manage', [$event, 'occurrence' => $occurrence->id])
+            ->with('success', 'Формат матча сохранён (действует для ещё не завершённых матчей).');
+    }
+
+    /** Записывает формат матча в конфиг служебной стадии (создаёт стадию с умолчаниями, если её ещё нет). */
+    private function saveFormat(Event $event, int $occurrenceId, array $data): TournamentStage
+    {
+        $stage = $this->games->stageFor($event, $occurrenceId);
         $stage->update(['config' => array_merge($stage->config ?? [], [
             'match_format'        => $data['match_format'],
             'set_points'          => (int) $data['set_points'],
             'deciding_set_points' => (int) $data['deciding_set_points'],
         ])]);
 
-        return redirect()->route('game.manage', [$event, 'occurrence' => $occurrence->id])
-            ->with('success', 'Формат матча сохранён (действует для ещё не завершённых матчей).');
+        return $stage;
     }
 
     public function destroyMatch(Request $request, TournamentMatch $match): RedirectResponse

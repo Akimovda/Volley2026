@@ -92,4 +92,8 @@ return [
     'stats_toggle'       => 'Match statistics',
     'progress_toggle'    => 'Match progress',
     'rated_note'         => 'Rated event — the results count in the players\' overall ratings.',
+    'format_words_one' => 'One set to :pts',
+    'format_words_multi' => 'First to :wins sets, sets to :pts, deciding set to :dec',
+    'new_match_format' => 'Match format',
+    'format_autosaved' => 'format saved',
 ];

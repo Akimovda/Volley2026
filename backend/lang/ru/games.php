@@ -92,4 +92,8 @@ return [
     'stats_toggle'       => 'Статистика матча',
     'progress_toggle'    => 'Ход матча',
     'rated_note'         => 'Рейтинговое мероприятие — результаты идут в общие рейтинги игроков.',
+    'format_words_one' => 'Один сет до :pts',
+    'format_words_multi' => 'До :wins побед, сеты до :pts, решающий до :dec',
+    'new_match_format' => 'Формат матча',
+    'format_autosaved' => 'формат сохранён',
 ];
