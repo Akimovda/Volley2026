@@ -81,6 +81,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Журнал вещания состояния площадок для оверлея (CourtStateBroadcaster): по строке на каждое вещание, 7 дней.
+        'broadcast' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/broadcast.log'),
+            'level' => 'info',
+            'days' => 7,
+            'permission' => 0664,
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

@@ -67,10 +67,29 @@ class CourtStateBroadcaster
 
         try {
             broadcast(new CourtStateUpdated($court->channel_key, $state));
+            $this->logBroadcast($court, $state, true);
         } catch (\Throwable $e) {
             Log::warning('broadcast.court_state_failed', ['court_id' => $court->id, 'error' => $e->getMessage()]);
+            $this->logBroadcast($court, $state, false, $e->getMessage());
         }
 
         return $state;
+    }
+
+    /** Строка в канал логов broadcast на каждое вещание: первые 6 символов channel_key, court_id, match_id, seq, mode. Сбой лога вещание не ломает. */
+    private function logBroadcast(EventCourt $court, array $state, bool $ok, ?string $error = null): void
+    {
+        try {
+            Log::channel('broadcast')->info('court_state', [
+                'ch'       => substr((string) $court->channel_key, 0, 6),
+                'court_id' => $court->id,
+                'match_id' => $state['match']['id'] ?? null,
+                'seq'      => $state['seq'] ?? null,
+                'mode'     => $state['mode'] ?? null,
+                'ok'       => $ok,
+            ] + ($error !== null ? ['error' => mb_substr($error, 0, 200)] : []));
+        } catch (\Throwable) {
+            // журнал не должен влиять на вещание
+        }
     }
 }
