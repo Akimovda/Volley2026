@@ -11,7 +11,8 @@
             @switch($st['key'])
                 @case('format') {{ $st['sentence'] }} @break
                 @case('teams')
-                    @if($st['complete'] >= 2 || $st['done']) {{ __('games.cl_teams_ready') }}@if($st['partial'] > 0) · ⚠️ {{ __('games.cl_teams_incomplete', ['n' => $st['partial']]) }}@endif
+                    @if($st['done'] && $st['draft'][0] >= 1 && $st['draft'][1] >= 1 && $st['complete'] < 2) {{ __('games.cl_teams_draft', ['a' => $st['draft'][0], 'b' => $st['draft'][1]]) }}
+                    @elseif($st['complete'] >= 2 || $st['done']) {{ __('games.cl_teams_ready') }}@if($st['partial'] > 0) · ⚠️ {{ __('games.cl_teams_incomplete', ['n' => $st['partial']]) }}@endif
                     @elseif($st['partial'] > 0) ⚠️ {{ __('games.cl_teams_incomplete', ['n' => $st['partial']]) }}
                     @else {{ __('games.cl_teams_roster', ['n' => $st['roster']]) }} @endif
                     @break

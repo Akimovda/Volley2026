@@ -53,6 +53,10 @@ class FriendlyGameController extends Controller
                 $prefill['home'] = $src->teamHome?->members->pluck('user_id')->all() ?? [];
                 $prefill['away'] = $src->teamAway?->members->pluck('user_id')->all() ?? [];
             }
+        } elseif ($stage && !empty($stage->config['draft'])) {
+            // Разделение на команды/пары, выбранное на странице, но ещё не ставшее матчем (автосохраняется) — после перезагрузки на месте
+            $prefill['home'] = array_map('intval', (array) ($stage->config['draft']['home'] ?? []));
+            $prefill['away'] = array_map('intval', (array) ($stage->config['draft']['away'] ?? []));
         }
 
         $occurrences = EventOccurrence::where('event_id', $event->id)
@@ -67,7 +71,8 @@ class FriendlyGameController extends Controller
             'occurrence'  => $occurrence,
             'occurrences' => $occurrences,
             'stage'       => $stage,
-            'config'      => $stage?->config ?? $this->games->defaultConfig($event),
+            'config'      => array_merge($this->games->defaultConfig($event), $stage?->config ?? []),   // неполный config не должен давать 25/bo1 в пляжке
+            'draft'       => (array) ($stage?->config['draft'] ?? []),
             'roster'      => $roster,
             'eventTeams'  => $eventTeams,
             'positions'   => $this->games->positions($occurrence->id),
@@ -84,7 +89,8 @@ class FriendlyGameController extends Controller
      */
     private function checklist(Event $event, $occurrence, ?TournamentStage $stage, $matches, $eventTeams, $roster): array
     {
-        $config   = $stage?->config ?? $this->games->defaultConfig($event);
+        $config   = array_merge($this->games->defaultConfig($event), $stage?->config ?? []);
+        $draft    = (array) ($stage?->config['draft'] ?? []);
         $complete = $eventTeams->filter(fn ($t) => $t->is_complete)->count();
         $partial  = $eventTeams->count() - $complete;
 
@@ -98,7 +104,8 @@ class FriendlyGameController extends Controller
 
         $steps = [
             ['key' => 'format', 'done' => $stage !== null, 'sentence' => $this->games->formatSentence($config)],
-            ['key' => 'teams', 'done' => $complete >= 2 || $matches->isNotEmpty(), 'complete' => $complete, 'partial' => $partial, 'roster' => $roster->count()],
+            ['key' => 'teams', 'done' => $complete >= 2 || $matches->isNotEmpty() || (count($draft['home'] ?? []) >= 1 && count($draft['away'] ?? []) >= 1),
+                'complete' => $complete, 'partial' => $partial, 'roster' => $roster->count(), 'draft' => [count($draft['home'] ?? []), count($draft['away'] ?? [])]],
             ['key' => 'court', 'done' => $matches->isNotEmpty() && $assigned->count() === $matches->count(), 'name' => $courtName, 'any' => $courts->isNotEmpty()],
             ['key' => 'match', 'done' => $matches->isNotEmpty(), 'count' => $matches->count()],
             ['key' => 'score', 'done' => $matches->contains(fn ($m) => $m->status !== TournamentMatch::STATUS_SCHEDULED), 'match' => $current],
@@ -109,6 +116,42 @@ class FriendlyGameController extends Controller
             'steps' => $steps,
             'ready' => collect($steps)->where('optional', '!=', true)->every(fn ($s) => $s['done']),
         ];
+    }
+
+    /**
+     * Автосохранение разделения на команды/пары (до создания матча): игроки по сторонам, цвета, выбранные команды мероприятия.
+     * Хранится в config служебной стадии (ключ `draft`) и восстанавливается при открытии страницы.
+     */
+    public function saveDraft(Request $request, Event $event): \Illuminate\Http\JsonResponse
+    {
+        $this->authorizeManage($request, $event);
+
+        $data = $request->validate([
+            'occurrence_id' => ['required', 'integer'],
+            'side'          => ['nullable', 'array'],
+            'side.*'        => ['nullable', 'in:home,away'],
+            'team_side'     => ['nullable', 'array'],
+            'team_side.*'   => ['nullable', 'in:home,away'],
+            'home_color'    => ['nullable', 'string'],
+            'away_color'    => ['nullable', 'string'],
+        ]);
+
+        $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
+        $roster     = $this->games->roster($occurrence->id)->pluck('id')->map(fn ($i) => (int) $i)->all();
+        $pick = fn (string $s) => collect((array) ($data['side'] ?? []))->filter(fn ($v) => $v === $s)->keys()->map(fn ($k) => (int) $k)->intersect($roster)->values()->all();
+
+        $draft = [
+            'home'       => $pick('home'),
+            'away'       => $pick('away'),
+            'home_color' => isset(FriendlyGameService::COLORS[$data['home_color'] ?? '']) ? $data['home_color'] : null,
+            'away_color' => isset(FriendlyGameService::COLORS[$data['away_color'] ?? '']) ? $data['away_color'] : null,
+            'team_side'  => collect((array) ($data['team_side'] ?? []))->filter()->mapWithKeys(fn ($v, $k) => [(int) $k => $v])->all(),
+        ];
+
+        $stage = $this->games->stageFor($event, $occurrence->id);
+        $stage->update(['config' => array_merge($stage->config ?? [], ['draft' => $draft])]);
+
+        return response()->json(['ok' => true, 'home' => count($draft['home']), 'away' => count($draft['away'])]);
     }
 
     /** Создать матч из двух составов */

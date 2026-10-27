@@ -183,10 +183,10 @@
 
                 <div class="gm-color-row mb-2">
                     <div class="gm-color-field">{{ $event->direction === 'beach' ? __('games.pair_a') : __('games.team_a') }}:
-                        <select name="home_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('home_color', 'red') === $k)>{{ $label }}</option>@endforeach</select>
+                        <select name="home_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('home_color', $draft['home_color'] ?? 'red') === $k)>{{ $label }}</option>@endforeach</select>
                     </div>
                     <div class="gm-color-field">{{ $event->direction === 'beach' ? __('games.pair_b') : __('games.team_b') }}:
-                        <select name="away_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('away_color', 'blue') === $k)>{{ $label }}</option>@endforeach</select>
+                        <select name="away_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('away_color', $draft['away_color'] ?? 'blue') === $k)>{{ $label }}</option>@endforeach</select>
                     </div>
                     <span class="f-14" style="align-self:center">
                         {{ $event->direction === 'beach' ? __('games.pair_a') : __('games.count_home') }}: <b id="gm-cnt-home">0</b> · {{ $event->direction === 'beach' ? __('games.pair_b') : __('games.count_away') }}: <b id="gm-cnt-away">0</b>
@@ -198,7 +198,7 @@
                     <div class="b-600">{{ __('games.event_teams_title') }}</div>
                     <div class="f-14 mb-1" style="opacity:.65">{{ __('games.event_teams_hint') }}</div>
                     @foreach($eventTeams as $t)
-                    @php $chosenT = old("team_side.{$t->id}", ''); @endphp
+                    @php $chosenT = old("team_side.{$t->id}", $draft['team_side'][$t->id] ?? ''); @endphp
                     <div class="gm-row">
                         <div class="gm-who">
                             <div style="min-width:0">
@@ -404,7 +404,24 @@
             rows.forEach(function (r) { setSide(r, ''); });
             recount();
         });
-        roster.addEventListener('change', recount);
+        // Автосохранение разделения на команды/пары (черновик на сервере): после перезагрузки страницы выбор на месте
+        var draftTmr = null, draftUrl = {!! json_encode(route('game.draft.save', $event)) !!};
+        function saveDraft() {
+            clearTimeout(draftTmr);
+            draftTmr = setTimeout(function () {
+                var f = document.getElementById('gm-form'); if (!f) return;
+                var fd = new FormData();
+                fd.append('occurrence_id', f.querySelector('[name=occurrence_id]').value);
+                fd.append('_token', f.querySelector('[name=_token]').value);
+                f.querySelectorAll('input[type=radio]:checked').forEach(function (r) { if (r.name.indexOf('side[') === 0 || r.name.indexOf('team_side[') === 0) fd.append(r.name, r.value); });
+                ['home_color', 'away_color'].forEach(function (n) { var s = f.querySelector('[name=' + n + ']'); if (s) fd.append(n, s.value); });
+                fetch(draftUrl, { method: 'POST', body: fd, credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } }).catch(function () {});
+            }, 500);
+        }
+        roster.addEventListener('change', function () { recount(); saveDraft(); });
+        ['gm-split-random', 'gm-split-level', 'gm-reset'].forEach(function (id) { document.getElementById(id).addEventListener('click', saveDraft); });
+        var gmForm = document.getElementById('gm-form');
+        if (gmForm) gmForm.addEventListener('change', function (e) { if (e.target.name && (e.target.name.indexOf('team_side[') === 0 || e.target.name.indexOf('_color') > 0)) saveDraft(); });
         recount();
     })();
     </script>
