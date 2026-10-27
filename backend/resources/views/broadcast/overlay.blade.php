@@ -148,7 +148,9 @@ window.__BC = @json($config);
     'use strict';
     var C = window.__BC || {}, S = C.strings || {};
     var cur = null, offset = 0, wsOk = false, pollFrom = Date.now() + 5000;
-    var lastFetch = 0, switched = null, subKey = null, subTimer = null;
+    // Связь: wsOk = true только после подтверждённой подписки на канал (а не после открытия сокета).
+    var echoRef = null, lastEventAt = Date.now(), lastWatchdogAt = 0, lastResubAt = 0, lastMiss = false;
+    var lastFetch = Date.now(), switched = null, subKey = null, subTimer = null;
     var els = {
         board: document.getElementById('board'), tabs: document.getElementById('tabs'), sub: document.getElementById('sub'),
         setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'),
@@ -368,31 +370,49 @@ window.__BC = @json($config);
         try { render({mode: 'off'}); } catch (e) {}
     }
 
-    function apply(p) {
+    // Возвращает true, если состояние применено, false — если устарело (seq меньше текущего того же матча).
+    // src: 'ws' (событие Reverb), 'safety' (опрос раз в 15 с), 'poll' / 'reconnect' / 'visible' / 'watchdog', 'push' (из приложения).
+    function apply(p, src) {
         try {
-            if (!p || !p.mode) { return; }
-            if (p.hidden) { goOff(); return; }
+            if (!p || !p.mode) { return false; }
+            if (p.hidden) { goOff(); return true; }
             offMode = false;
             if (cur) {
                 var cm = cur.match ? cur.match.id : null, pm = p.match ? p.match.id : null;
-                if (cm === pm && p.seq < cur.seq) { return; }
-                if (cm === pm && p.seq === cur.seq && p.mode === cur.mode && p.now_ms < cur.now_ms) { return; }
+                if (cm === pm && p.seq < cur.seq) { return false; }
+                if (cm === pm && p.seq === cur.seq && p.mode === cur.mode && p.now_ms < cur.now_ms) { return false; }
+                if (src === 'safety' && (cm !== pm || p.seq > cur.seq)) {
+                    lastMiss = true;
+                    try { console.warn('reverb miss, caught up', cur.seq, p.seq); } catch (e) {}
+                }
             }
             if (p.now_ms) { offset = p.now_ms - Date.now(); }
             cur = p;
             switched = null;
             render(p);
-        } catch (e) { /* на эфире ошибок не показываем */ }
+            return true;
+        } catch (e) { /* на эфире ошибок не показываем */ return false; }
     }
 
+    // Состояние от приложения (нативный клиент Reverb/опроса): тот же JSON, что /state и событие .state.
+    // Применяется, если p.seq >= текущего; собственный опрос и подписка страницы не отключаются.
+    window.__applyState = function (p) {
+        try {
+            if (typeof p === 'string') { p = JSON.parse(p); }
+            var ok = apply(p, 'push');
+            if (ok) { lastEventAt = Date.now(); }
+            return ok ? 'applied' : 'stale';
+        } catch (e) { return 'stale'; }
+    };
+
     /* ---------- получение состояния ---------- */
-    function fetchState() {
+    function fetchState(src) {
         if (C.demo || !C.stateUrl) { return; }
         lastFetch = Date.now();
         try {
             var x = new XMLHttpRequest();
             x.open('GET', C.stateUrl + (C.stateUrl.indexOf('?') < 0 ? '?' : '&') + 't=' + Date.now());
-            x.onload = function () { try { if (x.status === 200) { apply(JSON.parse(x.responseText)); } else if (x.status === 404) { goOff(); } } catch (e) {} };
+            x.onload = function () { try { if (x.status === 200) { lastMiss = false; apply(JSON.parse(x.responseText), src || 'poll'); if (lastMiss) { lastMiss = false; resubscribe(); } } else if (x.status === 404) { goOff(); } } catch (e) {} };
             x.send();
         } catch (e) {}
     }
@@ -419,11 +439,53 @@ window.__BC = @json($config);
     }
     setInterval(tick, 200);
 
-    // polling-fallback: WS не поднялся за 5 с или разорван
+    // polling-fallback: подписка не подтверждена за 5 с или разорвана — опрос раз в 3 с
     setInterval(function () {
         if (offMode) { if (Date.now() - lastFetch >= 30000) { fetchState(); } return; }
-        if (!wsOk && Date.now() >= pollFrom) { fetchState(); }
+        if (!wsOk && Date.now() >= pollFrom) { fetchState('poll'); }
     }, 3000);
+
+    // Страховка: опрос /state раз в 15 с ВСЕГДА, даже при подписанном Reverb (событие могло потеряться).
+    // Сторож: матч live, а событий Reverb нет 45 с — внеочередной /state и переподписка на канал.
+    setInterval(function () {
+        if (C.demo || !C.stateUrl || offMode) { return; }
+        var now = Date.now();
+        if (now - lastFetch >= 15000) { fetchState('safety'); }
+        if (cur && cur.mode === 'live' && now - lastEventAt > 45000 && now - lastWatchdogAt > 45000) {
+            lastWatchdogAt = now;
+            try { console.warn('reverb silent 45s on live match: refetch + resubscribe'); } catch (e) {}
+            fetchState('watchdog');
+            resubscribe();
+        }
+    }, 1000);
+
+    // Страница снова видна (экран/вкладка) — сразу сверяемся с сервером.
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible') { fetchState('visible'); }
+    });
+
+    function subscribe() {
+        var ch = echoRef.channel(C.channel);
+        ch.listen('.state', function (p) { lastEventAt = Date.now(); apply(p, 'ws'); });
+        var sub = ch.subscription || (echoRef.connector.pusher.channel ? echoRef.connector.pusher.channel(C.channel) : null);
+        if (sub && sub.bind) {
+            sub.bind('pusher:subscription_succeeded', function () { wsOk = true; lastEventAt = Date.now(); if (Date.now() - lastFetch > 1500) { fetchState('reconnect'); } });
+            sub.bind('pusher:subscription_error', function () { wsOk = false; pollFrom = Date.now(); });
+        }
+    }
+
+    // Переподписка на канал (не чаще раза в 10 с); пока подписка не подтверждена — резервный опрос раз в 3 с.
+    function resubscribe() {
+        try {
+            if (!echoRef || !C.channel) { return; }
+            var now = Date.now();
+            if (now - lastResubAt < 10000) { return; }
+            lastResubAt = now;
+            wsOk = false; pollFrom = now; lastEventAt = now;
+            echoRef.leaveChannel(C.channel);
+            subscribe();
+        } catch (e) {}
+    }
 
     function connect() {
         try {
@@ -432,13 +494,14 @@ window.__BC = @json($config);
                 broadcaster: 'reverb', key: C.key, wsHost: window.location.hostname, wsPort: 80, wssPort: 443,
                 forceTLS: window.location.protocol === 'https:', enabledTransports: ['ws', 'wss']
             });
-            echo.channel(C.channel).listen('.state', function (p) { apply(p); });
+            echoRef = echo;
+            subscribe();
             var conn = echo.connector.pusher.connection;
             conn.bind('state_change', function (st) {
-                if (st.current === 'connected') { wsOk = true; fetchState(); }
+                // wsOk выставляется только по подтверждению подписки (subscription_succeeded); тут — только сброс при разрыве
+                if (st.current === 'connected') { fetchState('reconnect'); }
                 else { if (wsOk) { pollFrom = Date.now(); } wsOk = false; }
             });
-            if (conn.state === 'connected') { wsOk = true; }
         } catch (e) {}
     }
 
