@@ -71,7 +71,12 @@
 			'setup'     => $lineup['setup'],
 		];
 	}
-	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg];
+	// B5: сигнал смены сторон/техтайм-аута на текущем счёте (пляжка); клиент показывает один раз на key
+	$ssSignal = (!$board['decided'])
+		? \App\Services\SideSwitchService::signal(\App\Services\SideSwitchService::rules($match->stage), (int) $match->id, (int) $setNumber,
+			(int) $board['score']['home'], (int) $board['score']['away'], (bool) ($board['is_deciding_set'] ?? false))
+		: null;
+	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal];
 @endphp
 
 		{{-- Шапка матча + табы сетов --}}

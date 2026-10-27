@@ -19,7 +19,7 @@
 html,body{margin:0;padding:0;overflow:hidden;background:transparent;width:100%;height:100%}
 body.preview{background:#5b6068}
 body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
-#board,#sub,#setsum,#matchsum,#tabs{--u:calc(var(--u0)*var(--k,.7))}
+#board,#sub,#setsum,#matchsum,#tabs,#sw{--u:calc(var(--u0)*var(--k,.7))}
 #stage{position:absolute;left:calc((100vw - var(--u0)*1920)/2);top:calc((100vh - var(--u0)*1080)/2);width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
@@ -72,6 +72,12 @@ em.pln.sub{font-style:normal;font-size:.55em;font-weight:500;opacity:.85;line-he
 .foot{height:calc(var(--u)*44);line-height:calc(var(--u)*44);padding:0 calc(var(--u)*20);font-size:calc(var(--u)*24);font-weight:500;color:var(--muted);background:rgba(255,255,255,.06);display:flex;justify-content:space-between}
 
 /* ---- замена ---- */
+/* B5: плашка «Смена сторон» / «Технический тайм-аут» (пляжка), сверху по центру, 6 с */
+#sw{top:calc(var(--u0)*var(--edge));left:50%;width:calc(var(--u)*720);margin-left:calc(var(--u)*-360)}
+#sw .in{display:flex;align-items:center;justify-content:center;padding:calc(var(--u)*18) calc(var(--u)*28)}
+#sw svg{flex:none;width:calc(var(--u)*46);height:calc(var(--u)*46);margin-right:calc(var(--u)*20)}
+#sw .t2{font-size:calc(var(--u)*38);font-weight:700;line-height:1.15}
+#sw .t3{font-size:calc(var(--u)*28);font-weight:600;color:var(--muted)}
 #sub{min-width:calc(var(--u)*520);max-width:calc(var(--u)*760);bottom:calc(var(--u0)*var(--edge))}
 #sub.r{right:calc(var(--u0)*var(--edge))}
 #sub.l{left:calc(var(--u0)*var(--edge))}
@@ -140,6 +146,7 @@ body.tpl-light_tv .sum-score .big{color:#16264a}
     <div id="board" class="p card tl"></div>
     <div id="tabs" class="p tl"></div>
     <div id="sub" class="p card r"></div>
+    <div id="sw" class="p card"></div>
     <div id="setsum" class="p card"></div>
     <div id="matchsum" class="p card"></div>
     <div id="splash" class="p"></div>
@@ -160,7 +167,7 @@ window.__BC = @json($config);
     var lastFetch = Date.now(), switched = null, subKey = null, subTimer = null;
     var els = {
         board: document.getElementById('board'), tabs: document.getElementById('tabs'), sub: document.getElementById('sub'),
-        setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'),
+        setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'), sw: document.getElementById('sw'),
         splash: document.getElementById('splash'), tag: document.getElementById('tag')
     };
     var prevPts = {};
@@ -269,6 +276,24 @@ window.__BC = @json($config);
 @include('broadcast.tabs.script')
 
     /* ---------- замена ---------- */
+    // B5: плашка смены сторон. Сервер отдаёт сигнал по текущему счёту (side_switch.key); показываем один раз на ключ, 6 с.
+    // На первом состоянии матча (загрузка страницы/переподключение) только запоминаем ключ — старые события не повторяем.
+    var swSeen = {}, swMatch = null, swTimer = null;
+    function renderSwitch(p) {
+        var mid = p.match ? p.match.id : null, ss = p.mode === 'live' ? p.side_switch : null;
+        if (mid !== swMatch) { swMatch = mid; swSeen = {}; show(els.sw, false); clearTimeout(swTimer); if (!C.demo) { if (ss) { swSeen[ss.key] = true; } return; } }
+        if (!ss || swSeen[ss.key]) { return; }
+        swSeen[ss.key] = true;
+        var lines = [];
+        if (ss.switch) { lines.push('<div class="t2">' + esc(S.side_switch || 'Смена сторон') + '</div>'); }
+        if (ss.timeout) { lines.push('<div class="' + (ss.switch ? 't3' : 't2') + '">' + esc(S.tech_timeout || 'Технический тайм-аут') + '</div>'); }
+        els.sw.innerHTML = '<div class="in">' + SWAP + '<div>' + lines.join('') + '</div></div>';
+        void els.sw.offsetWidth;
+        show(els.sw, true);
+        clearTimeout(swTimer);
+        swTimer = setTimeout(function () { show(els.sw, false); }, 6000);
+    }
+
     function renderSub(p) {
         var ls = p.last_sub;
         if (p.mode !== 'live' || !ls) { return; }
@@ -394,7 +419,7 @@ window.__BC = @json($config);
         var isTabs = (p.theme || {}).template === 'tabs', onAir = m === 'live' || m === 'set_summary';
         show(els.board, onAir && !isTabs ? (renderBoard(p), true) : false);
         show(els.tabs, onAir && isTabs ? (renderTabs(p), true) : false);
-        if (m === 'live') { renderSub(p); } else { show(els.sub, false); }
+        if (m === 'live') { renderSub(p); renderSwitch(p); } else { show(els.sub, false); show(els.sw, false); clearTimeout(swTimer); }
         show(els.setsum, m === 'set_summary' ? (renderSetSum(p), true) : false);
         show(els.matchsum, m === 'match_summary' ? (renderMatchSum(p), true) : false);
         show(els.splash, m === 'splash' ? (renderSplash(p), true) : false);

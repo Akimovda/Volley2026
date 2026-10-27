@@ -61,7 +61,8 @@ class FriendlyGameService
     {
         // Пляжка: до 2 побед (bo3), сеты до 21, решающий до 15 (разница 2 — общее правило isSetDecided). Остальное — как раньше.
         if ($event && $event->direction === 'beach') {
-            return ['match_format' => 'bo3', 'set_points' => 21, 'deciding_set_points' => 15];
+            return ['match_format' => 'bo3', 'set_points' => 21, 'deciding_set_points' => 15,
+                'side_switch_every' => 7, 'side_switch_deciding' => 5, 'tech_timeout' => false];
         }
 
         return ['match_format' => 'bo1', 'set_points' => 25, 'deciding_set_points' => 15];

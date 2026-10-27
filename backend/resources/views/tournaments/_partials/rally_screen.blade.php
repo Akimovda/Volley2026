@@ -85,6 +85,8 @@ body.dark #rw-live .rw-serve-btn:not(.on){background:transparent;color:#cacaca}
 body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,195,217,.45);box-shadow:none}
 .rw-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#222333;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:10002;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;max-width:90vw;text-align:center}
 .rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
+.rw-sidesw{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#2967BA;color:#fff;padding:12px 20px;border-radius:14px;font-size:17px;font-weight:700;z-index:10003;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 14px rgba(20,48,107,.35);text-align:center;max-width:90vw}
+.rw-sidesw.on{opacity:1}
 </style>
 
 <script>
@@ -132,11 +134,34 @@ window.RallyLive = (function () {
 		})();
 	}
 
+	/* B5: «Смена сторон» / «Технический тайм-аут» — тост 5 с + вибрация, ввод не блокирует. Один раз на ключ счёта
+	   (откат очка через границу и повторный заход на неё не показываются). Первое состояние страницы — только запоминаем. */
+	var ssSeen = {}, ssTimer = null;
+	function sideSignal(first) {
+		var ss = data().ss;
+		if (!ss) { return; }
+		var fresh = !ssSeen[ss.key];
+		ssSeen[ss.key] = true;
+		if (first || !fresh) { return; }
+		var parts = [];
+		if (ss.switch) { parts.push(SS_TXT.sw); }
+		if (ss.timeout) { parts.push(SS_TXT.to); }
+		var box = document.getElementById('rw-sidesw');
+		if (!box) { box = document.createElement('div'); box.id = 'rw-sidesw'; box.className = 'rw-sidesw'; document.body.appendChild(box); }
+		box.textContent = parts.join(' · ');
+		box.classList.add('on');
+		clearTimeout(ssTimer);
+		ssTimer = setTimeout(function () { box.classList.remove('on'); }, 5000);
+		try { if (navigator.vibrate) { navigator.vibrate([200, 100, 200]); } } catch (e) {}
+	}
+	var SS_TXT = {sw: @json(__('tournaments.rally_side_switch')), to: @json(__('tournaments.rally_tech_timeout'))};
+
 	function swap(html) {
 		if (!live || !html) { return; }
 		live.innerHTML = html;
 		var jn = document.getElementById('jn-list');
 		if (jn) { jn.scrollTop = jn.scrollHeight; }
+		sideSignal(false);
 		document.dispatchEvent(new CustomEvent('rally:swapped'));
 	}
 	function refresh(done) {
@@ -247,6 +272,7 @@ window.RallyLive = (function () {
 	// возврат из bfcache — формы снова рабочие
 	window.addEventListener('pageshow', function (ev) { if (ev.persisted) { refresh(); } });
 
+	sideSignal(true);   // первое состояние страницы: ключ только запоминаем
 	return {send: send, swap: swap, refresh: refresh, busy: busy, toast: toast, uuid: uuid, data: data, token: token, netErr: NET_ERR};
 })();
 </script>

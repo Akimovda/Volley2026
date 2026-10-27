@@ -2,6 +2,7 @@
 
 namespace App\Services\Broadcast;
 
+use App\Services\SideSwitchService;
 use App\Models\BroadcastSetting;
 use App\Models\BroadcastTeamStyle;
 use App\Models\EventCourt;
@@ -159,6 +160,7 @@ class CourtStateService
             'wins'       => $setsState ? ['home' => $setsState['wins_home'], 'away' => $setsState['wins_away']] : ['home' => 0, 'away' => 0],
             'serving'    => null,
             'serving_lineup' => false,
+            'side_switch' => null,   // B5: пляжка — смена сторон / технический тайм-аут на текущем счёте (клиент дедуплицирует по key)
             'last_sub'   => null,
             'summary'    => null,
             'splash'     => null,
@@ -175,6 +177,11 @@ class CourtStateService
         if ($subject && $current && in_array($mode, ['live', 'set_summary'], true)) {
             [$payload['serving'], $payload['serving_lineup']] = $this->serving($subject, (int) $current['n']);
             $payload['last_sub'] = $this->lastSub($subject, (int) $current['n']);
+            if ($mode === 'live') {
+                $payload['side_switch'] = SideSwitchService::signal(
+                    SideSwitchService::rules($subject->stage, $court->event), (int) $subject->id, (int) $current['n'],
+                    (int) $current['home'], (int) $current['away'], (bool) ($current['deciding'] ?? false));
+            }
         }
 
         if ($subject && $summaryScope) {

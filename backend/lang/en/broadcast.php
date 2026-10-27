@@ -57,4 +57,6 @@ return [
     'serve_mark_label'           => 'Serving:',
     'match_started_note'         => 'Match in progress, 0:0 scoreboard is on air.',
     'captain' => 'Captain',
+    'side_switch' => 'Switch sides',
+    'tech_timeout' => 'Technical timeout',
 ];

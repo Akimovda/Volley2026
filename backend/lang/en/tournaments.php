@@ -1066,4 +1066,6 @@ return [
     'setup_court_unassigned' => '— not assigned —',
     'rally_match_decided' => 'The match is decided. Tap “Save score” to finish it.',
     'rally_match_decided_friendly' => 'The match is decided. Tap “Save score” — otherwise it will be saved automatically in a couple of minutes (unless you undo).',
+    'rally_side_switch' => 'Switch sides',
+    'rally_tech_timeout' => 'Technical timeout',
 ];
