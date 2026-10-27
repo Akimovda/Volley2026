@@ -56,6 +56,10 @@ body.native .p{will-change:auto}
 .row{display:flex;align-items:center;height:calc(var(--u)*88);border-top:1px solid rgba(255,255,255,.08)}
 .row:first-child{border-top:0}
 .name{flex:1;min-width:0;padding:0 calc(var(--u)*18);font-size:calc(var(--u)*38);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Пляжная пара: «Фамилия Имя» двух игроков друг под другом; авто-ужатие → только фамилия → многоточие (fitPairs) */
+.name.pl2{display:flex;flex-direction:column;justify-content:center;font-size:calc(var(--u)*32);line-height:1.1}
+.pln{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+em.pln.sub{font-style:normal;font-size:.55em;font-weight:500;opacity:.85;line-height:1.2}
 .sv{flex:none;width:calc(var(--u)*26);height:calc(var(--u)*26);margin-right:calc(var(--u)*10);opacity:0;transition:opacity .2s}
 .sv.on{opacity:1}
 .wins{flex:none;min-width:calc(var(--u)*52);height:calc(var(--u)*52);line-height:calc(var(--u)*52);text-align:center;margin-right:calc(var(--u)*10);border-radius:calc(var(--u)*8);background:rgba(255,255,255,.12);font-size:calc(var(--u)*32);font-weight:700}
@@ -180,6 +184,31 @@ window.__BC = @json($config);
         }
         return {logo: '', text: t.name || '', only: false};
     }
+    /* Пара (пляжка, ровно 2 игрока): [{full: 'Фамилия Имя', sur: 'Фамилия'}, ...] или null, если названия скрыты / это не пара */
+    function pairOf(p, side) {
+        var t = team(p, side), th = p.theme || {};
+        if (th.show_team_names === false || !t.pair || !t.players_full || t.players_full.length !== 2) { return null; }
+        return t.players_full.map(function (f, i) { return {full: f, sur: (t.players && t.players[i]) || String(f).split(' ')[0]}; });
+    }
+    function plnHtml(l, cls) { return '<' + (cls ? 'em class="pln ' + cls : 'div class="pln') + '" data-full="' + esc(l.full) + '" data-sur="' + esc(l.sur) + '">' + esc(l.full) + '</' + (cls ? 'em' : 'div') + '>'; }
+    // Авто-ужатие имён пары: сначала уменьшаем шрифт (до 75 %), затем только фамилия (и снова ужатие), дальше многоточие (CSS)
+    function fitPairs(root) {
+        var list = root.querySelectorAll('.pln');
+        for (var i = 0; i < list.length; i++) {
+            var el = list[i];
+            el.textContent = el.getAttribute('data-full') || el.textContent;
+            el.style.fontSize = '';
+            var base = parseFloat(getComputedStyle(el).fontSize) || 0;
+            if (!base) { continue; }
+            var shrink = function () { var k = 1; while (k > 0.75 && el.scrollWidth > el.clientWidth + 1) { k -= 0.05; el.style.fontSize = (base * k) + 'px'; } };
+            shrink();
+            if (el.scrollWidth > el.clientWidth + 1 && el.getAttribute('data-sur')) {
+                el.textContent = el.getAttribute('data-sur');
+                el.style.fontSize = '';
+                shrink();
+            }
+        }
+    }
     var EDGES = {small: 24, medium: 48, large: 80};
     function applyTheme(th) {
         th = th || {};
@@ -220,12 +249,13 @@ window.__BC = @json($config);
                 }
             }
             html += '<div class="row"><i class="stripe" style="background:' + color(t.color) + '"></i>' + logo +
-                '<div class="name' + (lb.only ? ' sp' : '') + '">' + esc(lb.text) + '</div>' +
+                '<div class="name' + (lb.only ? ' sp' : '') + (pairOf(p, side) ? ' pl2' : '') + '">' + (pairOf(p, side) ? pairOf(p, side).map(function (l) { return plnHtml(l); }).join('') : esc(lb.text)) + '</div>' +
                 '<div class="sv' + (p.serving_lineup && p.serving === (side === 'home' ? 'A' : 'B') ? ' on' : '') + '">' + BALL + '</div>' + extra +
                 '<div class="pts"><span data-side="' + side + '">' + pts + '</span></div></div>';
         });
         html += '<div class="foot"><span>' + esc(fmt(S.set_n, cs.n)) + '</span></div>';
         els.board.innerHTML = html;
+        fitPairs(els.board);
         ['home', 'away'].forEach(function (side) {
             var k = (p.match ? p.match.id : 0) + ':' + cs.n + ':' + side;
             var el = els.board.querySelector('[data-side="' + side + '"]');
@@ -269,7 +299,10 @@ window.__BC = @json($config);
     function nameChip(p, side, right) {
         var t = team(p, side), lb = labelOf(p, side);
         var bar = '<b style="background:' + color(t.color) + '"></b>';
-        var body = lb.only ? '<img class="lg2" src="' + esc(lb.logo) + '" alt="">' : '<span>' + esc(lb.text) + '</span>';
+        var pr = pairOf(p, side), sub = '';
+        if (pr) { sub = pr.map(function (l) { return plnHtml(l, 'sub'); }).join(''); }
+        else if (t.captain && (p.theme || {}).show_team_names !== false) { sub = '<em class="pln sub" data-full="' + esc((S.captain || 'Капитан') + ': ' + t.captain) + '" data-sur="">' + esc((S.captain || 'Капитан') + ': ' + t.captain) + '</em>'; }
+        var body = lb.only ? '<img class="lg2" src="' + esc(lb.logo) + '" alt="">' : '<span>' + esc(lb.text) + sub + '</span>';
         return '<div class="tn' + (right ? ' r' : '') + '">' + (right ? body + bar : bar + body) + '</div>';
     }
     function renderSetSum(p) {
@@ -278,6 +311,7 @@ window.__BC = @json($config);
         var set = (p.sets || []).filter(function (s) { return s.n === sm.set_number; })[0] || {home: 0, away: 0};
         els.setsum.innerHTML = '<div class="sum-title">' + esc(fmt(S.set_summary, sm.set_number)) + '</div>' +
             '<div class="sum-score">' + nameChip(p, 'home', false) + '<div class="big">' + set.home + ' : ' + set.away + '</div>' + nameChip(p, 'away', true) + '</div>' + statRows(sm);
+        fitPairs(els.setsum);
     }
     function renderMatchSum(p) {
         var sm = p.summary; if (!sm || sm.scope !== 'match') { return; }
@@ -287,6 +321,7 @@ window.__BC = @json($config);
         els.matchsum.innerHTML = '<div class="sum-title">' + esc(S.match_summary) + '</div>' +
             '<div class="sum-score">' + nameChip(p, 'home', false) + '<div class="big">' + ((p.wins && p.wins.home) || 0) + ' : ' + ((p.wins && p.wins.away) || 0) + '</div>' + nameChip(p, 'away', true) + '</div>' +
             '<div class="sum-sets">' + sets + '</div>' + statRows(sm) + nx;
+        fitPairs(els.matchsum);
     }
 
     /* ---------- заставка ---------- */

@@ -34,9 +34,11 @@
     $side = [];
     foreach (['home' => $match->teamHome, 'away' => $match->teamAway] as $k => $t) {
         $c = $t?->captain;
+        $pair = app(\App\Services\TeamDisplayNames::class)->pair($t, $match->stage?->event);   // пляжная пара: игроки вместо названия
         $side[$k] = [
             'avatar'  => $captainAvatar($c),
             'captain' => $c ? trim(($c->last_name ?? '') . ' ' . ($c->first_name ?? '')) : '',
+            'pair'    => $pair,
         ];
     }
 @endphp
@@ -52,11 +54,14 @@
         @if($side[$k]['avatar'])
         <img src="{{ $side[$k]['avatar'] }}" class="mx-head-ava" alt="">
         @else
-        <div class="mx-head-ava mx-head-ava--{{ $k }}">{{ $initials($teams[$k]['name']) }}</div>
+        <div class="mx-head-ava mx-head-ava--{{ $k }}">{{ $initials($side[$k]['pair'][0]['full'] ?? $teams[$k]['name']) }}</div>
         @endif
         <div class="mx-head-team-txt">
-            <div class="mx-head-team-name {{ $won ? 'is-winner' : '' }}">{{ $teams[$k]['name'] }}</div>
-            @if($side[$k]['captain'])<div class="mx-head-captain">{{ $side[$k]['captain'] }}</div>@endif
+            <div class="mx-head-team-name {{ $won ? 'is-winner' : '' }}">
+                @if($side[$k]['pair'])@foreach($side[$k]['pair'] as $pn)<div>{{ $pn['full'] }}</div>@endforeach
+                @else{{ $teams[$k]['name'] }}@endif
+            </div>
+            @if(!$side[$k]['pair'] && $side[$k]['captain'])<div class="mx-head-captain">{{ $side[$k]['captain'] }}</div>@endif
         </div>
     </div>
     @endforeach

@@ -15,6 +15,17 @@
                 k = Math.max(0.6, k - 0.04);
                 el.style.fontSize = (base * k) + 'px';
             }
+            // Пара «Фамилия Имя» не поместилась даже ужатая — оставляем только фамилию (и снова ужимаем), дальше многоточие (CSS)
+            var sur = el.getAttribute('data-sur');
+            if (sur && el.scrollWidth > el.clientWidth + 1) {
+                el.textContent = sur;
+                el.style.fontSize = '';
+                k = 1;
+                while (k > 0.6 && el.scrollWidth > el.clientWidth + 1) {
+                    k = Math.max(0.6, k - 0.04);
+                    el.style.fontSize = (base * k) + 'px';
+                }
+            }
         }
     }
 
@@ -25,7 +36,11 @@
         }
         var beach = p.event && p.event.direction === 'beach' && t.players && t.players.length;
         if (beach) {
-            return t.players.slice(0, 2).map(function (n) { return '<div class="tb-fit two">' + esc(n) + '</div>'; }).join('');
+            // пара: «Фамилия Имя» (если полные имена есть), иначе только фамилии, как раньше
+            var full = t.pair && t.players_full && t.players_full.length === 2;
+            return t.players.slice(0, 2).map(function (n, i) {
+                return '<div class="tb-fit two"' + (full ? ' data-sur="' + esc(n) + '"' : '') + '>' + esc(full ? t.players_full[i] : n) + '</div>';
+            }).join('');
         }
         return '<div class="tb-fit">' + esc(t.short_custom && t.short_name ? t.short_name : (t.name || '')) + '</div>';
     }

@@ -96,4 +96,6 @@ return [
     'format_words_multi' => 'First to :wins sets, sets to :pts, deciding set to :dec',
     'new_match_format' => 'Match format',
     'format_autosaved' => 'format saved',
+    'pair_a' => 'Pair 1',
+    'pair_b' => 'Pair 2',
 ];

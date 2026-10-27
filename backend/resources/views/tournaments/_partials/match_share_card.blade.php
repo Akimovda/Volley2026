@@ -35,6 +35,8 @@ $captainName = function (?\App\Models\User $captain): ?string {
 
 $homeTeam = $match->teamHome;
 $awayTeam = $match->teamAway;
+$homePair = app(\App\Services\TeamDisplayNames::class)->pair($homeTeam, $match->stage?->event);   // пляжная пара: игроки вместо названия
+$awayPair = app(\App\Services\TeamDisplayNames::class)->pair($awayTeam, $match->stage?->event);
 $homeAvatar = $avatarDataUri($homeTeam?->captain);
 $awayAvatar = $avatarDataUri($awayTeam?->captain);
 $homeCaptainName = $captainName($homeTeam?->captain);
@@ -147,10 +149,10 @@ $metaLine = trim(implode(' · ', array_filter([$locationLine, $matchDateFormatte
             @if($homeAvatar)
             <img src="{{ $homeAvatar }}" class="avatar" alt="">
             @else
-            <div class="avatar-fallback avatar--home">{{ $teamInitials($homeTeam->name ?? '?') }}</div>
+            <div class="avatar-fallback avatar--home">{{ $teamInitials($homePair[0]['full'] ?? $homeTeam->name ?? '?') }}</div>
             @endif
-            <div class="team-name{{ $homeWon ? ' team-name--winner' : '' }}">{{ $homeTeam->name ?? '?' }}</div>
-            @if($homeCaptainName)
+            <div class="team-name{{ $homeWon ? ' team-name--winner' : '' }}">@if($homePair)@foreach($homePair as $pn)<div>{{ $pn['full'] }}</div>@endforeach @else{{ $homeTeam->name ?? '?' }}@endif</div>
+            @if($homeCaptainName && !$homePair)
             <div class="captain-name">{{ $homeCaptainName }}</div>
             @endif
         </div>
@@ -171,10 +173,10 @@ $metaLine = trim(implode(' · ', array_filter([$locationLine, $matchDateFormatte
             @if($awayAvatar)
             <img src="{{ $awayAvatar }}" class="avatar" alt="">
             @else
-            <div class="avatar-fallback avatar--away">{{ $teamInitials($awayTeam->name ?? '?') }}</div>
+            <div class="avatar-fallback avatar--away">{{ $teamInitials($awayPair[0]['full'] ?? $awayTeam->name ?? '?') }}</div>
             @endif
-            <div class="team-name{{ $awayWon ? ' team-name--winner' : '' }}">{{ $awayTeam->name ?? '?' }}</div>
-            @if($awayCaptainName)
+            <div class="team-name{{ $awayWon ? ' team-name--winner' : '' }}">@if($awayPair)@foreach($awayPair as $pn)<div>{{ $pn['full'] }}</div>@endforeach @else{{ $awayTeam->name ?? '?' }}@endif</div>
+            @if($awayCaptainName && !$awayPair)
             <div class="captain-name">{{ $awayCaptainName }}</div>
             @endif
         </div>

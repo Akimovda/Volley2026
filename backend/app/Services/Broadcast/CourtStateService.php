@@ -564,6 +564,9 @@ class CourtStateService
                 $payload['event']['direction'] = 'beach';
                 $payload['teams']['home']['players'] = ['Константинопольский', 'Иванов'];
                 $payload['teams']['away']['players'] = ['Петров', 'Сидоров'];
+                $payload['teams']['home']['players_full'] = ['Константинопольский Александр', 'Иванов Иван'];
+                $payload['teams']['away']['players_full'] = ['Петров Пётр', 'Сидоров Сергей'];
+                $payload['teams']['home']['pair'] = $payload['teams']['away']['pair'] = true;
                 break;
             case 'classic5':
                 $payload['match']['format'] = 'bo5';
@@ -651,22 +654,35 @@ class CourtStateService
             'color' => $this->styles->colorFor($t),
             'logo_url' => $this->styles->logoUrlFor($t, $court->event),
             'players' => $beach ? $this->surnames($t) : [],
-        ] : ['name' => null, 'short_name' => null, 'color' => null, 'logo_url' => null, 'players' => []];
+            // «Фамилия Имя» игроков (пляжка, до двух) и признак пары (ровно 2 подтверждённых игрока) — для имён на табло вместо «Команда N»
+            'players_full' => $beach ? $this->fullNames($t) : [],
+            'pair' => $beach && $this->confirmedMembers($t)->count() === 2,
+            // «Капитан: Фамилия Имя» в итогах классики (event_teams.captain_user_id), если назначен
+            'captain' => $this->captainName($t),
+        ] : ['name' => null, 'short_name' => null, 'color' => null, 'logo_url' => null, 'players' => [], 'players_full' => [], 'pair' => false, 'captain' => null];
 
         return ['home' => $side($m->teamHome), 'away' => $side($m->teamAway)];
     }
 
-    /** Фамилии (до двух) подтверждённых игроков команды — для столбика на табло «Вкладки» в пляжке. */
+    /** Подтверждённые игроки команды: логика имён — в TeamDisplayNames (единый источник для оверлея, пульта, статистики, PDF, share-card). */
+    private function confirmedMembers(EventTeam $t): \Illuminate\Support\Collection
+    {
+        return app(\App\Services\TeamDisplayNames::class)->confirmedMembers($t);
+    }
+
     private function surnames(EventTeam $t): array
     {
-        return DB::table('event_team_members')
-            ->join('users', 'users.id', '=', 'event_team_members.user_id')
-            ->where('event_team_members.event_team_id', $t->id)
-            ->where('event_team_members.confirmation_status', 'confirmed')
-            ->orderBy('event_team_members.id')->limit(2)
-            ->get(['users.last_name', 'users.first_name'])
-            ->map(fn ($u) => trim((string) ($u->last_name ?: $u->first_name)))
-            ->filter()->values()->all();
+        return app(\App\Services\TeamDisplayNames::class)->surnames($t);
+    }
+
+    private function fullNames(EventTeam $t): array
+    {
+        return app(\App\Services\TeamDisplayNames::class)->fullNames($t);
+    }
+
+    private function captainName(EventTeam $t): ?string
+    {
+        return app(\App\Services\TeamDisplayNames::class)->captainName($t);
     }
 
     public const TABS_LOGOS = ['volleyclub', 'organizer', 'hidden'];
