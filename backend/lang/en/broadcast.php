@@ -56,4 +56,5 @@ return [
     'match_unstart_confirm'      => 'Undo the match start? The scoreboard will go away and the splash screen will return.',
     'serve_mark_label'           => 'Serving:',
     'match_started_note'         => 'Match in progress, 0:0 scoreboard is on air.',
+    'captain' => 'Captain',
 ];
