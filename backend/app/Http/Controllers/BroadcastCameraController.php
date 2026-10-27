@@ -7,6 +7,7 @@ use App\Models\BroadcastDestination;
 use App\Models\BroadcastLink;
 use App\Models\Event;
 use App\Models\EventCourt;
+use App\Models\TournamentMatch;
 use App\Services\Broadcast\BroadcastLinkService;
 use App\Services\Broadcast\BroadcastTargetResolver;
 use App\Services\Broadcast\CourtStateBroadcaster;
@@ -46,13 +47,15 @@ class BroadcastCameraController extends Controller
             $tz = $c->occurrence?->timezone ?: ($e->timezone ?: 'Europe/Moscow');
             $at = $c->occurrence?->starts_at ?: $e->starts_at;
             $t = $this->targets->resolve($c, $e);
+            $state = $this->broadcaster->cached($c);
             return [
                 'sort'    => $at ? abs($at->getTimestamp() - $now->getTimestamp()) : PHP_INT_MAX,
                 'past'    => $at ? $at->copy()->addHours(12)->lt($now) : false,
                 'court_id' => (int) $c->id, 'court' => $c->name, 'event_id' => (int) $e->id, 'event' => $e->title,
                 'date'    => $at ? $at->copy()->setTimezone($tz)->format('d.m H:i') : null,
                 'today'   => $at ? $at->copy()->setTimezone($tz)->isSameDay($now->copy()->setTimezone($tz)) : false,
-                'status'  => CourtStatusLine::of($this->broadcaster->cached($c), $tz),
+                'status'  => CourtStatusLine::of($state, $tz),
+                'teams'   => $this->teamsLines($state, $e),
                 // платформа/подпись — без ключа и без адреса сервера
                 'dest'    => $t['ok'] ? ['platform' => $t['platform'], 'label' => $t['label']] : null,
                 'vk'      => $t['ok'] && $this->isVk($t),
@@ -65,6 +68,21 @@ class BroadcastCameraController extends Controller
         })->filter(fn ($r) => !$r['past'])->sortBy('sort')->take(60)->values();
 
         return view('broadcast.camera', ['rows' => $rows]);
+    }
+
+    /** Команды текущего (live) или следующего матча площадки с подписью под названием: пляжка — состав, классика — капитан. */
+    private function teamsLines(array $state, $event): array
+    {
+        $m = $state['match'] ?? null;
+        $id = ($m && ($m['status'] ?? '') === 'live' && ($state['mode'] ?? '') !== 'splash') ? ($m['id'] ?? null) : ($state['next_match']['id'] ?? null);
+        $match = $id ? TournamentMatch::with(['teamHome', 'teamAway'])->find($id) : null;
+        if (!$match) {
+            return [];
+        }
+        $names = app(\App\Services\TeamDisplayNames::class);
+
+        return array_values(array_filter(array_map(fn ($t) => $t ? ['name' => $t->name, 'lines' => $names->cameraLines($t, $event)] : null,
+            [$match->teamHome, $match->teamAway])));
     }
 
     public function start(Request $request, EventCourt $court): JsonResponse

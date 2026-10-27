@@ -128,6 +128,7 @@ class FriendlyGameController extends Controller
             'match_format'        => ['nullable', 'in:bo1,bo3,bo5'],
             'set_points'          => ['nullable', 'integer', 'min:5', 'max:50'],
             'deciding_set_points' => ['nullable', 'integer', 'min:5', 'max:50'],
+            'tech_timeout'        => ['nullable', 'boolean'],
         ]);
 
         $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
@@ -197,6 +198,7 @@ class FriendlyGameController extends Controller
             'match_format'        => ['required', 'in:bo1,bo3,bo5'],
             'set_points'          => ['required', 'integer', 'min:5', 'max:50'],
             'deciding_set_points' => ['required', 'integer', 'min:5', 'max:50'],
+            'tech_timeout'        => ['nullable', 'boolean'],
         ]);
 
         $occurrence = $this->occurrenceOf($event, (int) $data['occurrence_id']);
@@ -219,6 +221,7 @@ class FriendlyGameController extends Controller
             'match_format'        => $data['match_format'],
             'set_points'          => (int) $data['set_points'],
             'deciding_set_points' => (int) $data['deciding_set_points'],
+            'tech_timeout'        => (bool) ($data['tech_timeout'] ?? false),   // B5: технический тайм-аут при 21 (только пляжка)
         ])]);
 
         return $stage;

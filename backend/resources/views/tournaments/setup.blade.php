@@ -1753,6 +1753,15 @@ $tourNumber = $seasonData
 									</select>
 								</div>
 							</div>
+							@if($isBeach)
+							<div class="row mt-2" id="tech_timeout_field">
+								<div class="col-12">
+									<input type="hidden" name="tech_timeout" value="0">
+									<label class="d-inline-flex fvc" style="gap:.8rem;cursor:pointer"><input type="checkbox" name="tech_timeout" value="1"> {{ __('games.tech_timeout') }}</label>
+									<div class="f-14" style="opacity:.65">{{ __('games.tech_timeout_hint') }}</div>
+								</div>
+							</div>
+							@endif
 						</div>
 					</div>
 					{{-- King of the Beach: специфичные настройки --}}
@@ -3311,6 +3320,7 @@ $tourNumber = $seasonData
 			var doubleElimFields = document.getElementById('double_elim_fields');
 			var matchFormatField = document.getElementById('match_format_field');
 			var decidingSetWrap = document.getElementById('deciding_set_wrap');
+			var techTimeoutField = document.getElementById('tech_timeout_field');
 			var setPointsField = document.getElementById('set_points_field');
 			var createStageSubmitWrap = document.getElementById('create_stage_submit_wrap');
 			var courtsFields = document.getElementById('courts_shared_fields');
@@ -3606,6 +3616,7 @@ $tourNumber = $seasonData
 					// их только сбивает с толку (выглядит как Bo3, играется как Bo1).
 					setBlockActive(matchFormatField, !(showKb || showKoc));
 					setBlockActive(decidingSetWrap, !(showKb || showKoc));
+					if (techTimeoutField) { setBlockActive(techTimeoutField, !(showKb || showKoc)); }
 					// set_points тоже форсируется (15) и вообще не используется в механике
 					// King of the Court (нет очковой границы, только время) — но у King of
 					// the Beach set_points ВСЁ ЕЩЁ значим (реальная длина мини-сета

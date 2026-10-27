@@ -35,6 +35,10 @@
             .cam-keyform.on { display:block; }
             .cam-keymsg { margin-top:.4rem; }
             .cam-box input { width:100%; font-size:1.3rem; margin:.5rem 0; }
+                    .cam-teams { display:flex; gap:1.6rem; flex-wrap:wrap; margin:.4rem 0 .6rem; }
+            .cam-team { flex:1 1 14rem; min-width:0; }
+            .cam-team-name { font-weight:600; font-size:1.4rem; }
+            .cam-team-line { font-size:1.3rem; opacity:.75; line-height:1.35; }
         </style>
     </x-slot>
 
@@ -50,6 +54,13 @@
             <div class="cam-event">{{ $r['event'] }}@if($r['date']) · {{ $r['date'] }}@endif @if($r['today'])<span class="cam-today">{{ __('stream.cam_today') }}</span>@endif</div>
             <div class="cam-court">{{ $r['court'] }}</div>
             <div class="cam-status {{ $r['status']['kind'] === 'live' ? 'live' : '' }}">{{ $r['status']['text'] }}</div>
+            @if(collect($r['teams'])->contains(fn ($t) => !empty($t['lines'])))
+            <div class="cam-teams">
+                @foreach($r['teams'] as $t)
+                <div class="cam-team"><div class="cam-team-name">{{ $t['name'] }}</div>@foreach($t['lines'] as $ln)<div class="cam-team-line">{{ $ln }}</div>@endforeach</div>
+                @endforeach
+            </div>
+            @endif
             <div class="cam-dest">
                 @if($r['dest'])
                 {{ __('stream.cam_to', ['p' => ($platformNames[$r['dest']['platform']] ?? $r['dest']['platform']) . ($r['dest']['label'] ? ' · ' . $r['dest']['label'] : '')]) }}

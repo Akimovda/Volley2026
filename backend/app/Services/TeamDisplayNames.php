@@ -41,6 +41,26 @@ class TeamDisplayNames
             ->filter()->values()->all();
     }
 
+    /**
+     * Подпись под командой на экране камеры (/broadcast/camera): пляжка — весь подтверждённый состав «Фамилия Имя»
+     * (по строке на игрока); классика — «Капитан: Фамилия Имя», если капитан назначен (event_teams.captain_user_id); иначе пусто.
+     *
+     * @return string[]
+     */
+    public function cameraLines(?EventTeam $t, ?Event $event = null): array
+    {
+        if (!$t) {
+            return [];
+        }
+        $event ??= $t->event;
+        if (($event?->direction ?? null) === 'beach') {
+            return $this->confirmedMembers($t)->map(fn ($u) => $this->full($u))->filter()->values()->all();
+        }
+        $cap = $this->captainName($t);
+
+        return $cap ? [__('broadcast.captain') . ': ' . $cap] : [];
+    }
+
     /** «Фамилия Имя» капитана (event_teams.captain_user_id) или null. */
     public function captainName(EventTeam $t): ?string
     {

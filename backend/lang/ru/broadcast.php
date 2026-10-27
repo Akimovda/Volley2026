@@ -57,4 +57,6 @@ return [
     'serve_mark_label'           => 'Подаёт:',
     'match_started_note'         => 'Матч идёт, табло 0:0 в эфире.',
     'captain' => 'Капитан',
+    'side_switch' => 'Смена сторон',
+    'tech_timeout' => 'Технический тайм-аут',
 ];

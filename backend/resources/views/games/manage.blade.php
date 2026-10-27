@@ -146,6 +146,13 @@
                         @endforeach
                     </select>
                 </div>
+                @if($event->direction === 'beach')
+                <div class="w-100">
+                    <input type="hidden" name="tech_timeout" value="0">
+                    <label class="d-inline-flex fvc" style="gap:.8rem;cursor:pointer"><input type="checkbox" name="tech_timeout" value="1" @checked(!empty($config['tech_timeout']))> {{ __('games.tech_timeout') }}</label>
+                    <div class="f-13" style="opacity:.65">{{ __('games.tech_timeout_hint') }}</div>
+                </div>
+                @endif
                 <div>
                     <div class="f-14 mb-05">&nbsp;</div>
                     <button class="btn btn-outline btn-small" type="submit">{{ __('games.save') }}</button>
@@ -166,6 +173,7 @@
                 <input type="hidden" name="match_format" id="gm-fmt-format" value="{{ $config['match_format'] ?? 'bo1' }}">
                 <input type="hidden" name="set_points" id="gm-fmt-set" value="{{ (int) ($config['set_points'] ?? 25) }}">
                 <input type="hidden" name="deciding_set_points" id="gm-fmt-dec" value="{{ (int) ($config['deciding_set_points'] ?? 15) }}">
+                <input type="hidden" name="tech_timeout" id="gm-fmt-tt" value="{{ !empty($config['tech_timeout']) ? 1 : 0 }}">
 
                 <div class="gm-actions mb-2">
                     <button type="button" class="btn btn-outline btn-small" id="gm-split-level">⚖️ {{ __('games.split_level') }}</button>
@@ -333,12 +341,13 @@
         var T = {!! json_encode($fmtJs) !!};
         var selF = form.querySelector('[name=match_format]'), selS = form.querySelector('[name=set_points]'), selD = form.querySelector('[name=deciding_set_points]');
         var hF = document.getElementById('gm-fmt-format'), hS = document.getElementById('gm-fmt-set'), hD = document.getElementById('gm-fmt-dec');
+        var selT = form.querySelector('input[type=checkbox][name=tech_timeout]'), hT = document.getElementById('gm-fmt-tt');
         var txt = document.getElementById('gm-fmt-text'), mark = document.getElementById('gm-fmt-saved'), tmr = null;
         function sentence() {
             if (selF.value === 'bo1') return T.one.replace(':pts', selS.value);
             return T.multi.replace(':wins', selF.value === 'bo5' ? 3 : 2).replace(':pts', selS.value).replace(':dec', selD.value);
         }
-        function sync() { hF.value = selF.value; hS.value = selS.value; hD.value = selD.value; if (txt) txt.textContent = sentence(); }
+        function sync() { hF.value = selF.value; hS.value = selS.value; hD.value = selD.value; if (hT && selT) hT.value = selT.checked ? 1 : 0; if (txt) txt.textContent = sentence(); }
         function save() {
             sync();
             clearTimeout(tmr);
@@ -350,7 +359,7 @@
                     .catch(function () {});
             }, 400);
         }
-        [selF, selS, selD].forEach(function (s) { if (s) s.addEventListener('change', save); });
+        [selF, selS, selD, selT].forEach(function (s) { if (s) s.addEventListener('change', save); });
         sync();
     })();
     </script>
