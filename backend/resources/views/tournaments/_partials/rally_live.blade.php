@@ -38,13 +38,17 @@
 		);
 	};
 	$rwData = [];
+	// Пляжка: у пары (ровно 2 игрока) шаг «Кто принимал?» не нужен — партнёр подставляется сам (см. rally_screen.nextAfterPlayer)
+	$isBeachMatch = ($match->stage?->event?->direction ?? null) === 'beach';
 	foreach ($sides as $sk => $sd) {
 		$oppSk = $sk === 'home' ? 'away' : 'home';
+		$ownPlayers = $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]);
 		$rwData[$sk] = [
 			'teamId'     => $sd['team_id'],
 			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
-			'players'    => $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]),
+			'players'    => $ownPlayers,
 			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
+			'pairMode'   => $isBeachMatch && count($ownPlayers) === 2,
 		];
 	}
 @endphp

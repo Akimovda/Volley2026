@@ -308,7 +308,21 @@ window.RallyLive = (function () {
 
 	function nextAfterPlayer() {
 		// ace — прямой выигрыш на подаче: приёма/передачи своей команды нет
-		if (st.kind === 'own' && st.action !== 'ace') { go('dig'); } else { submit(); }
+		if (st.kind === 'own' && st.action !== 'ace') {
+			var d = DATA[st.side];
+			if (d.pairMode && d.players.length === 2) {
+				// Пляжка 2×2: шаг «Кто принимал?» не показываем.
+				// Атака — партнёр записывается в assist_user_id (пас); скидка (attack_type = 'dump') — партнёра НЕ пишем.
+				// Блок — в dig/assist ничего не пишем. dig_user_id в пляжке автоматически не заполняется никогда.
+				if (st.action === 'kill' && st.attackType !== 'dump') {
+					var partner = d.players.filter(function (p) { return String(p.id) !== String(st.player); })[0];
+					if (partner) { st.assist = String(partner.id); }
+				}
+				submit();
+				return;
+			}
+			go('dig');
+		} else { submit(); }
 	}
 
 	function render() {
