@@ -37,6 +37,7 @@ class BroadcastOverlayController extends Controller
             'channel'  => 'court.' . $court->channel_key,
             'key'      => (string) config('reverb.apps.apps.0.key'),
             'preview'  => $request->boolean('preview'),
+            'native'   => $request->boolean('native'),
             'audio'    => $request->query('audio') !== '0',
             'strings'  => trans('broadcast'),
             'initial'  => $broadcaster->cached($court),
