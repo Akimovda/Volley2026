@@ -43,7 +43,7 @@ class PersonalBotController extends Controller
         // 1. Проверяем что токен валиден — getMe
         try {
             $meResp = Http::timeout(10)
-                ->get("https://api.telegram.org/bot{$token}/getMe")
+                ->get(\App\Services\TelegramApi::url($token, 'getMe'))
                 ->json();
         } catch (\Throwable $e) {
             return back()->withErrors(['bot_token' => 'Не удалось подключиться к Telegram API: ' . $e->getMessage()]);
@@ -59,7 +59,7 @@ class PersonalBotController extends Controller
         // 2. Проверяем что бот является администратором указанного чата — getChatMember
         try {
             $memberResp = Http::timeout(10)
-                ->get("https://api.telegram.org/bot{$token}/getChatMember", [
+                ->get(\App\Services\TelegramApi::url($token, 'getChatMember'), [
                     'chat_id' => $chatId,
                     'user_id' => $botUserId,
                 ])
@@ -82,7 +82,7 @@ class PersonalBotController extends Controller
         if ($title === '') {
             try {
                 $chatResp = Http::timeout(10)
-                    ->get("https://api.telegram.org/bot{$token}/getChat", ['chat_id' => $chatId])
+                    ->get(\App\Services\TelegramApi::url($token, 'getChat'), ['chat_id' => $chatId])
                     ->json();
                 $title = $chatResp['result']['title']
                     ?? $chatResp['result']['username']
@@ -290,11 +290,11 @@ class PersonalBotController extends Controller
         $reason = null;
         try {
             if ($channel->platform === 'telegram') {
-                $me = Http::timeout(10)->get("https://api.telegram.org/bot{$token}/getMe")->json();
+                $me = \App\Services\TelegramApi::http(10)->get(\App\Services\TelegramApi::url($token, 'getMe'))->json();
                 if (empty($me['ok'])) {
                     $reason = 'Telegram не принимает токен бота — обновите токен (🔑).';
                 } else {
-                    $m = Http::timeout(10)->get("https://api.telegram.org/bot{$token}/getChatMember", [
+                    $m = \App\Services\TelegramApi::http(10)->get(\App\Services\TelegramApi::url($token, 'getChatMember'), [
                         'chat_id' => $channel->chat_id,
                         'user_id' => $me['result']['id'],
                     ])->json();

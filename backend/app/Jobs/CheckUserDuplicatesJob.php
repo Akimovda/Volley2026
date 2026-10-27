@@ -58,7 +58,7 @@ class CheckUserDuplicatesJob implements ShouldQueue
         }
 
         try {
-            Http::post("https://api.telegram.org/bot{$token}/sendMessage", [
+            \App\Services\TelegramApi::http()->post(\App\Services\TelegramApi::url($token, 'sendMessage'), [
                 'chat_id'                  => $chatId,
                 'text'                     => $text,
                 'parse_mode'               => 'HTML',

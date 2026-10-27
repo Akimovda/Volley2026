@@ -152,7 +152,7 @@
 				@endphp
 				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
 					@csrf
-					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}</button>
+					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}@include('tournaments._partials.team_sub_lines', ['team' => $sd['team'], 'inline' => true])</button>
 				</form>
 				@endforeach
 			</div>
@@ -222,6 +222,7 @@
 		@endphp
 		<div class="card mb-2">
 			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
+			@include('tournaments._partials.team_sub_lines', ['team' => $side['team']])
 
 			@if(!$board['decided'] && $luOn && $lineup['needs_start'])
 			<div class="alert alert-info f-13 mt-2">{{ __('tournaments.lineup_need_setup') }}</div>

@@ -48,6 +48,7 @@ class MatchRallyService
         ?string $clientRequestId = null,
         ?string $recordedByName = null,
         ?int $recordedByLinkId = null,
+        ?string $attackType = null,
     ): MatchRallyEvent {
         // Повтор уже записанного запроса — быстрый путь без проверок и без нового seq/пересчёта/broadcast
         if ($clientRequestId !== null && $dup = $this->findByRequestId($match->id, $clientRequestId)) {
@@ -66,6 +67,9 @@ class MatchRallyService
         if (!in_array($actionType, MatchRallyEvent::ALL_ACTIONS, true)) {
             throw new InvalidArgumentException('Неизвестный тип действия.');
         }
+
+        // Подтип атаки — только для очка «атака»; иное значение/не-атака → null
+        $attackType = ($actionType === MatchRallyEvent::ACTION_KILL && in_array($attackType, MatchRallyEvent::ATTACK_TYPES, true)) ? $attackType : null;
 
         $opponentTeamId = $scoringTeamId === $match->team_home_id ? $match->team_away_id : $match->team_home_id;
         $players = $this->playerStatsService->getMatchPlayers($match);
@@ -104,7 +108,7 @@ class MatchRallyService
         try {
             [$event, $isDuplicate] = DB::transaction(function () use (
                 $match, $setNumber, $scoringTeamId, $actionType, $playerId, $statTeamId,
-                $digUserId, $assistUserId, $recordedBy, $clientRequestId, $recordedByName, $recordedByLinkId
+                $digUserId, $assistUserId, $recordedBy, $clientRequestId, $recordedByName, $recordedByLinkId, $attackType
             ) {
                 $locked = TournamentMatch::whereKey($match->id)->lockForUpdate()->first();
 
@@ -139,6 +143,7 @@ class MatchRallyService
                     'stat_team_id'        => $statTeamId,
                     'dig_user_id'         => $digUserId,
                     'assist_user_id'      => $assistUserId,
+                    'attack_type'         => $attackType,
                     'recorded_by_user_id' => $recordedBy?->id,
                     'recorded_by_link_id' => $recordedByLinkId,
                     'recorded_by_name'    => $recordedByName,

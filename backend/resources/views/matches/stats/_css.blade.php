@@ -78,6 +78,13 @@ body.dark .mx-sbar-track { background:rgba(255,255,255,.1); }
 .mx-filters { display:flex; flex-wrap:wrap; gap:.8rem; margin-bottom:1.2rem; }
 .mx-filters select { min-width:16rem; }
 .mx-set-h { font-weight:800; font-size:1.6rem; margin:1.6rem 0 .6rem; }
+.mx-set-toggle { cursor:pointer; user-select:none; }
+.mx-set-toggle::before { content:'▸'; display:inline-block; width:1.6rem; transition:transform .15s; }
+.mx-set-toggle.is-open::before { content:'▾'; }
+.mx-set-body.is-collapsed { display:none; }
+.mx-at-line { font-size:1.25rem; opacity:.75; margin:-.2rem 0 .6rem; padding-left:.2rem; }
+.mx-at-line > div { margin:.1rem 0; }
+.mx-has-tip { border-bottom:1px dotted currentColor; cursor:help; }
 .mx-ev { display:grid; grid-template-columns:3.4rem 6.4rem 1fr; gap:.8rem; align-items:baseline; padding:.55rem 0; border-bottom:1px solid var(--mx-line); font-size:1.4rem; }
 .mx-ev-n { opacity:.45; font-size:1.2rem; text-align:right; }
 .mx-ev-score { font-weight:800; white-space:nowrap; }

@@ -61,6 +61,8 @@ return [
     ],
 
     'telegram' => [
+        // Базовый адрес Bot API; при блокировке пути до api.telegram.org — адрес релея (см. docs/server-ops.md)
+        'api_base' => env('TELEGRAM_API_BASE', 'https://api.telegram.org'),
         'bot_token'          => env('TELEGRAM_BOT_TOKEN'),
         'bot_username'       => env('TELEGRAM_BOT_USERNAME'),
         'admin_chat_id'      => env('TELEGRAM_ADMIN_CHAT_ID'),

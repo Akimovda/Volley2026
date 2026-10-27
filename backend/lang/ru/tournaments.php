@@ -1087,4 +1087,7 @@ return [
     'rally_match_decided_friendly' => 'Матч решён. Нажмите «Записать счёт» — иначе он запишется сам через пару минут (если не будет отмены).',
     'rally_side_switch' => 'Смена сторон',
     'rally_tech_timeout' => 'Технический тайм-аут',
+    'rally_attack_spike' => 'Удар',
+    'rally_attack_shot' => 'Накат',
+    'rally_attack_dump' => 'Скидка',
 ];

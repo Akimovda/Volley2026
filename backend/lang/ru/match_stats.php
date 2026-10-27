@@ -99,4 +99,9 @@ return [
     'profile_points'     => 'очки',
     'profile_errors'     => 'ошибки',
     'profile_live'       => 'идёт',
+    'at_breakdown' => 'из них: удар :spike · накат :shot · скидка :dump · без уточнения :none',
+    'at_spike' => 'удар',
+    'at_shot' => 'накат',
+    'at_dump' => 'скидка',
+    'act_kill_t' => 'Атака (:type) — :who',
 ];

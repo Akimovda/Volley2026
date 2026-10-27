@@ -29,6 +29,10 @@ return [
     |
     */
 
+    // Очередь для задач, ходящих в мессенджеры (Telegram/VK/MAX). По умолчанию — общая `default`; когда запущен отдельный
+    // воркер (`queue:work --queue=telegram`), выставить TELEGRAM_QUEUE=telegram, config:cache и перезапустить воркеры.
+    'telegram_queue' => env('TELEGRAM_QUEUE', 'default'),
+
     'connections' => [
 
         'sync' => [

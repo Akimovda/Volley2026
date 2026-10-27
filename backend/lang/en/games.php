@@ -128,4 +128,5 @@ return [
     'cl_btn_stream' => 'Stream setup',
     'tech_timeout' => 'Technical timeout at 21 points (sets 1–2)',
     'tech_timeout_hint' => 'Beach only. Side switches are always shown: every 7 points, every 5 in the deciding set.',
+    'cl_teams_draft' => 'Lineups set: :a and :b players — create the match',
 ];

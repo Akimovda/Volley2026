@@ -15,6 +15,9 @@
         ['key' => 'unattributed', 'label' => __('match_stats.origin_unattributed'), 'sub' => false],
         ['key' => 'total', 'label' => __('match_stats.origin_total'), 'sub' => false],
     ];
+    // разбивка атаки по подтипам (удар · накат · скидка) — только если в матче есть хотя бы одно уточнение
+    $atLine = fn (array $x) => __('match_stats.at_breakdown', ['spike' => $x['spike'] ?? 0, 'shot' => $x['shot'] ?? 0, 'dump' => $x['dump'] ?? 0, 'none' => $x['none'] ?? 0]);
+    $hasAt = collect(['home', 'away'])->contains(fn ($s) => (($o[$s]['at']['spike'] ?? 0) + ($o[$s]['at']['shot'] ?? 0) + ($o[$s]['at']['dump'] ?? 0)) > 0);
     $sv = $stats['serve'];
     $excluded = collect($stats['sets'])->filter(fn ($s) => !$s['serve']['reliable']);
 @endphp
@@ -25,7 +28,7 @@
     @if(count($stats['sets']) > 1 && empty($print))
     <div class="mx-seg" data-mx-seg="chart">
         @foreach($stats['sets'] as $sn => $set)
-        <button type="button" data-set="{{ $sn }}" class="{{ $loop->first ? 'is-active' : '' }}">{{ __('match_stats.set_n', ['n' => $sn]) }}</button>
+        <button type="button" data-set="{{ $sn }}" class="{{ $loop->first ? 'is-active' : '' }}">{{ __('match_stats.set_n', ['n' => $sn]) }} · {{ $set['score']['home'] }}:{{ $set['score']['away'] }}</button>
         @endforeach
     </div>
     @endif
@@ -70,6 +73,13 @@
             <div class="ms-bar-track ms-bar-track--away"><div class="ms-bar-fill ms-bar-fill--away" style="width:{{ round($av / $max * 100) }}%"></div></div>
             <div class="ms-bar-value ms-bar-value--away">{{ $av }}</div>
         </div>
+        @if($bar['key'] === 'attack' && $hasAt)
+        <div class="mx-at-line">
+            @foreach(['home', 'away'] as $side)
+            @if(($o[$side]['attack'] ?? 0) > 0)<div><span class="mx-dot mx-dot--{{ $side }}"></span>{{ $teams[$side]['name'] }} — {{ $atLine($o[$side]['at'] ?? []) }}</div>@endif
+            @endforeach
+        </div>
+        @endif
         @endforeach
     </div>
     <div class="mx-legend">

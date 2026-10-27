@@ -83,7 +83,7 @@ class VerifyPersonalBots extends Command
         try {
             // getMe — проверяем что токен валиден
             $me = Http::timeout(10)
-                ->get("https://api.telegram.org/bot{$token}/getMe")
+                ->get(\App\Services\TelegramApi::url($token, 'getMe'))
                 ->json();
 
             if (empty($me['ok'])) {
@@ -97,7 +97,7 @@ class VerifyPersonalBots extends Command
 
             // getChatMember — проверяем статус в чате
             $member = Http::timeout(10)
-                ->get("https://api.telegram.org/bot{$token}/getChatMember", [
+                ->get(\App\Services\TelegramApi::url($token, 'getChatMember'), [
                     'chat_id' => $chatId,
                     'user_id' => $botId,
                 ])

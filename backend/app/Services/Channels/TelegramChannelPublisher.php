@@ -36,7 +36,7 @@ class TelegramChannelPublisher implements ChannelPublisher
      */
     private function getHttpClient()
     {
-        return Http::timeout(15);
+        return \App\Services\TelegramApi::http(15);
     }
 
     /**
@@ -175,7 +175,7 @@ class TelegramChannelPublisher implements ChannelPublisher
                 }
 
                 $response = $this->getHttpClient()
-                    ->post("https://api.telegram.org/bot{$token}/sendRichMessage", $payload)
+                    ->post(\App\Services\TelegramApi::url($token, 'sendRichMessage'), $payload)
                     ->throw()
                     ->json();
 
@@ -219,7 +219,7 @@ class TelegramChannelPublisher implements ChannelPublisher
             }
 
             $response = $this->getHttpClient()
-                ->post("https://api.telegram.org/bot{$token}/sendPhoto", $payload)
+                ->post(\App\Services\TelegramApi::url($token, 'sendPhoto'), $payload)
                 ->throw()
                 ->json();
 
@@ -250,7 +250,7 @@ class TelegramChannelPublisher implements ChannelPublisher
         }
 
         $response = $this->getHttpClient()
-            ->post("https://api.telegram.org/bot{$token}/sendMessage", $payload)
+            ->post(\App\Services\TelegramApi::url($token, 'sendMessage'), $payload)
             ->throw()
             ->json();
 
@@ -289,7 +289,7 @@ class TelegramChannelPublisher implements ChannelPublisher
                 }
 
                 $response = $this->getHttpClient()
-                    ->post("https://api.telegram.org/bot{$token}/editMessageText", $payload)
+                    ->post(\App\Services\TelegramApi::url($token, 'editMessageText'), $payload)
                     ->throw()
                     ->json();
 
@@ -359,7 +359,7 @@ class TelegramChannelPublisher implements ChannelPublisher
             }
 
             $response = $this->getHttpClient()
-                ->post("https://api.telegram.org/bot{$token}/editMessageCaption", $payload)
+                ->post(\App\Services\TelegramApi::url($token, 'editMessageCaption'), $payload)
                 ->throw()
                 ->json();
 
@@ -384,7 +384,7 @@ class TelegramChannelPublisher implements ChannelPublisher
         }
 
         $response = $this->getHttpClient()
-            ->post("https://api.telegram.org/bot{$token}/editMessageText", $payload)
+            ->post(\App\Services\TelegramApi::url($token, 'editMessageText'), $payload)
             ->throw()
             ->json();
 
@@ -411,7 +411,7 @@ class TelegramChannelPublisher implements ChannelPublisher
         $token = $this->getToken();
 
         $response = $this->getHttpClient()
-            ->post("https://api.telegram.org/bot{$token}/deleteMessage", [
+            ->post(\App\Services\TelegramApi::url($token, 'deleteMessage'), [
                 'chat_id' => $chatId,
                 'message_id' => $messageId,
             ])

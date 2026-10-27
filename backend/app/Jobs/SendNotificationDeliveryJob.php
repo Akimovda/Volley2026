@@ -17,7 +17,9 @@ class SendNotificationDeliveryJob implements ShouldQueue
 
     public function __construct(
         public int $deliveryId
-    ) {}
+    ) {
+        $this->onQueue(config('queue.telegram_queue', 'default'));   // отдельная очередь для мессенджеров (см. TELEGRAM_QUEUE)
+    }
 
     public function handle(NotificationDeliverySender $sender): void
     {
