@@ -102,7 +102,7 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .ls-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;overflow:hidden;flex:none;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
 .ls-av img{width:100%;height:100%;object-fit:cover}
 .ls-av--lib{border-color:#C4B5FD}
-.ls-card .ls-zone-pos{white-space:normal;line-height:1.1;font-size:11px;text-align:center}
+.ls-card .ls-zone-pos{display:inline-block;white-space:nowrap;line-height:1;font-size:11px;font-weight:800;text-align:center;margin-top:3px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.14);opacity:1}
 .ls-zone-first{font-size:12px;opacity:.8;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ls-num{width:52px;margin-top:4px;text-align:center;font-weight:800;font-size:16px;border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:2px 4px;background:#fff;color:#111}
 .ls-num--ok{border-color:#16a34a}
@@ -118,7 +118,11 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .mc-net{height:8px;background:repeating-linear-gradient(90deg,#fff 0 6px,#cbd5e1 6px 12px);display:flex;align-items:center;justify-content:center;position:relative}
 .mc-net span{position:absolute;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:rgba(15,23,42,.7);color:#fff;padding:0 6px;border-radius:6px;top:-5px;line-height:1.5}
 .mc-title{font-weight:800;font-size:13px;text-align:center;margin:2px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mc-ball{opacity:0;margin-right:4px;transition:opacity .2s}
+.mc-ball{opacity:0;margin-right:4px;transition:opacity .2s;display:inline-flex;vertical-align:-.15em}
+.ball-ic{width:1.05em;height:1.05em;display:inline-block;fill:none !important}
+.mc-server-ic{display:inline-flex;vertical-align:-.15em;margin-right:4px}
+.mc-server--warn{color:#dc2626;font-weight:800}
+.ls-bi{display:inline-flex;vertical-align:-.15em}
 .mc-ball.on{opacity:1}
 .mc-row{display:flex;justify-content:space-around;gap:4px;margin:2px 0}
 .mc-cell{position:relative;flex:1 1 0;min-width:0;text-align:center;padding:2px 0 1px;border-radius:10px;background:rgba(255,255,255,.10);will-change:transform}

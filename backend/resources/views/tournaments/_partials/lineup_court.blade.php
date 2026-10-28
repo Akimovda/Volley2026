@@ -15,7 +15,7 @@
 		@if($side === 'home')<div class="mc-net"><span>{{ __('tournaments.lineup_net') }}</span></div>@endif
 		<div class="mc-half mc-half--{{ $side }}" style="background:{{ $tm['color'] }};color:{{ $tm['text'] }}" data-side="{{ $side }}">
 			@if($side === 'away')
-			<div class="mc-title"><span class="mc-ball{{ $tm['serving'] ? ' on' : '' }}">🏐</span>{{ $tm['name'] }}</div>
+			<div class="mc-title"><span class="mc-ball{{ $tm['serving'] ? ' on' : '' }}">@include('tournaments._partials.ball_icon')</span>{{ $tm['name'] }}</div>
 			@endif
 			@foreach($layout[$side] as $row)
 			<div class="mc-row">
@@ -24,7 +24,7 @@
 				<div class="mc-cell" @if($c) data-uid="{{ $c['id'] }}" @endif data-zone="{{ $z }}">
 					<span class="mc-z">{{ $z }}</span>
 					@if($c)
-					<div class="mc-av{{ $c['libero'] ? ' mc-av--lib' : '' }}{{ $tm['serving'] && $z === 1 ? ' mc-av--srv' : '' }}" style="{{ $c['photo'] ? '' : 'background:rgba(0,0,0,.28)' }}">
+					<div class="mc-av{{ $c['libero'] ? ' mc-av--lib' : '' }}{{ $tm['serving'] && $z === 1 && !$c['libero'] ? ' mc-av--srv' : '' }}" style="{{ $c['photo'] ? '' : 'background:rgba(0,0,0,.28)' }}">
 						@if($c['photo'])<img src="{{ $c['photo'] }}" alt="" loading="lazy">@else<span class="mc-ini" style="color:{{ $tm['text'] === '#111' ? '#111' : '#fff' }}">{{ $c['initials'] }}</span>@endif
 						@if($c['number'] !== null)<span class="mc-num">{{ $c['number'] }}</span>@endif
 					</div>
@@ -36,17 +36,21 @@
 			</div>
 			@endforeach
 			@if($side === 'home')
-			<div class="mc-title"><span class="mc-ball{{ $tm['serving'] ? ' on' : '' }}">🏐</span>{{ $tm['name'] }}</div>
+			<div class="mc-title"><span class="mc-ball{{ $tm['serving'] ? ' on' : '' }}">@include('tournaments._partials.ball_icon')</span>{{ $tm['name'] }}</div>
 			@endif
 		</div>
 		@endforeach
 		<div class="mc-plate" id="mc-plate" aria-live="polite"></div>
 	</div>
-	<div class="mc-server">
+	@if(!empty($mc['libero_serve']))
+	<div class="mc-server mc-server--warn">{{ __('tournaments.mc_libero_serve', ['who' => trim(($mc['libero_serve']['number'] !== null ? '№' . $mc['libero_serve']['number'] . ' ' : '') . $mc['libero_serve']['surname'])]) }}</div>
+	@else
+	<div class="mc-server"><span class="mc-server-ic">@include('tournaments._partials.ball_icon')</span>
 		@if(!empty($mc['server']))
 		{{ __('tournaments.mc_serves') }}: @if($mc['server']['number'] !== null)№{{ $mc['server']['number'] }} @endif{{ $mc['server']['surname'] }} · {{ $mc['server']['team'] }}
 		@else
 		{{ __('tournaments.mc_serves') }}: —
 		@endif
 	</div>
+	@endif
 </div>

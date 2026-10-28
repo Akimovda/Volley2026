@@ -154,7 +154,7 @@ class MatchLineupView
                     $cd = $cards[$c['id']] ?? ['surname' => $c['name'], 'first' => '', 'initials' => '?', 'photo' => null, 'number' => null];
                     $pos = $c['libero'] ? 'libero' : $c['position'];
                     $cells[] = $cd + [
-                        'zone' => $c['zone'], 'libero' => $c['libero'], 'pos' => $pos,
+                        'zone' => $c['zone'], 'libero' => $c['libero'], 'for_user_id' => $c['for_user_id'], 'pos' => $pos,
                         'pos_abbr' => $pos ? __('tournaments.pos_abbr_' . $pos) : '',
                         'pos_full' => $pos ? __('tournaments.pos_full_' . $pos) : '',
                     ];
@@ -162,8 +162,19 @@ class MatchLineupView
                 $isServing = $serving === $tid;
                 if ($isServing) {
                     $mini['serving_side'] = $side;
-                    foreach ($cells as $c) {
-                        if ((int) $c['zone'] === 1) {
+                    foreach ($cells as $i => $c) {
+                        if ((int) $c['zone'] !== 1) {
+                            continue;
+                        }
+                        if (!empty($c['libero'])) {
+                            // Либеро в зоне 1 у подающей команды: подавать он не может — кольцо не рисуем, просим вернуть заменённого игрока
+                            $cells[$i]['serving_blocked'] = true;
+                            $back = !empty($c['for_user_id']) ? ($cards[(int) $c['for_user_id']] ?? null) : null;
+                            $mini['libero_serve'] = [
+                                'number' => $back['number'] ?? null, 'surname' => $back['surname'] ?? '',
+                                'team' => (string) ($teamModels->get($tid)?->name ?? ''),
+                            ];
+                        } else {
                             $mini['server'] = ['id' => $c['id'], 'surname' => $c['surname'], 'number' => $c['number'], 'team' => (string) ($teamModels->get($tid)?->name ?? '')];
                         }
                     }

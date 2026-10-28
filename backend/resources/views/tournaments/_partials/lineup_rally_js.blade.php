@@ -47,7 +47,7 @@
 	function surname(n) { return String(n || '').split(' ')[0]; }
 	function posLabel(p) { return p ? (POS[p] || p) : ''; }
 	function zoneLabel(z) { return z ? T.zone.replace(':n', z) : ''; }
-	function posFull(p) { return p ? (POSFULL[p] || POS[p] || p) : ''; }
+	var BALL_SVG = @json(view('tournaments._partials.ball_icon')->render());
 
 	/* ---------- общий оверлей ---------- */
 	var ov = document.createElement('div');
@@ -237,14 +237,14 @@
 				var cell = st.zones[z], b = document.createElement('div');
 				b.setAttribute('role', 'button'); b.tabIndex = 0; b.className = 'ls-zone ls-card' + (cell ? ' ls-zone--filled' : '');
 				var h = '<span class="ls-zone-n">' + z + '</span>';
-				if (first === cur && z === 1) { h += '<span class="ls-ball">🏐</span>'; }
+				if (first === cur && z === 1) { h += '<span class="ls-ball">' + BALL_SVG + '</span>'; }
 				b.innerHTML = h;
 				if (cell) {
 					var rp = R[cur][cell.uid] || {};
 					b.appendChild(avatar(rp, cur));
 					var n = document.createElement('span'); n.className = 'ls-zone-name'; n.textContent = rp.surname || surname(nameOf(cur, cell.uid));
 					var fn = document.createElement('span'); fn.className = 'ls-zone-first'; fn.textContent = rp.first || '';
-					var p = document.createElement('span'); p.className = 'ls-zone-pos'; p.textContent = posFull(cell.pos);
+					var p = document.createElement('span'); p.className = 'ls-zone-pos'; p.textContent = posLabel(cell.pos);
 					b.appendChild(n); b.appendChild(fn); b.appendChild(p);
 					b.appendChild(numInput(cur, cell.uid));
 				}
