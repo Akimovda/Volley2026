@@ -437,7 +437,10 @@ class CourtStateService
 
     private function lastSub(TournamentMatch $m, int $setNumber): ?array
     {
-        $ev = MatchLineupEvent::where('match_id', $m->id)->where('set_number', $setNumber)->orderByDesc('seq')->first();
+        // «последняя замена» на табло — только замены/либеро; ручные правки расстановки (rotate/swap) в эфир не идут
+        $ev = MatchLineupEvent::where('match_id', $m->id)->where('set_number', $setNumber)
+            ->whereIn('type', [MatchLineupEvent::TYPE_SUBSTITUTION, MatchLineupEvent::TYPE_LIBERO_IN, MatchLineupEvent::TYPE_LIBERO_OUT])
+            ->orderByDesc('seq')->first();
         if (!$ev) {
             return null;
         }
@@ -476,7 +479,20 @@ class CourtStateService
                 SUM(serve_errors + attack_errors + block_errors + reception_errors) errors')
             ->groupBy('team_id')->get()->keyBy('team_id');
 
-        $pack = function (?int $teamId) use ($rows) {
+        // Ошибки расстановки (переход/расположение) в личную статистику не пишутся, но входят в «ошибки» команды-нарушителя
+        // (для команды, получившей очко, это ошибка соперника): считаем по событиям, нарушитель = соперник набравшей очко команды.
+        $lineupErr = [];
+        $leq = DB::table('match_rally_events')->where('match_id', $m->id)
+            ->whereIn('action_type', \App\Models\MatchRallyEvent::LINEUP_ERROR_ACTIONS);
+        if ($scope === 'set') {
+            $leq->where('set_number', $set);
+        }
+        foreach ($leq->pluck('team_id') as $scorerId) {
+            $offender = (int) $scorerId === (int) $m->team_home_id ? (int) $m->team_away_id : (int) $m->team_home_id;
+            $lineupErr[$offender] = ($lineupErr[$offender] ?? 0) + 1;
+        }
+
+        $pack = function (?int $teamId) use ($rows, $lineupErr) {
             $r = $teamId ? ($rows[$teamId] ?? null) : null;
             $aces = (int) ($r->aces ?? 0);
             $kills = (int) ($r->kills ?? 0);
@@ -484,7 +500,7 @@ class CourtStateService
             return [
                 'aces' => $aces, 'kills' => $kills, 'blocks' => $blocks,
                 'points' => $aces + $kills + $blocks,
-                'digs' => (int) ($r->digs ?? 0), 'assists' => (int) ($r->assists ?? 0), 'errors' => (int) ($r->errors ?? 0),
+                'digs' => (int) ($r->digs ?? 0), 'assists' => (int) ($r->assists ?? 0), 'errors' => (int) ($r->errors ?? 0) + (int) ($teamId ? ($lineupErr[$teamId] ?? 0) : 0),
             ];
         };
 
