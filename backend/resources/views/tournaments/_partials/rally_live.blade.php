@@ -33,7 +33,7 @@
 	// Для матчей с учётом состава в попапе очка — только игроки НА ПЛОЩАДКЕ сейчас (включая вышедшего либеро)
 	$courtPlayers = function (string $sk) use ($lineup, $board) {
 		return array_map(
-			fn ($c) => ['id' => $c['id'], 'name' => $c['name']],
+			fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'role' => $c['role'] ?? null],
 			$lineup['teams'][$sk]['court']
 		);
 	};

@@ -28,11 +28,20 @@
     @php
         $getVal = fn($totals, $f) => is_array($totals) ? ($totals[$f] ?? 0) : ($totals->$f ?? 0);
 
-        $enrichSide = function (array $rows) use ($getVal) {
+        // Пляжка «По амплуа»: метка роли пары (Бл / Защ) рядом с именем
+        $pairRoles = [];
+        foreach ([$match->teamHome, $match->teamAway] as $t) {
+            foreach (($t?->members ?? []) as $m) {
+                if ($m->confirmation_status === 'confirmed' && in_array($m->position_code, ['blocker', 'defender'], true)) {
+                    $pairRoles[(int) $m->user_id] = position_short((string) $m->position_code);
+                }
+            }
+        }
+        $enrichSide = function (array $rows) use ($getVal, $pairRoles) {
             $out = [];
             foreach ($rows as $row) {
                 $out[] = [
-                    'user_name'    => $row['user_name'],
+                    'user_name'    => $row['user_name'] . (isset($pairRoles[(int) $row['user_id']]) ? ' (' . $pairRoles[(int) $row['user_id']] . ')' : ''),
                     'attack'       => (int) $getVal($row['totals'], 'kills'),
                     'block'        => (int) $getVal($row['totals'], 'blocks'),
                     'serve'        => (int) $getVal($row['totals'], 'aces'),

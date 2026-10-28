@@ -13,6 +13,8 @@ $posFull = [
     'opposite' => __('tournaments.pos_full_opposite'),
     'middle'   => __('tournaments.pos_full_middle'),
     'libero'   => __('tournaments.pos_full_libero'),
+    'blocker'  => __('tournaments.pos_full_blocker'),
+    'defender' => __('tournaments.pos_full_defender'),
 ];
 
 $positionLabel = $player['position_code'] ? ($posFull[$player['position_code']] ?? null) : null;

@@ -420,7 +420,7 @@ window.RallyLive = (function () {
 				elGrid.appendChild(atk);
 			}
 			pl.forEach(function (p) {
-				elGrid.appendChild(btn(p.name, 'btn-primary', function () { st.player = String(p.id); nextAfterPlayer(); }));
+				elGrid.appendChild(btn(p.name + (p.role ? ' · ' + p.role : ''), 'btn-primary', function () { st.player = String(p.id); nextAfterPlayer(); }));
 			});
 			if (st.kind === 'opp' && OPP_REQ.indexOf(st.action) === -1) {
 				elGrid.appendChild(btn(T.noPlayer, 'btn-secondary', function () { st.player = ''; submit(); }, true));

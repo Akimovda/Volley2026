@@ -952,6 +952,10 @@ return [
     'pos_full_outside'              => 'Доигровщик',
     'pos_full_opposite'             => 'Диагональный',
     'pos_full_middle'               => 'Центральный блокирующий',
+    'pos_full_blocker'              => 'Блокирующий',
+    'pos_full_defender'             => 'Защитник',
+    'pos_abbr_blocker'              => 'Бл',
+    'pos_abbr_defender'             => 'Защ',
     'pos_full_libero'               => 'Либеро',
 
     // Таблица рейтинга участников турнира (tab=stats)
