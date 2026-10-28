@@ -3190,6 +3190,20 @@ class TournamentController extends Controller
         });
     }
 
+    /** Номер на футболке с экрана расстановки (те же права, что у ввода состава). */
+    public function rallyJersey(Request $request, TournamentMatch $match)
+    {
+        if ($this->guardRallyMode($request, $match)) {
+            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+        }
+
+        $validated = $request->validate(\App\Services\RallyInputService::jerseyRules());
+
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
+            app(\App\Services\RallyInputService::class)->jersey($match, $validated, \App\Support\RallyActor::user($request->user()));
+        });
+    }
+
     /** «Матч начался» / «Отменить начало» — статус матча без записи очков (табло 0:0 в эфире). */
     public function rallyMatchStart(Request $request, TournamentMatch $match)
     {

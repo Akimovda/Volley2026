@@ -191,26 +191,17 @@ class MatchLineupService
      */
     public function currentServer(TournamentMatch $match, int $setNumber): ?array
     {
-        $start = MatchSetStart::where('match_id', $match->id)->where('set_number', $setNumber)->first();
-        if (!$start || !$start->first_serve_team_id) {
-            return null;
-        }
         $size = (int) ($this->profile($match)['on_court_size'] ?? 0);
         if ($size < 2) {
             return null;
         }
-
-        $serving = (int) $start->first_serve_team_id;
-        $rot = [(int) $match->team_home_id => 0, (int) $match->team_away_id => 0];
-        foreach (\App\Models\MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)->orderBy('seq')->pluck('team_id') as $scorer) {
-            $scorer = (int) $scorer;
-            if ($scorer !== $serving) {
-                $rot[$scorer] = ($rot[$scorer] ?? 0) + 1;
-                $serving = $scorer;
-            }
+        $rs = $this->rotationState($match, $setNumber);
+        if (!$rs['has_start'] || !$rs['serving_team_id']) {
+            return null;
         }
 
-        $slot = ($rot[$serving] % $size) + 1;
+        $serving = $rs['serving_team_id'];
+        $slot = ($rs['rot'][$serving] % $size) + 1;
         $uid = null;
         foreach ($this->state($match, $setNumber)['teams'][$serving]['court'] ?? [] as $id => $c) {
             if (($c['zone'] ?? null) === $slot && empty($c['libero'])) {
@@ -219,6 +210,74 @@ class MatchLineupService
         }
 
         return ['team_id' => $serving, 'user_id' => $uid, 'slot' => $slot];
+    }
+
+    /**
+     * Физическая зона «места» после $rot переходов команды: место k стоит в зоне ((k-1-rot) mod N)+1
+     * (переход по часовой: игрок зоны 2 уходит в зону 1 и подаёт, игрок зоны 1 — в зону 6).
+     * Зоны в стартовом составе, в заменах и у либеро — это «места»; текущую зону даёт только эта функция.
+     */
+    public static function physicalZone(int $slot, int $rot, int $n): int
+    {
+        if ($n < 1) {
+            return $slot;
+        }
+
+        return ((($slot - 1 - $rot) % $n) + $n) % $n + 1;
+    }
+
+    /**
+     * Единая хронология партии: очки и события состава по общему seq (задел под rotate/swap блока B —
+     * ручные правки расстановки тоже будут событиями с seq и откатываться тем же undo).
+     *
+     * @return \Illuminate\Support\Collection<int, array{kind:string, seq:int, team_id:int, ev:object}>
+     */
+    public function timeline(TournamentMatch $match, int $setNumber, ?int $upToSeq = null)
+    {
+        $points = \App\Models\MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)
+            ->when($upToSeq !== null, fn ($q) => $q->where('seq', '<=', $upToSeq))->get()
+            ->map(fn ($e) => ['kind' => 'point', 'seq' => (int) $e->seq, 'team_id' => (int) $e->team_id, 'ev' => $e]);
+        $lineup = MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)
+            ->when($upToSeq !== null, fn ($q) => $q->where('seq', '<=', $upToSeq))->get()
+            ->map(fn ($e) => ['kind' => 'lineup', 'seq' => (int) $e->seq, 'team_id' => (int) $e->team_id, 'ev' => $e]);
+
+        return $points->concat($lineup)->sortBy('seq')->values();
+    }
+
+    /**
+     * Поворот расстановки на момент seq (по умолчанию — сейчас): число переходов каждой команды
+     * (rot[team]) и подающая команда. Ничего не хранится — выводится из очков (переход делает команда,
+     * выигравшая розыгрыш на приёме) + стартовой отметки «подаёт первым». Откат очка откатывает и поворот.
+     *
+     * @return array{has_start:bool, serving_team_id:?int, rot:array<int,int>, last_rotated_team_id:?int}
+     */
+    public function rotationState(TournamentMatch $match, int $setNumber, ?int $upToSeq = null): array
+    {
+        $home = (int) $match->team_home_id;
+        $away = (int) $match->team_away_id;
+        $rot = [$home => 0, $away => 0];
+        $start = MatchSetStart::where('match_id', $match->id)->where('set_number', $setNumber)->first();
+        if (!$start || !$start->first_serve_team_id) {
+            return ['has_start' => (bool) $start, 'serving_team_id' => null, 'rot' => $rot, 'last_rotated_team_id' => null];
+        }
+
+        $serving = (int) $start->first_serve_team_id;
+        $last = null;
+        foreach ($this->timeline($match, $setNumber, $upToSeq) as $item) {
+            if ($item['kind'] === 'point') {
+                $scorer = $item['team_id'];
+                if ($scorer !== $serving) {
+                    $rot[$scorer] = ($rot[$scorer] ?? 0) + 1;
+                    $serving = $scorer;
+                    $last = $scorer;
+                } else {
+                    $last = null;
+                }
+            }
+            // блок B: тип lineup-события rotate/swap будет менять $rot здесь
+        }
+
+        return ['has_start' => true, 'serving_team_id' => $serving, 'rot' => $rot, 'last_rotated_team_id' => $last];
     }
 
     public function hasStart(TournamentMatch $match, int $setNumber): bool
@@ -283,9 +342,12 @@ class MatchLineupService
                     unset($court[$t['libero_id']]);
                     $court[$uid] = $held;
                 }
+                // «места» прошлой партии → физические зоны на момент её окончания (с учётом переходов)
+                $rotEnd = $this->rotationState($match, $setNumber - 1)['rot'][$tid] ?? 0;
                 $list = [];
                 foreach ($court as $uid => $c) {
-                    $list[] = ['user_id' => (int) $uid, 'position' => $c['position'], 'zone' => $c['zone']];
+                    $zn = $c['zone'] === null ? null : self::physicalZone((int) $c['zone'], (int) $rotEnd, (int) $profile['on_court_size']);
+                    $list[] = ['user_id' => (int) $uid, 'position' => $c['position'], 'zone' => $zn];
                 }
                 usort($list, fn ($a, $b) => ($a['zone'] ?? 99) <=> ($b['zone'] ?? 99));
                 $onCourtIds = array_column($list, 'user_id');

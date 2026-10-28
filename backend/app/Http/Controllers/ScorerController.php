@@ -292,6 +292,11 @@ class ScorerController extends Controller
         return $this->act($request, $match, RallyInputService::serveMarkRules(), fn ($m, $v, $a) => $this->input->serveMark($m, $v, $a));
     }
 
+    public function jersey(Request $request, string $token, TournamentMatch $match)
+    {
+        return $this->act($request, $match, RallyInputService::jerseyRules(), fn ($m, $v, $a) => $this->input->jersey($m, $v, $a));
+    }
+
     public function lineupEvent(Request $request, string $token, TournamentMatch $match)
     {
         return $this->act($request, $match, RallyInputService::eventRules(), fn ($m, $v, $a) => $this->input->lineupEvent($m, $v, $a));

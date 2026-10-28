@@ -12,7 +12,7 @@ use App\Models\TournamentMatch;
  */
 class MatchLineupView
 {
-    public function __construct(private MatchLineupService $lineup) {}
+    public function __construct(private MatchLineupService $lineup, private PlayerCardService $cards) {}
 
     /**
      * @return array{enabled:bool, ...}
@@ -33,21 +33,46 @@ class MatchLineupView
         $sideTeams = ['home' => (int) $match->team_home_id, 'away' => (int) $match->team_away_id];
         $nm = fn (int $tid, int $uid) => $roster[$tid][$uid]['name'] ?? ('#' . $uid);
 
+        // Карточки игроков (фото/инициалы/номер) — одним набором на оба состава
+        $eventId = (int) ($match->relationLoaded('stage') ? $match->stage : $match->stage()->first())?->event_id;
+        $allIds = [];
+        foreach ($roster as $players) {
+            $allIds = array_merge($allIds, array_keys($players));
+        }
+        $cards = $this->cards->cards($allIds, $eventId);
+        $rs = $this->lineup->rotationState($match, $setNumber);
+        $size = (int) $profile['on_court_size'];
+        $styles = app(\App\Services\Broadcast\TeamStyleService::class);
+        $teamModels = \App\Models\EventTeam::whereIn('id', array_values($sideTeams))->get()->keyBy('id');
+        $colors = [];
+        foreach ($sideTeams as $side => $tid) {
+            $colors[$side] = $teamModels->get($tid) ? $styles->colorFor($teamModels->get($tid)) : '#2967BA';
+        }
+
         $teams = [];
         foreach ($sideTeams as $side => $tid) {
             $t = $d['teams'][$tid];
             $court = [];
+            $rot = (int) ($rs['rot'][$tid] ?? 0);
             foreach ($t['court'] as $uid => $c) {
+                $slot = $c['zone'] === null ? null : (int) $c['zone'];
                 $court[] = [
                     'id' => (int) $uid, 'name' => $nm($tid, $uid), 'position' => $c['position'],
-                    'zone' => $c['zone'], 'libero' => (bool) $c['libero'], 'for_user_id' => $c['for_user_id'],
+                    // зона — ФИЗИЧЕСКАЯ сейчас (с учётом переходов); slot — «место» из стартового состава/замен
+                    'zone' => $slot === null ? null : MatchLineupService::physicalZone($slot, $rot, $size),
+                    'slot' => $slot,
+                    'libero' => (bool) $c['libero'], 'for_user_id' => $c['for_user_id'],
                 ];
             }
             usort($court, fn ($a, $b) => ($a['zone'] ?? 99) <=> ($b['zone'] ?? 99));
 
             $held = [];
             foreach ($t['held'] as $uid => $h) {
-                $held[] = ['id' => (int) $uid, 'name' => $nm($tid, $uid), 'position' => $h['position'], 'zone' => $h['zone']];
+                $hs = $h['zone'] === null ? null : (int) $h['zone'];
+                $held[] = [
+                    'id' => (int) $uid, 'name' => $nm($tid, $uid), 'position' => $h['position'],
+                    'zone' => $hs === null ? null : MatchLineupService::physicalZone($hs, $rot, $size), 'slot' => $hs,
+                ];
             }
 
             $bench = [];
@@ -66,6 +91,8 @@ class MatchLineupView
                 'bench'     => $bench,
                 'libero_id' => $t['libero_id'],
                 'libero_on_court' => (bool) $liberoOnCourt,
+                'color'     => $colors[$side],
+                'text'      => PlayerCardService::textOn($colors[$side]),
             ];
         }
 
@@ -103,14 +130,58 @@ class MatchLineupView
             foreach ($sideTeams as $side => $tid) {
                 $list = [];
                 foreach ($roster[$tid] ?? [] as $uid => $p) {
-                    $list[] = ['id' => (int) $uid, 'name' => $p['name'], 'position' => $p['position'], 'team_role' => $p['team_role']];
+                    $cd = $cards[(int) $uid] ?? null;
+                    $list[] = [
+                        'id' => (int) $uid, 'name' => $p['name'], 'position' => $p['position'], 'team_role' => $p['team_role'],
+                        'surname' => $cd['surname'] ?? $p['name'], 'first' => $cd['first'] ?? '', 'initials' => $cd['initials'] ?? '?',
+                        'photo' => $cd['photo'] ?? null, 'number' => $cd['number'] ?? null,
+                    ];
                 }
                 $setup['teams'][$side]['roster'] = $list;
             }
         }
 
+        // Мини-площадка пульта: физические зоны, цвет команды, подающий
+        $mini = null;
+        if ($hasStart) {
+            $serving = $rs['serving_team_id'];
+            $mini = ['size' => $size, 'serving_side' => null, 'server' => null, 'sig' => $setNumber . ':' . ($rs['rot'][$sideTeams['home']] ?? 0) . ':' . ($rs['rot'][$sideTeams['away']] ?? 0),
+                'rot' => [], 'rotated_side' => null, 'teams' => []];
+            foreach ($sideTeams as $side => $tid) {
+                $color = $colors[$side];
+                $cells = [];
+                foreach ($teams[$side]['court'] as $c) {
+                    $cd = $cards[$c['id']] ?? ['surname' => $c['name'], 'first' => '', 'initials' => '?', 'photo' => null, 'number' => null];
+                    $pos = $c['libero'] ? 'libero' : $c['position'];
+                    $cells[] = $cd + [
+                        'zone' => $c['zone'], 'libero' => $c['libero'], 'pos' => $pos,
+                        'pos_abbr' => $pos ? __('tournaments.pos_abbr_' . $pos) : '',
+                        'pos_full' => $pos ? __('tournaments.pos_full_' . $pos) : '',
+                    ];
+                }
+                $isServing = $serving === $tid;
+                if ($isServing) {
+                    $mini['serving_side'] = $side;
+                    foreach ($cells as $c) {
+                        if ((int) $c['zone'] === 1) {
+                            $mini['server'] = ['id' => $c['id'], 'surname' => $c['surname'], 'number' => $c['number'], 'team' => (string) ($teamModels->get($tid)?->name ?? '')];
+                        }
+                    }
+                }
+                $mini['rot'][$side] = (int) ($rs['rot'][$tid] ?? 0);
+                if (($rs['last_rotated_team_id'] ?? null) === $tid) {
+                    $mini['rotated_side'] = $side;
+                }
+                $mini['teams'][$side] = [
+                    'team_id' => $tid, 'name' => (string) ($teamModels->get($tid)?->name ?? ''), 'color' => $color,
+                    'text' => PlayerCardService::textOn($color), 'serving' => $isServing, 'cells' => $cells,
+                ];
+            }
+        }
+
         return [
             'enabled'    => true,
+            'mini'       => $mini,
             'profile'    => $profile,
             'has_start'  => $hasStart,
             'needs_start' => !$hasStart && !$decided,
