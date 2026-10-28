@@ -18,7 +18,8 @@
 		'dig' => __('tournaments.rally_wiz_dig'), 'assist' => __('tournaments.rally_wiz_assist'),
 		'skip' => __('tournaments.rally_wiz_skip'), 'back' => __('tournaments.rally_wiz_back'), 'cancel' => __('tournaments.rally_wiz_cancel'),
 		'noPlayer' => __('tournaments.rally_no_player_option'),
-		'atkSpike' => __('tournaments.rally_attack_spike'), 'atkShot' => __('tournaments.rally_attack_shot'), 'atkDump' => __('tournaments.rally_attack_dump'),
+		'atkPower' => __('tournaments.rally_attack_power'), 'atkCut' => __('tournaments.rally_attack_cut'), 'atkPoke' => __('tournaments.rally_attack_poke'),
+		'atkRoll' => __('tournaments.rally_attack_roll'), 'atkTip' => __('tournaments.rally_attack_tip'),
 	];
 @endphp
 
@@ -74,8 +75,11 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .rw-grid .btn{width:100%;font-size:15px;padding:14px 8px;text-align:center;white-space:normal;line-height:1.2}
 .rw-grid .rw-wide{grid-column:1/-1}
-.rw-atk{display:flex;gap:8px}
-.rw-atk .btn{flex:1;font-size:14px;padding:10px 6px}
+/* 5 подтипов атаки: 3 + 2 (нижние по центру), все кнопки одной ширины — без горизонтального скролла на 390 px */
+.rw-atk{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
+.rw-atk .btn{grid-column:span 2;font-size:14px;padding:10px 4px;min-height:54px;white-space:normal;line-height:1.15;text-align:center}
+.rw-atk .btn:nth-child(4){grid-column:2 / span 2}
+.rw-atk .btn:nth-child(5){grid-column:4 / span 2}
 .rw-box .rw-atk .btn.on{background:#2967BA!important;color:#fff!important;border-color:#2967BA!important}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
@@ -286,6 +290,7 @@ window.RallyLive = (function () {
 	var DATA = RallyLive.data().rw;
 	var T = @json($rwText);
 	var SELF = ['ace', 'kill', 'block'];
+	var ATK = [['power', T.atkPower], ['cut', T.atkCut], ['poke', T.atkPoke], ['roll', T.atkRoll], ['tip', T.atkTip]];   // подтипы атаки (ключи = match_rally_events.attack_type)
 	var OPP = ['opp_serve_error', 'opp_attack_error', 'opp_block_error', 'opp_reception_error'];
 	var OPP_REQ = ['opp_serve_error', 'opp_attack_error'];
 	var form = document.getElementById('rw-form');
@@ -351,9 +356,9 @@ window.RallyLive = (function () {
 			var d = DATA[st.side];
 			if (d.pairMode && d.players.length === 2) {
 				// Пляжка 2×2: шаг «Кто принимал?» не показываем.
-				// Атака — партнёр записывается в assist_user_id (пас); скидка (attack_type = 'dump') — партнёра НЕ пишем.
+				// Атака — партнёр записывается в assist_user_id (пас); обман/скидка (attack_type = 'tip') — партнёра НЕ пишем.
 				// Блок — в dig/assist ничего не пишем. dig_user_id в пляжке автоматически не заполняется никогда.
-				if (st.action === 'kill' && st.attackType !== 'dump') {
+				if (st.action === 'kill' && st.attackType !== 'tip') {
 					var partner = d.players.filter(function (p) { return String(p.id) !== String(st.player); })[0];
 					if (partner) { st.assist = String(partner.id); }
 				}
@@ -396,7 +401,7 @@ window.RallyLive = (function () {
 				// «Удар · Накат · Скидка» над списком игроков: по умолчанию не выбрано, повторное нажатие снимает выбор; без новых шагов
 				var atk = document.createElement('div');
 				atk.className = 'rw-atk rw-wide';
-				[['spike', T.atkSpike], ['shot', T.atkShot], ['dump', T.atkDump]].forEach(function (a) {
+				ATK.forEach(function (a) {
 					var b = document.createElement('button');
 					b.type = 'button';
 					b.className = 'btn btn-secondary' + (st.attackType === a[0] ? ' on' : '');
@@ -408,7 +413,7 @@ window.RallyLive = (function () {
 					if (st.attackType === a[0]) { paint(b, true); }
 					b.addEventListener('click', function () {
 						st.attackType = st.attackType === a[0] ? '' : a[0];
-						atk.querySelectorAll('button').forEach(function (x, i) { var on = st.attackType === ['spike', 'shot', 'dump'][i]; x.classList.toggle('on', on); paint(x, on); });
+						atk.querySelectorAll('button').forEach(function (x, i) { var on = st.attackType === ATK[i][0]; x.classList.toggle('on', on); paint(x, on); });
 					});
 					atk.appendChild(b);
 				});

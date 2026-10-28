@@ -46,7 +46,7 @@ class RallyInputService
             'player_id'         => 'nullable|integer',
             'dig_user_id'       => 'nullable|integer',
             'assist_user_id'    => 'nullable|integer',
-            'attack_type'       => 'nullable|in:spike,shot,dump',
+            'attack_type'       => 'nullable|in:power,cut,poke,roll,tip',
             'client_request_id' => 'nullable|uuid',
         ];
     }
