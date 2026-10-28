@@ -332,6 +332,18 @@
 													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_positions_hint') }}</div>
 												</div>
 
+												{{-- По амплуа (пляжка 2×2): Блокирующий + Защитник. Показывается для game / training_game / командного турнира; у training, king_beach, mixed_group и мастер-класса режима нет --}}
+												<div class="mt-1" id="reg_by_roles_block" data-show-if="direction=beach,game_subtype=2x2,format=game|training_game|tournament,registration_mode=single|team_beach">
+													<label class="checkbox-item">
+														<input type="hidden" name="game_registration_by_roles" value="0">
+														<input type="checkbox" name="game_registration_by_roles" value="1" id="game_registration_by_roles"
+														@checked(old('game_registration_by_roles', $prefill['game_registration_by_roles'] ?? false))>
+														<div class="custom-checkbox"></div>
+														<span>{{ __('events.reg_by_roles_label') }}</span>
+													</label>
+													<div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_roles_hint') }}</div>
+												</div>
+
 												{{-- libero_mode --}}
 												<div id="libero_mode_block" class="mt-1" data-show-if="direction=classic,game_subtype=5x1">
 													<label class="pt-05">{{ __('events.libero_mode') }}</label>

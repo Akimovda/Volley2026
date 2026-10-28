@@ -912,6 +912,39 @@
                         </script>
                         @endif
 
+                        @php
+                            // «По амплуа» (пляжка 2×2): game / training_game / командный турнир team_beach; не для training, king_beach, mixed_group
+                            $rolesApplicableEdit = $isBeachGame && (
+                                (in_array($event->format, ['game', 'training_game'], true) && $event->registration_mode !== 'mixed_group')
+                                || ($event->format === 'tournament' && $event->registration_mode === 'team_beach')
+                            );
+                        @endphp
+                        @if($rolesApplicableEdit)
+                        <div class="col-md-6" id="mgmt_reg_by_roles_block" style="{{ old('game_subtype', $event->gameSettings?->subtype) === '2x2' ? '' : 'display:none' }}">
+                            <div class="card">
+                                <label class="checkbox-item">
+                                    <input type="hidden" name="game_registration_by_roles" value="0">
+                                    <input type="checkbox" name="game_registration_by_roles" value="1"
+                                        @checked(old('game_registration_by_roles', $event->registersByBeachRoles()))>
+                                    <div class="custom-checkbox"></div>
+                                    <span>{{ __('events.reg_by_roles_label') }}</span>
+                                </label>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_roles_hint') }}</div>
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_positions_edit_hint') }}</div>
+                                @error('game_registration_by_roles')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var st = document.getElementById('mgmt_game_subtype'), box = document.getElementById('mgmt_reg_by_roles_block');
+                            if (!st || !box) return;
+                            st.addEventListener('change', function () { box.style.display = st.value === '2x2' ? '' : 'none'; });
+                        });
+                        </script>
+                        @endif
+
                         <div class="col-md-6">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.gender_label') }}</label>

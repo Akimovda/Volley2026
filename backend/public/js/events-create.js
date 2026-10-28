@@ -624,6 +624,7 @@ document.addEventListener("trix-file-accept", function (event) {
 		
 		var allowClassic = { mixed_open: 1, only_male: 1, only_female: 1, mixed_limited: 1 };
 		var allowBeach = { mixed_open: 1, only_male: 1, only_female: 1, mixed_5050: 1 };
+		if (isBeachRolesMode()) allowBeach.mixed_limited = 1;   // квота по полу на позицию — как в классике
 		
 		var opts = genderPolicyEl.querySelectorAll('option');
 		for (var i = 0; i < opts.length; i++) {
@@ -661,7 +662,7 @@ document.addEventListener("trix-file-accept", function (event) {
         	genderPolicyEl.value = 'mixed_open';
 		}
 		
-		if (direction === 'beach') {
+		if (direction === 'beach' && !isBeachRolesMode()) {
 			clearGenderLimitedData();
 			if (limitedSideWrap) addClass(limitedSideWrap, 'hidden');
 			if (limitedMaxWrap) addClass(limitedMaxWrap, 'hidden');
@@ -672,7 +673,17 @@ document.addEventListener("trix-file-accept", function (event) {
 		syncGender5050Hint();
 	}
 	
+	// Пляжка 2×2 «По амплуа» (Блокирующий + Защитник)
+	function isBeachRolesMode() {
+		var cb = document.getElementById('game_registration_by_roles');
+		var direction = dirEl ? dirEl.value : '';
+		var st = gameSubtype ? trim(gameSubtype.value || '') : '';
+		return !!(cb && cb.checked && direction === 'beach' && st === '2x2');
+	}
+
 	var POS_LABELS = {
+		blocker:  'Блокирующий',
+		defender: 'Защитник',
 		setter:  'Связующий (setter)',
 		outside: 'Доигровщик (outside)',
 		opposite:'Диагональный (opposite)',
@@ -703,6 +714,7 @@ document.addEventListener("trix-file-accept", function (event) {
 		var reserveMax = reserveEl2 ? (parseInt(reserveEl2.value, 10) || 0) : 0;
 
 		var base;
+		if (isBeachRolesMode()) return ['blocker', 'defender'];
 		if (st === '4x2') base = ['setter', 'outside'];
 		else if (st === '4x4') base = ['setter', 'outside', 'opposite'];
 		else if (st === '5x1') base = (libero === 'with_libero')
@@ -2507,6 +2519,8 @@ function recalcPlayers() {
 	(function () {
 		var byPos = document.getElementById('game_registration_by_positions');
 		if (byPos) byPos.addEventListener('change', function () { syncGenderLimitedBlocks(); });
+		var byRoles = document.getElementById('game_registration_by_roles');
+		if (byRoles) byRoles.addEventListener('change', function () { syncGenderPolicyOptions(); syncGenderLimitedBlocks(); });
 	})();
 	
 	document.addEventListener('change', function (e) {

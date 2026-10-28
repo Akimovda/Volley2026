@@ -576,22 +576,43 @@ class EventGameSettingsService
                     $genderPolicy = 'mixed_open';
                 }
         
+                // «По амплуа» (Блокирующий + Защитник): квота по полу на позиции доступна так же, как в классике
+                $rolesMode = $this->wantsBeachRoles(
+                    $data, $direction, $format,
+                    (string) ($data['tournament_registration_mode'] ?? $data['registration_mode'] ?? 'single')
+                );
+
                 $allowed = [
                     'mixed_open',
                     'mixed_5050',
                     'only_male',
                     'only_female',
                 ];
+                if ($rolesMode) {
+                    $allowed[] = 'mixed_limited';
+                }
         
                 if (!in_array($genderPolicy, $allowed, true)) {
                     $errors['game_gender_policy'] = [
                         'Для пляжа доступны: без ограничений / только мужчины / только девушки / микс 50/50.',
                     ];
                 }
-        
-                $genderLimitedSide = null;
-                $genderLimitedMax = null;
-                $genderLimitedPositions = null;
+
+                if ($rolesMode && $genderPolicy === 'mixed_limited') {
+                    if (!$genderLimitedSide) {
+                        $errors['game_gender_limited_side'] = ['Укажи, кого ограничиваем (М или Ж).'];
+                    }
+                    if (is_null($genderLimitedMax)) {
+                        $errors['game_gender_limited_max'] = ['Укажи максимум мест для ограничиваемых.'];
+                    }
+                    $genderLimitedPositions = is_array($genderLimitedPositions)
+                        ? (array_values(array_intersect($genderLimitedPositions, ['blocker', 'defender'])) ?: null)
+                        : null;
+                } else {
+                    $genderLimitedSide = null;
+                    $genderLimitedMax = null;
+                    $genderLimitedPositions = null;
+                }
         
                 $data['game_allow_girls'] = 0;
                 $data['game_girls_max'] = null;

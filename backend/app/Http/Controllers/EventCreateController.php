@@ -677,6 +677,7 @@ use App\Services\StaffLogService;
 				$prefill['game_girls_max'] = $gs->girls_max;
 				$prefill['game_reserve_players_max'] = $gs->reserve_players_max;
 				$prefill['game_registration_by_positions'] = !((bool) ($gs->registration_without_positions ?? false));
+				$prefill['game_registration_by_roles'] = $src->registersByBeachRoles();
 				$prefill['track_lineup'] = (bool) ($src->format === 'tournament'
 					? ($src->tournamentSetting?->track_lineup ?? false)
 					: ($gs->track_lineup ?? false));
