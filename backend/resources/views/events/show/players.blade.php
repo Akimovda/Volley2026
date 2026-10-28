@@ -508,6 +508,12 @@
 					<option value="middle">{{ __('profile.positions.middle_full') }}</option>
 					<option value="libero">{{ __('events.positions.libero') }}</option>
 				</select>
+				@elseif($isTeamBeach && $event->registersByBeachRoles())
+				<select name="captain_position_code" id="saved-team-pos" class="mb-1">
+					<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+					<option value="blocker">{{ __('events.positions.blocker') }}</option>
+					<option value="defender">{{ __('events.positions.defender') }}</option>
+				</select>
 				@endif
 				<button type="submit" id="saved-team-btn" class="btn btn-secondary w-100" disabled>
 					Зарегистрировать эту команду
@@ -529,6 +535,12 @@
 				<option value="opposite">{{ __('events.positions.opposite') }}</option>
 				<option value="middle">{{ __('profile.positions.middle_full') }}</option>
 				<option value="libero">{{ __('events.positions.libero') }}</option>
+			</select>
+			@elseif($isTeamBeach && $event->registersByBeachRoles())
+			<select name="captain_position_code" class="form-select mb-1" required>
+				<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+				<option value="blocker">{{ __('events.positions.blocker') }}</option>
+				<option value="defender">{{ __('events.positions.defender') }}</option>
 			</select>
 			@endif
 			<button type="submit" class="btn mt-1 {{ $tournamentTeamsFull ? 'btn-secondary' : 'btn-primary' }} w-100">

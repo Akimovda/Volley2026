@@ -1294,6 +1294,13 @@ $tourNumber = $seasonData
 											<input type="hidden" name="captain_user_id" id="org-captain-id">
 											<div id="org-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 										</div>
+										@if($event->registersByBeachRoles())
+										<select name="captain_position_code" class="mt-1" required>
+											<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+											<option value="blocker">{{ __('events.positions.blocker') }}</option>
+											<option value="defender">{{ __('events.positions.defender') }}</option>
+										</select>
+										@endif
 										@endif
 									</div>
 								</div>

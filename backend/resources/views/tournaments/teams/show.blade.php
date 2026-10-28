@@ -3,6 +3,8 @@
 $isCaptain   = auth()->check() && (int)$team->captain_user_id === (int)auth()->id();
 $isOrganizer = auth()->check() && ((int)$event->organizer_id === (int)auth()->id() || auth()->user()->isAdmin());
 $canManage   = $isCaptain || $isOrganizer;
+// команда выбирает позиции игроков: классика или пара «По амплуа» (positionCapacity непуст только у таких)
+$posTeam     = $team->team_kind === 'classic_team' || !empty($positionCapacity);
 @endphp
 <x-slot name="title">{{ $team->name }} — команда</x-slot>
 <x-slot name="h1">{{ $team->name }}</x-slot>
@@ -59,7 +61,7 @@ $pendingCount   = ($team->invites ?? collect())->where('status','pending')->coun
 $isCaptain      = (int)$team->captain_user_id === (int)auth()->id();
 $isOrganizer    = auth()->check() && ((int)$event->organizer_id === (int)auth()->id() || (auth()->user()->isAdmin()));
 $canManage      = $isCaptain || $isOrganizer;
-$posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
+$posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро','blocker'=>'Блокирующий','defender'=>'Защитник'];
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной игрок','reserve'=>'Запасной'];
 $stLabels = ['confirmed'=>'Подтверждён','joined'=>'Ожидает подтверждения','invited'=>'Приглашён','declined'=>'Отклонён','requested'=>'Запрос на вступление'];
 $stColor  = ['confirmed'=>'#166534','joined'=>'#92400e','invited'=>'#1e40af','declined'=>'#9f1239','requested'=>'#5b21b6'];
@@ -127,13 +129,13 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <span class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</span>
                         <span class="f-16">
                             {{ $roleLabels[$member->team_role] ?? $member->team_role }}
-                            @if($team->team_kind==='classic_team' && $member->position_code)
+                            @if($posTeam && $member->position_code)
                                 · {{ $posLabels[$member->position_code] ?? $member->position_code }}
                             @endif
                         </span>
                         @php
                             $canEditPosition = $canManage
-                                && $team->team_kind === 'classic_team'
+                                && $posTeam
                                 && in_array($member->team_role, ['player','captain','reserve'], true)
                                 && $member->confirmation_status === 'confirmed'
                                 && !empty($positionCapacity);
@@ -377,7 +379,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <option value="reserve">Запасной</option>
                     </select>
                 </div>
-                @if($team->team_kind==='classic_team')
+                @if($posTeam)
                 <div class="col-md-4" id="ti-pos-wrap">
                     <label>Позиция</label>
                     <select name="position_code" id="ti-position">
@@ -420,7 +422,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         <option value="reserve">Запасной</option>
                     </select>
                 </div>
-                @if($team->team_kind === 'classic_team')
+                @if($posTeam)
                 <div class="col-md-4">
                     <label>Позиция</label>
                     <select name="position_code">
@@ -725,7 +727,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
             </div>
             @endif
         </div>
-        @if($team->team_kind === 'classic_team' && !empty($positionBreakdown))
+        @if($posTeam && !empty($positionBreakdown))
         <div class="card mt-1">
             <div class="f-16 mb-05 b-600">Разбивка по позициям (запасной с назначенным амплуа тоже занимает слот):</div>
             @php $playersOk = ($requirementsCheck['players_count'] ?? 0) >= (int)($requirementsCheck['limits']['min_players'] ?? 0); @endphp

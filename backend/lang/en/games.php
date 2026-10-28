@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'roles_pair_warn' => 'A pair has two players with the same role — better to pair a Blocker with a Defender',
     'manage_title'       => 'Game with statistics',
     'manage_h2'          => 'Teams, score and match statistics',
     'breadcrumb_event'   => 'Event',
