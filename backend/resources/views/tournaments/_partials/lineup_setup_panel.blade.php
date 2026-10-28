@@ -34,6 +34,9 @@
 	</div>
 	@endif
 
+	<div id="ls-libero-row"></div>
+	<div class="f-13 mt-1" style="opacity:.7">{{ __('tournaments.lineup_jersey_hint') }}</div>
+
 	<div id="ls-pool" class="f-13 mt-2" style="display:none"></div>
 	<div id="ls-error" class="alert alert-error f-13 mt-2" style="display:none"></div>
 	<div id="ls-missing" class="f-13 mt-2" style="opacity:.75"></div>

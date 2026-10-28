@@ -66,6 +66,7 @@
 		$luCfg = [
 			'setNumber' => $setNumber,
 			'startUrl'  => $urls['lineup_start'],
+			'jerseyUrl' => $urls['jersey'] ?? null,
 			'eventUrl'  => $urls['lineup_event'],
 			'size'      => $lineup['profile']['on_court_size'],
 			'hasLibero' => $lineup['profile']['has_libero'],
@@ -80,7 +81,11 @@
 		? \App\Services\SideSwitchService::signal(\App\Services\SideSwitchService::rules($match->stage), (int) $match->id, (int) $setNumber,
 			(int) $board['score']['home'], (int) $board['score']['away'], (bool) ($board['is_deciding_set'] ?? false))
 		: null;
-	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal];
+	// mc — сигнатура переходов для анимации на клиенте (сравнивается между подменами фрагмента)
+	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal, 'mc' => !empty($lineup['mini']) ? [
+		'set' => $setNumber, 'rot' => $lineup['mini']['rot'], 'rotated_side' => $lineup['mini']['rotated_side'],
+		'names' => ['home' => $lineup['mini']['teams']['home']['name'], 'away' => $lineup['mini']['teams']['away']['name']],
+	] : null];
 @endphp
 
 		{{-- Шапка матча + табы сетов --}}
@@ -122,6 +127,10 @@
 				@endfor
 			</div>
 		</div>
+
+		@if($luOn && !empty($lineup['mini']))
+		@include('tournaments._partials.lineup_court')
+		@endif
 
 		@if(!empty($canMatchStart) && !empty($urls['match_start']))
 		<div class="card mb-2" style="text-align:center">
