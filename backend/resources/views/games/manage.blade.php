@@ -180,11 +180,13 @@
                 <input type="hidden" name="deciding_set_points" id="gm-fmt-dec" value="{{ (int) ($config['deciding_set_points'] ?? 15) }}">
                 <input type="hidden" name="tech_timeout" id="gm-fmt-tt" value="{{ !empty($config['tech_timeout']) ? 1 : 0 }}">
 
+                @unless($autoPair)
                 <div class="gm-actions mb-2">
                     <button type="button" class="btn btn-outline btn-small" id="gm-split-level">⚖️ {{ __('games.split_level') }}</button>
                     <button type="button" class="btn btn-outline btn-small" id="gm-split-random">🎲 {{ __('games.split_random') }}</button>
                     <button type="button" class="btn btn-outline btn-small" id="gm-reset">{{ __('games.reset') }}</button>
                 </div>
+                @endunless
 
                 <div class="gm-color-row mb-2">
                     <div class="gm-color-field">{{ $event->direction === 'beach' ? __('games.pair_a') : __('games.team_a') }}:
@@ -193,12 +195,23 @@
                     <div class="gm-color-field">{{ $event->direction === 'beach' ? __('games.pair_b') : __('games.team_b') }}:
                         <select name="away_color">@foreach($colors as $k => $label)<option value="{{ $k }}" @selected(old('away_color', $draft['away_color'] ?? 'blue') === $k)>{{ $label }}</option>@endforeach</select>
                     </div>
+                    @unless($autoPair)
                     <span class="f-14" style="align-self:center">
                         {{ $event->direction === 'beach' ? __('games.pair_a') : __('games.count_home') }}: <b id="gm-cnt-home">0</b> · {{ $event->direction === 'beach' ? __('games.pair_b') : __('games.count_away') }}: <b id="gm-cnt-away">0</b>
                     </span>
+                    @endunless
                 </div>
 
-                @if($eventTeams->isNotEmpty())
+                @if($autoPair)
+                @php $pairA = $eventTeams->values()[0]; $pairB = $eventTeams->values()[1]; @endphp
+                <div class="mb-2">
+                    <div class="b-600">{{ __('games.auto_pair_title') }}</div>
+                    <input type="hidden" name="team_side[{{ $pairA->id }}]" value="home">
+                    <input type="hidden" name="team_side[{{ $pairB->id }}]" value="away">
+                    <div class="f-15 mt-05">{{ $pairA->name }} — {{ $pairB->name }}</div>
+                    <div class="f-13" style="opacity:.65">{{ __('games.auto_pair_hint') }}</div>
+                </div>
+                @elseif($eventTeams->isNotEmpty())
                 <div class="mb-2">
                     <div class="b-600">{{ __('games.event_teams_title') }}</div>
                     <div class="f-14 mb-1" style="opacity:.65">{{ __('games.event_teams_hint') }}</div>
@@ -227,6 +240,7 @@
                 </div>
                 @endif
 
+                @unless($autoPair)
                 <div id="gm-roster">
                     @foreach($roster as $u)
                     @php
@@ -258,6 +272,7 @@
                     </div>
                     @endforeach
                 </div>
+                @endunless
 
                 @php $fmtText = app(\App\Services\FriendlyGameService::class)->formatSentence($config ?? []); @endphp
                 <div class="f-14 mt-2" style="opacity:.85">{{ __('games.new_match_format') }}: <b id="gm-fmt-text">{{ $fmtText }}</b>

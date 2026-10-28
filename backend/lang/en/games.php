@@ -129,4 +129,6 @@ return [
     'tech_timeout' => 'Technical timeout at 21 points (sets 1–2)',
     'tech_timeout_hint' => 'Beach only. Side switches are always shown: every 7 points, every 5 in the deciding set.',
     'cl_teams_draft' => 'Lineups set: :a and :b players — create the match',
+    'auto_pair_title' => 'Match between the formed teams',
+    'auto_pair_hint' => 'The teams are already set — no need to pick sides or players, just create the match.',
 ];
