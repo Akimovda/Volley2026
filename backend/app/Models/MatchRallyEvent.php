@@ -19,6 +19,8 @@ class MatchRallyEvent extends Model
     public const ATTACK_TYPES = ['power', 'cut', 'poke', 'roll', 'tip'];
     public const ACTION_OPP_BLOCK_ERROR      = 'opp_block_error';
     public const ACTION_OPP_RECEPTION_ERROR  = 'opp_reception_error';
+    public const ACTION_OPP_ROTATION_ERROR   = 'opp_rotation_error';   // ошибка перехода (подавал не тот игрок): очко сопернику
+    public const ACTION_OPP_POSITION_ERROR   = 'opp_position_error';   // ошибка расположения (стояли не по порядку): очко сопернику
     public const ACTION_UNATTRIBUTED         = 'unattributed';
 
     public const SELF_ACTIONS = [
@@ -32,6 +34,14 @@ class MatchRallyEvent extends Model
         self::ACTION_OPP_ATTACK_ERROR,
         self::ACTION_OPP_BLOCK_ERROR,
         self::ACTION_OPP_RECEPTION_ERROR,
+        self::ACTION_OPP_ROTATION_ERROR,
+        self::ACTION_OPP_POSITION_ERROR,
+    ];
+
+    /** Ошибки расстановки: виновник необязателен, в личную статистику игрока (match_player_stats) НЕ пишутся (нет в ACTION_STAT_FIELD). */
+    public const LINEUP_ERROR_ACTIONS = [
+        self::ACTION_OPP_ROTATION_ERROR,
+        self::ACTION_OPP_POSITION_ERROR,
     ];
 
     /**
@@ -51,6 +61,8 @@ class MatchRallyEvent extends Model
         self::ACTION_OPP_ATTACK_ERROR,
         self::ACTION_OPP_BLOCK_ERROR,
         self::ACTION_OPP_RECEPTION_ERROR,
+        self::ACTION_OPP_ROTATION_ERROR,
+        self::ACTION_OPP_POSITION_ERROR,
         self::ACTION_UNATTRIBUTED,
     ];
 

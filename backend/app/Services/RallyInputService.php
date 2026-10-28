@@ -88,9 +88,14 @@ class RallyInputService
         return [
             'set_number'        => 'required|integer|min:1|max:5',
             'team_id'           => 'required|integer',
-            'type'              => 'required|in:substitution,libero_in,libero_out',
+            'type'              => 'required|in:substitution,libero_in,libero_out,rotate,swap,fix',
             'out_user_id'       => 'nullable|integer',
             'in_user_id'        => 'nullable|integer',
+            // «Исправить расстановку»: rotate — delta; swap — out/in; fix — delta + swaps (один шаг пользователя, отдельные события)
+            'delta'             => 'nullable|integer|between:-11,11',
+            'swaps'             => 'nullable|array|max:12',
+            'swaps.*'           => 'array|size:2',
+            'swaps.*.*'         => 'integer',
             'client_request_id' => 'nullable|uuid',
         ];
     }
@@ -181,6 +186,9 @@ class RallyInputService
             'substitution' => $svc->substitute($match, $set, $team, $out, $in, $actor->user, $actor->name, $rid, $actor->linkId),
             'libero_in'    => $svc->liberoIn($match, $set, $team, $out, $actor->user, $actor->name, $rid, $actor->linkId),
             'libero_out'   => $svc->liberoOut($match, $set, $team, $actor->user, $actor->name, $rid, $actor->linkId),
+            'rotate'       => $svc->rotate($match, $set, $team, (int) ($v['delta'] ?? 0), $actor->user, $actor->name, $rid, $actor->linkId),
+            'swap'         => $svc->swapPlayers($match, $set, $team, $out, $in, $actor->user, $actor->name, $rid, $actor->linkId),
+            'fix'          => $svc->fixLineup($match, $set, $team, (int) ($v['delta'] ?? 0), (array) ($v['swaps'] ?? []), $actor->user, $actor->name, $rid, $actor->linkId),
         };
     }
 

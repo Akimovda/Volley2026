@@ -26,16 +26,18 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v4';
+    private const CACHE_VERSION = 'v5';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't5';
+    private const PDF_TEMPLATE_VERSION = 't6';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
         MatchRallyEvent::ACTION_OPP_ATTACK_ERROR,
         MatchRallyEvent::ACTION_OPP_RECEPTION_ERROR,
         MatchRallyEvent::ACTION_OPP_BLOCK_ERROR,
+        MatchRallyEvent::ACTION_OPP_ROTATION_ERROR,
+        MatchRallyEvent::ACTION_OPP_POSITION_ERROR,
     ];
 
     public function __construct(private readonly MatchLineupService $lineupService)
@@ -195,6 +197,7 @@ class MatchAdvancedStatsService
                     'set'        => (int) $sn,
                     'side'       => $sideOf((int) $le->team_id),
                     'type'       => $le->type,
+                    'delta'      => $le->type === 'rotate' ? (int) $le->position : null,
                     'out_id'     => $le->out_user_id ? (int) $le->out_user_id : null,
                     'in_id'      => $le->in_user_id ? (int) $le->in_user_id : null,
                     'out'        => $le->out_user_id ? ($names[(int) $le->out_user_id] ?? null) : null,
@@ -242,6 +245,8 @@ class MatchAdvancedStatsService
                 MatchRallyEvent::ACTION_OPP_ATTACK_ERROR    => [$o['opp_total']++, $o['opp_attack']++],
                 MatchRallyEvent::ACTION_OPP_RECEPTION_ERROR => [$o['opp_total']++, $o['opp_reception']++],
                 MatchRallyEvent::ACTION_OPP_BLOCK_ERROR     => [$o['opp_total']++, $o['opp_block']++],
+                MatchRallyEvent::ACTION_OPP_ROTATION_ERROR  => [$o['opp_total']++, $o['opp_rotation']++],
+                MatchRallyEvent::ACTION_OPP_POSITION_ERROR  => [$o['opp_total']++, $o['opp_position']++],
                 default                                     => $o['unattributed']++,
             };
             unset($o);
@@ -328,7 +333,7 @@ class MatchAdvancedStatsService
     private function emptyOrigin(): array
     {
         return ['total' => 0, 'attack' => 0, 'block' => 0, 'ace' => 0, 'opp_total' => 0,
-            'opp_serve' => 0, 'opp_attack' => 0, 'opp_reception' => 0, 'opp_block' => 0, 'unattributed' => 0,
+            'opp_serve' => 0, 'opp_attack' => 0, 'opp_reception' => 0, 'opp_block' => 0, 'opp_rotation' => 0, 'opp_position' => 0, 'unattributed' => 0,
             // подтип атаки (атака = power + cut + poke + roll + tip + none)
             'at' => ['power' => 0, 'cut' => 0, 'poke' => 0, 'roll' => 0, 'tip' => 0, 'none' => 0]];
     }
@@ -524,6 +529,7 @@ class MatchAdvancedStatsService
                 $evs[] = [
                     'side'       => $side,
                     'type'       => $le->type,
+                    'delta'      => $le->type === 'rotate' ? (int) $le->position : null,
                     'in'         => $le->in_user_id ? ($names[(int) $le->in_user_id] ?? null) : null,
                     'out'        => $le->out_user_id ? ($names[(int) $le->out_user_id] ?? null) : null,
                     'score_home' => (int) $le->score_home,

@@ -49,6 +49,8 @@
         $text = match ($ev['type']) {
             'substitution' => __('match_stats.lu_sub', ['in' => $ev['in'] ?? '—', 'out' => $ev['out'] ?? '—']),
             'libero_in'    => __('match_stats.lu_libero_in', ['in' => $ev['in'] ?? '—', 'out' => $ev['out'] ?? '—']),
+            'rotate'       => __('match_stats.lu_rotate', ['delta' => ($ev['delta'] ?? 0) > 0 ? '+' . $ev['delta'] : (string) ($ev['delta'] ?? 0)]),
+            'swap'         => __('match_stats.lu_swap', ['a' => $ev['out'] ?? '—', 'b' => $ev['in'] ?? '—']),
             default        => __('match_stats.lu_libero_out', ['in' => $ev['in'] ?? '—', 'out' => $ev['out'] ?? '—']),
         };
     @endphp

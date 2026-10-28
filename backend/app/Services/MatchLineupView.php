@@ -190,6 +190,38 @@ class MatchLineupView
             }
         }
 
+        // Подсказка по либеро «Вернуть X»: (а) либеро стоит в передней линии (замещённый игрок перешёл в зону 4);
+        // (б) команда подаёт, а в зоне 1 стоит либеро. Только 6 на площадке (5-1 с либеро).
+        if ($mini) {
+            $mini['hints'] = [];
+            if ($size === 6) {
+                foreach ($sideTeams as $side => $tid) {
+                    $tm = $mini['teams'][$side];
+                    $lib = collect($tm['cells'])->first(fn ($c) => !empty($c['libero']));
+                    if (!$lib) {
+                        continue;
+                    }
+                    $z = (int) $lib['zone'];
+                    $reason = in_array($z, [2, 3, 4], true) ? 'front' : (($tm['serving'] && $z === 1) ? 'serve' : null);
+                    if (!$reason) {
+                        continue;
+                    }
+                    $held = collect($teams[$side]['held'])->firstWhere('id', (int) $lib['for_user_id']);
+                    $pc = $cards[(int) $lib['for_user_id']] ?? null;
+                    if (!$pc) {
+                        continue;
+                    }
+                    $pp = $held['position'] ?? null;
+                    $mini['hints'][] = [
+                        'side' => $side, 'team_id' => $tid, 'team' => $tm['name'], 'color' => $tm['color'], 'text' => $tm['text'],
+                        'reason' => $reason, 'key' => $setNumber . ':' . $side . ':' . $reason . ':' . $mini['rot'][$side],
+                        'libero' => ['id' => (int) $lib['id'], 'surname' => $lib['surname'], 'initials' => $lib['initials'], 'photo' => $lib['photo'], 'number' => $lib['number']],
+                        'partner' => $pc + ['pos_abbr' => $pp ? __('tournaments.pos_abbr_' . $pp) : '', 'pos_full' => $pp ? __('tournaments.pos_full_' . $pp) : ''],
+                    ];
+                }
+            }
+        }
+
         return [
             'enabled'    => true,
             'mini'       => $mini,

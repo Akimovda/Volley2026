@@ -162,6 +162,17 @@ class MatchLineupService
                     ];
                     break;
 
+                case MatchLineupEvent::TYPE_SWAP:
+                    // два игрока меняются «местами» (зоны-места); позиции-роли остаются за игроками
+                    $a = (int) $ev->out_user_id;
+                    $b = (int) $ev->in_user_id;
+                    if (isset($t['court'][$a], $t['court'][$b])) {
+                        $za = $t['court'][$a]['zone'];
+                        $t['court'][$a]['zone'] = $t['court'][$b]['zone'];
+                        $t['court'][$b]['zone'] = $za;
+                    }
+                    break;
+
                 case MatchLineupEvent::TYPE_LIBERO_OUT:
                     $partner = (int) $ev->in_user_id;
                     unset($t['court'][(int) $ev->out_user_id]);
@@ -201,7 +212,7 @@ class MatchLineupService
         }
 
         $serving = $rs['serving_team_id'];
-        $slot = ($rs['rot'][$serving] % $size) + 1;
+        $slot = ((($rs['rot'][$serving] % $size) + $size) % $size) + 1;
         $uid = null;
         foreach ($this->state($match, $setNumber)['teams'][$serving]['court'] ?? [] as $id => $c) {
             if (($c['zone'] ?? null) === $slot && empty($c['libero'])) {
@@ -274,7 +285,10 @@ class MatchLineupService
                     $last = null;
                 }
             }
-            // блок B: тип lineup-события rotate/swap будет менять $rot здесь
+            elseif ($item['ev']->type === MatchLineupEvent::TYPE_ROTATE) {
+                // ручной поворот расстановки команды (position = знаковая дельта)
+                $rot[$item['team_id']] = ($rot[$item['team_id']] ?? 0) + (int) $item['ev']->position;
+            }
         }
 
         return ['has_start' => true, 'serving_team_id' => $serving, 'rot' => $rot, 'last_rotated_team_id' => $last];
@@ -665,6 +679,80 @@ class MatchLineupService
     }
 
     /**
+     * Ручной поворот расстановки команды на $delta шагов (+ = как после перехода подачи, − = назад).
+     * Пишется отдельным lineup-событием (с seq): откатывается обычным undo; на статистику игроков не влияет.
+     */
+    public function rotate(
+        TournamentMatch $match, int $setNumber, int $teamId, int $delta,
+        ?User $recordedBy = null, ?string $recordedByName = null, ?string $clientRequestId = null, ?int $recordedByLinkId = null,
+    ): MatchLineupEvent {
+        $size = (int) $this->profile($match)['on_court_size'];
+
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId, byLinkId: $recordedByLinkId, build:
+            function () use ($delta, $size) {
+                if ($delta === 0 || abs($delta) >= max(2, $size)) {
+                    throw new InvalidArgumentException('Поворот — от 1 до ' . max(1, $size - 1) . ' шагов вперёд или назад.');
+                }
+
+                return [
+                    'type' => MatchLineupEvent::TYPE_ROTATE,
+                    'out_user_id' => null, 'in_user_id' => null, 'zone' => null,
+                    'position' => ($delta > 0 ? '+' : '') . $delta,
+                ];
+            });
+    }
+
+    /** Двое игроков площадки меняются местами (оба на площадке, не либеро и не «замещённые либеро»). */
+    public function swapPlayers(
+        TournamentMatch $match, int $setNumber, int $teamId, int $userA, int $userB,
+        ?User $recordedBy = null, ?string $recordedByName = null, ?string $clientRequestId = null, ?int $recordedByLinkId = null,
+    ): MatchLineupEvent {
+        return $this->recordEvent($match, $setNumber, $teamId, $recordedBy, $recordedByName, $clientRequestId, byLinkId: $recordedByLinkId, build:
+            function (array $team) use ($userA, $userB) {
+                if ($userA === $userB) {
+                    throw new InvalidArgumentException('Выберите двух разных игроков.');
+                }
+                foreach ([$userA, $userB] as $u) {
+                    $c = $team['court'][$u] ?? null;
+                    if (!$c || $c['libero'] || isset($team['held'][$u])) {
+                        throw new InvalidArgumentException('Менять местами можно только основных игроков на площадке (не либеро и не замещённых им).');
+                    }
+                }
+
+                return [
+                    'type' => MatchLineupEvent::TYPE_SWAP,
+                    'out_user_id' => $userA, 'in_user_id' => $userB, 'position' => null, 'zone' => null,
+                ];
+            });
+    }
+
+    /**
+     * «Исправить расстановку» одним действием: поворот на $delta + обмены (по порядку). Каждый шаг — отдельное
+     * lineup-событие (undo по шагам). Идемпотентно: client_request_id шага = uuid5(базовый id, номер шага).
+     *
+     * @param array<int, array{0:int,1:int}> $swaps
+     * @return MatchLineupEvent[]
+     */
+    public function fixLineup(
+        TournamentMatch $match, int $setNumber, int $teamId, int $delta, array $swaps,
+        ?User $recordedBy = null, ?string $recordedByName = null, ?string $baseRequestId = null, ?int $recordedByLinkId = null,
+    ): array {
+        $rid = fn (int $i) => $baseRequestId ? \Ramsey\Uuid\Uuid::uuid5($baseRequestId, 'fix-' . $i)->toString() : null;
+        $out = [];
+        $i = 0;
+        DB::transaction(function () use (&$out, &$i, $match, $setNumber, $teamId, $delta, $swaps, $recordedBy, $recordedByName, $recordedByLinkId, $rid) {
+            if ($delta !== 0) {
+                $out[] = $this->rotate($match, $setNumber, $teamId, $delta, $recordedBy, $recordedByName, $rid($i++), $recordedByLinkId);
+            }
+            foreach ($swaps as $pair) {
+                $out[] = $this->swapPlayers($match, $setNumber, $teamId, (int) $pair[0], (int) $pair[1], $recordedBy, $recordedByName, $rid($i++), $recordedByLinkId);
+            }
+        });
+
+        return $out;
+    }
+
+    /**
      * Общая обвязка событий состава: блокировка матча, проверки, seq, снимок счёта, статистика, broadcast.
      *
      * @param callable(array,array):array $build (состояние команды, ростер команды) => атрибуты события
@@ -774,6 +862,9 @@ class MatchLineupService
         $events = MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)
             ->orderBy('seq')->get();
         foreach ($events as $ev) {
+            if (in_array($ev->type, [MatchLineupEvent::TYPE_ROTATE, MatchLineupEvent::TYPE_SWAP], true)) {
+                continue; // правки расстановки не меняют, кто и на какой позиции выходил
+            }
             $pos = $ev->type === MatchLineupEvent::TYPE_LIBERO_IN ? self::LIBERO : $ev->position;
             $add((int) $ev->in_user_id, $pos);
         }

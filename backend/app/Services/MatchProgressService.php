@@ -195,6 +195,16 @@ class MatchProgressService
                 'pos' => $posFull($ev->position) ?: '—',
             ]) . ($zone ? ' · ' . __('tournaments.lineup_zone_n', ['n' => $zone]) : '');
             $summary = $surname($in) . ' → ' . $surname($out);
+        } elseif ($ev->type === MatchLineupEvent::TYPE_ROTATE) {
+            // ручной поворот расстановки: position = знаковая дельта
+            $delta = (int) $ev->position;
+            $label = __('tournaments.lineup_ev_fix');
+            $summary = '↻ ' . ($delta > 0 ? '+' : '') . $delta;
+            $lines[] = __('tournaments.lineup_popup_rotate', ['delta' => ($delta > 0 ? '+' : '') . $delta]);
+        } elseif ($ev->type === MatchLineupEvent::TYPE_SWAP) {
+            $label = __('tournaments.lineup_ev_swap');
+            $summary = $surname($out) . ' ↔ ' . $surname($in);
+            $lines[] = __('tournaments.lineup_popup_swap', ['a' => $fullName($out), 'b' => $fullName($in)]);
         } else {
             $label = __('tournaments.lineup_ev_libero');
             $lines[] = __('tournaments.lineup_popup_libero_out', ['name' => $fullName($in), 'libero' => $fullName($out)])

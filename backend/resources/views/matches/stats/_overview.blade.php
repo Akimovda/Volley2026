@@ -12,6 +12,8 @@
         ['key' => 'opp_attack', 'label' => __('match_stats.origin_opp_attack'), 'sub' => true],
         ['key' => 'opp_reception', 'label' => __('match_stats.origin_opp_reception'), 'sub' => true],
         ['key' => 'opp_block', 'label' => __('match_stats.origin_opp_block'), 'sub' => true],
+        ['key' => 'opp_rotation', 'label' => __('match_stats.origin_opp_rotation'), 'sub' => true],
+        ['key' => 'opp_position', 'label' => __('match_stats.origin_opp_position'), 'sub' => true],
         ['key' => 'unattributed', 'label' => __('match_stats.origin_unattributed'), 'sub' => false],
         ['key' => 'total', 'label' => __('match_stats.origin_total'), 'sub' => false],
     ];

@@ -13,6 +13,12 @@
 		'opp_serve_error' => __('tournaments.rally_action_opp_serve_error'), 'opp_attack_error' => __('tournaments.rally_action_opp_attack_error'),
 		'opp_block_error' => __('tournaments.rally_action_opp_block_error'), 'opp_reception_error' => __('tournaments.rally_action_opp_reception_error'),
 		'unattributed' => __('tournaments.rally_action_unattributed'),
+		'opp_rotation_error' => __('tournaments.rally_action_opp_rotation_error'), 'opp_position_error' => __('tournaments.rally_action_opp_position_error'),
+		'bx_lineup_section' => __('tournaments.bx_lineup_section'), 'bx_server_other' => __('tournaments.bx_server_other'),
+		'bx_srv_title' => __('tournaments.bx_srv_title'), 'bx_srv_text' => __('tournaments.bx_srv_text'),
+		'bx_srv_keep' => __('tournaments.bx_srv_keep'), 'bx_srv_keep_sub' => __('tournaments.bx_srv_keep_sub'),
+		'bx_srv_rot' => __('tournaments.bx_srv_rot'), 'bx_srv_rot_sub' => __('tournaments.bx_srv_rot_sub'),
+		'bx_culprit' => __('tournaments.bx_culprit'), 'bx_fix_banner' => __('tournaments.bx_fix_banner'),
 		'how' => __('tournaments.rally_wiz_how'), 'errorType' => __('tournaments.rally_wiz_error_type'),
 		'whoScored' => __('tournaments.rally_wiz_who_scored'), 'oppWho' => __('tournaments.rally_wiz_opp_who'),
 		'dig' => __('tournaments.rally_wiz_dig'), 'assist' => __('tournaments.rally_wiz_assist'),
@@ -97,6 +103,47 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .rw-sidesw.on{opacity:1}
 
 
+
+/* ===== Блок B: проверка подающего, исправление расстановки, подсказка по либеро ===== */
+.rw-sec{font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.06em;opacity:.7;margin-top:6px}
+.rw-lu-btn{border-color:#7C3AED !important}
+.rw-lite.on{background:#EAB308 !important;color:#111 !important;border-color:#EAB308 !important}
+.rw-danger{border:2px solid #dc2626 !important;color:#dc2626 !important}
+.rw-sub2{font-size:12px;opacity:.75;text-align:center;margin:-4px 0 6px}
+.rw-pcs{display:flex;justify-content:center;gap:24px;margin:6px 0 10px}
+.rw-pc{text-align:center;max-width:130px}
+.rw-pc-av{position:relative;width:56px;height:56px;border-radius:50%;margin:0 auto;background:#64748B;color:#fff;font-weight:800;font-size:19px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.rw-pc-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.rw-pc-av--srv{box-shadow:0 0 0 4px #EAB308}
+.rw-pc-num{position:absolute;right:-6px;top:-6px;min-width:20px;height:20px;border-radius:10px;background:#111827;color:#fff;font-size:12px;font-weight:800;line-height:20px;padding:0 4px;box-sizing:border-box;border:1px solid #fff}
+.rw-pc-nm{font-size:12px;font-weight:700;margin-top:4px}
+.lf-box{max-width:480px}
+.lf-banner{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:10px;padding:8px 10px;font-weight:800;font-size:13px;margin-bottom:8px}
+.lf-court{border-radius:14px;overflow:hidden;padding:0 6px 8px;margin:8px 0}
+.lf-court .mc-net{margin:10px -6px 8px}
+.lf-cell{padding-top:15px !important}
+.lf-cell .mc-z{left:6px;top:3px;font-size:10px}
+.lf-cell{cursor:pointer}
+.lf-cell .mc-av{width:56px;height:56px}
+.lf-cell .mc-ini{font-size:19px}
+.lf-cell .mc-nm{font-size:13px}
+.lf-cell .mc-z{font-size:10px}
+.lf-cell.lf-sel{outline:3px solid #fff;box-shadow:0 0 0 5px #2967BA}
+.lf-hint{text-align:center;font-size:13px;opacity:.8;margin:4px 0 8px;min-height:1.2em}
+.lf-rot{display:flex;gap:8px}
+.lf-rot .btn{flex:1}
+#rw-live.rw-muted .js-rw-start{opacity:.55}
+.lu-hint{border:2px solid #7C3AED;border-radius:14px;padding:10px;margin:0 0 10px;background:rgba(124,58,237,.07)}
+.lu-hint-top{display:flex;gap:10px;align-items:center}
+.lu-hint-av{position:relative;flex:none;width:44px;height:44px;border-radius:50%;background:#7C3AED;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #C4B5FD}
+.lu-hint-av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.lu-hint-av i{position:absolute;right:-6px;top:-6px;min-width:17px;height:17px;border-radius:9px;background:#111827;color:#fff;font-size:10px;font-style:normal;font-weight:800;line-height:17px;padding:0 3px;box-sizing:border-box}
+.lu-hint-ttl{font-weight:800;font-size:13px;color:#6D28D9}
+.lu-hint-q{font-size:14px;font-weight:600}
+.lu-hint-btns{display:flex;gap:8px;margin-top:8px}
+.lu-hint-btns .btn{flex:1}
+.lu-hint-note{font-size:11px;opacity:.65;text-align:center;margin-top:4px}
+.rw-bi{display:inline-flex;vertical-align:-.15em}
 /* ===== Экран стартовой расстановки: карточки игроков ===== */
 .ls-card{cursor:pointer;min-height:150px;padding:8px 4px 6px;justify-content:flex-start;gap:1px}
 .ls-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;overflow:hidden;flex:none;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
@@ -397,6 +444,37 @@ window.RallyLive = (function () {
 	var ATK = [['power', T.atkPower], ['cut', T.atkCut], ['poke', T.atkPoke], ['roll', T.atkRoll], ['tip', T.atkTip]];   // подтипы атаки (ключи = match_rally_events.attack_type)
 	var OPP = ['opp_serve_error', 'opp_attack_error', 'opp_block_error', 'opp_reception_error'];
 	var OPP_REQ = ['opp_serve_error', 'opp_attack_error'];
+	var OPP_LU = ['opp_rotation_error', 'opp_position_error'];   // ошибки расстановки (виновник необязателен)
+	function luOn() { var l = RallyLive.data().lu; return !!(l && l.hasStart); }
+	function otherSide(sd) { return sd === 'home' ? 'away' : 'home'; }
+	function findP(list, id) { for (var i = 0; i < (list || []).length; i++) { if (String(list[i].id) === String(id)) { return list[i]; } } return null; }
+	function lab(p) { var c = p.card || {}; return (c.number != null ? '№' + c.number + ' ' : '') + (c.surname || p.name || ''); }
+	/* кружок игрока (фото/инициалы, номер, фамилия · амплуа); ring — жёлтое кольцо подающего */
+	function pcard(p, ring) {
+		var c = p.card || {}, w = document.createElement('div'), av = document.createElement('div');
+		w.className = 'rw-pc'; av.className = 'rw-pc-av' + (ring ? ' rw-pc-av--srv' : '');
+		if (c.photo) { var im = document.createElement('img'); im.src = c.photo; im.alt = ''; av.appendChild(im); } else { av.textContent = c.initials || String(p.name || '?').charAt(0); }
+		if (c.number != null) { var nb = document.createElement('span'); nb.className = 'rw-pc-num'; nb.textContent = c.number; av.appendChild(nb); }
+		var nm = document.createElement('div'); nm.className = 'rw-pc-nm'; nm.textContent = (c.surname || p.name || '') + (c.pos ? ' · ' + c.pos : '');
+		w.appendChild(av); w.appendChild(nm);
+		return w;
+	}
+	/* проверка подающего: игрок эйса/ошибки подачи ≠ подающий по расстановке → вопрос вместо записи */
+	function serverCheck(p) {
+		if (!luOn() || !st) { return null; }
+		var ownAce = st.kind === 'own' && st.action === 'ace', oppSrv = st.kind === 'opp' && st.action === 'opp_serve_error';
+		if (!ownAce && !oppSrv) { return null; }
+		var srvSide = ownAce ? st.side : otherSide(st.side), sid = DATA[srvSide] && DATA[srvSide].serverId;
+		if (!sid || String(sid) === String(p.id)) { return null; }
+		var list = DATA[srvSide].players, srv = findP(list, sid), pick = findP(list, p.id);
+		return (srv && pick) ? {srv: srv, pick: pick, srvSide: srvSide} : null;
+	}
+	function afterPick(p) {
+		st.player = String(p.id);
+		var chk = serverCheck(p);
+		if (chk) { st.chk = chk; go('srvcheck'); return; }
+		nextAfterPlayer();
+	}
 	var form = document.getElementById('rw-form');
 	var st = null, history = [], sending = false;
 
@@ -436,10 +514,16 @@ window.RallyLive = (function () {
 		if (st.assist) body.assist_user_id = st.assist;
 		if (st.action === 'kill' && st.attackType) body.attack_type = st.attackType;   // подтип атаки (необязательно)
 		setSending(true);
+		// ошибка перехода → сразу экран «Исправить расстановку» для нарушившей команды
+		var fixSide = st.fixSide || (st.action === 'opp_rotation_error' ? otherSide(st.side) : null), scorerName = DATA[st.side].teamName;
 		RallyLive.send(form.action, body, {retry: true}, function (j) {
 			sending = false; setSending(false);
 			close();
 			RallyLive.swap(j.html);
+			if (fixSide && window.LuFix) {
+				var sc = (j.board && j.board.score) ? (j.board.score.home + ':' + j.board.score.away) : '';
+				window.LuFix.open(fixSide, {banner: T.bx_fix_banner.replace(':team', scorerName).replace(':score', sc)});
+			}
 		}, function (m, net) {
 			sending = false; setSending(false);
 			elNote.textContent = m; // тот же st.rid — повторное нажатие не задвоит очко, если первый запрос дошёл
@@ -485,22 +569,50 @@ window.RallyLive = (function () {
 		if (st.step === 'action') {
 			elTitle.textContent = st.kind === 'own' ? T.how : T.errorType;
 			var list = st.kind === 'own' ? SELF : OPP.concat(['unattributed']);
+			var auto = !st.forcePick;   // «Подавал другой игрок?» — вручную выбрать игрока вместо автозаписи на подающего
 			list.forEach(function (a) {
 				elGrid.appendChild(btn(T[a], st.kind === 'own' ? 'btn-primary' : 'btn-secondary', function () {
 					st.action = a;
 					var dd = DATA[st.side];
-					if (st.kind === 'own' && a === 'ace' && dd && dd.serverId) { st.player = String(dd.serverId); submit(); return; }   // эйс = подающий: игрока не спрашиваем
+					if (auto && st.kind === 'own' && a === 'ace' && dd && dd.serverId) { st.player = String(dd.serverId); submit(); return; }   // эйс = подающий: игрока не спрашиваем
 					// ошибка подачи соперника: ошибся его подающий (если известен по составу) — игрока не спрашиваем
-					if (st.kind === 'opp' && a === 'opp_serve_error') {
-						var od = DATA[st.side === 'home' ? 'away' : 'home'];
+					if (auto && st.kind === 'opp' && a === 'opp_serve_error') {
+						var od = DATA[otherSide(st.side)];
 						if (od && od.serverId) { st.player = String(od.serverId); submit(); return; }
 					}
 					if (a === 'unattributed') { submit(); } else { go('player'); }
 				}, list.length % 2 === 1 && a === list[list.length - 1]));
 			});
+			if (st.kind === 'opp' && luOn()) {
+				var sec = document.createElement('div'); sec.className = 'rw-sec rw-wide'; sec.textContent = T.bx_lineup_section; elGrid.appendChild(sec);
+				OPP_LU.forEach(function (a) {
+					elGrid.appendChild(btn(T[a], 'btn-secondary rw-lu-btn', function () { st.action = a; go('player'); }));
+				});
+			}
+			var srvSide0 = st.kind === 'own' ? st.side : otherSide(st.side);
+			if (luOn() && DATA[srvSide0] && DATA[srvSide0].serverId) {
+				elGrid.appendChild(btn(T.bx_server_other, 'btn-secondary rw-lite' + (st.forcePick ? ' on' : ''), function () { st.forcePick = !st.forcePick; render(); }, true));
+			}
+		} else if (st.step === 'srvcheck') {
+			var ck = st.chk;
+			elTitle.textContent = T.bx_srv_title;
+			elSub.textContent = T.bx_srv_text.replace(':srv', lab(ck.srv)).replace(':pick', lab(ck.pick));
+			var pcs = document.createElement('div'); pcs.className = 'rw-pcs rw-wide';
+			pcs.appendChild(pcard(ck.srv, true)); pcs.appendChild(pcard(ck.pick, false));
+			elGrid.appendChild(pcs);
+			var keepB = btn(T.bx_srv_keep.replace(':action', T[st.action]).replace(':who', lab(ck.srv)), 'btn-primary', function () { st.player = String(ck.srv.id); submit(); }, true);
+			var keepS = document.createElement('div'); keepS.className = 'rw-sub2 rw-wide'; keepS.textContent = T.bx_srv_keep_sub;
+			var rotB = btn(T.bx_srv_rot.replace(':who', lab(ck.pick)), 'btn-secondary rw-danger', function () {
+				// ошибка перехода: очко сопернику нарушившей (подающей) команды, затем экран «Исправить расстановку»
+				var scorer = otherSide(ck.srvSide), pid = String(ck.pick.id);
+				st.side = scorer; st.kind = 'opp'; st.action = 'opp_rotation_error'; st.player = pid; st.fixSide = ck.srvSide; st.rid = '';
+				submit();
+			}, true);
+			var rotS = document.createElement('div'); rotS.className = 'rw-sub2 rw-wide'; rotS.textContent = T.bx_srv_rot_sub.replace(':team', DATA[otherSide(ck.srvSide)].teamName);
+			elGrid.appendChild(keepB); elGrid.appendChild(keepS); elGrid.appendChild(rotB); elGrid.appendChild(rotS);
 		} else if (st.step === 'player') {
 			var pl = st.kind === 'own' ? d.players : d.oppPlayers;
-			elTitle.textContent = st.kind === 'own' ? T.whoScored : T.oppWho;
+			elTitle.textContent = OPP_LU.indexOf(st.action) !== -1 ? T.bx_culprit : (st.kind === 'own' ? T.whoScored : T.oppWho);
 			if (st.kind === 'own' && st.action === 'kill') {
 				// «Удар · Накат · Скидка» над списком игроков: по умолчанию не выбрано, повторное нажатие снимает выбор; без новых шагов
 				var atk = document.createElement('div');
@@ -524,7 +636,7 @@ window.RallyLive = (function () {
 				elGrid.appendChild(atk);
 			}
 			pl.forEach(function (p) {
-				elGrid.appendChild(btn(p.name + (p.role ? ' · ' + p.role : ''), 'btn-primary', function () { st.player = String(p.id); nextAfterPlayer(); }));
+				elGrid.appendChild(btn(p.name + (p.role ? ' · ' + p.role : ''), 'btn-primary', function () { afterPick(p); }));
 			});
 			if (st.kind === 'opp' && OPP_REQ.indexOf(st.action) === -1) {
 				elGrid.appendChild(btn(T.noPlayer, 'btn-secondary', function () { st.player = ''; submit(); }, true));
@@ -567,4 +679,5 @@ window.RallyLive = (function () {
 @if($luOn)
 @include('tournaments._partials.lineup_popup_js')
 @include('tournaments._partials.lineup_rally_js')
+@include('tournaments._partials.lineup_fix_js')
 @endif
