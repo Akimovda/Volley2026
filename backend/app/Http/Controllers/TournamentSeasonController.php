@@ -322,7 +322,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $teamService = app(\App\Services\TournamentTeamService::class);
-            // Пара «По амплуа»: капитан и партнёр получают противоположные амплуа (по умолчанию капитан — Блокирующий)
+            // Пара «По амплуа»: амплуа капитана обязательно (как при обычном создании пары), партнёр получает противоположное
             $rolesPairs = $event->registersByBeachRoles();
             $captainPos = null;
             $team = $teamService->createTeam(
@@ -330,7 +330,7 @@ class TournamentSeasonController extends Controller
                 captain: $captain,
                 name: $teamName,
                 occurrenceId: $occurrenceId,
-                captainPositionCode: $rolesPairs ? ($captainPos = (in_array($request->input('captain_position_code'), ['blocker', 'defender'], true) ? $request->input('captain_position_code') : 'blocker')) : null,
+                captainPositionCode: $rolesPairs ? ($captainPos = $request->input('captain_position_code')) : null,
                 autoApprove: true,
             );
 

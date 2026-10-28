@@ -763,6 +763,19 @@ $tourNumber = $seasonData
 									</div>
 								</div>
 							</div>
+							@if($isBeach && $event->registersByBeachRoles())
+							<div class="col-md-6">
+								<div class="card">
+									<label>Амплуа капитана <span style="color:red">*</span></label>
+									<select name="captain_position_code" required>
+										<option value="">{{ __('events.sp_position_in_team_ph') }}</option>
+										<option value="blocker">{{ __('events.positions.blocker') }}</option>
+										<option value="defender">{{ __('events.positions.defender') }}</option>
+									</select>
+									<div class="f-13 mt-05" style="opacity:.7">Партнёр получит противоположное амплуа.</div>
+								</div>
+							</div>
+							@endif
 							@if($isBeach)
 							<div class="col-md-6">
 								<div class="card">
