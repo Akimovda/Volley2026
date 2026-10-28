@@ -75,6 +75,8 @@ class FriendlyGameController extends Controller
             'draft'       => (array) ($stage?->config['draft'] ?? []),
             'roster'      => $roster,
             'eventTeams'  => $eventTeams,
+            // Ровно две сформированные команды/пары — матч однозначен (кто 1, кто 2 — безразлично): стороны и список игроков не спрашиваем
+            'autoPair'    => $eventTeams->count() === 2 && $eventTeams->every(fn ($t) => $t->is_complete),
             'positions'   => $this->games->positions($occurrence->id),
             'matches'     => $matches,
             'board'       => $board,

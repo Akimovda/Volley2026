@@ -181,6 +181,46 @@ class MatchLineupService
         ];
     }
 
+    /**
+     * Кто сейчас подаёт: команда и игрок на подаче (зона 1). Модель: зоны в составе — «места» стартовой расстановки; при каждом
+     * переходе подачи (команда выигрывает розыгрыш на приёме) её расстановка поворачивается на одну позицию: подаёт игрок
+     * места (r mod N)+1, где r — число переходов подачи у этой команды в партии. Замены/либеро занимают то же место.
+     * user_id = null, если подающий не определён однозначно (нет старта, на месте либеро и т.п.) — тогда подающего спрашиваем.
+     *
+     * @return array{team_id:int,user_id:?int,slot:int}|null
+     */
+    public function currentServer(TournamentMatch $match, int $setNumber): ?array
+    {
+        $start = MatchSetStart::where('match_id', $match->id)->where('set_number', $setNumber)->first();
+        if (!$start || !$start->first_serve_team_id) {
+            return null;
+        }
+        $size = (int) ($this->profile($match)['on_court_size'] ?? 0);
+        if ($size < 2) {
+            return null;
+        }
+
+        $serving = (int) $start->first_serve_team_id;
+        $rot = [(int) $match->team_home_id => 0, (int) $match->team_away_id => 0];
+        foreach (\App\Models\MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)->orderBy('seq')->pluck('team_id') as $scorer) {
+            $scorer = (int) $scorer;
+            if ($scorer !== $serving) {
+                $rot[$scorer] = ($rot[$scorer] ?? 0) + 1;
+                $serving = $scorer;
+            }
+        }
+
+        $slot = ($rot[$serving] % $size) + 1;
+        $uid = null;
+        foreach ($this->state($match, $setNumber)['teams'][$serving]['court'] ?? [] as $id => $c) {
+            if (($c['zone'] ?? null) === $slot && empty($c['libero'])) {
+                $uid = (int) $id;
+            }
+        }
+
+        return ['team_id' => $serving, 'user_id' => $uid, 'slot' => $slot];
+    }
+
     public function hasStart(TournamentMatch $match, int $setNumber): bool
     {
         return MatchSetStart::where('match_id', $match->id)->where('set_number', $setNumber)->exists();

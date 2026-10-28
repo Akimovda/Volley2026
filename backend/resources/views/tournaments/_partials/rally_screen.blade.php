@@ -379,6 +379,8 @@ window.RallyLive = (function () {
 			list.forEach(function (a) {
 				elGrid.appendChild(btn(T[a], st.kind === 'own' ? 'btn-primary' : 'btn-secondary', function () {
 					st.action = a;
+					var dd = DATA[st.side];
+					if (st.kind === 'own' && a === 'ace' && dd && dd.serverId) { st.player = String(dd.serverId); submit(); return; }   // эйс = подающий: игрока не спрашиваем
 					if (a === 'unattributed') { submit(); } else { go('player'); }
 				}, list.length % 2 === 1 && a === list[list.length - 1]));
 			});

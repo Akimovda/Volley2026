@@ -37,6 +37,8 @@
 			$lineup['teams'][$sk]['court']
 		);
 	};
+	// Подающий игрок (учёт состава): эйс подающей команды записывается на него без вопроса «кто набрал очко»
+	$srv = $luStarted ? app(\App\Services\MatchLineupService::class)->currentServer($match, (int) $setNumber) : null;
 	$rwData = [];
 	// Пляжка: у пары (ровно 2 игрока) шаг «Кто принимал?» не нужен — партнёр подставляется сам (см. rally_screen.nextAfterPlayer)
 	$isBeachMatch = ($match->stage?->event?->direction ?? null) === 'beach';
@@ -47,6 +49,8 @@
 			'teamId'     => $sd['team_id'],
 			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
 			'players'    => $ownPlayers,
+			'serverId'   => ($srv && $srv['user_id'] && (int) $srv['team_id'] === (int) $sd['team_id'] && collect($ownPlayers)->contains(fn ($p) => (int) $p['id'] === (int) $srv['user_id']))
+				? (string) $srv['user_id'] : null,
 			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
 			'pairMode'   => $isBeachMatch && count($ownPlayers) === 2,
 		];
