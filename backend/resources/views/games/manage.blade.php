@@ -40,14 +40,15 @@
             .gm-page .form-select-custom { height:4.2rem; box-sizing:border-box; padding:0 1.4rem; font-size:1.5rem; line-height:3.8rem; }
             @media (hover:none) and (pointer:coarse) { .gm-page .form select { height:4.2rem; box-sizing:border-box; font-size:1.5rem; } }
             .gm-page .btn { height:4.2rem; box-sizing:border-box; padding:0 2rem; font-size:1.5rem; line-height:1; }
-            .gm-cl-step { display:flex; align-items:flex-start; gap:1.2rem; padding:1rem 0; border-bottom:1px solid rgba(128,128,128,.2); flex-wrap:wrap; }
+            .gm-cl-step { display:flex; align-items:center; gap:1.2rem; padding:1rem 0; border-bottom:1px solid rgba(128,128,128,.2); flex-wrap:nowrap; }
             .gm-cl-step:last-of-type { border-bottom:0; }
             .gm-cl-mark { flex:0 0 2.8rem; height:2.8rem; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; background:rgba(128,128,128,.25); }
             .gm-cl-step.done .gm-cl-mark { background:#2e7d32; color:#fff; }
-            .gm-cl-body { flex:1 1 20rem; min-width:0; font-size:1.5rem; }
+            .gm-cl-body { flex:1 1 0; min-width:0; font-size:1.5rem; }
             .gm-cl-note { font-size:1.3rem; opacity:.7; margin-top:.2rem; }
             .gm-cl-opt { font-weight:400; font-size:1.3rem; opacity:.6; }
-            .gm-cl-actions { display:flex; gap:.8rem; flex-wrap:wrap; }
+            .gm-cl-actions { display:flex; flex-direction:column; gap:.5rem; flex:0 0 auto; align-items:stretch; }
+            .gm-page .gm-cl-actions .btn { height:auto; min-height:0; padding:.6rem 1rem; font-size:1.1rem; line-height:1.1; white-space:nowrap; text-align:center; }
             .gm-cl-ready { font-weight:700; font-size:1.7rem; color:#2e7d32; cursor:pointer; }
             .gm-color-row { display:flex; gap:1.5rem; flex-wrap:wrap; align-items:center; }
         </style>
@@ -149,7 +150,11 @@
                 @if($event->direction === 'beach')
                 <div class="w-100">
                     <input type="hidden" name="tech_timeout" value="0">
-                    <label class="d-inline-flex fvc" style="gap:.8rem;cursor:pointer"><input type="checkbox" name="tech_timeout" value="1" @checked(!empty($config['tech_timeout']))> {{ __('games.tech_timeout') }}</label>
+<label class="checkbox-item">
+                        <input type="checkbox" name="tech_timeout" value="1" @checked(!empty($config['tech_timeout']))>
+                        <div class="custom-checkbox"></div>
+                        <span>{{ __('games.tech_timeout') }}</span>
+                    </label>
                     <div class="f-13" style="opacity:.65">{{ __('games.tech_timeout_hint') }}</div>
                 </div>
                 @endif

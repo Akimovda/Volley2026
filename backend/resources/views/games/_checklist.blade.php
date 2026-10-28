@@ -31,13 +31,13 @@
         @switch($st['key'])
             @case('format') <a href="#gm-cfg" class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
             @case('teams') <a href="#gm-new" class="btn btn-small {{ $st['done'] ? 'btn-outline' : '' }}">{{ __('games.cl_btn_teams') }}</a> @break
-            @case('court') <a href="{{ $setupUrl }}" class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
+            @case('court') <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
             @case('match') <a href="#gm-new" class="btn btn-small {{ $st['done'] ? 'btn-outline' : '' }}">{{ __('games.cl_btn_match') }}</a> @break
             @case('score')
                 @if($st['match'])<a href="{{ route('tournament.matches.rally.form', $st['match']) }}" class="btn btn-small">{{ __('games.cl_btn_score') }}</a>@endif
-                <a href="{{ $setupUrl }}" class="btn btn-small btn-outline">{{ __('games.cl_btn_secretary') }}</a>
+                <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_secretary') }}</a>
                 @break
-            @case('stream') <a href="{{ $setupUrl }}" class="btn btn-small btn-outline">{{ __('games.cl_btn_stream') }}</a> @break
+            @case('stream') <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_stream') }}</a> @break
         @endswitch
     </div>
 </div>
