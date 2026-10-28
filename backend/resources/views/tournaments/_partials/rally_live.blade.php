@@ -19,7 +19,7 @@
 	$actionMarkers = [
 		'ace' => 'Э', 'kill' => 'А', 'block' => 'Б',
 		'opp_serve_error' => 'ошП', 'opp_attack_error' => 'ошА',
-		'opp_block_error' => 'ошБ', 'opp_reception_error' => 'ошПр',
+		'opp_block_error' => 'ошБ', 'opp_reception_error' => 'ошПр', 'opp_rotation_error' => 'ошПер', 'opp_position_error' => 'ошРас',
 		'unattributed' => '•',
 	];
 
@@ -31,9 +31,17 @@
 	$luOn = !empty($lineup['enabled']);
 	$luStarted = $luOn && $lineup['has_start'];
 	// Для матчей с учётом состава в попапе очка — только игроки НА ПЛОЩАДКЕ сейчас (включая вышедшего либеро)
-	$courtPlayers = function (string $sk) use ($lineup, $board) {
+	// карточка игрока (фото/инициалы/номер/амплуа) из мини-площадки — для панели «Подаёт не тот игрок?» и чипов виновника
+	$cardsOf = [];
+	foreach (($lineup['mini']['teams'] ?? []) as $cSide => $cTeam) {
+		foreach ($cTeam['cells'] as $cc) {
+			$cardsOf[$cSide][$cc['id']] = ['surname' => $cc['surname'], 'initials' => $cc['initials'], 'photo' => $cc['photo'], 'number' => $cc['number'],
+				'pos' => $cc['pos_abbr'], 'libero' => $cc['libero'], 'zone' => $cc['zone']];
+		}
+	}
+	$courtPlayers = function (string $sk) use ($lineup, $board, $cardsOf) {
 		return array_map(
-			fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'role' => $c['role'] ?? null],
+			fn ($c) => ['id' => $c['id'], 'name' => $c['name'], 'role' => $c['role'] ?? null, 'card' => $cardsOf[$sk][$c['id']] ?? null],
 			$lineup['teams'][$sk]['court']
 		);
 	};
@@ -82,7 +90,7 @@
 			(int) $board['score']['home'], (int) $board['score']['away'], (bool) ($board['is_deciding_set'] ?? false))
 		: null;
 	// mc — сигнатура переходов для анимации на клиенте (сравнивается между подменами фрагмента)
-	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal, 'mc' => !empty($lineup['mini']) ? [
+	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal, 'fx' => $lineup['mini'] ?? null, 'mc' => !empty($lineup['mini']) ? [
 		'set' => $setNumber, 'rot' => $lineup['mini']['rot'], 'rotated_side' => $lineup['mini']['rotated_side'],
 		'names' => ['home' => $lineup['mini']['teams']['home']['name'], 'away' => $lineup['mini']['teams']['away']['name']],
 	] : null];
@@ -227,6 +235,10 @@
 		@include('tournaments._partials.lineup_setup_panel')
 		@endif
 
+		@if($luOn && !$board['decided'])
+		@include('tournaments._partials.lineup_hints')
+		@endif
+
 		@foreach($sides as $sideKey => $side)
 		@php
 			$teamId = $side['team_id'];
@@ -244,10 +256,11 @@
 				<div class="f-13 b-600 mb-1">{{ __('tournaments.rally_add_point_title') }}</div>
 				<div class="d-flex gap-1" style="flex-wrap:wrap">
 
-					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem">🏐 {{ __('tournaments.rally_own_action_btn') }}</button>
+					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem"><span class="rw-bi">@include('tournaments._partials.ball_icon')</span> {{ __('tournaments.rally_own_action_btn') }}</button>
 					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</button>
 					@if($luStarted)
 					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
+					<button type="button" class="btn btn-secondary js-lu-fix" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.bx_fix_btn') }}">{{ __('tournaments.bx_fix_btn') }}</button>
 					@endif
 
 				</div>
