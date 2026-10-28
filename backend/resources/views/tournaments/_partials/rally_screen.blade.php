@@ -381,6 +381,11 @@ window.RallyLive = (function () {
 					st.action = a;
 					var dd = DATA[st.side];
 					if (st.kind === 'own' && a === 'ace' && dd && dd.serverId) { st.player = String(dd.serverId); submit(); return; }   // эйс = подающий: игрока не спрашиваем
+					// ошибка подачи соперника: ошибся его подающий (если известен по составу) — игрока не спрашиваем
+					if (st.kind === 'opp' && a === 'opp_serve_error') {
+						var od = DATA[st.side === 'home' ? 'away' : 'home'];
+						if (od && od.serverId) { st.player = String(od.serverId); submit(); return; }
+					}
 					if (a === 'unattributed') { submit(); } else { go('player'); }
 				}, list.length % 2 === 1 && a === list[list.length - 1]));
 			});
