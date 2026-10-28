@@ -1015,6 +1015,7 @@ if ($role === 'admin') {
 
             // Турнирные настройки (только при format=tournament)
             'tournament_game_scheme'              => ['nullable', 'string', 'max:16'],
+            'tournament_min_teams'                => ['nullable', 'integer', 'min:2', 'max:100'],
             'tournament_team_size_min'            => ['nullable', 'integer', 'min:1', 'max:20'],
             'tournament_reserve_players_max'      => ['nullable', 'integer', 'min:0', 'max:20'],
             'tournament_application_mode'         => ['nullable', 'string', 'in:auto,manual'],
@@ -1629,6 +1630,11 @@ if ($role === 'admin') {
                     'track_lineup'                 => (array_key_exists('track_lineup', $data) && !$isBeach)
                         ? (bool) $data['track_lineup'] : null,
                 ], static fn ($v) => $v !== null);
+
+                // Минимум команд — nullable: пустое поле сбрасывает порог (array_filter выше отбрасывает null)
+                if (array_key_exists('tournament_min_teams', $data)) {
+                    $tsPayload['min_teams'] = ($data['tournament_min_teams'] !== null && $data['tournament_min_teams'] !== '') ? (int) $data['tournament_min_teams'] : null;
+                }
 
                 \App\Models\EventTournamentSetting::updateOrCreate(
                     ['event_id' => (int) $event->id],

@@ -47,6 +47,7 @@ class CancelEventsByQuorum extends Command
             ->join('events as e', 'e.id', '=', 'eo.event_id')
             ->join('event_game_settings as egs', 'egs.event_id', '=', 'e.id')
             ->leftJoin('locations as loc', 'loc.id', '=', 'eo.location_id')
+            ->leftJoin('event_tournament_settings as ets', 'ets.event_id', '=', 'e.id')
             ->select([
                 'eo.id',
                 'eo.event_id',
@@ -56,7 +57,7 @@ class CancelEventsByQuorum extends Command
                 'e.title as event_title',
                 'e.format as event_format',
                 'e.registration_mode as event_registration_mode',
-                'e.tournament_teams_count as event_tournament_teams_count',
+                'ets.min_teams as event_min_teams',
                 'egs.min_players',
                 'loc.name as location_name',
                 'loc.address as location_address',
@@ -117,7 +118,9 @@ class CancelEventsByQuorum extends Command
                     || (string) ($row->event_format ?? '') === 'tournament';
 
                 if ($isTeamMode) {
-                    $minTeams = (int) ($row->event_tournament_teams_count ?? 0);
+                    // Порог — отдельная настройка «Минимум команд» (event_tournament_settings.min_teams).
+                    // tournament_teams_count — вместимость турнира, а не минимум: по нему не отменяем.
+                    $minTeams = (int) ($row->event_min_teams ?? 0);
                     if ($minTeams <= 0) {
                         // Командный турнир без настроенного порога — авто-отмена не применяется
                         $skipped++;

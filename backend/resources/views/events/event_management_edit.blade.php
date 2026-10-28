@@ -710,6 +710,15 @@
                                     value="{{ old('tournament_reserve_players_max', $ts?->reserve_players_max ?? 0) }}">
                             </div>
                         </div>
+
+                        <div class="col-md-3">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_min_teams_label') }}</label>
+                                <input type="number" name="tournament_min_teams" id="mgmt_tournament_min_teams" min="2" max="100"
+                                    value="{{ old('tournament_min_teams', $ts?->min_teams) }}" placeholder="{{ __('events.tournament_min_teams_ph') }}">
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.tournament_min_teams_hint') }}</div>
+                            </div>
+                        </div>
                         @else
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">
