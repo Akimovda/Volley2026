@@ -129,7 +129,7 @@
 				return $result;
 			}
 
-			$direction = (string) ($event->direction ?? 'classic');
+			$direction = $event->registrationDirection();
             $isClassic = $direction === 'classic';
             $isBeach = $direction === 'beach';
 			

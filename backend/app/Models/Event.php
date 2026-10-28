@@ -207,6 +207,17 @@ class Event extends Model implements HasMedia
         return is_array($p) && in_array('blocker', $p, true) && in_array('defender', $p, true);
     }
 
+    /**
+     * Направление с точки зрения РЕГИСТРАЦИИ ПО ПОЗИЦИЯМ: 'classic', если у события есть выбор позиции (классика ИЛИ пляжка «По амплуа»),
+     * иначе 'beach'. Одна точка вместо `direction === 'classic'` в проверках записи, листе ожидания и формах.
+     */
+    public function registrationDirection(): string
+    {
+        $d = (string) ($this->direction ?? 'classic');
+
+        return ($d === 'beach' && $this->registersByBeachRoles()) ? 'classic' : $d;
+    }
+
     public function registersWithoutPositions(): bool
     {
         return (bool) ($this->gameSettings?->registration_without_positions ?? false);

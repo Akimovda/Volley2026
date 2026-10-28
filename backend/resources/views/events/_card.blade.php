@@ -68,7 +68,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$isClassicDirection = ((string)($event?->direction ?? 'classic') === 'classic');
 			$isBeachDirection   = ((string)($event?->direction ?? '') === 'beach');
-			$requiresPositionChoice = $isClassicDirection;
+			$requiresPositionChoice = $isClassicDirection || (bool) $event?->registersByBeachRoles();
 			
 			$trainerLabel = null;
 			if ($trainerColumn && $event) {

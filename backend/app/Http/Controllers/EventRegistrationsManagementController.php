@@ -113,7 +113,7 @@ class EventRegistrationsManagementController extends Controller
         // Свободные слоты по позициям (только для классики с конкретной датой)
         $freePositionSlots = []; // role => free_count
         $eventSlots = null;
-        if ($direction === 'classic') {
+        if ($event->registrationDirection() === 'classic') {
             $eventSlots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
             if ($occurrenceId && $eventSlots->isNotEmpty()) {
                 $takenByRole = DB::table('event_registrations')
@@ -134,7 +134,7 @@ class EventRegistrationsManagementController extends Controller
 
         // Запасные игроки: добавляем позицию 'reserve' если настроена или уже используется
         $reserveMax = 0; // используется ниже для корректного расчёта вместимости
-        if ($direction === 'classic') {
+        if ($event->registrationDirection() === 'classic') {
             $reserveSlot = $eventSlots?->firstWhere('role', 'reserve');
             $reserveMax  = $reserveSlot
                 ? (int) $reserveSlot->max_slots
@@ -385,7 +385,7 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $event->loadMissing('gameSettings');
-        $addDirection = (string)($event->direction ?? 'classic');
+        $addDirection = $event->registrationDirection();
         $addPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
 
         // Добавляем 'reserve' если настроено
@@ -698,7 +698,7 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $event->loadMissing('gameSettings');
-        $updDirection = (string)($event->direction ?? 'classic');
+        $updDirection = $event->registrationDirection();
         $updPositions = app(\App\Services\EventRoleSlotService::class)->resolvePositionsForEvent($event);
 
         // Добавляем 'reserve' если настроено
@@ -962,7 +962,7 @@ class EventRegistrationsManagementController extends Controller
                 $occId = (int) ($row->occurrence_id ?? 0);
                 if ($occId) {
                     $event->loadMissing('gameSettings');
-                    $direction    = (string)($event->direction ?? 'classic');
+                    $direction    = $event->registrationDirection();
                     $resMax       = (int)($event->gameSettings?->reserve_players_max ?? 0);
                     $isReservePos = $requestedPos === 'reserve';
 
@@ -1352,6 +1352,8 @@ class EventRegistrationsManagementController extends Controller
             'middle'   => 'Центральный',
             'libero'   => 'Либеро',
             'reserve'  => 'Резерв',
+            'blocker'  => position_name('blocker'),
+            'defender' => position_name('defender'),
         ];
 
         $rawFields    = $request->query('fields', 'name,phone,position');

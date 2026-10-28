@@ -555,7 +555,7 @@
         }
 		}
 		// Занятые основные позиции классики — нужны для disabled-кнопок и ссылки на waitlist
-		$btnDirection    = (string)($event->direction ?? 'classic');
+		$btnDirection    = $event->registrationDirection();
 		$btnOccupied = [];
 		if ($btnDirection === 'classic' && $event->gameSettings) {
 		    $btnAllSlots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
@@ -657,7 +657,7 @@ $totalCapacityFull = $maxPlayers + $reserveMaxFull;
 $registered       = $registered_total ?? 0;
 $isFull           = $totalCapacityFull > 0 && $registered >= $totalCapacityFull;
 
-$direction     = (string)($event->direction ?? 'classic');
+$direction     = $event->registrationDirection();
 $isBeach       = $direction === 'beach';
 $isClassic     = $direction === 'classic';
 
