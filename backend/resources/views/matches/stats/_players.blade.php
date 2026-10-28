@@ -12,7 +12,9 @@
     $print = $print ?? false;
     if ($print) { $scopes = ['all']; }
     // подсказка в ячейке «Атака»: из них удар · накат · скидка · без уточнения (если в матче есть хотя бы одно уточнение)
-    $hasAt = collect(['home', 'away'])->flatMap(fn ($s) => $stats['players'][$s])->contains(fn ($r) => (($r['scopes']['all']['at']['spike'] ?? 0) + ($r['scopes']['all']['at']['shot'] ?? 0) + ($r['scopes']['all']['at']['dump'] ?? 0)) > 0);
+    $atKeys = \App\Models\MatchRallyEvent::ATTACK_TYPES;
+    $atTitle = fn (array $x) => __('match_stats.at_breakdown', collect($atKeys)->mapWithKeys(fn ($k) => [$k => $x[$k] ?? 0])->all() + ['none' => $x['none'] ?? 0]);
+    $hasAt = collect(['home', 'away'])->flatMap(fn ($s) => $stats['players'][$s])->contains(fn ($r) => collect($atKeys)->sum(fn ($k) => $r['scopes']['all']['at'][$k] ?? 0) > 0);
 @endphp
 @if(!$print && count($scopes) > 2)
 <div class="mx-seg" data-mx-seg="players">
@@ -49,7 +51,7 @@
         <tr data-player="{{ $x['r']['user_id'] }}" class="{{ ($c['plus'] + $c['minus']) === 0 ? 'mx-muted' : '' }} {{ ($highlight ?? null) === $x['r']['user_id'] ? 'mx-row--hl' : '' }}">
             <td><a href="{{ route('users.show', $x['r']['user_id']) }}" class="blink">{{ $x['r']['name'] }}</a></td>
             @foreach($cols as $k => $label)
-            <td class="{{ str_ends_with($k, '_err') && $c[$k] > 0 ? 'is-err' : ($c[$k] === 0 ? 'is-zero' : '') }}"@if($k === 'attack' && $hasAt && $c['attack'] > 0) title="{{ __('match_stats.at_breakdown', ['spike' => $c['at']['spike'] ?? 0, 'shot' => $c['at']['shot'] ?? 0, 'dump' => $c['at']['dump'] ?? 0, 'none' => $c['at']['none'] ?? 0]) }}"@endif>@if($k === 'attack' && $hasAt && $c['attack'] > 0)<span class="mx-has-tip">{{ $c[$k] }}</span>@else{{ $c[$k] }}@endif</td>
+            <td class="{{ str_ends_with($k, '_err') && $c[$k] > 0 ? 'is-err' : ($c[$k] === 0 ? 'is-zero' : '') }}"@if($k === 'attack' && $hasAt && $c['attack'] > 0) title="{{ $atTitle($c['at'] ?? []) }}"@endif>@if($k === 'attack' && $hasAt && $c['attack'] > 0)<span class="mx-has-tip">{{ $c[$k] }}</span>@else{{ $c[$k] }}@endif</td>
             @endforeach
             <td class="mx-bal {{ $c['balance'] < 0 ? 'is-neg' : '' }}" data-bal="{{ $c['balance'] }}">{{ $c['balance'] > 0 ? '+' . $c['balance'] : $c['balance'] }}</td>
         </tr>

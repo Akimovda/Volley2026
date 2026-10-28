@@ -15,8 +15,8 @@ class MatchRallyEvent extends Model
     public const ACTION_OPP_SERVE_ERROR      = 'opp_serve_error';
     public const ACTION_OPP_ATTACK_ERROR     = 'opp_attack_error';
 
-    /** Подтип атаки (только для kill): удар / накат / скидка. */
-    public const ATTACK_TYPES = ['spike', 'shot', 'dump'];
+    /** Подтип атаки (только для kill): power — силовой, cut — кат (накат), poke — краб, roll — обводка, tip — обман (скидка). */
+    public const ATTACK_TYPES = ['power', 'cut', 'poke', 'roll', 'tip'];
     public const ACTION_OPP_BLOCK_ERROR      = 'opp_block_error';
     public const ACTION_OPP_RECEPTION_ERROR  = 'opp_reception_error';
     public const ACTION_UNATTRIBUTED         = 'unattributed';

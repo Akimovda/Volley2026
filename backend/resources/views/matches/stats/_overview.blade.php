@@ -16,8 +16,9 @@
         ['key' => 'total', 'label' => __('match_stats.origin_total'), 'sub' => false],
     ];
     // разбивка атаки по подтипам (удар · накат · скидка) — только если в матче есть хотя бы одно уточнение
-    $atLine = fn (array $x) => __('match_stats.at_breakdown', ['spike' => $x['spike'] ?? 0, 'shot' => $x['shot'] ?? 0, 'dump' => $x['dump'] ?? 0, 'none' => $x['none'] ?? 0]);
-    $hasAt = collect(['home', 'away'])->contains(fn ($s) => (($o[$s]['at']['spike'] ?? 0) + ($o[$s]['at']['shot'] ?? 0) + ($o[$s]['at']['dump'] ?? 0)) > 0);
+    $atKeys = \App\Models\MatchRallyEvent::ATTACK_TYPES;
+    $atLine = fn (array $x) => __('match_stats.at_breakdown', collect($atKeys)->mapWithKeys(fn ($k) => [$k => $x[$k] ?? 0])->all() + ['none' => $x['none'] ?? 0]);
+    $hasAt = collect(['home', 'away'])->contains(fn ($s) => collect($atKeys)->sum(fn ($k) => $o[$s]['at'][$k] ?? 0) > 0);
     $sv = $stats['serve'];
     $excluded = collect($stats['sets'])->filter(fn ($s) => !$s['serve']['reliable']);
 @endphp

@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v2';
+    private const CACHE_VERSION = 'v3';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't3';
+    private const PDF_TEMPLATE_VERSION = 't4';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
@@ -306,8 +306,8 @@ class MatchAdvancedStatsService
     {
         return ['total' => 0, 'attack' => 0, 'block' => 0, 'ace' => 0, 'opp_total' => 0,
             'opp_serve' => 0, 'opp_attack' => 0, 'opp_reception' => 0, 'opp_block' => 0, 'unattributed' => 0,
-            // подтип атаки (атака = spike + shot + dump + none)
-            'at' => ['spike' => 0, 'shot' => 0, 'dump' => 0, 'none' => 0]];
+            // подтип атаки (атака = power + cut + poke + roll + tip + none)
+            'at' => ['power' => 0, 'cut' => 0, 'poke' => 0, 'roll' => 0, 'tip' => 0, 'none' => 0]];
     }
 
     /**
@@ -398,7 +398,7 @@ class MatchAdvancedStatsService
     {
         $blank = fn () => ['attack' => 0, 'block' => 0, 'ace' => 0, 'serve_err' => 0, 'attack_err' => 0,
             'reception_err' => 0, 'block_err' => 0, 'plus' => 0, 'minus' => 0, 'balance' => 0,
-            'at' => ['spike' => 0, 'shot' => 0, 'dump' => 0, 'none' => 0]];
+            'at' => ['power' => 0, 'cut' => 0, 'poke' => 0, 'roll' => 0, 'tip' => 0, 'none' => 0]];
 
         $rows = ['home' => [], 'away' => []];
         $ensure = function (string $side, int $uid) use (&$rows, $names, $blank) {

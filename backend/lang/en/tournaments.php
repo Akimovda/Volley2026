@@ -1068,7 +1068,9 @@ return [
     'rally_match_decided_friendly' => 'The match is decided. Tap “Save score” — otherwise it will be saved automatically in a couple of minutes (unless you undo).',
     'rally_side_switch' => 'Switch sides',
     'rally_tech_timeout' => 'Technical timeout',
-    'rally_attack_spike' => 'Spike',
-    'rally_attack_shot' => 'Shot',
-    'rally_attack_dump' => 'Dump',
+    'rally_attack_power' => 'Power',
+    'rally_attack_cut' => 'Cut',
+    'rally_attack_poke' => 'Poke',
+    'rally_attack_roll' => 'Roll',
+    'rally_attack_tip' => 'Tip',
 ];
