@@ -61,6 +61,8 @@
 				? (string) $srv['user_id'] : null,
 			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
 			'pairMode'   => $isBeachMatch && count($ownPlayers) === 2,
+			// подаёт ли эта команда по расстановке (даже если подающий игрок не определён — например, на его месте либеро)
+			'serving'    => (bool) ($srv && (int) $srv['team_id'] === (int) $sd['team_id']),
 		];
 	}
 @endphp

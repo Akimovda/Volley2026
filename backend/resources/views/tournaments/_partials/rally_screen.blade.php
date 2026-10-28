@@ -18,6 +18,8 @@
 		'bx_srv_title' => __('tournaments.bx_srv_title'), 'bx_srv_text' => __('tournaments.bx_srv_text'),
 		'bx_srv_keep' => __('tournaments.bx_srv_keep'), 'bx_srv_keep_sub' => __('tournaments.bx_srv_keep_sub'),
 		'bx_srv_rot' => __('tournaments.bx_srv_rot'), 'bx_srv_rot_sub' => __('tournaments.bx_srv_rot_sub'),
+		'bx_mm_title' => __('tournaments.bx_mm_title'), 'bx_mm_text' => __('tournaments.bx_mm_text'), 'bx_mm_record' => __('tournaments.bx_mm_record'),
+		'bx_mm_record_sub' => __('tournaments.bx_mm_record_sub'), 'bx_mm_fix' => __('tournaments.bx_mm_fix'), 'bx_mm_hint' => __('tournaments.bx_mm_hint'),
 		'bx_culprit' => __('tournaments.bx_culprit'), 'bx_fix_banner' => __('tournaments.bx_fix_banner'),
 		'how' => __('tournaments.rally_wiz_how'), 'errorType' => __('tournaments.rally_wiz_error_type'),
 		'whoScored' => __('tournaments.rally_wiz_who_scored'), 'oppWho' => __('tournaments.rally_wiz_opp_who'),
@@ -579,6 +581,8 @@ window.RallyLive = (function () {
 					if (auto && st.kind === 'opp' && a === 'opp_serve_error') {
 						var od = DATA[otherSide(st.side)];
 						if (od && od.serverId) { st.player = String(od.serverId); submit(); return; }
+						// по расстановке подаёт ЭТА (набравшая очко) команда, а ошибку подачи записывают сопернику → расхождение: предупреждаем
+						if (luOn() && dd && dd.serving) { go('srvmismatch'); return; }
 					}
 					if (a === 'unattributed') { submit(); } else { go('player'); }
 				}, list.length % 2 === 1 && a === list[list.length - 1]));
@@ -593,6 +597,24 @@ window.RallyLive = (function () {
 			if (luOn() && DATA[srvSide0] && DATA[srvSide0].serverId) {
 				elGrid.appendChild(btn(T.bx_server_other, 'btn-secondary rw-lite' + (st.forcePick ? ' on' : ''), function () { st.forcePick = !st.forcePick; render(); }, true));
 			}
+		} else if (st.step === 'srvmismatch') {
+			var sv = DATA[st.side], svP = sv.serverId ? findP(sv.players, sv.serverId) : null;
+			elTitle.textContent = T.bx_mm_title;
+			elSub.textContent = T.bx_mm_text.replace(':team', sv.teamName).replace(':who', svP ? lab(svP) : '—');
+			if (svP) {
+				var mp = document.createElement('div'); mp.className = 'rw-pcs rw-wide'; mp.appendChild(pcard(svP, true)); elGrid.appendChild(mp);
+				var recB = btn(T.bx_mm_record.replace(':who', lab(svP)), 'btn-primary', function () {
+					// ошибка подачи у подающей по расстановке команды: очко её сопернику, виновник — подающий
+					var scorerSide = otherSide(st.side);
+					st.player = String(svP.id); st.side = scorerSide; st.kind = 'opp'; st.action = 'opp_serve_error'; st.rid = '';
+					submit();
+				}, true);
+				var recS = document.createElement('div'); recS.className = 'rw-sub2 rw-wide'; recS.textContent = T.bx_mm_record_sub.replace(':team', DATA[otherSide(st.side)].teamName);
+				elGrid.appendChild(recB); elGrid.appendChild(recS);
+			}
+			var fixSide0 = st.side;
+			elGrid.appendChild(btn(T.bx_mm_fix, 'btn-secondary', function () { close(); if (window.LuFix) { window.LuFix.open(fixSide0); } }, true));
+			var hintEl = document.createElement('div'); hintEl.className = 'rw-sub2 rw-wide'; hintEl.textContent = T.bx_mm_hint; elGrid.appendChild(hintEl);
 		} else if (st.step === 'srvcheck') {
 			var ck = st.chk;
 			elTitle.textContent = T.bx_srv_title;
