@@ -116,7 +116,7 @@ return [
     'cl_match_n' => 'Matches in this session: :n',
     'cl_match_none' => 'No match yet — create one from the lineups',
     'cl_score_started' => 'Scoring in progress',
-    'cl_score_hint' => 'Open score entry or send the scorer link to the secretary',
+    'cl_score_hint' => 'Score entry or a scorer link',
     'cl_score_nomatch' => 'Create a match first',
     'cl_stream_ok' => 'Stream channel is set up',
     'cl_stream_no' => 'Stream channel is not set up',

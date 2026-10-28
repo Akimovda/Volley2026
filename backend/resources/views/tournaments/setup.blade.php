@@ -1757,7 +1757,11 @@ $tourNumber = $seasonData
 							<div class="row mt-2" id="tech_timeout_field">
 								<div class="col-12">
 									<input type="hidden" name="tech_timeout" value="0">
-									<label class="d-inline-flex fvc" style="gap:.8rem;cursor:pointer"><input type="checkbox" name="tech_timeout" value="1"> {{ __('games.tech_timeout') }}</label>
+<label class="checkbox-item">
+					    <input type="checkbox" name="tech_timeout" value="1" >
+					    <div class="custom-checkbox"></div>
+					    <span>{{ __('games.tech_timeout') }}</span>
+					</label>
 									<div class="f-14" style="opacity:.65">{{ __('games.tech_timeout_hint') }}</div>
 								</div>
 							</div>

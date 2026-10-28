@@ -127,8 +127,10 @@
             .bc-team-name { font-weight:600; flex:1 1 14rem; min-width:0; }
             .bc-sw { display:inline-block; width:2.6rem; height:2.6rem; border-radius:50%; border:2px solid rgba(0,0,0,.2); cursor:pointer; padding:0; vertical-align:middle; }
             .bc-sw.sel { outline:3px solid #E7612F; outline-offset:2px; }
-            .bc-swatches { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; }
-            .bc-hex { width:11rem !important; }
+            .bc-swatches { display:flex; gap:.9rem 1rem; flex-wrap:wrap; align-items:center; margin:.4rem 0 .2rem; }
+            .bc-swatches input[type=text] { margin-top:.6rem; }
+            .bc-hex { width:14rem !important; }
+            .bc-bg-actions { display:flex; gap:.8rem; flex-wrap:wrap; align-items:center; margin:.4rem 0 .8rem; }
             .bc-logo { width:5rem; height:5rem; object-fit:contain; border-radius:.6rem; background:rgba(128,128,128,.15); }
             .bc-hint { font-size:1.25rem; opacity:.65; }
             .bc-bg { max-width:24rem; width:100%; aspect-ratio:16/9; object-fit:cover; border-radius:.8rem; display:block; margin-bottom:.8rem; }
@@ -478,8 +480,10 @@
             <div class="bc-field">
                 <span class="bc-l" style="display:block;font-weight:600;font-size:1.4rem;margin-bottom:.4rem">{{ __('stream.bg') }}</span>
                 @if($form['bg_url'])<img src="{{ $form['bg_url'] }}" class="bc-bg" id="bc-bg-img" alt="">@else<img src="" class="bc-bg" id="bc-bg-img" alt="" style="display:none">@endif
-                <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer">{{ __('stream.bg_upload') }}<input type="file" id="bc-bg-file" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
-                <button type="button" class="btn btn-small btn-outline" id="bc-bg-del" @if(!$form['bg_url']) style="display:none" @endif>{{ __('stream.bg_delete') }}</button>
+                <div class="bc-bg-actions">
+                    <label class="btn btn-small btn-outline" style="margin:0;cursor:pointer;width:auto">{{ __('stream.bg_upload') }}<input type="file" id="bc-bg-file" accept="image/jpeg,image/png,image/webp" style="display:none"></label>
+                    <button type="button" class="btn btn-small btn-outline" id="bc-bg-del" @if(!$form['bg_url']) style="display:none" @endif>{{ __('stream.bg_delete') }}</button>
+                </div>
                 <div class="bc-hint" style="margin-top:.5rem">{{ __('stream.bg_hint') }}</div>
             </div>
             <form id="bc-splash-form" onsubmit="return false">
