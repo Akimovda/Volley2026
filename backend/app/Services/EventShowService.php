@@ -204,7 +204,7 @@ class EventShowService
         $relations = [
             'location:' . implode(',', $locCols),
             'location.city:id,name,region,timezone',
-            'gameSettings:event_id,subtype,libero_mode,max_players,reserve_players_max,positions,gender_policy,gender_limited_side,gender_limited_max,gender_limited_positions,gender_limited_reg_starts_days_before,allow_girls,girls_max',
+            'gameSettings:event_id,subtype,libero_mode,max_players,reserve_players_max,positions,registration_by_roles,gender_policy,gender_limited_side,gender_limited_max,gender_limited_positions,gender_limited_reg_starts_days_before,allow_girls,girls_max',
             'media',
             'tournamentSetting',
             'occurrences',
