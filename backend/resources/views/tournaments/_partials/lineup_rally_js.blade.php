@@ -5,7 +5,13 @@
 	foreach (['setter', 'outside', 'opposite', 'middle', 'libero'] as $pc) {
 		$luPos[$pc] = __('tournaments.pos_abbr_' . $pc);
 	}
+	$luPosFull = [];
+	foreach (['setter', 'outside', 'opposite', 'middle', 'libero'] as $pc) {
+		$luPosFull[$pc] = __('tournaments.pos_full_' . $pc);
+	}
 	$luT = [
+		'jerseyPh' => __('tournaments.lineup_jersey_ph'), 'jerseySaved' => __('tournaments.lineup_jersey_saved'),
+		'liberoRow' => __('tournaments.lineup_libero_row'),
 		'net' => __('tournaments.lineup_net'),
 		'whoOut' => __('tournaments.lineup_sub_who_out'), 'whoIn' => __('tournaments.lineup_sub_who_in'),
 		'forLibero' => __('tournaments.lineup_sub_for_libero'), 'insteadLibero' => __('tournaments.lineup_sub_instead_of_libero'),
@@ -31,7 +37,7 @@
 @endphp
 <script>
 (function () {
-	var C = RallyLive.data().lu, T = @json($luT), POS = @json($luPos);
+	var C = RallyLive.data().lu, T = @json($luT), POS = @json($luPos), POSFULL = @json($luPosFull);
 	var SIDES = ['home', 'away'];
 
 	/* запросы — общий рантайм (jQuery.ajax, повтор при сетевой ошибке тем же client_request_id) */
@@ -41,6 +47,7 @@
 	function surname(n) { return String(n || '').split(' ')[0]; }
 	function posLabel(p) { return p ? (POS[p] || p) : ''; }
 	function zoneLabel(z) { return z ? T.zone.replace(':n', z) : ''; }
+	var BALL_SVG = @json(view('tournaments._partials.ball_icon')->render());
 
 	/* ---------- общий оверлей ---------- */
 	var ov = document.createElement('div');
@@ -173,6 +180,35 @@
 		});
 
 		function nameOf(side, uid) { return R[side][uid] ? R[side][uid].name : '#' + uid; }
+		/* кружок 56px: фото или инициалы на цвете команды (без внешних сервисов); либеро — фиолетовый */
+		function avatar(p, side, lib) {
+			var a = document.createElement('span');
+			a.className = 'ls-av' + (lib ? ' ls-av--lib' : '');
+			var team = C.teams[side] || {};
+			a.style.background = lib ? '#7C3AED' : (team.color || '#2967BA');
+			a.style.color = lib ? '#fff' : (team.text || '#fff');
+			if (p.photo) { var im = document.createElement('img'); im.src = p.photo; im.alt = ''; a.style.background = 'transparent'; a.appendChild(im); }
+			else { a.textContent = p.initials || '?'; }
+			return a;
+		}
+		/* поле «№»: правка сразу сохраняется (event_jersey_numbers), расстановку и выбор не сбрасывает */
+		function numInput(side, uid) {
+			var i = document.createElement('input');
+			i.type = 'text'; i.className = 'ls-num'; i.setAttribute('inputmode', 'numeric'); i.maxLength = 2;
+			i.placeholder = T.jerseyPh; i.value = (R[side][uid] && R[side][uid].number != null) ? R[side][uid].number : '';
+			i.addEventListener('click', function (e) { e.stopPropagation(); });
+			i.addEventListener('input', function () { i.value = i.value.replace(/[^0-9]/g, ''); });
+			i.addEventListener('change', function () {
+				var v = i.value.trim();
+				i.classList.remove('ls-num--ok'); i.classList.remove('ls-num--err');
+				if (!C.jerseyUrl) { return; }
+				RallyLive.send(C.jerseyUrl, {set_number: C.setNumber, user_id: uid, number: v}, {json: true, retry: true}, function () {
+					if (R[side][uid]) { R[side][uid].number = v === '' ? null : parseInt(v, 10); }
+					i.classList.add('ls-num--ok'); setTimeout(function () { i.classList.remove('ls-num--ok'); }, 1200);
+				}, function (m) { i.classList.add('ls-num--err'); i.title = m; });
+			});
+			return i;
+		}
 		function placedIds(side) { return Object.keys(S[side].zones).map(function (z) { return S[side].zones[z].uid; }); }
 		function validPos(p) { return p && C.positions.indexOf(p) !== -1 ? p : null; }
 		function zoneOrder() { return C.size === 6 ? [4, 3, 2, 5, 6, 1] : Array.apply(null, Array(C.size)).map(function (_, i) { return i + 1; }); }
@@ -198,20 +234,40 @@
 			courtEl.className = 'ls-court' + (C.size === 6 ? '' : ' ls-court--flat');
 			courtEl.innerHTML = '';
 			zoneOrder().forEach(function (z) {
-				var cell = st.zones[z], b = document.createElement('button');
-				b.type = 'button'; b.className = 'ls-zone' + (cell ? ' ls-zone--filled' : '');
+				var cell = st.zones[z], b = document.createElement('div');
+				b.setAttribute('role', 'button'); b.tabIndex = 0; b.className = 'ls-zone ls-card' + (cell ? ' ls-zone--filled' : '');
 				var h = '<span class="ls-zone-n">' + z + '</span>';
-				if (first === cur && z === 1) { h += '<span class="ls-ball">🏐</span>'; }
+				if (first === cur && z === 1) { h += '<span class="ls-ball">' + BALL_SVG + '</span>'; }
 				b.innerHTML = h;
 				if (cell) {
-					var n = document.createElement('span'); n.className = 'ls-zone-name'; n.textContent = surname(nameOf(cur, cell.uid));
+					var rp = R[cur][cell.uid] || {};
+					b.appendChild(avatar(rp, cur));
+					var n = document.createElement('span'); n.className = 'ls-zone-name'; n.textContent = rp.surname || surname(nameOf(cur, cell.uid));
+					var fn = document.createElement('span'); fn.className = 'ls-zone-first'; fn.textContent = rp.first || '';
 					var p = document.createElement('span'); p.className = 'ls-zone-pos'; p.textContent = posLabel(cell.pos);
-					b.appendChild(n); b.appendChild(p);
+					b.appendChild(n); b.appendChild(fn); b.appendChild(p);
+					b.appendChild(numInput(cur, cell.uid));
 				}
-				b.addEventListener('click', function () { openZone(z); });
+				b.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.ls-num')) { return; } openZone(z); });
+				b.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === b) { e.preventDefault(); openZone(z); } });
 				courtEl.appendChild(b);
 			});
 			if (liberoBtn) { liberoBtn.textContent = T.liberoLabel + ': ' + (st.libero ? nameOf(cur, st.libero) : T.liberoNone); }
+			var libRow = document.getElementById('ls-libero-row');
+			if (libRow) {
+				libRow.innerHTML = '';
+				if (st.libero && R[cur][st.libero]) {
+					var lr = R[cur][st.libero];
+					libRow.className = 'ls-libero-row';
+					libRow.appendChild(avatar(lr, cur, true));
+					var lt = document.createElement('div'); lt.className = 'ls-libero-txt';
+					lt.innerHTML = '<b></b><span></span>';
+					lt.querySelector('b').textContent = (lr.surname || '') + (lr.first ? ' ' + lr.first : '');
+					lt.querySelector('span').textContent = T.liberoRow;
+					libRow.appendChild(lt);
+					libRow.appendChild(numInput(cur, st.libero));
+				} else { libRow.className = ''; }
+			}
 			var placed = placedIds(cur), un = st.cand.filter(function (id) { return placed.indexOf(id) === -1 && id !== st.libero; });
 			poolEl.style.display = un.length ? '' : 'none';
 			poolEl.innerHTML = '';

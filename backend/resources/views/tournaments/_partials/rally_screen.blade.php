@@ -95,6 +95,58 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
 .rw-sidesw{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#2967BA;color:#fff;padding:12px 20px;border-radius:14px;font-size:17px;font-weight:700;z-index:10003;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 14px rgba(20,48,107,.35);text-align:center;max-width:90vw}
 .rw-sidesw.on{opacity:1}
+
+
+/* ===== Экран стартовой расстановки: карточки игроков ===== */
+.ls-card{cursor:pointer;min-height:150px;padding:8px 4px 6px;justify-content:flex-start;gap:1px}
+.ls-av{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px;overflow:hidden;flex:none;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 0 1px rgba(0,0,0,.12)}
+.ls-av img{width:100%;height:100%;object-fit:cover}
+.ls-av--lib{border-color:#C4B5FD}
+.ls-card .ls-zone-pos{display:inline-block;white-space:nowrap;line-height:1;font-size:11px;font-weight:800;text-align:center;margin-top:3px;padding:3px 8px;border-radius:8px;background:rgba(0,0,0,.14);opacity:1}
+.ls-zone-first{font-size:12px;opacity:.8;line-height:1.1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ls-num{width:52px;margin-top:4px;text-align:center;font-weight:800;font-size:16px;border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:2px 4px;background:#fff;color:#111}
+.ls-num--ok{border-color:#16a34a}
+.ls-num--err{border-color:#dc2626}
+.ls-libero-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px;border-radius:12px;background:rgba(124,58,237,.10);border:1px solid rgba(124,58,237,.35)}
+.ls-libero-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.ls-libero-txt b{font-size:14px}
+.ls-libero-txt span{font-size:12px;opacity:.8;color:#7C3AED}
+/* ===== Мини-площадка (учёт состава): физические зоны, подающий, анимация перехода ===== */
+.mc-wrap{margin-left:auto;margin-right:auto;max-width:420px}
+.mc{position:relative;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:zoom-in;user-select:none;-webkit-tap-highlight-color:transparent}
+.mc-half{padding:8px 6px 6px}
+.mc-net{height:8px;background:repeating-linear-gradient(90deg,#fff 0 6px,#cbd5e1 6px 12px);display:flex;align-items:center;justify-content:center;position:relative}
+.mc-net span{position:absolute;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:rgba(15,23,42,.7);color:#fff;padding:0 6px;border-radius:6px;top:-5px;line-height:1.5}
+.mc-title{font-weight:800;font-size:13px;text-align:center;margin:2px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-ball{opacity:0;margin-right:4px;transition:opacity .2s;display:inline-flex;vertical-align:-.15em}
+.ball-ic{width:1.05em;height:1.05em;display:inline-block;fill:none !important}
+.mc-server-ic{display:inline-flex;vertical-align:-.15em;margin-right:4px}
+.mc-server--warn{color:#dc2626;font-weight:800}
+.ls-bi{display:inline-flex;vertical-align:-.15em}
+.mc-ball.on{opacity:1}
+.mc-row{display:flex;justify-content:space-around;gap:4px;margin:2px 0}
+.mc-cell{position:relative;flex:1 1 0;min-width:0;text-align:center;padding:2px 0 1px;border-radius:10px;background:rgba(255,255,255,.10);will-change:transform}
+.mc-z{position:absolute;left:4px;top:2px;font-size:9px;font-weight:700;opacity:.7}
+.mc-av{position:relative;width:40px;height:40px;margin:0 auto;border-radius:50%;overflow:visible;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,.55)}
+.mc-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.mc-ini{font-weight:800;font-size:14px;letter-spacing:.02em}
+.mc-av--lib{border-color:#7C3AED;border-width:3px;background:#7C3AED !important}
+.mc-av--srv{box-shadow:0 0 0 3px #EAB308;border-color:#EAB308}
+.mc-num{position:absolute;right:-5px;top:-5px;min-width:17px;height:17px;border-radius:9px;background:#111827;color:#fff;font-size:10px;font-weight:800;line-height:17px;padding:0 3px;box-sizing:border-box;border:1px solid #fff}
+.mc-nm{font-size:11px;font-weight:700;line-height:1.15;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}
+.mc-pos{font-size:10px;font-weight:800;opacity:.85;line-height:1.1}
+.mc-pos--lib{color:#DDD6FE;opacity:1}
+.mc-server{text-align:center;font-size:13px;font-weight:700;margin-top:6px}
+.mc-plate{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.9);background:rgba(15,23,42,.88);color:#fff;padding:8px 16px;border-radius:12px;font-weight:800;font-size:15px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:5;white-space:nowrap}
+.mc-plate.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+.mc-zoom{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10001;display:flex;align-items:center;justify-content:center;padding:10px}
+.mc-zoom .mc{width:100%;max-width:440px;cursor:zoom-out}
+.mc-zoom .mc-av{width:56px;height:56px}
+.mc-zoom .mc-ini{font-size:19px}
+.mc-zoom .mc-nm{font-size:13px}
+.mc-zoom .mc-pos{font-size:12px}
+.mc-zoom .mc-num{min-width:20px;height:20px;line-height:20px;font-size:12px;border-radius:10px;right:-6px;top:-6px}
+.mc-zoom .mc-title{font-size:15px}
 </style>
 
 <script>
@@ -164,9 +216,48 @@ window.RallyLive = (function () {
 	}
 	var SS_TXT = {sw: @json(__('tournaments.rally_side_switch')), to: @json(__('tournaments.rally_tech_timeout'))};
 
+	/* Мини-площадка: снимок позиций кружков до подмены фрагмента → «FLIP»-анимация перехода (~0,5 с) + плашка */
+	var MC_TXT = @json(__('tournaments.mc_transition'));
+	function mcSnapshot() {
+		var m = {};
+		document.querySelectorAll('#mc .mc-cell[data-uid]').forEach(function (c) { m[c.getAttribute('data-uid')] = c.getBoundingClientRect(); });
+		return m;
+	}
+	function mcAnimate(snap, prev) {
+		var cur = data().mc;
+		if (!prev || !cur || prev.set !== cur.set) { return; }
+		var moved = false;
+		document.querySelectorAll('#mc .mc-cell[data-uid]').forEach(function (c) {
+			var o = snap[c.getAttribute('data-uid')];
+			if (!o) { return; }
+			var n = c.getBoundingClientRect(), dx = o.left - n.left, dy = o.top - n.top;
+			if (Math.abs(dx) + Math.abs(dy) < 2) { return; }
+			moved = true;
+			c.style.transition = 'none';
+			c.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+			c.style.zIndex = '3';
+			requestAnimationFrame(function () { requestAnimationFrame(function () {
+				c.style.transition = 'transform .5s ease';
+				c.style.transform = '';
+				setTimeout(function () { c.style.transition = ''; c.style.zIndex = ''; }, 560);
+			}); });
+		});
+		var sum = function (r) { return (r.home || 0) + (r.away || 0); };
+		if (moved && sum(cur.rot) > sum(prev.rot) && cur.rotated_side) {
+			var plate = document.getElementById('mc-plate');
+			if (plate) {
+				plate.textContent = MC_TXT.replace(':team', cur.names[cur.rotated_side] || '');
+				plate.classList.add('on');
+				setTimeout(function () { plate.classList.remove('on'); }, 1400);
+			}
+		}
+	}
+
 	function swap(html) {
 		if (!live || !html) { return; }
+		var mcPrev = data().mc, mcSnap = mcSnapshot();
 		live.innerHTML = html;
+		try { mcAnimate(mcSnap, mcPrev); } catch (e) {}
 		var jn = document.getElementById('jn-list');
 		if (jn) { jn.scrollTop = jn.scrollHeight; }
 		sideSignal(false);
@@ -280,6 +371,19 @@ window.RallyLive = (function () {
 	// возврат из bfcache — формы снова рабочие
 	window.addEventListener('pageshow', function (ev) { if (ev.persisted) { refresh(); } });
 
+	/* тап по мини-площадке → крупный вид (кружки 56 px) */
+	document.addEventListener('click', function (e) {
+		var m = e.target.closest ? e.target.closest('#mc') : null;
+		if (!m) { return; }
+		var z = document.createElement('div');
+		z.className = 'mc-zoom';
+		var big = m.cloneNode(true);
+		big.removeAttribute('id');
+		big.querySelectorAll('[id]').forEach(function (x) { x.removeAttribute('id'); });
+		z.appendChild(big);
+		z.addEventListener('click', function () { z.remove(); });
+		document.body.appendChild(z);
+	});
 	sideSignal(true);   // первое состояние страницы: ключ только запоминаем
 	return {send: send, swap: swap, refresh: refresh, busy: busy, toast: toast, uuid: uuid, data: data, token: token, netErr: NET_ERR};
 })();

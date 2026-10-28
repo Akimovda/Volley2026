@@ -17,7 +17,7 @@
 	<div class="f-13 b-600 mb-05">{{ __('tournaments.lineup_first_serve') }}</div>
 	<div class="ls-tabs mb-2">
 		@foreach($sides as $sk => $sd)
-		<button type="button" class="btn btn-small ls-serve" data-side="{{ $sk }}">🏐 {{ $sd['team']->name ?? 'TBD' }}</button>
+		<button type="button" class="btn btn-small ls-serve" data-side="{{ $sk }}"><span class="ls-bi">@include('tournaments._partials.ball_icon')</span> {{ $sd['team']->name ?? 'TBD' }}</button>
 		@endforeach
 	</div>
 
@@ -33,6 +33,9 @@
 		<button type="button" class="btn btn-secondary" id="ls-libero" style="width:100%"></button>
 	</div>
 	@endif
+
+	<div id="ls-libero-row"></div>
+	<div class="f-13 mt-1" style="opacity:.7">{{ __('tournaments.lineup_jersey_hint') }}</div>
 
 	<div id="ls-pool" class="f-13 mt-2" style="display:none"></div>
 	<div id="ls-error" class="alert alert-error f-13 mt-2" style="display:none"></div>

@@ -73,6 +73,16 @@ class RallyInputService
         ];
     }
 
+    /** Номер на футболке (событие + игрок): правка с экрана расстановки. number пусто — убрать номер. */
+    public static function jerseyRules(): array
+    {
+        return [
+            'set_number' => 'required|integer|min:1|max:5',
+            'user_id'    => 'required|integer',
+            'number'     => 'nullable',
+        ];
+    }
+
     public static function eventRules(): array
     {
         return [
@@ -151,6 +161,11 @@ class RallyInputService
             $match, (int) $v['set_number'], $lineups, (int) $v['first_serve_team_id'],
             $actor->user, $actor->name, $actor->linkId
         );
+    }
+
+    public function jersey(TournamentMatch $match, array $v, RallyActor $actor): void
+    {
+        app(JerseyNumberService::class)->setForMatch($match, (int) $v['user_id'], $v['number'] ?? null, $actor->user, $actor->linkId);
     }
 
     public function lineupEvent(TournamentMatch $match, array $v, RallyActor $actor): void
