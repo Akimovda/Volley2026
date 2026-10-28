@@ -59,4 +59,5 @@ return [
     'captain' => 'Captain',
     'side_switch' => 'Switch sides',
     'tech_timeout' => 'Technical timeout',
+    'wt_sets' => 'SETS',
 ];

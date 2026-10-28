@@ -369,17 +369,34 @@
             <form id="bc-theme-form" onsubmit="return false">
                 <div class="bc-grid">
                     <div class="bc-field">
-                        <label class="bc-l" for="bc-template">{{ __('stream.tpl') }}</label>
-                        <select id="bc-template" name="template">
-                            <option value="compact" @selected($form['template'] === 'compact')>{{ __('stream.tpl_compact') }}</option>
-                            <option value="sets_table" @selected($form['template'] === 'sets_table')>{{ __('stream.tpl_sets_table') }}</option>
-                            <option value="glass" @selected($form['template'] === 'glass')>{{ __('stream.tpl_glass') }}</option>
-                            <option value="neon" @selected($form['template'] === 'neon')>{{ __('stream.tpl_neon') }}</option>
-                            <option value="light_tv" @selected($form['template'] === 'light_tv')>{{ __('stream.tpl_light_tv') }}</option>
-                            <option value="tabs" @selected($form['template'] === 'tabs')>{{ __('stream.tpl_tabs') }}</option>
+                        <label class="bc-l" for="bc-board">{{ __('stream.tpl') }}</label>
+                        <select id="bc-board" name="board_skin">
+                            @foreach(\App\Services\Broadcast\CourtStateService::SKINS as $bd => $skins)
+                            <optgroup label="{{ __('stream.board_' . $bd) }}">
+                                @foreach($skins as $sk)
+                                <option value="{{ $bd }}.{{ $sk }}" @selected($form['board'] === $bd && $form['skin'] === $sk)>{{ __('stream.board_' . $bd . '_' . $sk) }}</option>
+                                @endforeach
+                            </optgroup>
+                            @endforeach
                         </select>
                     </div>
-                    <div class="bc-field">
+                    <div class="bc-field" id="bc-layout-wrap" @if($form['board'] !== 'classic') style="display:none" @endif>
+                        <label class="bc-l" for="bc-layout">{{ __('stream.layout') }}</label>
+                        <select id="bc-layout" name="layout">
+                            @foreach(\App\Services\Broadcast\CourtStateService::LAYOUTS as $lo)
+                            <option value="{{ $lo }}" @selected($form['layout'] === $lo)>{{ __('stream.layout_' . $lo) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="bc-field" id="bc-wtpos-wrap" @if($form['board'] !== 'wt') style="display:none" @endif>
+                        <label class="bc-l" for="bc-wtpos">{{ __('stream.wt_position') }}</label>
+                        <select id="bc-wtpos" name="wt_position">
+                            @foreach(\App\Services\Broadcast\CourtStateService::WT_POSITIONS as $wp)
+                            <option value="{{ $wp }}" @selected($form['wt_position'] === $wp)>{{ __('stream.wt_position_' . $wp) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="bc-field" id="bc-corner-wrap" @if($form['board'] === 'wt') style="display:none" @endif>
                         <label class="bc-l" for="bc-corner">{{ __('stream.corner') }}</label>
                         <select id="bc-corner" name="corner">
                             @foreach(['top-left', 'top-right', 'bottom-left', 'bottom-right'] as $k)
@@ -388,8 +405,8 @@
                         </select>
                     </div>
                 </div>
-                <div class="bc-grid" id="bc-tabs-opts" @if($form['template'] !== 'tabs') style="display:none" @endif>
-                    <div class="bc-field">
+                <div class="bc-grid" id="bc-tabs-opts" @if($form['board'] === 'classic') style="display:none" @endif>
+                    <div class="bc-field" id="bc-tabs-color-wrap" @if($form['board'] !== 'avp') style="display:none" @endif>
                         <label class="bc-l">{{ __('stream.tabs_color') }}</label>
                         <div class="bc-swatches">
                             <button type="button" class="bc-sw {{ $form['tabs_color'] ? '' : 'sel' }}" id="bc-tabs-default" style="background:linear-gradient(90deg,#E7612F,#2967BA)" data-color="" aria-label="{{ __('stream.tabs_color_default') }}" title="{{ __('stream.tabs_color_default') }}"></button>
@@ -943,13 +960,22 @@
 
             /* ---------- оформление ---------- */
             function themeNow() {
-                return { template: $('#bc-template').val(), corner: $('#bc-corner').val(),
+                var bs = String($('#bc-board').val()).split('.');
+                return { board: bs[0], skin: bs[1], layout: $('#bc-layout').val(), wt_position: $('#bc-wtpos').val(), corner: $('#bc-corner').val(),
                     show_set_scores: $('#bc-set-scores').is(':checked'), show_logos: $('#bc-show-logos').is(':checked'),
                     scale: parseInt($('#bc-scale').val(), 10), opacity: parseInt($('#bc-opacity').val(), 10), edge_margin: $('#bc-edge').val(), show_team_names: $('#bc-team-names').is(':checked'),
                     tabs_color: tabsColor(), tabs_logo: $('#bc-tabs-logo').val() };
             }
             function tabsColor() { var v = $.trim($('#bc-tabs-hex').val()); return /^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : null; }
-            $('#bc-template').on('change', function () { $('#bc-tabs-opts').toggle($(this).val() === 'tabs'); });
+            function syncBoardOpts() {
+                var bd = String($('#bc-board').val()).split('.')[0];
+                $('#bc-layout-wrap').toggle(bd === 'classic');
+                $('#bc-wtpos-wrap').toggle(bd === 'wt');
+                $('#bc-corner-wrap').toggle(bd !== 'wt');
+                $('#bc-tabs-opts').toggle(bd !== 'classic');
+                $('#bc-tabs-color-wrap').toggle(bd === 'avp');
+            }
+            $('#bc-board').on('change', syncBoardOpts);
             $('#bc-tabs-opts').on('click', '.bc-sw', function () {
                 $('#bc-tabs-opts .bc-sw').removeClass('sel'); $(this).addClass('sel');
                 $('#bc-tabs-hex').val($(this).data('color') || '').trigger('input');
@@ -973,7 +999,8 @@
             $('#bc-theme-save').on('click', function () {
                 call('POST', CFG.base + '/theme', {
                     occurrence_id: CFG.occurrenceId,
-                    template: $('#bc-template').val(), corner: $('#bc-corner').val(),
+                    board: String($('#bc-board').val()).split('.')[0], skin: String($('#bc-board').val()).split('.')[1],
+                    layout: $('#bc-layout').val(), wt_position: $('#bc-wtpos').val(), corner: $('#bc-corner').val(),
                     show_set_scores: $('#bc-set-scores').is(':checked') ? 1 : 0,
                     show_logos: $('#bc-show-logos').is(':checked') ? 1 : 0,
                     scale: $('#bc-scale').val(), opacity: $('#bc-opacity').val(), edge_margin: $('#bc-edge').val(),

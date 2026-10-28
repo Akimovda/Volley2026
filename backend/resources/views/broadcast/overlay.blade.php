@@ -19,7 +19,7 @@
 html,body{margin:0;padding:0;overflow:hidden;background:transparent;width:100%;height:100%}
 body.preview{background:#5b6068}
 body{font-family:"Commissioner",system-ui,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
-#board,#sub,#setsum,#matchsum,#tabs,#sw{--u:calc(var(--u0)*var(--k,.7))}
+#board,#sub,#setsum,#matchsum,#tabs,#sw,#tag{--u:calc(var(--u0)*var(--k,.7))}
 #stage{position:absolute;left:calc((100vw - var(--u0)*1920)/2);top:calc((100vh - var(--u0)*1080)/2);width:calc(var(--u)*1920);height:calc(var(--u)*1080)}
 .p{position:absolute;opacity:0;transform:translateY(calc(var(--u)*14));transition:opacity .25s ease,transform .25s ease;pointer-events:none;will-change:opacity,transform}
 .p.on{opacity:1;transform:none}
@@ -41,6 +41,7 @@ body.native .p{will-change:auto}
 .sum-score .tn img.lg2{width:calc(var(--u)*64);height:calc(var(--u)*64);border-radius:50%;object-fit:cover;flex:none}
 
 @include('broadcast.tabs.style')
+@include('broadcast.wt.style')
 
 /* ---- метка платформы ---- */
 #tag{left:50%;bottom:calc(var(--u)*14);width:calc(var(--u)*700);margin-left:calc(var(--u)*-350);text-align:center;font-size:calc(var(--u)*22);font-weight:500;color:#fff;opacity:0;text-shadow:0 0 calc(var(--u)*6) rgba(0,0,0,.75),0 calc(var(--u)*1) calc(var(--u)*2) rgba(0,0,0,.6);letter-spacing:.02em;transform:none;z-index:5}
@@ -145,6 +146,7 @@ body.tpl-light_tv .sum-score .big{color:#16264a}
 <div id="stage">
     <div id="board" class="p card tl"></div>
     <div id="tabs" class="p tl"></div>
+    <div id="wt" class="p top"></div>
     <div id="sub" class="p card r"></div>
     <div id="sw" class="p card"></div>
     <div id="setsum" class="p card"></div>
@@ -167,7 +169,7 @@ window.__BC = @json($config);
     var lastFetch = Date.now(), switched = null, subKey = null, subTimer = null;
     var els = {
         board: document.getElementById('board'), tabs: document.getElementById('tabs'), sub: document.getElementById('sub'),
-        setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'), sw: document.getElementById('sw'),
+        setsum: document.getElementById('setsum'), matchsum: document.getElementById('matchsum'), sw: document.getElementById('sw'), wt: document.getElementById('wt'),
         splash: document.getElementById('splash'), tag: document.getElementById('tag')
     };
     var prevPts = {};
@@ -217,19 +219,32 @@ window.__BC = @json($config);
         }
     }
     var EDGES = {small: 24, medium: 48, large: 80};
+    // Табло/скин/вариант из темы (старое поле template разворачивается как на сервере: CourtStateService::normalizeBoard)
+    var BOARD_SKINS = {avp: ['default', 'night', 'light', 'forest'], classic: ['default', 'glass', 'neon', 'light_tv'], wt: ['red', 'blue', 'gold', 'light']};
+    function normTheme(th) {
+        th = th || {};
+        var legacy = th.template, board = BOARD_SKINS[th.board] ? th.board : (legacy === 'tabs' ? 'avp' : 'classic');
+        var skin = BOARD_SKINS[board].indexOf(th.skin) >= 0 ? th.skin : ((board === 'classic' && ['glass', 'neon', 'light_tv'].indexOf(legacy) >= 0) ? legacy : BOARD_SKINS[board][0]);
+        var layout = th.layout === 'sets_table' || th.layout === 'compact' ? th.layout : (legacy === 'sets_table' ? 'sets_table' : 'compact');
+        return {board: board, skin: skin, layout: layout, wt_position: th.wt_position === 'bottom' ? 'bottom' : 'top'};
+    }
     function applyTheme(th) {
         th = th || {};
         var k = Math.max(50, Math.min(150, parseInt(th.scale, 10) || 70)) / 100;
         var pa = Math.max(30, Math.min(100, parseInt(th.opacity, 10) || 85)) / 100;
-        ['board', 'tabs', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
+        ['board', 'tabs', 'wt', 'sub', 'setsum', 'matchsum'].forEach(function (n) { els[n].style.setProperty('--k', k); els[n].style.setProperty('--pa', pa); });
+        ['sw', 'tag'].forEach(function (n) { els[n] = els[n] || document.getElementById(n); els[n].style.setProperty('--k', k); });
         document.getElementById('stage').style.setProperty('--edge', EDGES[th.edge_margin] || 48);
-        ['glass', 'neon', 'light_tv'].forEach(function (n) { document.body.classList.toggle('tpl-' + n, th.template === n); });
+        var nt = normTheme(th);
+        ['glass', 'neon', 'light_tv'].forEach(function (n) { document.body.classList.toggle('tpl-' + n, nt.board === 'classic' && nt.skin === n); });
+        document.body.classList.toggle('wt-top', nt.board === 'wt' && nt.wt_position === 'top');
+        document.body.classList.toggle('wt-bottom', nt.board === 'wt' && nt.wt_position === 'bottom');
     }
     function team(p, side) { return (p.teams && p.teams[side]) || {name: '', color: null, logo_url: null}; }
 
     /* ---------- табло ---------- */
     function renderBoard(p) {
-        var th = p.theme || {}, tpl = th.template || 'compact', corner = th.corner || 'top-left';
+        var th = p.theme || {}, tpl = normTheme(th).layout, corner = th.corner || 'top-left';
         var cls = {'top-left': 'tl', 'top-right': 'tr', 'bottom-left': 'bl', 'bottom-right': 'br'}[corner] || 'tl';
         els.board.className = 'p card ' + cls + (tpl === 'sets_table' ? ' wide' : '') + (th.show_team_names === false ? ' nn' : '') + (els.board.classList.contains('on') ? ' on' : '');
         var cs = p.set || {n: 1, home: 0, away: 0};
@@ -273,6 +288,7 @@ window.__BC = @json($config);
         });
     }
 
+@include('broadcast.wt.script')
 @include('broadcast.tabs.script')
 
     /* ---------- замена ---------- */
@@ -416,8 +432,9 @@ window.__BC = @json($config);
         var m = p.mode;
         if (p.theme) { applyTheme(p.theme); }
         show(els.tag, m !== 'off');
-        var isTabs = (p.theme || {}).template === 'tabs', onAir = m === 'live' || m === 'set_summary';
-        show(els.board, onAir && !isTabs ? (renderBoard(p), true) : false);
+        var nbd = normTheme(p.theme).board, isTabs = nbd === 'avp', isWt = nbd === 'wt', onAir = m === 'live' || m === 'set_summary';
+        show(els.board, onAir && !isTabs && !isWt ? (renderBoard(p), true) : false);
+        show(els.wt, onAir && isWt ? (renderWt(p), true) : false);
         show(els.tabs, onAir && isTabs ? (renderTabs(p), true) : false);
         if (m === 'live') { renderSub(p); renderSwitch(p); } else { show(els.sub, false); show(els.sw, false); clearTimeout(swTimer); }
         show(els.setsum, m === 'set_summary' ? (renderSetSum(p), true) : false);
