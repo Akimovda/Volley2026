@@ -411,7 +411,7 @@
                     const btn = document.createElement('button');
                     btn.type = 'button';
                     btn.className = 'btn btn-primary w-100';
-                    btn.innerHTML = `${p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
+                    btn.innerHTML = `${(window.__posNames || {})[p.key] || p.label || p.key} <span class="ms-2 small opacity-75">(${p.free ?? 0})</span>`;
                     btn.addEventListener('click', () => {
                         joinForm.action = `/occurrences/${occurrenceId}/join`;
                         joinPos.value = p.key;
@@ -433,6 +433,7 @@
                 return data;
             }
 
+            window.__posNames = @json(__('events.positions'));
             document.querySelectorAll('.js-open-join').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const occurrenceId = btn.dataset.occurrenceId;

@@ -888,6 +888,7 @@
 			const positionNames = {
 				outside: 'Доигровщик', opposite: 'Диагональный',
 				middle: 'ЦБ', setter: 'Связующий', libero: 'Либеро', player: 'Игрок',
+				blocker: 'Блокирующий', defender: 'Защитник',
 			};
 			const titleEl   = document.getElementById('jmTitle');
 			const metaEl    = document.getElementById('jmMeta');
