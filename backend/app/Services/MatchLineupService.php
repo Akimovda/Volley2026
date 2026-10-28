@@ -112,12 +112,41 @@ class MatchLineupService
     {
         $start = MatchSetStart::where('match_id', $match->id)->where('set_number', $setNumber)->first();
 
-        $teams = [];
-        foreach ([(int) $match->team_home_id, (int) $match->team_away_id] as $tid) {
-            $teams[$tid] = ['court' => [], 'held' => [], 'libero_id' => null];
+        $lineups = MatchSetLineup::where('match_id', $match->id)->where('set_number', $setNumber)->get();
+        $teams = self::initialTeams($lineups, [(int) $match->team_home_id, (int) $match->team_away_id]);
+
+        $events = MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)
+            ->when($upToSeq !== null, fn ($q) => $q->where('seq', '<=', $upToSeq))
+            ->orderBy('seq')->get();
+
+        foreach ($events as $ev) {
+            $tid = (int) $ev->team_id;
+            if (!isset($teams[$tid])) {
+                continue;
+            }
+            self::applyEvent($teams[$tid], $ev);
         }
 
-        $lineups = MatchSetLineup::where('match_id', $match->id)->where('set_number', $setNumber)->get();
+        return [
+            'has_start'           => $start !== null,
+            'first_serve_team_id' => $start?->first_serve_team_id ? (int) $start->first_serve_team_id : null,
+            'teams'               => $teams,
+        ];
+    }
+
+    /**
+     * Стартовые составы команд партии: team_id => [court: user_id => {position, zone(место), libero, for_user_id}, held: [], libero_id].
+     * Общая точка для state() и статистики по расстановкам (одна логика реплея).
+     *
+     * @param \Illuminate\Support\Collection<int, MatchSetLineup> $lineups строки match_set_lineups ОДНОЙ партии
+     * @param int[] $teamIds
+     */
+    public static function initialTeams($lineups, array $teamIds): array
+    {
+        $teams = [];
+        foreach ($teamIds as $tid) {
+            $teams[$tid] = ['court' => [], 'held' => [], 'libero_id' => null];
+        }
         foreach ($lineups as $row) {
             $tid = (int) $row->team_id;
             if (!isset($teams[$tid])) {
@@ -133,63 +162,54 @@ class MatchLineupService
             ];
         }
 
-        $events = MatchLineupEvent::where('match_id', $match->id)->where('set_number', $setNumber)
-            ->when($upToSeq !== null, fn ($q) => $q->where('seq', '<=', $upToSeq))
-            ->orderBy('seq')->get();
+        return $teams;
+    }
 
-        foreach ($events as $ev) {
-            $tid = (int) $ev->team_id;
-            if (!isset($teams[$tid])) {
-                continue;
-            }
-            $t = &$teams[$tid];
-            $zone = $ev->zone === null ? null : (int) $ev->zone;
+    /**
+     * Применить lineup-событие к составу ОДНОЙ команды (замена, либеро, обмен местами). rotate на составе не отражается —
+     * поворот учитывает rotationState()/статистика по расстановкам отдельно.
+     */
+    public static function applyEvent(array &$t, MatchLineupEvent $ev): void
+    {
+        $zone = $ev->zone === null ? null : (int) $ev->zone;
 
-            switch ($ev->type) {
-                case MatchLineupEvent::TYPE_SUBSTITUTION:
-                    unset($t['court'][(int) $ev->out_user_id]);
-                    $t['court'][(int) $ev->in_user_id] = [
-                        'position' => $ev->position, 'zone' => $zone, 'libero' => false, 'for_user_id' => null,
-                    ];
-                    break;
+        switch ($ev->type) {
+            case MatchLineupEvent::TYPE_SUBSTITUTION:
+                unset($t['court'][(int) $ev->out_user_id]);
+                $t['court'][(int) $ev->in_user_id] = [
+                    'position' => $ev->position, 'zone' => $zone, 'libero' => false, 'for_user_id' => null,
+                ];
+                break;
 
-                case MatchLineupEvent::TYPE_LIBERO_IN:
-                    $partner = (int) $ev->out_user_id;
-                    $t['held'][$partner] = $t['court'][$partner] ?? ['position' => $ev->position, 'zone' => $zone];
-                    unset($t['court'][$partner]);
-                    $t['court'][(int) $ev->in_user_id] = [
-                        'position' => self::LIBERO, 'zone' => $zone, 'libero' => true, 'for_user_id' => $partner,
-                    ];
-                    break;
+            case MatchLineupEvent::TYPE_LIBERO_IN:
+                $partner = (int) $ev->out_user_id;
+                $t['held'][$partner] = $t['court'][$partner] ?? ['position' => $ev->position, 'zone' => $zone];
+                unset($t['court'][$partner]);
+                $t['court'][(int) $ev->in_user_id] = [
+                    'position' => self::LIBERO, 'zone' => $zone, 'libero' => true, 'for_user_id' => $partner,
+                ];
+                break;
 
-                case MatchLineupEvent::TYPE_SWAP:
-                    // два игрока меняются «местами» (зоны-места); позиции-роли остаются за игроками
-                    $a = (int) $ev->out_user_id;
-                    $b = (int) $ev->in_user_id;
-                    if (isset($t['court'][$a], $t['court'][$b])) {
-                        $za = $t['court'][$a]['zone'];
-                        $t['court'][$a]['zone'] = $t['court'][$b]['zone'];
-                        $t['court'][$b]['zone'] = $za;
-                    }
-                    break;
+            case MatchLineupEvent::TYPE_SWAP:
+                // два игрока меняются «местами» (зоны-места); позиции-роли остаются за игроками
+                $a = (int) $ev->out_user_id;
+                $b = (int) $ev->in_user_id;
+                if (isset($t['court'][$a], $t['court'][$b])) {
+                    $za = $t['court'][$a]['zone'];
+                    $t['court'][$a]['zone'] = $t['court'][$b]['zone'];
+                    $t['court'][$b]['zone'] = $za;
+                }
+                break;
 
-                case MatchLineupEvent::TYPE_LIBERO_OUT:
-                    $partner = (int) $ev->in_user_id;
-                    unset($t['court'][(int) $ev->out_user_id]);
-                    $t['court'][$partner] = $t['held'][$partner]
-                        ?? ['position' => $ev->position, 'zone' => $zone];
-                    $t['court'][$partner] += ['libero' => false, 'for_user_id' => null];
-                    unset($t['held'][$partner]);
-                    break;
-            }
-            unset($t);
+            case MatchLineupEvent::TYPE_LIBERO_OUT:
+                $partner = (int) $ev->in_user_id;
+                unset($t['court'][(int) $ev->out_user_id]);
+                $t['court'][$partner] = $t['held'][$partner]
+                    ?? ['position' => $ev->position, 'zone' => $zone];
+                $t['court'][$partner] += ['libero' => false, 'for_user_id' => null];
+                unset($t['held'][$partner]);
+                break;
         }
-
-        return [
-            'has_start'           => $start !== null,
-            'first_serve_team_id' => $start?->first_serve_team_id ? (int) $start->first_serve_team_id : null,
-            'teams'               => $teams,
-        ];
     }
 
     /**

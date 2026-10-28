@@ -113,3 +113,18 @@ body.dark .mx-ev--lineup { background:rgba(255,255,255,.04); }
   .mx-table { min-width:48rem; }
 }
 </style>
+/* ===== Расстановки (блок C) ===== */
+.mx-rot-table th { white-space:nowrap; }
+.mx-rot-table td { white-space:nowrap; }
+.mx-rot-grp th { border-bottom:none; }
+.mx-rot-empty td { opacity:.4; }
+.mx-rot-weak td { background:rgba(239,68,68,.07); }
+.mx-rot-strong td { background:rgba(22,163,74,.07); }
+.mx-rot-weak td:first-child, .mx-rot-strong td:first-child { background:var(--mx-sticky); }
+.mx-rot-mark { font-weight:800; opacity:.85; margin-left:.4rem; font-size:1.1rem; }
+.mx-rot-ins { font-size:1.4rem; margin:.4rem 0 1rem; line-height:1.5; }
+.mx-rot-srv { text-align:left !important; }
+.mx-seg[data-mx-seg="rot-team"] button { border-color:var(--rot-c, var(--mx-line)); }
+.mx-rot-table td:first-child { max-width:none; }
+.mx-print .mx-rot-table { min-width:0; font-size:1.1rem; }
+.mx-print .mx-rot-table td, .mx-print .mx-rot-table th { padding:.3rem .4rem; white-space:normal; }

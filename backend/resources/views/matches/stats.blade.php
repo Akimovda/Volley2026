@@ -42,6 +42,9 @@
                 @if($stats['lineup'])
                 <button type="button" class="mx-tab" data-tab="lineup" role="tab">{{ __('match_stats.tab_lineup') }}</button>
                 @endif
+                @if(!empty($stats['rotations']))
+                <button type="button" class="mx-tab" data-tab="rotations" role="tab">{{ __('match_stats.tab_rotations') }}</button>
+                @endif
             </div>
 
             <div class="mx-pane is-active" data-pane="overview">
@@ -64,6 +67,14 @@
                 @include('matches.stats._lineup')
             </div>
             @endif
+            @if(!empty($stats['rotations']))
+            <div class="mx-pane" data-pane="rotations">
+                <div class="ramka">
+                    <h2 class="-mt-05">{{ __('match_stats.rot_title') }}</h2>
+                    @include('matches.stats._rotations')
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 
@@ -71,7 +82,7 @@
     <script>
     (function () {
         var state = { tab: 'overview', chartSet: null, scope: 'all', team: '', player: '', sortAsc: false };
-        var tabs = ['overview', 'players', 'protocol', 'lineup'];
+        var tabs = ['overview', 'players', 'protocol', 'lineup', 'rotations'];
 
         function root() { return document.getElementById('mx-live'); }
         function q(sel, ctx) { return Array.prototype.slice.call((ctx || root()).querySelectorAll(sel)); }
@@ -96,6 +107,7 @@
             q('[data-mx-filter="team"]').forEach(function (s) { s.value = state.team; });
             q('[data-mx-filter="player"]').forEach(function (s) { s.value = state.player; });
             filterProtocol();
+            if (window.mxRotApply) { window.mxRotApply(); }
         }
 
         function sortTables() {

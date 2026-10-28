@@ -66,6 +66,13 @@
     </div>
     @endif
 
+    @if(!empty($stats['rotations']))
+    <div class="ramka">
+        <h2>{{ __('match_stats.rot_title') }}</h2>
+        @include('matches.stats._rotations', ['print' => true])
+    </div>
+    @endif
+
     <div class="foot">{{ __('match_stats.pdf_generated', ['date' => now()->format('d.m.Y H:i')]) }} · {{ config('app.url') }}</div>
 </div>
 </body>
