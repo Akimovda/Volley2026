@@ -710,6 +710,34 @@
                                     value="{{ old('tournament_reserve_players_max', $ts?->reserve_players_max ?? 0) }}">
                             </div>
                         </div>
+
+                        <div class="col-md-3" id="mgmt_min_teams_wrap" style="{{ old('tournament_individual_reg', $event->registration_mode === 'tournament_individual') ? 'display:none' : '' }}">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_min_teams_label') }}</label>
+                                <input type="number" name="tournament_min_teams" id="mgmt_tournament_min_teams" min="2" max="100"
+                                    value="{{ old('tournament_min_teams', $ts?->min_teams) }}" placeholder="{{ __('events.tournament_min_teams_ph') }}">
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.tournament_min_teams_hint') }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3" id="mgmt_min_players_wrap" style="{{ old('tournament_individual_reg', $event->registration_mode === 'tournament_individual') ? '' : 'display:none' }}">
+                            <div class="card" style="overflow:visible">
+                                <label>{{ __('events.tournament_min_players_label') }}</label>
+                                <input type="number" name="tournament_min_players" id="mgmt_tournament_min_players" min="2" max="1000"
+                                    value="{{ old('tournament_min_players', $ts?->min_players) }}" placeholder="{{ __('events.tournament_min_teams_ph') }}">
+                                <div class="f-13 mt-05" style="opacity:.7">{{ __('events.tournament_min_players_hint') }}</div>
+                                @error('tournament_min_players')
+                                <div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            var cb = document.querySelector('input[type=checkbox][name="tournament_individual_reg"]');
+                            var t = document.getElementById('mgmt_min_teams_wrap'), p = document.getElementById('mgmt_min_players_wrap');
+                            if (!cb || !t || !p) return;
+                            cb.addEventListener('change', function () { t.style.display = cb.checked ? 'none' : ''; p.style.display = cb.checked ? '' : 'none'; });
+                        });
+                        </script>
                         @else
                         <div class="col-md-3">
                             <div class="card" style="overflow:visible">

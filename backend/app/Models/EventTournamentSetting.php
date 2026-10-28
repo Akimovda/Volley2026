@@ -34,6 +34,8 @@ class EventTournamentSetting extends Model
         // 🔥 НОВОЕ (ключевое)
         'game_scheme',
         'teams_count',
+        'min_teams',
+        'min_players',
         'reserve_players_max',
         'total_players_max',
         'payment_mode',
@@ -52,6 +54,8 @@ class EventTournamentSetting extends Model
         'team_size_max' => 'integer',
         'max_rating_sum' => 'integer',
 
+        'min_teams' => 'integer',
+        'min_players' => 'integer',
         'reserve_players_max' => 'integer',
         'total_players_max' => 'integer',
 

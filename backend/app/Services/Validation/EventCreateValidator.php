@@ -267,6 +267,8 @@
                 'min:3',
                 'max:100'
             ],
+            'tournament_min_teams' => ['nullable', 'integer', 'min:2', 'max:100'],
+            'tournament_min_players' => ['nullable', 'integer', 'min:2', 'max:1000'],
             'tournament_individual_reg' => ['nullable', 'boolean'],
             'king_beach_reg' => ['nullable', 'boolean'],
             'king_beach_min_players' => ['nullable', 'integer', 'min:1', 'max:200'],
@@ -699,6 +701,16 @@
                     $teamMin = (int) ($data['tournament_team_size_min'] ?? 0);
                     $totalMax = (int) ($data['tournament_total_players_max'] ?? 0);
                     $teamsCount = (int) ($data['tournament_teams_count'] ?? 0);
+                    $individualReg = !empty($data['tournament_individual_reg']);
+                    $minTeams = (int) ($data['tournament_min_teams'] ?? 0);
+                    if (!$individualReg && $minTeams > 0 && $teamsCount > 0 && $minTeams > $teamsCount) {
+                        $v->errors()->add('tournament_min_teams', __('events.tournament_min_teams_gt_total'));
+                    }
+                    // Индивидуальная регистрация: «Минимум игроков» не больше максимума участников (команд × состав)
+                    $minPlayersQ = (int) ($data['tournament_min_players'] ?? 0);
+                    if ($individualReg && $minPlayersQ > 0 && $teamsCount > 0 && $teamMin > 0 && $minPlayersQ > $teamsCount * $teamMin) {
+                        $v->errors()->add('tournament_min_players', __('events.tournament_min_players_gt_max', ['max' => $teamsCount * $teamMin]));
+                    }
 
                     if ($teamsCount <= 0) {
                         $teamsCount = 4;

@@ -685,6 +685,41 @@
                                                     @enderror
 												</div>
 											</div>
+																					<div class="card mt-1" id="tournament_min_teams_card" data-show-if="tournament_reg_mode=team">
+												<label for="tournament_min_teams">{{ __('events.tournament_min_teams_label') }}</label>
+												<input
+												type="number"
+												name="tournament_min_teams"
+												id="tournament_min_teams"
+												min="2"
+												max="100"
+												value="{{ old('tournament_min_teams', $prefill['tournament_min_teams'] ?? '') }}"
+												placeholder="{{ __('events.tournament_min_teams_ph') }}"
+												class="w-full rounded-lg border-gray-200"
+												>
+												<ul class="list f-16 mt-1"><li>{{ __('events.tournament_min_teams_hint') }}</li></ul>
+												@error('tournament_min_teams')
+												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+												@enderror
+											</div>
+											{{-- Индивидуальная регистрация: команды формируются позже, поэтому вместо минимума команд — минимум игроков --}}
+											<div class="card mt-1" id="tournament_min_players_card" data-show-if="tournament_reg_mode=individual">
+												<label for="tournament_min_players">{{ __('events.tournament_min_players_label') }}</label>
+												<input
+												type="number"
+												name="tournament_min_players"
+												id="tournament_min_players"
+												min="2"
+												max="1000"
+												value="{{ old('tournament_min_players', $prefill['tournament_min_players'] ?? '') }}"
+												placeholder="{{ __('events.tournament_min_teams_ph') }}"
+												class="w-full rounded-lg border-gray-200"
+												>
+												<ul class="list f-16 mt-1"><li>{{ __('events.tournament_min_players_hint') }}</li></ul>
+												@error('tournament_min_players')
+												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
+												@enderror
+											</div>
 										</div>
 										<div class="col-md-4">
 											<div class="card" id="tournament_notifs_card">
