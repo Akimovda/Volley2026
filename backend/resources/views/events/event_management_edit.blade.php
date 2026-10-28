@@ -922,6 +922,7 @@
                         @if($rolesApplicableEdit)
                         <div class="col-md-6" id="mgmt_reg_by_roles_block" style="{{ old('game_subtype', $event->gameSettings?->subtype) === '2x2' ? '' : 'display:none' }}">
                             <div class="card">
+                                <label>{{ __('events.reg_mode_label') }}</label>
                                 <label class="checkbox-item">
                                     <input type="hidden" name="game_registration_by_roles" value="0">
                                     <input type="checkbox" name="game_registration_by_roles" value="1"
