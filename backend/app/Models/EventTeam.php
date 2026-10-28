@@ -10,6 +10,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class EventTeam extends Model
 {
+    /**
+     * Статусы команд, которые НЕ считаются в кворуме командного турнира (автоотмена «Минимум команд»).
+     * Всё остальное (в т.ч. pending) считается. Команды в очереди резерва (reserve_position) тоже не считаются.
+     */
+    public const QUORUM_EXCLUDED_STATUSES = ['rejected', 'cancelled', 'withdrawn', 'incomplete', 'reserve'];
+
     protected $fillable = [
         'event_id',
         'occurrence_id',

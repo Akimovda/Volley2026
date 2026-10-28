@@ -1016,6 +1016,7 @@ if ($role === 'admin') {
             // Турнирные настройки (только при format=tournament)
             'tournament_game_scheme'              => ['nullable', 'string', 'max:16'],
             'tournament_min_teams'                => ['nullable', 'integer', 'min:2', 'max:100'],
+            'tournament_min_players'              => ['nullable', 'integer', 'min:2', 'max:1000'],
             'tournament_team_size_min'            => ['nullable', 'integer', 'min:1', 'max:20'],
             'tournament_reserve_players_max'      => ['nullable', 'integer', 'min:0', 'max:20'],
             'tournament_application_mode'         => ['nullable', 'string', 'in:auto,manual'],
@@ -1043,8 +1044,21 @@ if ($role === 'admin') {
         }
 
         // Игра со статистикой — матч строго между двумя командами
-        // «Минимум команд» не может превышать общее число команд турнира
-        if (!empty($data['tournament_min_teams'])) {
+        // Индивидуальная регистрация турнира: «Минимум игроков» не больше максимума участников (команд × состав)
+        $isIndividualSave = (bool) ($data['tournament_individual_reg'] ?? ($event->registration_mode === 'tournament_individual'));
+        if ($isIndividualSave && !empty($data['tournament_min_players'])) {
+            $event->loadMissing('tournamentSetting');
+            $maxPlayersT = (int) ($data['teams_count'] ?? $event->tournamentSetting?->teams_count ?? $event->tournament_teams_count ?? 0)
+                * (int) ($data['tournament_team_size_min'] ?? $event->tournamentSetting?->team_size_min ?? 0);
+            if ($maxPlayersT > 0 && (int) $data['tournament_min_players'] > $maxPlayersT) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'tournament_min_players' => __('events.tournament_min_players_gt_max', ['max' => $maxPlayersT]),
+                ]);
+            }
+        }
+
+        // «Минимум команд» не может превышать общее число команд турнира (командная регистрация)
+        if (!$isIndividualSave && !empty($data['tournament_min_teams'])) {
             $event->loadMissing('tournamentSetting');
             $totalTeams = (int) ($data['teams_count'] ?? $event->tournamentSetting?->teams_count ?? $event->tournament_teams_count ?? 0);
             if ($totalTeams > 0 && (int) $data['tournament_min_teams'] > $totalTeams) {
@@ -1643,9 +1657,11 @@ if ($role === 'admin') {
                 ], static fn ($v) => $v !== null);
 
                 // Минимум команд — nullable: пустое поле сбрасывает порог (array_filter выше отбрасывает null)
-                if (array_key_exists('tournament_min_teams', $data)) {
-                    $tsPayload['min_teams'] = ($data['tournament_min_teams'] !== null && $data['tournament_min_teams'] !== '') ? (int) $data['tournament_min_teams'] : null;
-                }
+                // Командная регистрация — min_teams, индивидуальная — min_players (второй порог сбрасывается)
+                $tsPayload['min_teams'] = (!$isIndividual && array_key_exists('tournament_min_teams', $data) && $data['tournament_min_teams'] !== null && $data['tournament_min_teams'] !== '')
+                    ? (int) $data['tournament_min_teams'] : null;
+                $tsPayload['min_players'] = ($isIndividual && array_key_exists('tournament_min_players', $data) && $data['tournament_min_players'] !== null && $data['tournament_min_players'] !== '')
+                    ? (int) $data['tournament_min_players'] : null;
 
                 \App\Models\EventTournamentSetting::updateOrCreate(
                     ['event_id' => (int) $event->id],

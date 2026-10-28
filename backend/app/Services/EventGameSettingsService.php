@@ -203,7 +203,9 @@ class EventGameSettingsService
                 'total_players_max' => $data['tournament_total_players_max'] ?? null,
                 'teams_count' => $data['tournament_teams_count'] ?? 4,
                 // Минимум команд для проведения (пусто — авто-отмена по кворуму не применяется)
-                'min_teams' => (isset($data['tournament_min_teams']) && $data['tournament_min_teams'] !== '') ? (int) $data['tournament_min_teams'] : null,
+                'min_teams' => (isset($data['tournament_min_teams']) && $data['tournament_min_teams'] !== '' && $registrationMode !== 'tournament_individual') ? (int) $data['tournament_min_teams'] : null,
+                // Минимум игроков — только для турниров с индивидуальной регистрацией
+                'min_players' => (isset($data['tournament_min_players']) && $data['tournament_min_players'] !== '' && $registrationMode === 'tournament_individual') ? (int) $data['tournament_min_players'] : null,
         
                 'require_libero' => (bool)($data['tournament_require_libero'] ?? false),
                 ...$this->trackLineupPayload(

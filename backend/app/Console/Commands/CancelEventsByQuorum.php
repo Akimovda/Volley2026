@@ -58,14 +58,20 @@ class CancelEventsByQuorum extends Command
                 'e.format as event_format',
                 'e.registration_mode as event_registration_mode',
                 'ets.min_teams as event_min_teams',
+                'ets.min_players as event_min_players',
                 'egs.min_players',
                 'loc.name as location_name',
                 'loc.address as location_address',
             ])
             ->whereNotNull('eo.starts_at')
             ->whereNotNull('eo.registration_ends_at')
-            ->whereNotNull('egs.min_players')
-            ->where('egs.min_players', '>', 0);
+            // Для обычных игр порог — event_game_settings.min_players; у турниров свои пороги (min_teams / min_players в настройках турнира)
+            ->where(function ($w) {
+                $w->where('e.format', 'tournament')
+                  ->orWhere(function ($g) {
+                      $g->whereNotNull('egs.min_players')->where('egs.min_players', '>', 0);
+                  });
+            });
 
         if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
             $q->whereNull('eo.cancelled_at');
@@ -114,15 +120,36 @@ class CancelEventsByQuorum extends Command
                 }
 
                 $regMode = (string) ($row->event_registration_mode ?? '');
-                $isTeamMode = in_array($regMode, ['team_beach', 'team_classic'], true)
-                    || (string) ($row->event_format ?? '') === 'tournament';
+                $isTournament = (string) ($row->event_format ?? '') === 'tournament';
 
-                if ($isTeamMode) {
-                    // Порог — отдельная настройка «Минимум команд» (event_tournament_settings.min_teams).
-                    // tournament_teams_count — вместимость турнира, а не минимум: по нему не отменяем.
+                if ($isTournament && $regMode === 'king_beach') {
+                    // King Beach (индивидуальная запись с собственными лимитами) — авто-отмена не применяется
+                    $skipped++;
+                    continue;
+                }
+
+                if ($isTournament && $regMode === 'tournament_individual') {
+                    // Индивидуальная регистрация (команды формируются позже): порог — «Минимум игроков» (ets.min_players),
+                    // кворум — активные записавшиеся игроки без резерва. Порог не задан — авто-отмены нет.
+                    $minPlayers = (int) ($row->event_min_players ?? 0);
+                    if ($minPlayers <= 0) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $activeRegs = $this->countActiveRegistrations((int) $row->event_id, (int) $row->id, true);
+
+                    if ($activeRegs >= $minPlayers) {
+                        $skipped++;
+                        continue;
+                    }
+
+                    $userIds = $this->getActiveRegisteredUserIds((int) $row->event_id, (int) $row->id, true);
+                } elseif ($isTournament || in_array($regMode, ['team_beach', 'team_classic'], true)) {
+                    // Командный турнир: порог — «Минимум команд» (ets.min_teams). tournament_teams_count — это вместимость,
+                    // а не минимум. Порог не задан — авто-отмены нет.
                     $minTeams = (int) ($row->event_min_teams ?? 0);
                     if ($minTeams <= 0) {
-                        // Командный турнир без настроенного порога — авто-отмена не применяется
                         $skipped++;
                         continue;
                     }
@@ -268,7 +295,8 @@ class CancelEventsByQuorum extends Command
         return (int) DB::table('event_teams')
             ->where('event_id', $eventId)
             ->where('occurrence_id', $occurrenceId)
-            ->whereIn('status', ['draft', 'pending_members', 'ready', 'submitted', 'confirmed', 'approved'])
+            ->whereNotIn('status', \App\Models\EventTeam::QUORUM_EXCLUDED_STATUSES)
+            ->whereNull('reserve_position')
             ->count();
     }
 
@@ -281,7 +309,8 @@ class CancelEventsByQuorum extends Command
         $teamIds = DB::table('event_teams')
             ->where('event_id', $eventId)
             ->where('occurrence_id', $occurrenceId)
-            ->whereIn('status', ['draft', 'pending_members', 'ready', 'submitted', 'confirmed', 'approved'])
+            ->whereNotIn('status', \App\Models\EventTeam::QUORUM_EXCLUDED_STATUSES)
+            ->whereNull('reserve_position')
             ->pluck('id');
 
         if ($teamIds->isEmpty()) {
@@ -307,10 +336,16 @@ class CancelEventsByQuorum extends Command
             ->all();
     }
 
-    private function countActiveRegistrations(int $eventId, int $occurrenceId): int
+    private function countActiveRegistrations(int $eventId, int $occurrenceId, bool $excludeReserve = false): int
     {
         $q = DB::table('event_registrations')
             ->where('event_id', $eventId);
+
+        if ($excludeReserve && Schema::hasColumn('event_registrations', 'position')) {
+            $q->where(function ($w) {
+                $w->whereNull('position')->orWhere('position', '<>', 'reserve');
+            });
+        }
 
         if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
             $q->where('occurrence_id', $occurrenceId);
@@ -337,10 +372,16 @@ class CancelEventsByQuorum extends Command
         return (int) $q->count();
     }
 
-    private function getActiveRegisteredUserIds(int $eventId, int $occurrenceId): array
+    private function getActiveRegisteredUserIds(int $eventId, int $occurrenceId, bool $excludeReserve = false): array
     {
         $q = DB::table('event_registrations')
             ->where('event_id', $eventId);
+
+        if ($excludeReserve && Schema::hasColumn('event_registrations', 'position')) {
+            $q->where(function ($w) {
+                $w->whereNull('position')->orWhere('position', '<>', 'reserve');
+            });
+        }
 
         if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
             $q->where('occurrence_id', $occurrenceId);
