@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v5';
+    private const CACHE_VERSION = 'v6';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't6';
+    private const PDF_TEMPLATE_VERSION = 't7';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
@@ -300,6 +300,7 @@ class MatchAdvancedStatsService
             'has_block_errors'     => $this->anyAction($events, MatchRallyEvent::ACTION_OPP_BLOCK_ERROR),
             'has_reception_errors' => $this->anyAction($events, MatchRallyEvent::ACTION_OPP_RECEPTION_ERROR),
             'lineup'    => $lineup,
+            'rotations' => app(MatchRotationStatsService::class)->build($match, $events, $lineupEvents, $setLineups, $starts, $names),
             'names'     => $names,
         ];
     }
