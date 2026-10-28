@@ -759,6 +759,7 @@ class EventGameSettingsService
                 'positions'           => [],
                 'reserve_players_max' => null,
                 'registration_without_positions' => false,
+                'registration_by_roles' => false,
                 'gender_policy'       => 'mixed_open',
                 'gender_limited_side' => null,
                 'gender_limited_max'  => null,
@@ -903,6 +904,7 @@ class EventGameSettingsService
             'positions'            => $positions,
             'reserve_players_max'  => $reservePlayersMax,
             'registration_without_positions' => $noPositions,
+            'registration_by_roles' => $byBeachRoles,
         ];
     
         if (empty($egsPayload['subtype'])) {

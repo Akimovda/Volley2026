@@ -194,17 +194,15 @@ class Event extends Model implements HasMedia
      * Флаг хранится в event_game_settings.registration_without_positions.
      */
     /**
-     * Пляжка 2×2 в режиме «По амплуа» (Блокирующий + Защитник). Флаг — набор позиций event_game_settings.positions
-     * (['blocker','defender']), как у классики позиции — набор позиций для того же механизма слотов.
+     * Пляжка 2×2 в режиме «По амплуа» (Блокирующий + Защитник). Флаг — event_game_settings.registration_by_roles
+     * (как registration_without_positions у классики); позиции ['blocker','defender'] пишутся в positions для механизма слотов.
      */
     public function registersByBeachRoles(): bool
     {
         if (($this->direction ?? null) !== 'beach') {
             return false;
         }
-        $p = $this->gameSettings?->positions;
-
-        return is_array($p) && in_array('blocker', $p, true) && in_array('defender', $p, true);
+        return (bool) ($this->gameSettings?->registration_by_roles ?? false);
     }
 
     /**

@@ -28,6 +28,7 @@ class EventGameSetting extends Model
         'girls_max',
         'reserve_players_max',
         'registration_without_positions',
+        'registration_by_roles',
         'track_lineup',
     ];
 
@@ -46,6 +47,7 @@ class EventGameSetting extends Model
         'girls_max' => 'integer',
         'reserve_players_max' => 'integer',
         'registration_without_positions' => 'boolean',
+        'registration_by_roles' => 'boolean',
         'track_lineup' => 'boolean',
     ];
 

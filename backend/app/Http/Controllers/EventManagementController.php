@@ -1480,6 +1480,7 @@ if ($role === 'admin') {
                     ? (($data['game_reserve_players_max'] === '' || $data['game_reserve_players_max'] === null) ? null : (int) $data['game_reserve_players_max'])
                     : null,
                 'registration_without_positions' => $noPosApplicable ? $noPosNew : null,
+                'registration_by_roles' => (($event->direction ?? 'classic') === 'beach' && !$isMasterClass) ? $rolesNew : null,
                 // пляжка: набор позиций режима «По амплуа» (['blocker','defender']) или пусто; классика — не трогаем
                 'positions' => (($event->direction ?? 'classic') === 'beach' && !$isMasterClass) ? ($rolesNew ? ['blocker', 'defender'] : []) : null,
                 // «Вести стартовый состав и замены»: только классика; пляж/прочее не затрагиваем
