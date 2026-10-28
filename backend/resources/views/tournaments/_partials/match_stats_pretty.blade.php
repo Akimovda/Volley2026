@@ -136,6 +136,8 @@ $awaySections = $splitSections($awayPlayers);
 $sectionLabels = [
     'main' => null,
     'libero' => 'Либеро',
+    'blocker' => 'Блокирующий',
+    'defender' => 'Защитник',
     'reserve' => $luTracked ? __('tournaments.lineup_stat_subs_played') : 'Запасные',
 ];
 

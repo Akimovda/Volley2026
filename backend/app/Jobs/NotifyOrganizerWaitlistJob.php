@@ -29,6 +29,8 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
         'opposite' => 'Диагональный',
         'middle'   => 'Центральный',
         'libero'   => 'Либеро',
+        'blocker'   => 'Блокирующий',
+        'defender'   => 'Защитник',
         'defender' => 'Защитник',
         'reserve'  => 'Запасной',
         'player'   => 'Игрок',

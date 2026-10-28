@@ -330,6 +330,8 @@ final class UserNotificationService
             'opposite' => 'диагональный',
             'middle'   => 'центральный блокирующий',
             'libero'   => 'либеро',
+            'blocker'   => 'блокирующий',
+            'defender'   => 'защитник',
             default    => null,
         };
 

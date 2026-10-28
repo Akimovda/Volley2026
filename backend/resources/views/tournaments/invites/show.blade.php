@@ -23,7 +23,7 @@ $settings = $event?->tournamentSetting;
 $members  = $team?->members ?? collect();
 $confirmedMembers = $members->where('confirmation_status','confirmed');
 $pendingMembers   = $members->whereIn('confirmation_status',['invited','joined']);
-$posLabels  = ['setter'=>__('profile.positions.setter'),'outside'=>__('profile.positions.outside'),'opposite'=>__('profile.positions.opposite'),'middle'=>__('profile.positions.middle_full'),'libero'=>__('profile.positions.libero')];
+$posLabels  = ['setter'=>__('profile.positions.setter'),'outside'=>__('profile.positions.outside'),'opposite'=>__('profile.positions.opposite'),'middle'=>__('profile.positions.middle_full'),'libero'=>__('profile.positions.libero'),'blocker'=>'Блокирующий','defender'=>'Защитник'];
 $roleLabels = ['captain'=>__('tournaments.team_role_captain'),'player'=>__('tournaments.team_role_main'),'reserve'=>__('tournaments.team_role_reserve')];
 $stLabels   = ['confirmed'=>__('tournaments.invite_status_confirmed'),'joined'=>__('tournaments.invite_status_joined'),'invited'=>__('tournaments.invite_status_invited'),'declined'=>__('tournaments.invite_status_declined')];
 $stColors   = ['confirmed'=>'#4caf50','joined'=>'#ff9800','invited'=>'#2967BA','declined'=>'#f44336'];
