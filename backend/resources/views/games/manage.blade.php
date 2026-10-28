@@ -426,21 +426,25 @@
             return p.some(function (r) { return r.dataset.pos === 'blocker'; }) && p.some(function (r) { return r.dataset.pos === 'defender'; });
         }
         function splitByRoles(p, byLevel) {
-            var flip = false;
+            // Каждого игрока кладём в ту сторону, где меньше игроков с его амплуа; затем — где меньше игроков всего;
+            // затем (по уровню) — где ниже сумма уровней, иначе случайно. Так пары получаются Бл + Защ, а размеры равны
+            var cnt = { home: { all: 0, lvl: 0 }, away: { all: 0, lvl: 0 } };
+            function put(r, side) { setSide(r, side); var role = r.dataset.pos || '-'; cnt[side][role] = (cnt[side][role] || 0) + 1; cnt[side].all++; cnt[side].lvl += parseInt(r.dataset.level) || 0; }
+            var order = [];
             ['blocker', 'defender'].forEach(function (role) {
                 var g = p.filter(function (r) { return r.dataset.pos === role; });
                 if (byLevel) g.sort(function (a, b) { return (parseInt(b.dataset.level) || 0) - (parseInt(a.dataset.level) || 0); });
-                g.forEach(function (r, i) {
-                    var k = byLevel ? i % 4 : i % 2;
-                    var home = byLevel ? (k === 0 || k === 3) : k === 0;
-                    if (flip) home = !home;
-                    setSide(r, home ? 'home' : 'away');
-                });
-                // при нечётном числе игроков роли следующая группа стартует с другой стороны
-                if (g.length % 2 === 1) flip = !flip;
+                order = order.concat(g);
             });
-            p.filter(function (r) { return r.dataset.pos !== 'blocker' && r.dataset.pos !== 'defender'; })
-                .forEach(function (r, i) { setSide(r, i % 2 === 0 ? 'home' : 'away'); });
+            order = order.concat(p.filter(function (r) { return r.dataset.pos !== 'blocker' && r.dataset.pos !== 'defender'; }));
+            order.forEach(function (r) {
+                var role = r.dataset.pos || '-', h = cnt.home, a = cnt.away, side;
+                if ((h[role] || 0) !== (a[role] || 0)) side = (h[role] || 0) < (a[role] || 0) ? 'home' : 'away';
+                else if (h.all !== a.all) side = h.all < a.all ? 'home' : 'away';
+                else if (byLevel && h.lvl !== a.lvl) side = h.lvl < a.lvl ? 'home' : 'away';
+                else side = Math.random() < 0.5 ? 'home' : 'away';
+                put(r, side);
+            });
         }
         document.getElementById('gm-split-random').addEventListener('click', function () {
             var p = shuffle(pool());
