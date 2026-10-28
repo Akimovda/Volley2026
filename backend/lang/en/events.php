@@ -1263,6 +1263,7 @@ return [
     'track_lineup_label' => 'Track starting lineup and substitutions',
     'track_lineup_hint' => 'In point-by-point entry: lineup at the start of each set, substitutions and libero.',
     'reg_by_roles_even_places' => 'With role registration the number of places must be even (equal Blockers and Defenders). Please enter an even number.',
+    'reg_by_roles_pair_hint' => 'Each pair is a Blocker + a Defender: players pick a role when creating a pair or inviting a partner; two identical roles in a pair are not allowed.',
     'reg_by_roles_label' => 'By role',
     'reg_by_roles_hint' => 'Players sign up as a Blocker or a Defender: an equal number of spots per role (one pair = Blocker + Defender). Unchecked — everyone signs up as a Player.',
     'reg_by_roles_locked' => 'The sign-up mode cannot be changed: players are already registered for upcoming games (:n). Cancel their registrations first.',

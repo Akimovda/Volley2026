@@ -197,6 +197,7 @@
             ],
 
             'game_registration_by_positions' => ['nullable', 'boolean'],
+            'tournament_registration_by_roles' => ['nullable', 'boolean'],   // командный турнир 2×2: пара «Бл + Защ»
             'game_registration_by_roles' => ['nullable', 'boolean'],   // пляжка 2×2: «По амплуа» (Блокирующий + Защитник)
             'track_lineup' => ['nullable', 'boolean'],
 

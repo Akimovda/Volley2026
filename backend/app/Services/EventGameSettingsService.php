@@ -252,7 +252,11 @@ class EventGameSettingsService
      */
     public function wantsBeachRoles(array $data, string $direction, string $format, ?string $registrationMode = null): bool
     {
-        if ($direction !== 'beach' || empty($data['game_registration_by_roles'])) {
+        // В форме создания турнира флаг лежит в отдельном поле (рядом с типом регистрации участников)
+        $flag = $format === 'tournament'
+            ? ($data['tournament_registration_by_roles'] ?? $data['game_registration_by_roles'] ?? null)
+            : ($data['game_registration_by_roles'] ?? null);
+        if ($direction !== 'beach' || empty($flag)) {
             return false;
         }
         $subtype = (string) ($data['game_subtype'] ?? $data['tournament_game_scheme'] ?? '') ?: '2x2';
