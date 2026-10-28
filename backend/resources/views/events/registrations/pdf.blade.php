@@ -94,6 +94,8 @@ tbody td { padding: 6px 8px; vertical-align: top; font-size: 14px; }
         'middle'   => 'Центральный',
         'libero'   => 'Либеро',
         'reserve'  => 'Резерв',
+        'blocker'  => 'Блокирующий',
+        'defender' => 'Защитник',
     ];
     $dateLine = '—';
     if ($startsLocal) {

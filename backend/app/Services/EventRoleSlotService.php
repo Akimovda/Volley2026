@@ -185,6 +185,9 @@ class EventRoleSlotService
     public function resolvePositionsForEvent(Event $event): array
     {
         $event->loadMissing('gameSettings');
+        if ($event->registersByBeachRoles()) {
+            return ['blocker' => __('events.positions.blocker'), 'defender' => __('events.positions.defender')];
+        }
         if ($event->registersWithoutPositions()) {
             return ['player' => __('events.positions.player')];
         }

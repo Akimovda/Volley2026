@@ -197,6 +197,7 @@
             ],
 
             'game_registration_by_positions' => ['nullable', 'boolean'],
+            'game_registration_by_roles' => ['nullable', 'boolean'],   // пляжка 2×2: «По амплуа» (Блокирующий + Защитник)
             'track_lineup' => ['nullable', 'boolean'],
 
             'game_allow_girls' => ['nullable','boolean'],

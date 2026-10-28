@@ -193,6 +193,29 @@ class Event extends Model implements HasMedia
      * Классика без амплуа (игра 4x2): запись одним общим списком, слот 'player', как в пляжке.
      * Флаг хранится в event_game_settings.registration_without_positions.
      */
+    /**
+     * Пляжка 2×2 в режиме «По амплуа» (Блокирующий + Защитник). Флаг — event_game_settings.registration_by_roles
+     * (как registration_without_positions у классики); позиции ['blocker','defender'] пишутся в positions для механизма слотов.
+     */
+    public function registersByBeachRoles(): bool
+    {
+        if (($this->direction ?? null) !== 'beach') {
+            return false;
+        }
+        return (bool) ($this->gameSettings?->registration_by_roles ?? false);
+    }
+
+    /**
+     * Направление с точки зрения РЕГИСТРАЦИИ ПО ПОЗИЦИЯМ: 'classic', если у события есть выбор позиции (классика ИЛИ пляжка «По амплуа»),
+     * иначе 'beach'. Одна точка вместо `direction === 'classic'` в проверках записи, листе ожидания и формах.
+     */
+    public function registrationDirection(): string
+    {
+        $d = (string) ($this->direction ?? 'classic');
+
+        return ($d === 'beach' && $this->registersByBeachRoles()) ? 'classic' : $d;
+    }
+
     public function registersWithoutPositions(): bool
     {
         return (bool) ($this->gameSettings?->registration_without_positions ?? false);

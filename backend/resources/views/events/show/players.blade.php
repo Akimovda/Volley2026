@@ -225,7 +225,7 @@
 		<div class="alert alert-success">
 			{{ __('events.sp_already_registered') }}
 			@if($userPosition)
-			<div><span class="f-16">{{ __('events.sp_position_label') }}</span> {{ $userPosition }}</div>
+			<div><span class="f-16">{{ __('events.sp_position_label') }}</span> {{ position_name($userPosition) }}</div>
 			@endif
 		</div>
 		
@@ -555,7 +555,7 @@
         }
 		}
 		// Занятые основные позиции классики — нужны для disabled-кнопок и ссылки на waitlist
-		$btnDirection    = (string)($event->direction ?? 'classic');
+		$btnDirection    = $event->registrationDirection();
 		$btnOccupied = [];
 		if ($btnDirection === 'classic' && $event->gameSettings) {
 		    $btnAllSlots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
@@ -657,7 +657,7 @@ $totalCapacityFull = $maxPlayers + $reserveMaxFull;
 $registered       = $registered_total ?? 0;
 $isFull           = $totalCapacityFull > 0 && $registered >= $totalCapacityFull;
 
-$direction     = (string)($event->direction ?? 'classic');
+$direction     = $event->registrationDirection();
 $isBeach       = $direction === 'beach';
 $isClassic     = $direction === 'classic';
 

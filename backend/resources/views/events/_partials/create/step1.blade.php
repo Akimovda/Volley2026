@@ -377,6 +377,18 @@
 												@error('registration_mode')
 												<div class="text-xs text-red-600 mt-1">{{ $message }}</div>
 												@enderror
+											{{-- По амплуа (пляжка 2×2): Блокирующий + Защитник. Показывается для game / training_game (в карточке режима регистрации; турнир — пары, этап 2); у training, king_beach, mixed_group и мастер-класса режима нет --}}
+											<div class="mt-1" id="reg_by_roles_block" data-show-if="direction=beach,game_subtype=2x2,format=game|training_game,registration_mode=single">
+												<label class="checkbox-item">
+													<input type="hidden" name="game_registration_by_roles" value="0">
+													<input type="checkbox" name="game_registration_by_roles" value="1" id="game_registration_by_roles"
+													@checked(old('game_registration_by_roles', $prefill['game_registration_by_roles'] ?? false))>
+													<div class="custom-checkbox"></div>
+													<span>{{ __('events.reg_by_roles_label') }}</span>
+												</label>
+												<div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_roles_hint') }}</div>
+											</div>
+
 												<ul class="list f-16 mt-1">
 													<li id="registration_mode_hint_classic" data-show-if="direction=classic">
 														{{ __('events.reg_mode_hint_classic') }}

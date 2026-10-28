@@ -808,6 +808,8 @@ class OccurrenceAnnouncementMessageBuilder
             'opposite' => 'диагональный',
             'middle'   => 'центральный',
             'libero'   => 'либеро',
+            'blocker'  => 'блокирующий',
+            'defender' => 'защитник',
         ];
 
         $rows = DB::table('event_registrations as er')
@@ -906,6 +908,8 @@ class OccurrenceAnnouncementMessageBuilder
             'opposite' => 'диагональный',
             'middle'   => 'центральный',
             'libero'   => 'либеро',
+            'blocker'  => 'блокирующий',
+            'defender' => 'защитник',
             'reserve'  => 'запасной',
         ];
 

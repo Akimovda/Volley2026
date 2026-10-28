@@ -246,6 +246,26 @@ class EventGameSettingsService
         return $subtype === '4x2';
     }
 
+    /**
+     * Пляжка 2×2 «По амплуа» (Блокирующий + Защитник): только пляж, схема 2×2 и форматы game, training_game,
+     * командный турнир team_beach. Не применяется к training, king_beach, master_class и mixed_group.
+     */
+    public function wantsBeachRoles(array $data, string $direction, string $format, ?string $registrationMode = null): bool
+    {
+        if ($direction !== 'beach' || empty($data['game_registration_by_roles'])) {
+            return false;
+        }
+        $subtype = (string) ($data['game_subtype'] ?? $data['tournament_game_scheme'] ?? '') ?: '2x2';
+        if ($subtype !== '2x2') {
+            return false;
+        }
+        if (in_array($format, ['game', 'training_game'], true)) {
+            return in_array($registrationMode ?? 'single', ['single', ''], true);
+        }
+
+        return $format === 'tournament' && $registrationMode === 'team_beach';
+    }
+
     public function normalizeGameDefaults(array $data, string $direction, string $format): array
     {
         $errors = [];
@@ -372,6 +392,14 @@ class EventGameSettingsService
 
             if (empty($data['game_max_players']))
                 $data['game_max_players'] = ($direction === 'beach') ? 6 : 12;
+
+            // Пляжка «По амплуа»: места делятся поровну между Блокирующим и Защитником — нужно чётное число мест
+            if ($format === 'training_game'
+                && $this->wantsBeachRoles($data, $direction, $format, (string) ($data['registration_mode'] ?? 'single'))
+                && ((int) $data['game_max_players']) % 2 !== 0
+            ) {
+                $errors['game_max_players'] = [__('events.reg_by_roles_even_places')];
+            }
 
         }
         else {
@@ -556,22 +584,43 @@ class EventGameSettingsService
                     $genderPolicy = 'mixed_open';
                 }
         
+                // «По амплуа» (Блокирующий + Защитник): квота по полу на позиции доступна так же, как в классике
+                $rolesMode = $this->wantsBeachRoles(
+                    $data, $direction, $format,
+                    (string) ($data['tournament_registration_mode'] ?? $data['registration_mode'] ?? 'single')
+                );
+
                 $allowed = [
                     'mixed_open',
                     'mixed_5050',
                     'only_male',
                     'only_female',
                 ];
+                if ($rolesMode) {
+                    $allowed[] = 'mixed_limited';
+                }
         
                 if (!in_array($genderPolicy, $allowed, true)) {
                     $errors['game_gender_policy'] = [
                         'Для пляжа доступны: без ограничений / только мужчины / только девушки / микс 50/50.',
                     ];
                 }
-        
-                $genderLimitedSide = null;
-                $genderLimitedMax = null;
-                $genderLimitedPositions = null;
+
+                if ($rolesMode && $genderPolicy === 'mixed_limited') {
+                    if (!$genderLimitedSide) {
+                        $errors['game_gender_limited_side'] = ['Укажи, кого ограничиваем (М или Ж).'];
+                    }
+                    if (is_null($genderLimitedMax)) {
+                        $errors['game_gender_limited_max'] = ['Укажи максимум мест для ограничиваемых.'];
+                    }
+                    $genderLimitedPositions = is_array($genderLimitedPositions)
+                        ? (array_values(array_intersect($genderLimitedPositions, ['blocker', 'defender'])) ?: null)
+                        : null;
+                } else {
+                    $genderLimitedSide = null;
+                    $genderLimitedMax = null;
+                    $genderLimitedPositions = null;
+                }
         
                 $data['game_allow_girls'] = 0;
                 $data['game_girls_max'] = null;
@@ -718,6 +767,7 @@ class EventGameSettingsService
                 'positions'           => [],
                 'reserve_players_max' => null,
                 'registration_without_positions' => false,
+                'registration_by_roles' => false,
                 'gender_policy'       => 'mixed_open',
                 'gender_limited_side' => null,
                 'gender_limited_max'  => null,
@@ -769,11 +819,22 @@ class EventGameSettingsService
             
             $subtype = $subtype ?: (($direction === 'beach') ? '2x2' : '4x2');
             
+            // Пляжка «По амплуа»: роли blocker/defender вместо единой роли player (слоты = роль × число команд → мест/2 на роль)
+            $byBeachRoles = $this->wantsBeachRoles(
+                $data, $direction, (string) ($data['format'] ?? $event->format ?? ''),
+                $registrationMode !== '' ? $registrationMode : (string) ($data['registration_mode'] ?? $event->registration_mode ?? 'single')
+            );
+
             $calc = GameCalculator::calculate(
                 (string)$subtype,
                 $liberoMode,
-                1
+                1,
+                $byBeachRoles
             );
+
+            if ($byBeachRoles && !empty($calc['roles'])) {
+                $positions = array_keys($calc['roles']);
+            }
             
             /*
             |--------------------------------------------------------------------------
@@ -851,6 +912,7 @@ class EventGameSettingsService
             'positions'            => $positions,
             'reserve_players_max'  => $reservePlayersMax,
             'registration_without_positions' => $noPositions,
+            'registration_by_roles' => $byBeachRoles,
         ];
     
         if (empty($egsPayload['subtype'])) {

@@ -37,7 +37,7 @@ class OccurrenceWaitlistController extends Controller
         if (!is_array($positions)) $positions = [];
         $positions = array_values(array_unique(array_filter($positions, fn($p) => $p !== null && $p !== '')));
 
-        $direction = (string) ($occurrence->event->direction ?? 'classic');
+        $direction = $occurrence->event->registrationDirection();
 
         // Проверяем возраст, уровень и хард-гендерные политики (only_male/only_female/
         // mixed_5050). Допуск конкретных позиций (mixed_limited) проверяется отдельно

@@ -122,7 +122,7 @@ class EventWaitlistManagementController extends Controller
         $occurrence = $entry->occurrence()->with('event.gameSettings')->first();
         $waitlist   = app(WaitlistService::class);
         if ($occurrence) {
-            $direction = (string) ($occurrence->event->direction ?? 'classic');
+            $direction = $occurrence->event->registrationDirection();
             if ($direction !== 'beach' && empty($positions)) {
                 $positions = $waitlist->occupiedPositions($occurrence);
                 \Illuminate\Support\Facades\Log::warning("Waitlist: updatePositions() получил пустой positions для entry #{$entry->id} (direction={$direction}) — заполнено занятыми позициями", [

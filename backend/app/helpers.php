@@ -263,6 +263,9 @@ if (! function_exists('position_name')) {
             'libero'   => 'Либеро',
             'player'   => 'Игрок',
             'reserve'  => 'Запасной игрок',
+            // пляжные амплуа (режим «По амплуа», 2×2)
+            'blocker'  => 'Блокирующий',
+            'defender' => 'Защитник',
 
         ];
 
@@ -275,6 +278,16 @@ if (! function_exists('position_name')) {
         return $map[$role] ?? ucfirst($role);
     }
 }
+if (! function_exists('position_short')) {
+    /** Короткая метка позиции для тесных мест (пульт, статистика): «Бл» / «Защ»; для остальных позиций — пустая строка. */
+    function position_short(?string $role): string
+    {
+        $role = strtolower(trim((string) $role));
+
+        return in_array($role, ['blocker', 'defender'], true) ? __('events.positions_short.' . $role) : '';
+    }
+}
+
 // =========================
 // Валюта
 // =========================

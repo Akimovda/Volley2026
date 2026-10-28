@@ -30,7 +30,7 @@ class WaitlistService
         // waitlist в "на всё" даже когда занята одна конкретная позиция. Предохранитель
         // на случай любого клиента (веб уже фильтрует на своей стороне, но мобильный
         // и будущий API — не гарантированно).
-        $direction = (string) ($occurrence->event->direction ?? 'classic');
+        $direction = $occurrence->event->registrationDirection();
         if ($direction !== 'beach' && empty($positions)) {
             $positions = $this->occupiedPositions($occurrence);
             Log::warning("Waitlist: join() получил пустой positions для occurrence #{$occurrence->id} (direction={$direction}) — заполнено занятыми позициями", [
@@ -263,7 +263,7 @@ class WaitlistService
             return false;
         }
 
-        $direction = (string) ($event->direction ?? 'classic');
+        $direction = $event->registrationDirection();
 
         return DB::transaction(function () use ($occurrence, $event, $position, $direction) {
             // Тот же advisory lock и та же формула roleKey, что в
@@ -622,7 +622,7 @@ class WaitlistService
         $event = $occurrence->event;
         if (!$event) return false;
 
-        $direction = (string)($event->direction ?? 'classic');
+        $direction = $event->registrationDirection();
 
         if ($direction === 'beach') {
             // Для пляжки — проверяем общий лимит

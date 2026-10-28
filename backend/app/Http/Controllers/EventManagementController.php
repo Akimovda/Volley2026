@@ -964,6 +964,7 @@ if ($role === 'admin') {
             'game_min_players'             => ['nullable', 'integer', 'min:0'],
             'game_reserve_players_max'     => ['nullable', 'integer', 'min:0', 'max:20'],
             'game_registration_by_positions' => ['nullable', 'boolean'],
+            'game_registration_by_roles' => ['nullable', 'boolean'],   // пляжка 2×2 «По амплуа»
             'game_subtype'             => ['nullable', 'string', 'max:32'],
             'game_libero_mode'         => ['nullable', 'string', 'max:32'],
             'game_gender_policy'       => ['nullable', 'string', 'max:64'],
@@ -1110,6 +1111,31 @@ if ($role === 'admin') {
             }
         }
 
+        // Пляжка 2×2 «По амплуа» (Блокирующий + Защитник): чекбокс «По амплуа». Как и у классики 4×2, менять режим можно,
+        // пока нет активных записей на будущие туры — иначе позиции записавшихся разойдутся со слотами.
+        $rolesCurrent = $event->registersByBeachRoles();
+        $rolesSubtype = (string) ($data['game_subtype'] ?? $event->gameSettings?->subtype ?? '2x2');
+        $rolesFlag    = array_key_exists('game_registration_by_roles', $data) ? !empty($data['game_registration_by_roles']) : $rolesCurrent;
+        $rolesNew     = app(\App\Services\EventGameSettingsService::class)->wantsBeachRoles(
+            ['game_registration_by_roles' => $rolesFlag, 'game_subtype' => $rolesSubtype],
+            (string) ($event->direction ?? 'classic'), (string) $event->format, (string) $event->registration_mode
+        );
+        if ($rolesNew !== $rolesCurrent) {
+            $activeFutureRoles = DB::table('event_registrations as er')
+                ->join('event_occurrences as eo', 'eo.id', '=', 'er.occurrence_id')
+                ->where('er.event_id', $event->id)
+                ->where('eo.starts_at', '>', now())
+                ->whereNull('er.cancelled_at')
+                ->whereRaw('(er.is_cancelled IS NULL OR er.is_cancelled = false)')
+                ->whereRaw("(er.status IS NULL OR er.status <> 'cancelled')")
+                ->count();
+            if ($activeFutureRoles > 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'game_registration_by_roles' => __('events.reg_by_roles_locked', ['n' => $activeFutureRoles]),
+                ]);
+            }
+        }
+
         // King Beach — жёсткая валидация min/max ДО транзакции (не warning: квота/чётность
         // настроены осознанно). Правило чётности расширенное относительно формы создания:
         // при gender_policy=mixed_5050 ОБА поля (min и max) должны быть чётными.
@@ -1218,7 +1244,7 @@ if ($role === 'admin') {
             $data['king_beach_max_players'] = $kbMax;
         }
 
-        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable, $isMasterClass) {
+        DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable, $isMasterClass, $rolesNew, $rolesCurrent) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
             // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
@@ -1418,6 +1444,13 @@ if ($role === 'admin') {
             $event->save();
 
             $glp = $data['game_gender_limited_positions'] ?? null;
+            // Режим «По амплуа» сменился: квота по полу была привязана к другим позициям — сбрасываем её (и недоступный без ролей «mixed_limited»)
+            if (($event->direction ?? 'classic') === 'beach' && $rolesNew !== $rolesCurrent) {
+                $glp = null;
+                if (!$rolesNew && (($data['game_gender_policy'] ?? $event->gameSettings?->gender_policy) === 'mixed_limited')) {
+                    $data['game_gender_policy'] = 'mixed_open';
+                }
+            }
             // Без амплуа квота по полу — общий лимит на единственную роль 'player'.
             if ($noPosNew && (($data['game_gender_policy'] ?? $event->gameSettings?->gender_policy) === 'mixed_limited')) {
                 $glp = ['player'];
@@ -1449,6 +1482,9 @@ if ($role === 'admin') {
                     ? (($data['game_reserve_players_max'] === '' || $data['game_reserve_players_max'] === null) ? null : (int) $data['game_reserve_players_max'])
                     : null,
                 'registration_without_positions' => $noPosApplicable ? $noPosNew : null,
+                'registration_by_roles' => (($event->direction ?? 'classic') === 'beach' && !$isMasterClass) ? $rolesNew : null,
+                // пляжка: набор позиций режима «По амплуа» (['blocker','defender']) или пусто; классика — не трогаем
+                'positions' => (($event->direction ?? 'classic') === 'beach' && !$isMasterClass) ? ($rolesNew ? ['blocker', 'defender'] : []) : null,
                 // «Вести стартовый состав и замены»: только классика; пляж/прочее не затрагиваем
                 'track_lineup' => (array_key_exists('track_lineup', $data) && ($event->direction ?? 'classic') === 'classic')
                     ? (bool) $data['track_lineup'] : null,
@@ -1512,7 +1548,8 @@ if ($role === 'admin') {
                 $calc = \App\Services\GameCalculator::calculate(
                     (string) $gs->subtype,
                     $gs->libero_mode,
-                    $teams
+                    $teams,
+                    $event->registersByBeachRoles()
                 );
 
                 $roles = [];
