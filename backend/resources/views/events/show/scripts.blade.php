@@ -258,6 +258,8 @@
 				libero: 'Либеро',
 				player: '',
 				reserve: 'Запасной',
+				blocker: 'Блокирующий',
+				defender: 'Защитник',
 			};
 
 			return map[pos] ?? pos;

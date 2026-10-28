@@ -260,7 +260,7 @@ class EventGameSettingsService
             return false;
         }
         if (in_array($format, ['game', 'training_game'], true)) {
-            return ($registrationMode ?? 'single') !== 'mixed_group';
+            return in_array($registrationMode ?? 'single', ['single', ''], true);
         }
 
         return $format === 'tournament' && $registrationMode === 'team_beach';
@@ -392,6 +392,14 @@ class EventGameSettingsService
 
             if (empty($data['game_max_players']))
                 $data['game_max_players'] = ($direction === 'beach') ? 6 : 12;
+
+            // Пляжка «По амплуа»: места делятся поровну между Блокирующим и Защитником — нужно чётное число мест
+            if ($format === 'training_game'
+                && $this->wantsBeachRoles($data, $direction, $format, (string) ($data['registration_mode'] ?? 'single'))
+                && ((int) $data['game_max_players']) % 2 !== 0
+            ) {
+                $errors['game_max_players'] = [__('events.reg_by_roles_even_places')];
+            }
 
         }
         else {

@@ -915,7 +915,7 @@
                         @php
                             // «По амплуа» (пляжка 2×2): game / training_game / командный турнир team_beach; не для training, king_beach, mixed_group
                             $rolesApplicableEdit = $isBeachGame && (
-                                (in_array($event->format, ['game', 'training_game'], true) && $event->registration_mode !== 'mixed_group')
+                                (in_array($event->format, ['game', 'training_game'], true) && in_array($event->registration_mode ?? 'single', ['single', ''], true))
                                 || ($event->format === 'tournament' && $event->registration_mode === 'team_beach')
                             );
                         @endphp

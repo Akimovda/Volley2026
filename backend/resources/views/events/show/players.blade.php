@@ -225,7 +225,7 @@
 		<div class="alert alert-success">
 			{{ __('events.sp_already_registered') }}
 			@if($userPosition)
-			<div><span class="f-16">{{ __('events.sp_position_label') }}</span> {{ $userPosition }}</div>
+			<div><span class="f-16">{{ __('events.sp_position_label') }}</span> {{ position_name($userPosition) }}</div>
 			@endif
 		</div>
 		
