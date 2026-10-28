@@ -405,7 +405,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="bc-grid" id="bc-tabs-opts" @if($form['board'] === 'classic') style="display:none" @endif>
+                <div class="bc-grid" id="bc-tabs-opts" @if($form['board'] !== 'avp') style="display:none" @endif>
                     <div class="bc-field" id="bc-tabs-color-wrap" @if($form['board'] !== 'avp') style="display:none" @endif>
                         <label class="bc-l">{{ __('stream.tabs_color') }}</label>
                         <div class="bc-swatches">
@@ -972,10 +972,13 @@
                 $('#bc-layout-wrap').toggle(bd === 'classic');
                 $('#bc-wtpos-wrap').toggle(bd === 'wt');
                 $('#bc-corner-wrap').toggle(bd !== 'wt');
-                $('#bc-tabs-opts').toggle(bd !== 'classic');
+                $('#bc-tabs-opts').toggle(bd === 'avp');
                 $('#bc-tabs-color-wrap').toggle(bd === 'avp');
+                // «Мировой Тур»: только положение сверху/снизу — счёт по партиям, логотипы и названия у него фиксированные
+                $('#bc-set-scores, #bc-show-logos, #bc-team-names').closest('.bc-field').toggle(bd !== 'wt');
             }
             $('#bc-board').on('change', syncBoardOpts);
+            syncBoardOpts();
             $('#bc-tabs-opts').on('click', '.bc-sw', function () {
                 $('#bc-tabs-opts .bc-sw').removeClass('sel'); $(this).addClass('sel');
                 $('#bc-tabs-hex').val($(this).data('color') || '').trigger('input');

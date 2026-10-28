@@ -434,7 +434,8 @@ window.__BC = @json($config);
         show(els.tag, m !== 'off');
         var nbd = normTheme(p.theme).board, isTabs = nbd === 'avp', isWt = nbd === 'wt', onAir = m === 'live' || m === 'set_summary';
         show(els.board, onAir && !isTabs && !isWt ? (renderBoard(p), true) : false);
-        show(els.wt, onAir && isWt ? (renderWt(p), true) : false);
+        show(els.wt, m === 'live' && isWt ? (renderWt(p), true) : false);   // «Мировой Тур» — только в игре: итоги партии/матча и заставку не перекрывает
+        if (m !== 'live') { document.body.classList.remove('wt-top', 'wt-bottom'); }
         show(els.tabs, onAir && isTabs ? (renderTabs(p), true) : false);
         if (m === 'live') { renderSub(p); renderSwitch(p); } else { show(els.sub, false); show(els.sw, false); clearTimeout(swTimer); }
         show(els.setsum, m === 'set_summary' ? (renderSetSum(p), true) : false);
