@@ -364,8 +364,9 @@ class EventRegistrationController extends Controller
                         throw new \Exception('Свободных мест на этой позиции больше нет.');
                     }
                 }
-            } elseif ($occurrence->event->registersByBeachRoles()) {
-                // Пляжка «По амплуа»: без выбранной позиции слоты не посчитать — как у классики, нужно выбрать амплуа
+            } elseif ($occurrence->event->registersByBeachRoles() || ((string) ($occurrence->event->direction ?? 'classic') === 'beach' && app(EventRoleSlotService::class)->requiresPositionChoice($occurrence->event))) {
+                // Пляжка «По амплуа» (или пляжка с несколькими ролями-слотами — страховка от рассинхрона флага и слотов):
+                // без выбранной позиции слоты не посчитать — как у классики, нужно выбрать амплуа
                 throw new \Exception('Выберите амплуа: Блокирующий или Защитник.');
             } elseif ((string) ($occurrence->event->direction ?? 'classic') === 'beach') {
                 // Defensive: реальная веб-форма для пляжки всегда шлёт position='player'
