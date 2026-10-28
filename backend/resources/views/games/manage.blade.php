@@ -199,6 +199,9 @@
                     <span class="f-14" style="align-self:center">
                         {{ $event->direction === 'beach' ? __('games.pair_a') : __('games.count_home') }}: <b id="gm-cnt-home">0</b> · {{ $event->direction === 'beach' ? __('games.pair_b') : __('games.count_away') }}: <b id="gm-cnt-away">0</b>
                     </span>
+                    @if($event->registersByBeachRoles())
+                    <span class="f-13" id="gm-roles-warn" style="display:none;align-self:center;color:#dc2626">⚠ {{ __('games.roles_pair_warn') }}</span>
+                    @endif
                     @endunless
                 </div>
 
@@ -247,7 +250,7 @@
                         $lvl   = $event->direction === 'beach' ? $u->beach_level : $u->classic_level;
                         $chosen = old("side.{$u->id}", in_array($u->id, $prefill['home']) ? 'home' : (in_array($u->id, $prefill['away']) ? 'away' : ''));
                     @endphp
-                    <div class="gm-row" data-level="{{ (int) $lvl }}">
+                    <div class="gm-row" data-level="{{ (int) $lvl }}" data-pos="{{ $positions[$u->id] ?? '' }}">
                         <div class="gm-who">
                             <img src="{{ $u->profile_photo_url }}" alt="">
                             <div style="min-width:0">
@@ -402,6 +405,15 @@
             rows.forEach(function (r) { var s = sideOf(r); if (s === 'home') h++; else if (s === 'away') a++; });
             document.getElementById('gm-cnt-home').textContent = h;
             document.getElementById('gm-cnt-away').textContent = a;
+            var warn = document.getElementById('gm-roles-warn');
+            if (warn) {
+                // «Бл + Защ»: в паре не должно быть двух одинаковых амплуа (подсказка, не блокировка)
+                var bad = ['home', 'away'].some(function (side) {
+                    var pos = rows.filter(function (r) { return sideOf(r) === side; }).map(function (r) { return r.dataset.pos; });
+                    return pos.filter(function (x) { return x === 'blocker'; }).length > 1 || pos.filter(function (x) { return x === 'defender'; }).length > 1;
+                });
+                warn.style.display = bad ? '' : 'none';
+            }
         }
         function shuffle(arr) { for (var i = arr.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = arr[i]; arr[i] = arr[j]; arr[j] = t; } return arr; }
         // Делим тех, кто уже отмечен; если никого не отметили — всех записанных
@@ -409,14 +421,42 @@
             var chosen = rows.filter(function (r) { return sideOf(r) !== ''; });
             return chosen.length ? chosen : rows.slice();
         }
+        // Пляжка «По амплуа»: делим отдельно Блокирующих и Защитников, чтобы в каждой паре был Бл + Защ
+        function hasRoles(p) {
+            return p.some(function (r) { return r.dataset.pos === 'blocker'; }) && p.some(function (r) { return r.dataset.pos === 'defender'; });
+        }
+        function splitByRoles(p, byLevel) {
+            // Каждого игрока кладём в ту сторону, где меньше игроков с его амплуа; затем — где меньше игроков всего;
+            // затем (по уровню) — где ниже сумма уровней, иначе случайно. Так пары получаются Бл + Защ, а размеры равны
+            var cnt = { home: { all: 0, lvl: 0 }, away: { all: 0, lvl: 0 } };
+            function put(r, side) { setSide(r, side); var role = r.dataset.pos || '-'; cnt[side][role] = (cnt[side][role] || 0) + 1; cnt[side].all++; cnt[side].lvl += parseInt(r.dataset.level) || 0; }
+            var order = [];
+            ['blocker', 'defender'].forEach(function (role) {
+                var g = p.filter(function (r) { return r.dataset.pos === role; });
+                if (byLevel) g.sort(function (a, b) { return (parseInt(b.dataset.level) || 0) - (parseInt(a.dataset.level) || 0); });
+                order = order.concat(g);
+            });
+            order = order.concat(p.filter(function (r) { return r.dataset.pos !== 'blocker' && r.dataset.pos !== 'defender'; }));
+            order.forEach(function (r) {
+                var role = r.dataset.pos || '-', h = cnt.home, a = cnt.away, side;
+                if ((h[role] || 0) !== (a[role] || 0)) side = (h[role] || 0) < (a[role] || 0) ? 'home' : 'away';
+                else if (h.all !== a.all) side = h.all < a.all ? 'home' : 'away';
+                else if (byLevel && h.lvl !== a.lvl) side = h.lvl < a.lvl ? 'home' : 'away';
+                else side = Math.random() < 0.5 ? 'home' : 'away';
+                put(r, side);
+            });
+        }
         document.getElementById('gm-split-random').addEventListener('click', function () {
             var p = shuffle(pool());
+            if (hasRoles(p)) { splitByRoles(p, false); recount(); return; }
             p.forEach(function (r, i) { setSide(r, i % 2 === 0 ? 'home' : 'away'); });
             recount();
         });
         document.getElementById('gm-split-level').addEventListener('click', function () {
             // по убыванию уровня (равные — случайно), «змейкой» 1-2-2-1-1-2…, чтобы составы были равны по силе
-            var p = shuffle(pool()).sort(function (a, b) { return (parseInt(b.dataset.level) || 0) - (parseInt(a.dataset.level) || 0); });
+            var p = shuffle(pool());
+            if (hasRoles(p)) { splitByRoles(p, true); recount(); return; }
+            p.sort(function (a, b) { return (parseInt(b.dataset.level) || 0) - (parseInt(a.dataset.level) || 0); });
             p.forEach(function (r, i) { var k = i % 4; setSide(r, (k === 0 || k === 3) ? 'home' : 'away'); });
             recount();
         });

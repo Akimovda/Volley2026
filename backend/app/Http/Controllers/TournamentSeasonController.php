@@ -322,11 +322,15 @@ class TournamentSeasonController extends Controller
 
         try {
             $teamService = app(\App\Services\TournamentTeamService::class);
+            // Пара «По амплуа»: амплуа капитана обязательно (как при обычном создании пары), партнёр получает противоположное
+            $rolesPairs = $event->registersByBeachRoles();
+            $captainPos = null;
             $team = $teamService->createTeam(
                 event: $event,
                 captain: $captain,
                 name: $teamName,
                 occurrenceId: $occurrenceId,
+                captainPositionCode: $rolesPairs ? ($captainPos = $request->input('captain_position_code')) : null,
                 autoApprove: true,
             );
 
@@ -337,7 +341,8 @@ class TournamentSeasonController extends Controller
                     \App\Models\EventTeamMember::create([
                         'event_team_id'        => $team->id,
                         'user_id'              => $partner->id,
-                        'role_code'            => 'player',
+                        'role_code'            => $rolesPairs ? ($captainPos === 'blocker' ? 'defender' : 'blocker') : 'player',
+                        'position_code'        => $rolesPairs ? ($captainPos === 'blocker' ? 'defender' : 'blocker') : null,
                         'team_role'            => 'player',
                         'confirmation_status'  => 'confirmed',
                         'position_order'       => 2,

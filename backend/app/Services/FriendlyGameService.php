@@ -542,11 +542,16 @@ class FriendlyGameService
             'meta'            => ['friendly' => true, 'color' => $color],
         ]);
 
+        // Пляжка «По амплуа»: роль регистрации (Бл/Защ) переносим в position_code игрока пары
+        $rolePositions = $event->registersByBeachRoles() ? $this->positions($occurrenceId) : [];
+
         foreach ($userIds as $i => $uid) {
+            $posCode = in_array($rolePositions[$uid] ?? null, ['blocker', 'defender'], true) ? $rolePositions[$uid] : null;
             EventTeamMember::create([
                 'event_team_id'       => $team->id,
                 'user_id'             => $uid,
-                'role_code'           => 'player',
+                'role_code'           => $posCode ?? 'player',
+                'position_code'       => $posCode,
                 'team_role'           => $i === 0 ? 'captain' : 'player',
                 'confirmation_status' => 'confirmed',
                 'position_order'      => $i + 1,

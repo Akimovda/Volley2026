@@ -457,6 +457,17 @@
 														<span class="b-500">{{ __('events.tournament_reg_mode_team_label') }}</span>
 													</label>
 													<ul class="list f-16" style="margin:.2rem 0 1rem 3.8rem"><li>{{ __('events.tournament_reg_mode_team_hint') }}</li></ul>
+													{{-- По амплуа (пляжка 2×2, командный турнир): пара = Блокирующий + Защитник --}}
+													<div class="mt-1 mb-1" id="tournament_reg_by_roles_block" style="margin-left:3.8rem" data-show-if="direction=beach,tournament_game_scheme=2x2,tournament_reg_mode=team">
+														<label class="checkbox-item">
+															<input type="hidden" name="tournament_registration_by_roles" value="0">
+															<input type="checkbox" name="tournament_registration_by_roles" value="1" id="tournament_registration_by_roles"
+															@checked(old('tournament_registration_by_roles', $prefill['game_registration_by_roles'] ?? false))>
+															<div class="custom-checkbox"></div>
+															<span>{{ __('events.reg_by_roles_label') }}</span>
+														</label>
+														<div class="f-13 mt-05" style="opacity:.7">{{ __('events.reg_by_roles_pair_hint') }}</div>
+													</div>
 
 													<div id="king_beach_reg_block" data-show-if="direction=beach,tournament_game_scheme=2x2">
 														<label class="radio-item">

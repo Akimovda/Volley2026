@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v3';
+    private const CACHE_VERSION = 'v4';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't4';
+    private const PDF_TEMPLATE_VERSION = 't5';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
@@ -81,6 +81,8 @@ class MatchAdvancedStatsService
         $starts = MatchSetStart::where('match_id', $match->id)->get()->keyBy('set_number');
         $marks = MatchServeMark::where('match_id', $match->id)->get()->keyBy('set_number');
         $roster = $this->lineupService->roster($match);
+        // Пляжка «По амплуа»: роль игрока в паре (Бл / Защ) — подписывается в протоколе и таблицах игроков
+        $roles = $this->pairRoles((int) $match->team_home_id, (int) $match->team_away_id);
 
         $names = $this->resolveNames(
             $events->pluck('player_id')->merge($lineupEvents->pluck('in_user_id'))->merge($lineupEvents->pluck('out_user_id'))
@@ -176,7 +178,7 @@ class MatchAdvancedStatsService
                     'attack_type' => $ev->action_type === MatchRallyEvent::ACTION_KILL ? $ev->attack_type : null,
                     'is_error'    => $isOpp,
                     'player_id'   => $ev->player_id ? (int) $ev->player_id : null,
-                    'player'      => $ev->player_id ? ($names[(int) $ev->player_id] ?? null) : null,
+                    'player'      => $ev->player_id ? $this->withRole($names[(int) $ev->player_id] ?? null, $roles[(int) $ev->player_id] ?? null) : null,
                     'player_side' => $ev->player_id ? $sideOf($ev->stat_team_id ? (int) $ev->stat_team_id : null) : null,
                     'score_home'  => $h,
                     'score_away'  => $a,
@@ -246,7 +248,7 @@ class MatchAdvancedStatsService
         }
 
         // ---- игроки: матч и по сетам ----
-        $players = $this->playerTables($events, $roster, $names, $homeId, $awayId, $sideOf);
+        $players = $this->playerTables($events, $roster, $names, $homeId, $awayId, $sideOf, $roles);
 
         // ---- составы и замены ----
         $lineup = $this->lineupBlock($match, $setLineups, $lineupEvents, $names, $sideOf, $homeId, $awayId);
@@ -295,6 +297,27 @@ class MatchAdvancedStatsService
             'lineup'    => $lineup,
             'names'     => $names,
         ];
+    }
+
+    /**
+     * Роли игроков пар «По амплуа»: user_id => «Бл» / «Защ» (только подтверждённые участники двух команд матча).
+     *
+     * @return array<int,string>
+     */
+    private function pairRoles(int $homeId, int $awayId): array
+    {
+        return \DB::table('event_team_members')
+            ->whereIn('event_team_id', array_filter([$homeId, $awayId]))
+            ->where('confirmation_status', 'confirmed')
+            ->whereIn('position_code', ['blocker', 'defender'])
+            ->pluck('position_code', 'user_id')
+            ->map(fn ($c) => position_short((string) $c))
+            ->all();
+    }
+
+    private function withRole(?string $name, ?string $role): ?string
+    {
+        return $name !== null && $role ? $name . ' (' . $role . ')' : $name;
     }
 
     private function anyAction(Collection $events, string $action): bool
@@ -394,15 +417,15 @@ class MatchAdvancedStatsService
     /**
      * @return array{home: array, away: array} — строки игроков: scopes['all'|номер сета] => счётчики
      */
-    private function playerTables(Collection $events, array $roster, array $names, int $homeId, int $awayId, callable $sideOf): array
+    private function playerTables(Collection $events, array $roster, array $names, int $homeId, int $awayId, callable $sideOf, array $roles = []): array
     {
         $blank = fn () => ['attack' => 0, 'block' => 0, 'ace' => 0, 'serve_err' => 0, 'attack_err' => 0,
             'reception_err' => 0, 'block_err' => 0, 'plus' => 0, 'minus' => 0, 'balance' => 0,
             'at' => ['power' => 0, 'cut' => 0, 'poke' => 0, 'roll' => 0, 'tip' => 0, 'none' => 0]];
 
         $rows = ['home' => [], 'away' => []];
-        $ensure = function (string $side, int $uid) use (&$rows, $names, $blank) {
-            $rows[$side][$uid] ??= ['user_id' => $uid, 'name' => $names[$uid] ?? ('#' . $uid), 'scopes' => ['all' => $blank()]];
+        $ensure = function (string $side, int $uid) use (&$rows, $names, $blank, $roles) {
+            $rows[$side][$uid] ??= ['user_id' => $uid, 'name' => $names[$uid] ?? ('#' . $uid), 'role' => $roles[$uid] ?? null, 'scopes' => ['all' => $blank()]];
         };
 
         foreach ([$homeId => 'home', $awayId => 'away'] as $teamId => $side) {

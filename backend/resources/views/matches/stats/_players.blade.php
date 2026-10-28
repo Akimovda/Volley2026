@@ -49,7 +49,7 @@
         @forelse($rows as $x)
         @php $c = $x['c'] ?? array_fill_keys(['attack','block','ace','serve_err','attack_err','reception_err','block_err','plus','minus','balance'], 0); @endphp
         <tr data-player="{{ $x['r']['user_id'] }}" class="{{ ($c['plus'] + $c['minus']) === 0 ? 'mx-muted' : '' }} {{ ($highlight ?? null) === $x['r']['user_id'] ? 'mx-row--hl' : '' }}">
-            <td><a href="{{ route('users.show', $x['r']['user_id']) }}" class="blink">{{ $x['r']['name'] }}</a></td>
+            <td><a href="{{ route('users.show', $x['r']['user_id']) }}" class="blink">{{ $x['r']['name'] }}</a>@if(!empty($x['r']['role'])) <span class="mx-role" style="opacity:.6;font-size:.85em">{{ $x['r']['role'] }}</span>@endif</td>
             @foreach($cols as $k => $label)
             <td class="{{ str_ends_with($k, '_err') && $c[$k] > 0 ? 'is-err' : ($c[$k] === 0 ? 'is-zero' : '') }}"@if($k === 'attack' && $hasAt && $c['attack'] > 0) title="{{ $atTitle($c['at'] ?? []) }}"@endif>@if($k === 'attack' && $hasAt && $c['attack'] > 0)<span class="mx-has-tip">{{ $c[$k] }}</span>@else{{ $c[$k] }}@endif</td>
             @endforeach

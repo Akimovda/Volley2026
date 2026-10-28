@@ -16,6 +16,8 @@ $posAbbr = [
     'opposite' => __('tournaments.pos_abbr_opposite'),
     'middle'   => __('tournaments.pos_abbr_middle'),
     'libero'   => __('tournaments.pos_abbr_libero'),
+    'blocker'  => __('tournaments.pos_abbr_blocker'),
+    'defender' => __('tournaments.pos_abbr_defender'),
 ];
 
 $teamInitials = function (?string $name): string {
@@ -134,6 +136,8 @@ $awaySections = $splitSections($awayPlayers);
 $sectionLabels = [
     'main' => null,
     'libero' => 'Либеро',
+    'blocker' => 'Блокирующий',
+    'defender' => 'Защитник',
     'reserve' => $luTracked ? __('tournaments.lineup_stat_subs_played') : 'Запасные',
 ];
 

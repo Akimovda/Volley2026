@@ -2,7 +2,7 @@
 @php
 $isNew = !isset($team) || !$team->exists;
 $title = $isNew ? 'Новая команда' : ('Редактировать: ' . $team->name);
-$posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро'];
+$posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','opposite'=>'Диагональный','middle'=>'Центральный','libero'=>'Либеро','blocker'=>'Блокирующий','defender'=>'Защитник'];
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной','reserve'=>'Запасной'];
 $currentMembers = $isNew ? collect() : $team->members->sortBy(fn($m)=>$m->role_code==='captain'?0:1);
 $captainId = $isNew ? auth()->id() : (int)$team->user_id;

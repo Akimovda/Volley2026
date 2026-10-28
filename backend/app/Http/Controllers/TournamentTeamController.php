@@ -130,7 +130,7 @@ class TournamentTeamController extends Controller
             ],
             'occurrence_id' => ['nullable', 'integer', 'exists:event_occurrences,id'],
             'team_kind' => ['nullable', 'string', 'in:classic_team,beach_pair'],
-            'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
             'captain_user_id' => ['nullable', 'integer', 'exists:users,id'],
             'member_user_ids' => ['nullable', 'array'],
             'member_user_ids.*' => ['integer', 'exists:users,id', 'distinct'],
@@ -368,7 +368,7 @@ class TournamentTeamController extends Controller
         abort_unless($canManage, 403);
 
         $data = $request->validate([
-            'position_code' => ['required', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'position_code' => ['required', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
         try {
@@ -433,8 +433,9 @@ class TournamentTeamController extends Controller
         $isOrg   = (int) $event->organizer_id === (int) $user->id;
         abort_unless($isAdmin || $isOrg, 403);
 
-        $positionRules = (string) $team->team_kind === 'classic_team'
-            ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero']
+        $team->loadMissing('event.gameSettings');
+        $positionRules = ((string) $team->team_kind === 'classic_team' || ((string) $team->team_kind === 'beach_pair' && $team->event?->registersByBeachRoles()))
+            ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender']
             : ['nullable'];
 
         $data = $request->validate([
@@ -904,7 +905,7 @@ class TournamentTeamController extends Controller
         $data = $request->validate([
             'user_team_id'          => ['required', 'integer', 'exists:user_teams,id'],
             'occurrence_id'         => ['nullable', 'integer', 'exists:event_occurrences,id'],
-            'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'captain_position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
         $userTeam = \App\Models\UserTeam::with('members.user')->find((int) $data['user_team_id']);
@@ -954,13 +955,18 @@ class TournamentTeamController extends Controller
             foreach ($userTeam->members as $member) {
                 if ((int) $member->user_id === (int) $user->id) continue;
                 if (!$member->user) continue;
+                $memberPos = $member->position_code ?: null;
+                if ($memberPos === null && $team->team_kind === 'beach_pair' && $event->registersByBeachRoles()) {
+                    // Пара «По амплуа» из шаблона без амплуа: партнёр получает противоположное капитану
+                    $memberPos = $captainPos === 'blocker' ? 'defender' : ($captainPos === 'defender' ? 'blocker' : null);
+                }
                 try {
                     app(\App\Services\TournamentTeamInviteService::class)->createInvite(
                         team: $team,
                         invitedUserId: (int) $member->user_id,
                         invitedByUserId: (int) $user->id,
                         teamRole: $member->role_code ?: 'player',
-                        positionCode: $member->position_code ?: null,
+                        positionCode: $memberPos,
                     );
                 } catch (\Exception $e) {
                     // Пропускаем ошибки приглашения (игрок уже в команде и т.д.)

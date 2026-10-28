@@ -341,24 +341,28 @@ class PlayerMatchStatsService
             ->join('users', 'users.id', '=', 'event_team_members.user_id')
             ->where('event_team_id', $match->team_home_id)
             ->where('confirmation_status', 'confirmed')
-            ->select('users.id', 'users.first_name', 'users.last_name')
+            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code')
             ->get();
 
         $away = DB::table('event_team_members')
             ->join('users', 'users.id', '=', 'event_team_members.user_id')
             ->where('event_team_id', $match->team_away_id)
             ->where('confirmation_status', 'confirmed')
-            ->select('users.id', 'users.first_name', 'users.last_name')
+            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code')
             ->get();
 
         return [
             'home' => $home->map(fn($u) => [
                 'id' => $u->id,
                 'name' => trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')),
+                // Пляжка «По амплуа»: метка роли (Бл / Защ) для пульта
+                'role' => in_array($u->position_code ?? null, ['blocker', 'defender'], true) ? position_short((string) $u->position_code) : null,
             ])->toArray(),
             'away' => $away->map(fn($u) => [
                 'id' => $u->id,
                 'name' => trim(($u->last_name ?? '') . ' ' . ($u->first_name ?? '')),
+                // Пляжка «По амплуа»: метка роли (Бл / Защ) для пульта
+                'role' => in_array($u->position_code ?? null, ['blocker', 'defender'], true) ? position_short((string) $u->position_code) : null,
             ])->toArray(),
         ];
     }

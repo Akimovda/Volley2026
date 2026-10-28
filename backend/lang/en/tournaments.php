@@ -933,6 +933,10 @@ return [
     'pos_full_outside'              => 'Outside Hitter',
     'pos_full_opposite'             => 'Opposite',
     'pos_full_middle'               => 'Middle Blocker',
+    'pos_full_blocker'              => 'Blocker',
+    'pos_full_defender'             => 'Defender',
+    'pos_abbr_blocker'              => 'Blk',
+    'pos_abbr_defender'             => 'Def',
     'pos_full_libero'               => 'Libero',
 
     // Tournament participant rating table (tab=stats)

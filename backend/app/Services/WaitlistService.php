@@ -702,6 +702,8 @@ class WaitlistService
             'opposite' => 'Диагональный',
             'middle'   => 'Центральный',
             'libero'   => 'Либеро',
+            'blocker'   => 'Блокирующий',
+            'defender'   => 'Защитник',
             'player'   => 'Игрок',
             'reserve'  => 'Резерв',
             default    => $key,

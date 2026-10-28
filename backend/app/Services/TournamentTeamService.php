@@ -35,7 +35,13 @@ final class TournamentTeamService
 
             $teamKind ??= $this->resolveTeamKindFromSettings($settings, (string) ($event->direction ?? 'classic'));
             
-            if ((string) $teamKind === 'classic_team') {
+            $rolesPairKind = (string) $teamKind === 'beach_pair' && $event->registersByBeachRoles();
+
+            if ($rolesPairKind) {
+                if (!in_array($captainPositionCode, array_keys((array) (\App\Services\GameCalculator::beachRoles('2x2') ?? [])), true)) {
+                    throw new DomainException('Для капитана пары нужно выбрать амплуа: Блокирующий или Защитник.');
+                }
+            } elseif ((string) $teamKind === 'classic_team') {
                 if (empty($captainPositionCode)) {
                     throw new DomainException('Для капитана классической команды нужно указать амплуа.');
                 }
@@ -201,9 +207,33 @@ final class TournamentTeamService
      * амплуа — см. getPositionCapacity()). Используется при добавлении НОВОГО участника
      * (organizer add / invite-ссылка), где занятые слоты выбирать не нужно.
      */
+    /**
+     * Пара «По амплуа» (пляжка 2×2, турнир team_beach с registration_by_roles): позиции blocker/defender, по одной на пару.
+     * Работает через тот же механизм позиций, что и classic_team (ёмкость, проверка состава, смена позиции).
+     */
+    private function isRolesPair(EventTeam $team): bool
+    {
+        if ((string) $team->team_kind !== 'beach_pair') {
+            return false;
+        }
+        $event = $team->relationLoaded('event') ? $team->event : $team->event()->first();
+        if (!$event) {
+            return false;
+        }
+        $event->loadMissing('gameSettings');
+
+        return $event->registersByBeachRoles();
+    }
+
+    /** Команда выбирает позиции игроков: классика или пара «По амплуа». */
+    private function teamUsesPositions(EventTeam $team): bool
+    {
+        return (string) $team->team_kind === 'classic_team' || $this->isRolesPair($team);
+    }
+
     public function getAvailablePositionOptions(EventTeam $team): array
     {
-        if ((string) $team->team_kind !== 'classic_team') {
+        if (!$this->teamUsesPositions($team)) {
             return [];
         }
 
@@ -230,6 +260,7 @@ final class TournamentTeamService
             'opposite' => 'Диагональный',
             'middle' => 'Центральный блокирующий',
             'libero' => 'Либеро',
+            'blocker', 'defender' => position_name($code),
             default => $code,
         };
     }
@@ -243,17 +274,23 @@ final class TournamentTeamService
      */
     public function getPositionCapacity(EventTeam $team): array
     {
-        if ($team->team_kind !== 'classic_team') {
+        if (!$this->teamUsesPositions($team)) {
             return [];
         }
 
         $team->loadMissing(['event.tournamentSetting', 'members.user']);
         $settings = $this->getSettings($team->event);
-        $scheme = $this->resolveScheme($event ?? $team->event, $settings);
 
-        $positions = (array) config("volleyball.classic.{$scheme}.positions", []);
-        if ($this->requiresLibero($settings, $scheme) && !array_key_exists('libero', $positions)) {
-            $positions['libero'] = 1;
+        if ($this->isRolesPair($team)) {
+            // Пара «По амплуа»: ровно Блокирующий + Защитник (роли берутся из той же конфигурации, что и слоты записи)
+            $positions = (array) (\App\Services\GameCalculator::beachRoles('2x2') ?? ['blocker' => 1, 'defender' => 1]);
+        } else {
+            $scheme = $this->resolveScheme($event ?? $team->event, $settings);
+
+            $positions = (array) config("volleyball.classic.{$scheme}.positions", []);
+            if ($this->requiresLibero($settings, $scheme) && !array_key_exists('libero', $positions)) {
+                $positions['libero'] = 1;
+            }
         }
 
         $confirmed = $team->members->where('confirmation_status', 'confirmed');
@@ -296,8 +333,8 @@ final class TournamentTeamService
      */
     public function changeMemberPosition(EventTeam $team, EventTeamMember $member, string $newPositionCode, int $performedByUserId): EventTeamMember
     {
-        if ((string) $team->team_kind !== 'classic_team') {
-            throw new DomainException('Смена позиции доступна только для классических команд.');
+        if (!$this->teamUsesPositions($team)) {
+            throw new DomainException('Смена позиции доступна только для классических команд и пар «По амплуа».');
         }
 
         if ((int) $member->event_team_id !== (int) $team->id) {
@@ -531,20 +568,26 @@ final class TournamentTeamService
                 }
             }
     
-            if ((string) $team->team_kind === 'beach_pair' && !empty($positionCode)) {
+            $rolesPair = $this->isRolesPair($team);
+
+            if ((string) $team->team_kind === 'beach_pair' && !$rolesPair && !empty($positionCode)) {
                 throw new DomainException('Для пляжного волейбола позиция не используется.');
             }
     
-            if ((string) $team->team_kind === 'classic_team') {
+            if ((string) $team->team_kind === 'classic_team' || $rolesPair) {
                 if (in_array($teamRole, ['player', 'captain'], true) && empty($positionCode)) {
-                    throw new DomainException('Для основного состава классического волейбола нужно указать амплуа.');
+                    throw new DomainException($rolesPair
+                        ? 'Выберите амплуа в паре: Блокирующий или Защитник.'
+                        : 'Для основного состава классического волейбола нужно указать амплуа.');
                 }
     
                 if (!empty($positionCode)) {
                     $allowedPositions = array_keys($this->getAvailablePositionOptions($team));
     
                     if (!in_array($positionCode, $allowedPositions, true)) {
-                        throw new DomainException('Недопустимая позиция для этой схемы игры.');
+                        throw new DomainException($rolesPair
+                            ? 'В паре уже есть игрок с таким амплуа — выберите противоположное (Блокирующий + Защитник).'
+                            : 'Недопустимая позиция для этой схемы игры.');
                     }
                 }
     
@@ -553,6 +596,18 @@ final class TournamentTeamService
                 }
             }
     
+            if ($rolesPair && !empty($positionCode)) {
+                // Пара из двух одинаковых амплуа запрещена: учитываем и ожидающих ответа (invited/joined)
+                $sameRole = EventTeamMember::query()
+                    ->where('event_team_id', $team->id)
+                    ->whereIn('confirmation_status', ['invited', 'joined', 'confirmed'])
+                    ->where('position_code', $positionCode)
+                    ->exists();
+                if ($sameRole) {
+                    throw new DomainException('В паре уже есть игрок с таким амплуа — выберите противоположное (Блокирующий + Защитник).');
+                }
+            }
+
             $limits = $this->getTeamLimits($team);
     
             $currentTotal = EventTeamMember::query()
@@ -1091,6 +1146,17 @@ final class TournamentTeamService
     
         $issues = [];
     
+        if ($this->isRolesPair($team)) {
+            // Пара «По амплуа»: ровно Блокирующий + Защитник
+            foreach ($this->getPositionCapacity($team) as $position => $info) {
+                $currentCount = $confirmed->where('position_code', $position)->count();
+
+                if ($currentCount < (int) $info['max']) {
+                    $issues[] = "В паре нужен игрок на амплуа «{$info['label']}»";
+                }
+            }
+        }
+
         if ($team->team_kind === 'classic_team') {
             $scheme = $this->resolveScheme($event ?? $team->event, $settings);
             $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
@@ -1529,12 +1595,27 @@ final class TournamentTeamService
             throw new DomainException('Вы уже состоите в другой команде на это мероприятие.');
         }
 
-        return DB::transaction(function () use ($team, $user) {
+        // Пара «По амплуа»: у запрашивающего остаётся единственное амплуа — противоположное уже занятому в паре
+        $requestPosition = null;
+        if ($this->isRolesPair($team)) {
+            $taken = EventTeamMember::query()
+                ->where('event_team_id', $team->id)
+                ->whereIn('confirmation_status', ['invited', 'joined', 'confirmed', 'requested'])
+                ->pluck('position_code')->filter()->all();
+            $free = array_values(array_diff(array_keys($this->getPositionCapacity($team)), $taken));
+            if (!$free) {
+                throw new DomainException('В паре уже нет свободного амплуа.');
+            }
+            $requestPosition = $free[0];
+        }
+
+        return DB::transaction(function () use ($team, $user, $requestPosition) {
             $member = EventTeamMember::create([
                 'event_team_id' => $team->id,
                 'user_id' => $user->id,
-                'role_code' => 'player',
+                'role_code' => $requestPosition ?? 'player',
                 'team_role' => 'player',
+                'position_code' => $requestPosition,
                 'confirmation_status' => 'requested',
                 'position_order' => 2,
                 'invited_by_user_id' => $user->id,

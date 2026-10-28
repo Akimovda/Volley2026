@@ -60,7 +60,7 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
-            'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
         DB::transaction(function () use ($user, $data) {
@@ -107,7 +107,7 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
-            'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero'],
+            'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
         DB::transaction(function () use ($user, $team, $data) {

@@ -45,19 +45,27 @@ final class TournamentTeamInviteService
                 throw new DomainException('Пользователь уже состоит в команде.');
             }
 
-            if ((string) $team->team_kind === 'beach_pair') {
+            $team->loadMissing('event.gameSettings');
+            // Пара «По амплуа»: амплуа (Блокирующий/Защитник) выбирается и проверяется как позиция в классике
+            $rolesPair = (string) $team->team_kind === 'beach_pair' && (bool) $team->event?->registersByBeachRoles();
+
+            if ((string) $team->team_kind === 'beach_pair' && !$rolesPair) {
                 $positionCode = null;
             }
 
-            if ((string) $team->team_kind === 'classic_team' && $teamRole === 'player' && empty($positionCode)) {
-                throw new DomainException('Для основного состава нужно указать амплуа.');
+            $usesPositions = (string) $team->team_kind === 'classic_team' || $rolesPair;
+
+            if ($usesPositions && $teamRole === 'player' && empty($positionCode)) {
+                throw new DomainException($rolesPair ? 'Выберите амплуа партнёра: Блокирующий или Защитник.' : 'Для основного состава нужно указать амплуа.');
             }
 
-            if ((string) $team->team_kind === 'classic_team' && !empty($positionCode)) {
+            if ($usesPositions && !empty($positionCode)) {
                 $allowedPositions = array_keys($this->teamService->getAvailablePositionOptions($team));
 
                 if (!in_array($positionCode, $allowedPositions, true)) {
-                    throw new DomainException('Недопустимое амплуа для этой схемы игры.');
+                    throw new DomainException($rolesPair
+                        ? 'В паре уже есть игрок с таким амплуа — выберите противоположное (Блокирующий + Защитник).'
+                        : 'Недопустимое амплуа для этой схемы игры.');
                 }
             }
             $existingPendingInvite = EventTeamInvite::query()

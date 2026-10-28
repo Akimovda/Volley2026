@@ -27,8 +27,9 @@ class TournamentTeamInviteController extends Controller
         $isOrg     = (int) $event->organizer_id === (int) $user->id;
         abort_unless($isCaptain || $isAdmin || $isOrg, 403);
 
-        $positionRules = (string) $team->team_kind === 'classic_team'
-            ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero']
+        $team->loadMissing('event.gameSettings');
+        $positionRules = ((string) $team->team_kind === 'classic_team' || ((string) $team->team_kind === 'beach_pair' && $team->event?->registersByBeachRoles()))
+            ? ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender']
             : ['nullable'];
 
         $data = $request->validate([

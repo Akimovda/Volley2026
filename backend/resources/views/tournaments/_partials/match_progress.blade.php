@@ -21,6 +21,8 @@ $posFull = [
     'opposite' => __('tournaments.pos_full_opposite'),
     'middle'   => __('tournaments.pos_full_middle'),
     'libero'   => __('tournaments.pos_full_libero'),
+    'blocker'  => __('tournaments.pos_full_blocker'),
+    'defender' => __('tournaments.pos_full_defender'),
 ];
 @endphp
 <div class="rp-wrap">
@@ -69,7 +71,10 @@ $posFull = [
 			$genderClass = $player ? ($player['gender'] === 'm' ? 'rp-gender--m' : ($player['gender'] === 'f' ? 'rp-gender--f' : null)) : null;
 			$genderSign = $player ? ($player['gender'] === 'm' ? '♂' : ($player['gender'] === 'f' ? '♀' : null)) : null;
 
-			$showPosition = $player && ($player['team_kind'] ?? null) === 'classic_team' && ($player['role_code'] ?? null) !== 'reserve';
+			$showPosition = $player && (
+				(($player['team_kind'] ?? null) === 'classic_team' && ($player['role_code'] ?? null) !== 'reserve')
+				|| in_array($player['position_code'] ?? null, ['blocker', 'defender'], true)   // пляжка «По амплуа»
+			);
 			$positionLabel = $showPosition ? ($player['position_code'] ? ($posFull[$player['position_code']] ?? $player['position_code']) : '—') : null;
 			@endphp
 			<div class="rp-row" onclick="this.classList.toggle('rp-row--highlight')">
