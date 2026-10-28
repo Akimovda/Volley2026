@@ -48,7 +48,7 @@
     function renderTabs(p) {
         var th = p.theme || {}, corner = th.corner || 'top-left';
         var cls = {'top-left': 'tl', 'top-right': 'tr', 'bottom-left': 'bl', 'bottom-right': 'br'}[corner] || 'tl';
-        els.tabs.className = 'p ' + cls + (els.tabs.classList.contains('on') ? ' on' : '');
+        els.tabs.className = 'p ' + cls + ' sk-' + normTheme(th).skin + (els.tabs.classList.contains('on') ? ' on' : '');
         var cs = p.set || {n: 1, home: 0, away: 0};
         if (p.mode === 'set_summary' && p.summary && p.summary.set_number) {
             cs = (p.sets || []).filter(function (s) { return s.n === p.summary.set_number; })[0] || cs;
@@ -105,5 +105,5 @@
     }
     if (document.fonts && document.fonts.load) {
         // шрифт грузится лениво: после загрузки пересчитываем ужатие
-        document.fonts.load('600 40px Oswald', 'Аб').then(function () { if (cur && (cur.theme || {}).template === 'tabs') { tbFit(els.tabs); } }, function () {});
+        document.fonts.load('600 40px Oswald', 'Аб').then(function () { if (cur && normTheme(cur.theme || {}).board === 'avp') { tbFit(els.tabs); } }, function () {});
     }

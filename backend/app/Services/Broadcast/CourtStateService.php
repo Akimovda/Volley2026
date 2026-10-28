@@ -694,6 +694,44 @@ class CourtStateService
 
     public const TABS_LOGOS = ['volleyclub', 'organizer', 'hidden'];
 
+    /** Три табло и их скины (структура табло не меняется от скина — только цветовое оформление). */
+    public const BOARDS = ['avp', 'classic', 'wt'];
+    public const SKINS = [
+        'avp'     => ['default', 'night', 'light', 'forest'],
+        'classic' => ['default', 'glass', 'neon', 'light_tv'],
+        'wt'      => ['red', 'blue', 'gold', 'light'],
+    ];
+    public const LAYOUTS = ['compact', 'sets_table'];          // только табло «Классическое»
+    public const WT_POSITIONS = ['top', 'bottom'];             // только табло «Мировой Тур»
+
+    /**
+     * Табло/скин/вариант из сохранённой темы. Старые настройки (одно поле template: compact | sets_table | glass | neon | light_tv | tabs)
+     * разворачиваются без миграции данных: tabs → AVP; sets_table → Классическое (таблица партий); glass/neon/light_tv → скины Классического.
+     *
+     * @return array{board:string,skin:string,layout:string,wt_position:string,template:string}
+     */
+    public static function normalizeBoard(array $t): array
+    {
+        $legacy = $t['template'] ?? null;
+        $board = $t['board'] ?? null;
+        if (!in_array($board, self::BOARDS, true)) {
+            $board = $legacy === 'tabs' ? 'avp' : 'classic';
+        }
+        $skin = $t['skin'] ?? null;
+        if (!in_array($skin, self::SKINS[$board], true)) {
+            $skin = ($board === 'classic' && in_array($legacy, ['glass', 'neon', 'light_tv'], true)) ? $legacy : self::SKINS[$board][0];
+        }
+        $layout = $t['layout'] ?? null;
+        if (!in_array($layout, self::LAYOUTS, true)) {
+            $layout = $legacy === 'sets_table' ? 'sets_table' : 'compact';
+        }
+        $pos = in_array($t['wt_position'] ?? null, self::WT_POSITIONS, true) ? $t['wt_position'] : 'top';
+        // template — обратная совместимость для потребителей старого поля
+        $template = $board === 'avp' ? 'tabs' : ($board === 'wt' ? 'wt' : ($layout === 'sets_table' ? 'sets_table' : ($skin !== 'default' ? $skin : 'compact')));
+
+        return ['board' => $board, 'skin' => $skin, 'layout' => $layout, 'wt_position' => $pos, 'template' => $template];
+    }
+
     /** Цвет правой вкладки «Вкладок»: #RRGGBB или null (= фирменный градиент по умолчанию). */
     public static function cleanTabsColor(mixed $v): ?string
     {
@@ -740,11 +778,15 @@ class CourtStateService
     {
         $t = (array) ($settings->theme ?? []);
         $corner = $t['corner'] ?? 'top-left';
-        $template = $t['template'] ?? 'compact';
+        $nb = self::normalizeBoard($t);
 
         return [
             'corner'          => in_array($corner, ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $corner : 'top-left',
-            'template'        => in_array($template, ['compact', 'sets_table', 'glass', 'neon', 'light_tv', 'tabs'], true) ? $template : 'compact',
+            'template'        => $nb['template'],
+            'board'           => $nb['board'],
+            'skin'            => $nb['skin'],
+            'layout'          => $nb['layout'],
+            'wt_position'     => $nb['wt_position'],
             'show_set_scores' => (bool) ($t['show_set_scores'] ?? true),
             'show_logos'      => (bool) ($t['show_logos'] ?? true),
             'scale'           => self::clampScale($t['scale'] ?? null),

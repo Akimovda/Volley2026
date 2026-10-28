@@ -59,4 +59,5 @@ return [
     'captain' => 'Капитан',
     'side_switch' => 'Смена сторон',
     'tech_timeout' => 'Технический тайм-аут',
+    'wt_sets' => 'СЕТЫ',
 ];

@@ -114,7 +114,10 @@ class BroadcastSetupController extends Controller
             'checklist'   => app(\App\Services\Broadcast\StreamChecklist::class)->build($event, $occId, $courts, $activeLinks, $unassigned->count()),
             'teams'       => $this->teamRows($event, $occId, $isFriendly),
             'form'        => [
-                'template'        => in_array($theme['template'] ?? '', ['compact', 'sets_table', 'glass', 'neon', 'light_tv', 'tabs'], true) ? $theme['template'] : 'compact',
+                'board'           => CourtStateService::normalizeBoard($theme)['board'],
+                'skin'            => CourtStateService::normalizeBoard($theme)['skin'],
+                'layout'          => CourtStateService::normalizeBoard($theme)['layout'],
+                'wt_position'     => CourtStateService::normalizeBoard($theme)['wt_position'],
                 'tabs_color'      => CourtStateService::cleanTabsColor($theme['tabs_color'] ?? null),
                 'tabs_logo'       => in_array($theme['tabs_logo'] ?? '', CourtStateService::TABS_LOGOS, true) ? $theme['tabs_logo'] : 'volleyclub',
                 'corner'          => in_array($theme['corner'] ?? '', ['top-left', 'top-right', 'bottom-left', 'bottom-right'], true) ? $theme['corner'] : 'top-left',
@@ -510,7 +513,10 @@ class BroadcastSetupController extends Controller
         $this->authorizeEvent($request, $event);
         $data = $request->validate([
             'occurrence_id'   => ['required', 'integer'],
-            'template'        => ['required', Rule::in(['compact', 'sets_table', 'glass', 'neon', 'light_tv', 'tabs'])],
+            'board'           => ['required', Rule::in(CourtStateService::BOARDS)],
+            'skin'            => ['required', 'string', 'max:20'],
+            'layout'          => ['nullable', Rule::in(CourtStateService::LAYOUTS)],
+            'wt_position'     => ['nullable', Rule::in(CourtStateService::WT_POSITIONS)],
             'tabs_color'      => ['nullable', 'regex:/^#[0-9a-fA-F]{6}$/'],
             'tabs_logo'       => ['nullable', Rule::in(CourtStateService::TABS_LOGOS)],
             'corner'          => ['required', Rule::in(['top-left', 'top-right', 'bottom-left', 'bottom-right'])],
@@ -524,7 +530,10 @@ class BroadcastSetupController extends Controller
         $occ = $this->ownOccurrence($event, (int) $data['occurrence_id']);
         $s = $this->settingsRow($event, $occ);
         $s->theme = array_merge((array) $s->theme, [
-            'template' => $data['template'], 'corner' => $data['corner'],
+            'board' => $data['board'], 'skin' => in_array($data['skin'], CourtStateService::SKINS[$data['board']], true) ? $data['skin'] : CourtStateService::SKINS[$data['board']][0],
+            'layout' => $data['layout'] ?? 'compact', 'wt_position' => $data['wt_position'] ?? 'top',
+            'template' => CourtStateService::normalizeBoard(['board' => $data['board'], 'skin' => $data['skin'], 'layout' => $data['layout'] ?? 'compact'])['template'],
+            'corner' => $data['corner'],
             'show_set_scores' => (bool) $data['show_set_scores'], 'show_logos' => (bool) $data['show_logos'],
             'scale' => (int) $data['scale'], 'opacity' => (int) $data['opacity'], 'edge_margin' => $data['edge_margin'],
             'show_team_names' => (bool) $data['show_team_names'],
