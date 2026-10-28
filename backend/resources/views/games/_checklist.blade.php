@@ -1,6 +1,9 @@
 {{-- Пошаговый чек-лист страницы игры. Нужны: $checklist, $event, $occurrence --}}
 @php
     $setupUrl = route('broadcast.setup', $event) . '?occurrence_id=' . $occurrence->id;
+    // На сайте — в новой вкладке; в приложении (WebView) target=_blank уводит во внешний браузер, поэтому там — в том же окне приложения
+    $isAppUa = preg_match('/VolleyPlayApp|SVSVolleyApp/', (string) request()->userAgent()) === 1;
+    $blank = $isAppUa ? '' : ' target="_blank" rel="noopener"';
 @endphp
 @foreach($checklist['steps'] as $i => $st)
 <div class="gm-cl-step {{ $st['done'] ? 'done' : '' }}" data-cl="{{ $st['key'] }}">
@@ -31,13 +34,13 @@
         @switch($st['key'])
             @case('format') <a href="#gm-cfg" class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
             @case('teams') <a href="#gm-new" class="btn btn-small {{ $st['done'] ? 'btn-outline' : '' }}">{{ __('games.cl_btn_teams') }}</a> @break
-            @case('court') <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
+            @case('court') <a href="{{ $setupUrl }}"{!! $blank !!} class="btn btn-small btn-outline">{{ __('games.cl_btn_change') }}</a> @break
             @case('match') <a href="#gm-new" class="btn btn-small {{ $st['done'] ? 'btn-outline' : '' }}">{{ __('games.cl_btn_match') }}</a> @break
             @case('score')
                 @if($st['match'])<a href="{{ route('tournament.matches.rally.form', $st['match']) }}" class="btn btn-small">{{ __('games.cl_btn_score') }}</a>@endif
-                <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_secretary') }}</a>
+                <a href="{{ $setupUrl }}"{!! $blank !!} class="btn btn-small btn-outline">{{ __('games.cl_btn_secretary') }}</a>
                 @break
-            @case('stream') <a href="{{ $setupUrl }}" target="_blank" rel="noopener" class="btn btn-small btn-outline">{{ __('games.cl_btn_stream') }}</a> @break
+            @case('stream') <a href="{{ $setupUrl }}"{!! $blank !!} class="btn btn-small btn-outline">{{ __('games.cl_btn_stream') }}</a> @break
         @endswitch
     </div>
 </div>
