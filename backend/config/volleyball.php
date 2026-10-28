@@ -48,7 +48,12 @@ return [
 
         '2x2' => [
             'players_per_team' => 2,
-            'positions' => []
+            'positions' => [],
+            // режим «По амплуа» (event_game_settings.positions): пара = Блокирующий + Защитник
+            'positions_by_roles' => [
+                'blocker' => 1,
+                'defender' => 1,
+            ],
         ],
 
         '3x3' => [

@@ -252,7 +252,10 @@ return [
         'libero'   => 'Либеро',
         'player'   => 'Игрок',
         'reserve'  => 'Запасной игрок',
+        'blocker'  => 'Блокирующий',
+        'defender' => 'Защитник',
     ],
+    'positions_short' => ['blocker' => 'Бл', 'defender' => 'Защ'],
 
     'gender_quota_position_full' => 'На позиции «:position» уже занято :count из :max мест для :gender.',
     'gender_women' => 'женщин',

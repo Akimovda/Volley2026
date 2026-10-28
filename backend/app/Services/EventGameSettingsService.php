@@ -246,6 +246,26 @@ class EventGameSettingsService
         return $subtype === '4x2';
     }
 
+    /**
+     * Пляжка 2×2 «По амплуа» (Блокирующий + Защитник): только пляж, схема 2×2 и форматы game, training_game,
+     * командный турнир team_beach. Не применяется к training, king_beach, master_class и mixed_group.
+     */
+    public function wantsBeachRoles(array $data, string $direction, string $format, ?string $registrationMode = null): bool
+    {
+        if ($direction !== 'beach' || empty($data['game_registration_by_roles'])) {
+            return false;
+        }
+        $subtype = (string) ($data['game_subtype'] ?? $data['tournament_game_scheme'] ?? '') ?: '2x2';
+        if ($subtype !== '2x2') {
+            return false;
+        }
+        if (in_array($format, ['game', 'training_game'], true)) {
+            return ($registrationMode ?? 'single') !== 'mixed_group';
+        }
+
+        return $format === 'tournament' && $registrationMode === 'team_beach';
+    }
+
     public function normalizeGameDefaults(array $data, string $direction, string $format): array
     {
         $errors = [];
@@ -769,11 +789,22 @@ class EventGameSettingsService
             
             $subtype = $subtype ?: (($direction === 'beach') ? '2x2' : '4x2');
             
+            // Пляжка «По амплуа»: роли blocker/defender вместо единой роли player (слоты = роль × число команд → мест/2 на роль)
+            $byBeachRoles = $this->wantsBeachRoles(
+                $data, $direction, (string) ($data['format'] ?? $event->format ?? ''),
+                $registrationMode !== '' ? $registrationMode : (string) ($data['registration_mode'] ?? $event->registration_mode ?? 'single')
+            );
+
             $calc = GameCalculator::calculate(
                 (string)$subtype,
                 $liberoMode,
-                1
+                1,
+                $byBeachRoles
             );
+
+            if ($byBeachRoles && !empty($calc['roles'])) {
+                $positions = array_keys($calc['roles']);
+            }
             
             /*
             |--------------------------------------------------------------------------

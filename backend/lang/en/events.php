@@ -245,7 +245,10 @@ return [
         'libero'   => 'Libero',
         'player'   => 'Player',
         'reserve'  => 'Reserve',
+        'blocker'  => 'Blocker',
+        'defender' => 'Defender',
     ],
+    'positions_short' => ['blocker' => 'Bl', 'defender' => 'Def'],
 
     'gender_quota_position_full' => 'Position ":position" already has :count of :max slots filled for :gender.',
     'gender_women' => 'women',
