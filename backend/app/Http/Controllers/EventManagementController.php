@@ -1043,6 +1043,17 @@ if ($role === 'admin') {
         }
 
         // Игра со статистикой — матч строго между двумя командами
+        // «Минимум команд» не может превышать общее число команд турнира
+        if (!empty($data['tournament_min_teams'])) {
+            $event->loadMissing('tournamentSetting');
+            $totalTeams = (int) ($data['teams_count'] ?? $event->tournamentSetting?->teams_count ?? $event->tournament_teams_count ?? 0);
+            if ($totalTeams > 0 && (int) $data['tournament_min_teams'] > $totalTeams) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'tournament_min_teams' => __('events.tournament_min_teams_gt_total'),
+                ]);
+            }
+        }
+
         if (($data['format'] ?? $event->format) === 'game' && !empty($data['collect_stats']) && (int) ($data['teams_count'] ?? 2) > 2) {
             throw \Illuminate\Validation\ValidationException::withMessages(['teams_count' => __('events.stats_teams_limit')]);
         }
