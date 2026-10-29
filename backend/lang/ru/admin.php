@@ -345,6 +345,7 @@ return [
     'sub_col_amount'       => 'Сумма',
     'sub_col_status'       => 'Статус',
     'sub_col_date'         => 'Дата',
+    'sub_col_action'       => 'Действие',
     'sub_kind_premium'     => 'Premium',
     'sub_kind_pro'         => 'PRO',
     'sub_plan_trial'       => 'Пробный',
