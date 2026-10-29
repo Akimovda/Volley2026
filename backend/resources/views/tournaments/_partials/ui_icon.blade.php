@@ -1,4 +1,4 @@
-{{-- Иконки пульта (Tabler, stroke currentColor, aria-hidden). $n: undo | save | chart | warn | pen | play | check. $size — px (по умолчанию 18) --}}
+{{-- Иконки пульта (Tabler, stroke currentColor, aria-hidden). $n: undo | save | chart | warn | pen | play | back | check. $size — px (по умолчанию 18) --}}
 @php
 	$uiPaths = [
 		'undo'  => '<path d="M9 14l-4 -4l4 -4"/><path d="M5 10h11a4 4 0 1 1 0 8h-1"/>',
@@ -7,6 +7,7 @@
 		'warn'  => '<path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/>',
 		'pen'   => '<path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4"/><path d="M13.5 6.5l4 4"/>',
 		'play'  => '<path d="M7 4v16l13 -8z"/>',
+		'back'  => '<path d="M5 12h14"/><path d="M5 12l6 6"/><path d="M5 12l6 -6"/>',
 		'check' => '<path d="M5 12l5 5l10 -10"/>',
 	];
 @endphp

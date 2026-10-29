@@ -157,6 +157,15 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .ls-num{width:52px;margin-top:4px;text-align:center;font-weight:800;font-size:16px;border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:2px 4px;background:#fff;color:#111}
 .ls-num--ok{border-color:#16a34a}
 .ls-num--err{border-color:#dc2626}
+.rw-foot{display:grid;grid-template-columns:minmax(max-content,1fr) minmax(max-content,1.3fr) minmax(max-content,1fr);gap:8px;text-align:center}
+.rw-foot--2{grid-template-columns:minmax(max-content,1fr) minmax(max-content,1.3fr)}
+.rw-foot form{margin:0}
+.rw-foot .btn{height:52px;width:100%;display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 8px;box-sizing:border-box;font-size:14px;letter-spacing:0;line-height:1}
+.rw-foot .btn .ui-ico{flex:none}
+.rw-foot .rw-foot-pdf{grid-column:1/-1;height:auto;min-height:40px;width:auto;justify-self:center;padding:0 16px}
+@media (max-width:400px){.rw-foot{gap:6px}.rw-foot .btn{font-size:12px;gap:4px;padding:0 6px}.rw-foot .btn .ui-ico{width:15px;height:15px}}
+@media (max-width:370px){.rw-foot .btn{font-size:11px;padding:0 5px}.rw-foot .btn .ui-ico{width:14px;height:14px}}
+.js-rw-start{display:inline-flex;align-items:center;justify-content:center;gap:8px}
 .ui-ico{vertical-align:-3px;flex:none;fill:none!important;stroke:currentColor!important}
 .ui-ico *{fill:none!important}
 .rw-lbl-short{display:none}

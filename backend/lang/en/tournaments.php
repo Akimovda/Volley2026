@@ -1139,7 +1139,8 @@ return [
     'bx_fix_banner_beach' => 'Serving order error recorded · point to :team (:score)',
     'rally_action_opp_rotation_error_beach' => 'Serving order error',
     'rally_no_attempts_note_attacks' => 'Attack attempts are not counted automatically — refine them on the stats page if needed.',
-    'rally_btn_undo_short' => 'Undo point',
+    'rally_btn_undo_short' => 'Undo',
     'lineup_btn_undo_short' => 'Undo',
     'rally_btn_finalize_short' => 'Save',
+    'rally_btn_back' => 'Back',
 ];
