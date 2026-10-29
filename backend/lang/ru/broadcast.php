@@ -48,7 +48,7 @@ return [
     'scorer_invite_body'         => 'Вас назначили ведущим площадки «:court» — турнир «:event». Откройте ссылку и вводите счёт по очкам.',
     'scorer_invite_button'       => 'Открыть ввод счёта',
     'enable_sound' => 'Включить звук предпросмотра',
-    'match_start_btn'            => '▶ Матч начался',
+    'match_start_btn'            => 'Матч начался',
     'match_start_confirm'        => 'Матч начался? Табло 0:0 появится в эфире.',
     'match_start_yes'            => 'Да, начался',
     'match_start_no'             => 'Отмена',

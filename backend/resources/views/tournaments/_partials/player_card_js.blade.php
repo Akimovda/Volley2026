@@ -8,7 +8,7 @@ window.PlayerCardUi = window.PlayerCardUi || (function () {
 		a.className = 'ls-av' + (lib ? ' ls-av--lib' : '');
 		a.style.background = lib ? '#7C3AED' : (color || '#2967BA');
 		a.style.color = lib ? '#fff' : (text || '#fff');
-		if (p.photo) { var im = document.createElement('img'); im.src = p.photo; im.alt = ''; a.style.background = 'transparent'; a.appendChild(im); }
+		if (p.photo) { var im = document.createElement('img'); im.src = p.photo; im.alt = ''; im.dataset.ini = p.initials || '?'; im.dataset.bg = color || '#2967BA'; im.dataset.fg = text || '#fff'; a.style.background = 'transparent'; a.appendChild(im); }
 		else { a.textContent = p.initials || '?'; }
 		return a;
 	}

@@ -166,7 +166,7 @@
 			<div class="card mb-2 so-now" style="display:flex;align-items:center;justify-content:center;gap:8px">
 				<span class="rw-bi">@include('tournaments._partials.ball_icon')</span>
 				<span class="f-13" style="opacity:.7">{{ __('tournaments.so_serving') }}</span>
-				<span class="ls-av so-av28" style="background:{{ $sv['photo'] ? 'transparent' : $svt['color'] }};color:{{ $svt['text'] }}">@if($sv['photo'])<img src="{{ $sv['photo'] }}" alt="">@else{{ $sv['initials'] }}@endif</span>
+				<span class="ls-av so-av28" style="background:{{ $sv['photo'] ? 'transparent' : $svt['color'] }};color:{{ $svt['text'] }}">@if($sv['photo'])<img src="{{ $sv['photo'] }}" alt="" data-ini="{{ $sv['initials'] }}" data-bg="{{ $svt['color'] }}" data-fg="{{ $svt['text'] }}">@else{{ $sv['initials'] }}@endif</span>
 				<span class="b-700">{{ $sv['number'] !== null ? '№'.$sv['number'].' ' : '' }}{{ $sv['surname'] }}</span>
 			</div>
 			@endif
@@ -177,7 +177,7 @@
 		<div class="card mb-2" style="text-align:center">
 			<form method="POST" action="{{ $urls['match_start'] }}" class="js-rw-match-start" data-set="{{ $setNumber }}">
 				@csrf
-				<button type="submit" class="btn btn-primary w-100" style="font-size:16px;padding:14px 8px">{{ __('broadcast.match_start_btn') }}</button>
+				<button type="submit" class="btn btn-primary w-100" style="font-size:16px;padding:14px 8px">@include('tournaments._partials.ui_icon', ['n' => 'play', 'size' => 18]) {{ __('broadcast.match_start_btn') }}</button>
 			</form>
 		</div>
 		@elseif(!empty($canMatchUnstart) && !empty($urls['match_unstart']))
@@ -294,7 +294,7 @@
 				<div class="d-flex gap-1" style="flex-wrap:wrap">
 
 					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem"><span class="rw-bi">@include('tournaments._partials.ball_icon')</span> {{ __('tournaments.rally_own_action_btn') }}</button>
-					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">⚠ {{ __('tournaments.rally_opp_error_row') }}</button>
+					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">@include('tournaments._partials.ui_icon', ['n' => 'warn', 'size' => 18]) {{ __('tournaments.rally_opp_error_row') }}</button>
 					@if($luStarted)
 					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
 					<button type="button" class="btn btn-secondary js-lu-fix" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.bx_fix_btn') }}">{{ __('tournaments.bx_fix_btn') }}</button>
@@ -316,7 +316,7 @@
 				<input type="hidden" name="set_number" value="{{ $setNumber }}">
 				<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">
 				<button type="submit" class="btn btn-secondary w-100" {{ $board['can_undo'] ? '' : 'disabled' }}>
-					↩ <span class="rw-lbl-full">{{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}</span><span class="rw-lbl-short">{{ $luOn ? __('tournaments.lineup_btn_undo_short') : __('tournaments.rally_btn_undo_short') }}</span>
+					@include('tournaments._partials.ui_icon', ['n' => 'undo', 'size' => 18]) <span class="rw-lbl-full">{{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}</span><span class="rw-lbl-short">{{ $luOn ? __('tournaments.lineup_btn_undo_short') : __('tournaments.rally_btn_undo_short') }}</span>
 				</button>
 			</form>
 			@if($matchReady && !$match->isCompleted())
@@ -327,7 +327,7 @@
 			<form method="POST" action="{{ $urls['finalize'] }}" style="flex:1" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
 				@csrf
 				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
-					💾 <span class="rw-lbl-full">{{ __('tournaments.rally_btn_finalize') }}</span><span class="rw-lbl-short">{{ __('tournaments.rally_btn_finalize_short') }}</span>
+					@include('tournaments._partials.ui_icon', ['n' => 'save', 'size' => 18]) <span class="rw-lbl-full">{{ __('tournaments.rally_btn_finalize') }}</span><span class="rw-lbl-short">{{ __('tournaments.rally_btn_finalize_short') }}</span>
 				</button>
 			</form>
 			@if($urls['back'])
@@ -337,7 +337,7 @@
 			@endif
 			@if($match->isCompleted() && $urls['pdf'])
 			<a href="{{ $urls['pdf'] }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
-				📊 PDF
+				@include('tournaments._partials.ui_icon', ['n' => 'chart', 'size' => 18]) PDF
 			</a>
 			@endif
 		</div>

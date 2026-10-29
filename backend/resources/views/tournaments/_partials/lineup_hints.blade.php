@@ -5,7 +5,7 @@
 @php $lb = $h['libero']; $pt = $h['partner']; @endphp
 <div class="lu-hint" data-key="{{ $h['key'] }}">
 	<div class="lu-hint-top">
-		<span class="lu-hint-av">@if($lb['photo'])<img src="{{ $lb['photo'] }}" alt="">@else{{ $lb['initials'] }}@endif @if($lb['number'] !== null)<i>{{ $lb['number'] }}</i>@endif</span>
+		<span class="lu-hint-av">@if($lb['photo'])<img src="{{ $lb['photo'] }}" alt="" data-ini="{{ $lb['initials'] }}">@else{{ $lb['initials'] }}@endif @if($lb['number'] !== null)<i>{{ $lb['number'] }}</i>@endif</span>
 		<div class="lu-hint-txt">
 			<div class="lu-hint-ttl">{{ $h['team'] }} · {{ $h['reason'] === 'front' ? __('tournaments.bx_hint_front') : __('tournaments.bx_hint_serve') }}</div>
 			<div class="lu-hint-q">{{ __('tournaments.bx_hint_return', ['who' => trim(($pt['number'] !== null ? '№' . $pt['number'] . ' ' : '') . $pt['surname'] . ($pt['pos_abbr'] ? ' (' . $pt['pos_abbr'] . ')' : ''))]) }}</div>

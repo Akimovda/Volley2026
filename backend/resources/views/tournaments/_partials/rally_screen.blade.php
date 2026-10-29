@@ -157,6 +157,8 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .ls-num{width:52px;margin-top:4px;text-align:center;font-weight:800;font-size:16px;border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:2px 4px;background:#fff;color:#111}
 .ls-num--ok{border-color:#16a34a}
 .ls-num--err{border-color:#dc2626}
+.ui-ico{vertical-align:-3px;flex:none;fill:none!important;stroke:currentColor!important}
+.ui-ico *{fill:none!important}
 .rw-lbl-short{display:none}
 @media (max-width:480px){.rw-lbl-full{display:none}.rw-lbl-short{display:inline}}
 .so-pairs{display:flex;flex-direction:column;gap:10px}
@@ -476,7 +478,7 @@ window.RallyLive = (function () {
 	function pcard(p, ring) {
 		var c = p.card || {}, w = document.createElement('div'), av = document.createElement('div');
 		w.className = 'rw-pc'; av.className = 'rw-pc-av' + (ring ? ' rw-pc-av--srv' : '');
-		if (c.photo) { var im = document.createElement('img'); im.src = c.photo; im.alt = ''; av.appendChild(im); } else { av.textContent = c.initials || String(p.name || '?').charAt(0); }
+		if (c.photo) { var im = document.createElement('img'); im.src = c.photo; im.alt = ''; im.dataset.ini = c.initials || String(p.name || '?').charAt(0); av.appendChild(im); } else { av.textContent = c.initials || String(p.name || '?').charAt(0); }
 		if (c.number != null) { var nb = document.createElement('span'); nb.className = 'rw-pc-num'; nb.textContent = c.number; av.appendChild(nb); }
 		var nm = document.createElement('div'); nm.className = 'rw-pc-nm'; nm.textContent = (c.surname || p.name || '') + (c.pos ? ' · ' + c.pos : '');
 		w.appendChild(av); w.appendChild(nm);
@@ -725,6 +727,7 @@ window.RallyLive = (function () {
 })();
 </script>
 
+@include('tournaments._partials.photo_fallback_js')
 @if($luOn)
 @include('tournaments._partials.lineup_popup_js')
 @include('tournaments._partials.player_card_js')
