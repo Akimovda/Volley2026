@@ -20,6 +20,7 @@
 		'bx_srv_rot' => __('tournaments.bx_srv_rot'), 'bx_srv_rot_sub' => __('tournaments.bx_srv_rot_sub'),
 		'bx_mm_title' => __('tournaments.bx_mm_title'), 'bx_mm_text' => __('tournaments.bx_mm_text'), 'bx_mm_record' => __('tournaments.bx_mm_record'),
 		'bx_mm_record_sub' => __('tournaments.bx_mm_record_sub'), 'bx_mm_fix' => __('tournaments.bx_mm_fix'), 'bx_mm_hint' => __('tournaments.bx_mm_hint'),
+		'bx_scores' => __('tournaments.bx_scores'),
 		'bx_culprit' => __('tournaments.bx_culprit'), 'bx_fix_banner' => __('tournaments.bx_fix_banner'),
 		'how' => __('tournaments.rally_wiz_how'), 'errorType' => __('tournaments.rally_wiz_error_type'),
 		'whoScored' => __('tournaments.rally_wiz_who_scored'), 'oppWho' => __('tournaments.rally_wiz_opp_who'),
@@ -92,7 +93,7 @@ body.dark .rw-box{background:#222333;color:#cacaca}
 .rw-foot{display:flex;gap:8px;margin-top:14px}
 .rw-foot .btn{flex:1;font-size:14px}
 /* кнопки «Подаёт»: невыбранная — белая с контуром цвета команды (в тёмной теме прозрачная), выбранная — заливка (inline) */
-#rw-live .rw-serve-btn{box-shadow:none}
+#rw-live .rw-serve-btn{box-shadow:none;white-space:normal;text-align:center;line-height:1.25;overflow-wrap:anywhere;word-break:normal;hyphens:none}
 #rw-live .rw-serve-btn:not(.on){background:#fff;color:#2c2c2c}
 body.dark #rw-live .rw-serve-btn:not(.on){background:transparent;color:#cacaca}
 /* белые кнопки выбора: контур и лёгкая тень, чтобы не сливались с белым фоном окна */
@@ -562,11 +563,17 @@ window.RallyLive = (function () {
 	function render() {
 		var d = DATA[st.side], players = d.players;
 		elGrid.innerHTML = ''; elFoot.innerHTML = ''; elNote.textContent = '';
-		var crumbs = [d.teamName];
+		// под заголовком — «Очко получает: <команда>» (команда жирным); выбранные действие/игроки — второй строкой
+		var crumbs = [];
 		if (st.action) crumbs.push(T[st.action]);
 		if (st.player) crumbs.push(nameOf(st.kind === 'own' ? d.players : d.oppPlayers, st.player));
 		if (st.dig) crumbs.push('⤵ ' + nameOf(players, st.dig));
-		elSub.textContent = crumbs.join(' · ');
+		elSub.innerHTML = '';
+		var scoreLine = document.createElement('div'), sp = T.bx_scores.split(':team'), teamB = document.createElement('b');
+		teamB.textContent = d.teamName;
+		scoreLine.appendChild(document.createTextNode(sp[0])); scoreLine.appendChild(teamB); scoreLine.appendChild(document.createTextNode(sp[1] || ''));
+		elSub.appendChild(scoreLine);
+		if (crumbs.length) { var cl = document.createElement('div'); cl.style.fontSize = '12px'; cl.style.opacity = '.8'; cl.textContent = crumbs.join(' · '); elSub.appendChild(cl); }
 
 		if (st.step === 'action') {
 			elTitle.textContent = st.kind === 'own' ? T.how : T.errorType;

@@ -972,6 +972,7 @@ return [
     'bx_mm_record_sub' => 'record it on the server by the lineup, point to :team',
     'bx_mm_fix' => 'Check the lineup',
     'bx_mm_hint' => 'If the serve is wrong — Cancel, undo the last point (↩) and enter it again.',
+    'bx_scores' => 'Point goes to: :team',
     'mc_libero_serve' => 'Libero cannot serve — bring back :who',
     'mc_zoom' => 'Team positions — tap to enlarge',
     'mc_serves' => 'Serving',
