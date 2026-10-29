@@ -1,0 +1,202 @@
+--- bot.py.bak-2026-10-29	2026-10-29 14:07:24.022811437 +0000
++++ bot.py	2026-10-29 14:08:08.634512740 +0000
+@@ -169,62 +169,95 @@
+         return {"raw": resp.text}
+ 
+ 
+-def get_max_chats(limit: int = 100) -> list[dict[str, str]]:
+-    chats: list[dict[str, str]] = []
+-    marker: Optional[int] = None
+-
+-    while True:
+-        params: dict[str, Any] = {"count": limit}
+-        if marker is not None:
+-            params["marker"] = marker
++KNOWN_CHATS_PATH = os.getenv("KNOWN_CHATS_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "known_chats.json"))
+ 
+-        resp = requests.get(
+-            f"{MAX_API_BASE_URL}/chats",
+-            headers={"Authorization": MAX_BOT_TOKEN},
+-            params=params,
+-            timeout=20,
+-        )
+-        resp.raise_for_status()
+-        data = resp.json()
+ 
+-        raw_chats = data.get("chats") or []
+-        if not isinstance(raw_chats, list):
+-            break
+-
+-        for item in raw_chats:
+-            if not isinstance(item, dict):
+-                continue
+-
+-            chat_id = str(
+-                item.get("chat_id")
+-                or item.get("id")
+-                or item.get("chatId")
+-                or ""
+-            ).strip()
+-            if not chat_id:
+-                continue
+-
+-            title = str(
+-                item.get("title")
+-                or item.get("name")
+-                or item.get("chat_title")
+-                or f"Чат {chat_id}"
+-            ).strip()
++def load_known_chats() -> dict[str, dict[str, Any]]:
++    # GET /chats в MAX больше не работает (method.not.found), поэтому чаты бота накапливаем из событий bot_added / сообщений группы
++    try:
++        with open(KNOWN_CHATS_PATH, "r", encoding="utf-8") as f:
++            data = json.load(f)
++        return data if isinstance(data, dict) else {}
++    except Exception:
++        return {}
+ 
+-            chats.append({
+-                "chat_id": chat_id,
+-                "title": title,
+-            })
+ 
+-        marker = data.get("marker")
+-        if marker is None:
+-            break
+-
+-    unique: dict[str, dict[str, str]] = {}
+-    for item in chats:
+-        unique[item["chat_id"]] = item
++def save_known_chats(data: dict[str, dict[str, Any]]) -> None:
++    try:
++        with open(KNOWN_CHATS_PATH, "w", encoding="utf-8") as f:
++            json.dump(data, f, ensure_ascii=False)
++    except Exception as e:
++        log_message(f"KNOWN CHATS SAVE ERROR: {e}")
+ 
+-    return list(unique.values())
++
++def register_known_chat(chat_id: Any, added_by: Any = None) -> None:
++    cid = str(chat_id or "").strip()
++    if not cid or not cid.startswith("-"):
++        return
++    data = load_known_chats()
++    changed = False
++    if cid not in data:
++        data[cid] = {"added_at": int(time.time())}
++        changed = True
++        log_message(f"KNOWN CHAT ADDED: {cid} added_by={added_by}")
++    if added_by and str(data[cid].get("added_by") or "") != str(added_by):
++        data[cid]["added_by"] = str(added_by)   # кто добавил бота — тот видит чат в списке привязки
++        changed = True
++    if changed:
++        save_known_chats(data)
++
++
++def forget_known_chat(chat_id: Any) -> None:
++    cid = str(chat_id or "").strip()
++    data = load_known_chats()
++    if cid in data:
++        data.pop(cid, None)
++        save_known_chats(data)
++        log_message(f"KNOWN CHAT REMOVED: {cid}")
++
++
++def get_max_chats(user_id: str = "", limit: int = 100) -> list[dict[str, Any]]:
++    # в список попадают только чаты, куда бота добавил этот пользователь, либо где он админ/владелец (проверка через members)
++    chats: list[dict[str, Any]] = []
++    for cid, meta in list(load_known_chats().items()):
++        try:
++            resp = requests.get(f"{MAX_API_BASE_URL}/chats/{cid}", headers={"Authorization": MAX_BOT_TOKEN}, timeout=20)
++        except Exception as e:
++            log_message(f"CHAT INFO ERROR: chat_id={cid} error={e}")
++            continue
++        if resp.status_code in (403, 404):
++            forget_known_chat(cid)   # бота удалили из чата / чат закрыт
++            continue
++        if resp.status_code != 200:
++            log_message(f"CHAT INFO FAIL: chat_id={cid} http={resp.status_code}")
++            continue
++        info = resp.json() if resp.content else {}
++        if str(info.get("status") or "active") != "active":
++            continue
++        is_admin = False
++        try:
++            me = requests.get(f"{MAX_API_BASE_URL}/chats/{cid}/members/me", headers={"Authorization": MAX_BOT_TOKEN}, timeout=20)
++            if me.status_code == 200:
++                m = me.json()
++                is_admin = bool(m.get("is_admin") or m.get("is_owner"))
++        except Exception as e:
++            log_message(f"CHAT ME ERROR: chat_id={cid} error={e}")
++        mine = bool(user_id) and str(meta.get("added_by") or "") == str(user_id)
++        if not mine and user_id:
++            try:
++                mm = requests.get(f"{MAX_API_BASE_URL}/chats/{cid}/members", headers={"Authorization": MAX_BOT_TOKEN}, params={"user_ids": str(user_id)}, timeout=20)
++                if mm.status_code == 200:
++                    for m in (mm.json().get("members") or []):
++                        if str(m.get("user_id")) == str(user_id) and (m.get("is_admin") or m.get("is_owner")):
++                            mine = True
++            except Exception as e:
++                log_message(f"CHAT MEMBER CHECK ERROR: chat_id={cid} error={e}")
++        if not mine:
++            continue
++        title = str(info.get("title") or f"Чат {cid}").strip()
++        chats.append({"chat_id": cid, "title": title, "is_admin": is_admin})
++    chats.sort(key=lambda c: (not c["is_admin"], c["title"].lower()))
++    return chats
+ 
+ 
+ def render_chat_choices(chats: list[dict[str, str]]) -> str:
+@@ -235,7 +268,7 @@
+     ]
+ 
+     for index, item in enumerate(chats, start=1):
+-        lines.append(f"{index}. {item['title']}")
++        lines.append(f"{index}. {item['title']}" + ("" if item.get("is_admin") else " (бот не админ)"))
+ 
+     lines.extend([
+         "",
+@@ -735,6 +768,15 @@
+     log_message(f"WEBHOOK RAW: {json.dumps(update, ensure_ascii=False)}")
+ 
+     update_type = str(update.get("update_type") or "").strip()
++
++    # бота добавили в группу / убрали из неё — ведём список чатов (GET /chats в MAX недоступен)
++    if update_type == "bot_added":
++        register_known_chat(update.get("chat_id"), (update.get("user") or {}).get("user_id") or update.get("user_id"))
++        return {"ok": True, "mode": "bot_added"}
++    if update_type == "bot_removed":
++        forget_known_chat(update.get("chat_id"))
++        return {"ok": True, "mode": "bot_removed"}
++
+     personal_chat_id = extract_chat_id(update)
+     user_id = extract_user_id(update)
+     webhook_user_id = str(update.get("user_id") or user_id or "").strip()
+@@ -804,7 +846,7 @@
+ 
+         # CHANNEL BIND
+         try:
+-            chats = get_max_chats()
++            chats = get_max_chats(webhook_user_id)
+         except Exception as e:
+             log_message(f"GET CHATS ERROR: user_id={user_id} error={e}")
+             send_max_message(
+@@ -815,7 +857,7 @@
+ 
+         if not chats:
+             send_max_message(
+-                "Я пока не вижу ни одного группового чата. Добавьте бота в нужный чат и повторите подключение.",
++                "Я пока не вижу ваших групповых чатов. Добавьте бота в нужный чат (лучше сделать его админом) или отправьте в этом чате любое сообщение, затем снова нажмите «Подключить MAX» на сайте.",
+                 user_id=webhook_user_id,
+             )
+             return {"ok": True, "mode": "bot_started_no_chats"}
+@@ -848,6 +890,9 @@
+         return {"ok": True, "mode": "bot_started_select_chat"}
+ 
+     if update_type == "message_created":
++        _rcp = (update.get("message") or {}).get("recipient") or {}
++        if str(_rcp.get("chat_type") or "dialog") != "dialog":
++            register_known_chat(_rcp.get("chat_id") or personal_chat_id)
+         if not user_id:
+             return {"ok": True, "ignored": True}
+ 
