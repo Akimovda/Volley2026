@@ -47,19 +47,32 @@
 	};
 	// Подающий игрок (учёт состава): эйс подающей команды записывается на него без вопроса «кто набрал очко»
 	$srv = $luStarted ? app(\App\Services\MatchLineupService::class)->currentServer($match, (int) $setNumber) : null;
+	// Пляжка 2×2: порядок подачи (BeachServeOrderService); при включённом режиме подающий берётся оттуда
+	$serve = $serve ?? null;
+	$soOn = !empty($serve['enabled']);
+	if ($soOn) {
+		$srv = !empty($serve['server']) ? ['user_id' => $serve['server']['id'], 'team_id' => $serve['teams'][$serve['serving_side']]['team_id'] ?? null] : null;
+		if (!$srv && !empty($serve['serving_side'])) { $srv = ['user_id' => null, 'team_id' => $serve['teams'][$serve['serving_side']]['team_id']]; }
+	}
 	$rwData = [];
 	// Пляжка: у пары (ровно 2 игрока) шаг «Кто принимал?» не нужен — партнёр подставляется сам (см. rally_screen.nextAfterPlayer)
 	$isBeachMatch = ($match->stage?->event?->direction ?? null) === 'beach';
 	foreach ($sides as $sk => $sd) {
 		$oppSk = $sk === 'home' ? 'away' : 'home';
 		$ownPlayers = $luStarted ? $courtPlayers($sk) : array_values($board['players'][$sk]);
+		if ($soOn) {
+			$soCards = collect($serve['teams'][$sk]['players'])->keyBy('id');
+			$ownPlayers = array_map(fn ($p) => $p + ['card' => $soCards[$p['id']] ?? null], $ownPlayers);
+		}
 		$rwData[$sk] = [
 			'teamId'     => $sd['team_id'],
 			'teamName'   => (string) ($sd['team']->name ?? 'TBD'),
 			'players'    => $ownPlayers,
 			'serverId'   => ($srv && $srv['user_id'] && (int) $srv['team_id'] === (int) $sd['team_id'] && collect($ownPlayers)->contains(fn ($p) => (int) $p['id'] === (int) $srv['user_id']))
 				? (string) $srv['user_id'] : null,
-			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_values($board['players'][$oppSk]),
+			'oppPlayers' => $luStarted ? $courtPlayers($oppSk) : array_map(function ($p) use ($soOn, $serve, $oppSk) {
+				return $soOn ? $p + ['card' => collect($serve['teams'][$oppSk]['players'])->firstWhere('id', $p['id'])] : $p;
+			}, array_values($board['players'][$oppSk])),
 			'pairMode'   => $isBeachMatch && count($ownPlayers) === 2,
 			// подаёт ли эта команда по расстановке (даже если подающий игрок не определён — например, на его месте либеро)
 			'serving'    => (bool) ($srv && (int) $srv['team_id'] === (int) $sd['team_id']),
@@ -92,7 +105,12 @@
 			(int) $board['score']['home'], (int) $board['score']['away'], (bool) ($board['is_deciding_set'] ?? false))
 		: null;
 	// mc — сигнатура переходов для анимации на клиенте (сравнивается между подменами фрагмента)
-	$rwLiveData = ['rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal, 'fx' => $lineup['mini'] ?? null, 'mc' => !empty($lineup['mini']) ? [
+	$soCfg = $soOn ? [
+		'setNumber' => $setNumber, 'firstUrl' => $urls['serve_first'] ?? null, 'jerseyUrl' => $urls['jersey'] ?? null, 'eventUrl' => $urls['lineup_event'] ?? null,
+		'servingSide' => $serve['serving_side'], 'needsFirstSide' => $serve['needs_first_side'], 'canPickFirst' => $serve['can_pick_first'], 'hasStart' => $serve['has_start'],
+		'teams' => $serve['teams'], 'server' => $serve['server'],
+	] : null;
+	$rwLiveData = ['so' => $soCfg, 'rw' => $rwData, 'lu' => $luCfg, 'ss' => $ssSignal, 'fx' => $lineup['mini'] ?? null, 'mc' => !empty($lineup['mini']) ? [
 		'set' => $setNumber, 'rot' => $lineup['mini']['rot'], 'rotated_side' => $lineup['mini']['rotated_side'],
 		'names' => ['home' => $lineup['mini']['teams']['home']['name'], 'away' => $lineup['mini']['teams']['away']['name']],
 	] : null];
@@ -142,6 +160,19 @@
 		@include('tournaments._partials.lineup_court')
 		@endif
 
+		@if($soOn && !$board['decided'])
+			@if(!empty($serve['server']))
+			@php $sv = $serve['server']; $svt = $serve['teams'][$serve['serving_side']]; @endphp
+			<div class="card mb-2 so-now" style="display:flex;align-items:center;justify-content:center;gap:8px">
+				<span class="rw-bi">@include('tournaments._partials.ball_icon')</span>
+				<span class="f-13" style="opacity:.7">{{ __('tournaments.so_serving') }}</span>
+				<span class="ls-av so-av28" style="background:{{ $sv['photo'] ? 'transparent' : $svt['color'] }};color:{{ $svt['text'] }}">@if($sv['photo'])<img src="{{ $sv['photo'] }}" alt="">@else{{ $sv['initials'] }}@endif</span>
+				<span class="b-700">{{ $sv['number'] !== null ? '№'.$sv['number'].' ' : '' }}{{ $sv['surname'] }}</span>
+			</div>
+			@endif
+			@include('tournaments._partials.beach_serve', ['part' => 'start'])
+		@endif
+
 		@if(!empty($canMatchStart) && !empty($urls['match_start']))
 		<div class="card mb-2" style="text-align:center">
 			<form method="POST" action="{{ $urls['match_start'] }}" class="js-rw-match-start" data-set="{{ $setNumber }}">
@@ -183,7 +214,7 @@
 		@endif
 
 		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
-		<div class="alert alert-info f-13 mb-2">{{ __('tournaments.rally_no_attempts_note') }}</div>
+		<div class="alert alert-info f-13 mb-2">{{ __($soOn ? 'tournaments.rally_no_attempts_note_attacks' : 'tournaments.rally_no_attempts_note') }}</div>
 
 		@php $maxColumns = max($board['columns']['home'], $board['columns']['away']); @endphp
 
@@ -241,6 +272,10 @@
 		@include('tournaments._partials.lineup_hints')
 		@endif
 
+		@if($soOn && !$board['decided'])
+		@include('tournaments._partials.beach_serve', ['part' => 'panel'])
+		@endif
+
 		@foreach($sides as $sideKey => $side)
 		@php
 			$teamId = $side['team_id'];
@@ -281,7 +316,7 @@
 				<input type="hidden" name="set_number" value="{{ $setNumber }}">
 				<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">
 				<button type="submit" class="btn btn-secondary w-100" {{ $board['can_undo'] ? '' : 'disabled' }}>
-					↩ {{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}
+					↩ <span class="rw-lbl-full">{{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}</span><span class="rw-lbl-short">{{ $luOn ? __('tournaments.lineup_btn_undo_short') : __('tournaments.rally_btn_undo_short') }}</span>
 				</button>
 			</form>
 			@if($matchReady && !$match->isCompleted())
@@ -292,7 +327,7 @@
 			<form method="POST" action="{{ $urls['finalize'] }}" style="flex:1" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
 				@csrf
 				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
-					💾 {{ __('tournaments.rally_btn_finalize') }}
+					💾 <span class="rw-lbl-full">{{ __('tournaments.rally_btn_finalize') }}</span><span class="rw-lbl-short">{{ __('tournaments.rally_btn_finalize_short') }}</span>
 				</button>
 			</form>
 			@if($urls['back'])

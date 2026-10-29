@@ -35,14 +35,16 @@ class RallyScreenService
 
         // «Подаёт: [A] [B]» — только в текущей партии, пока в ней нет очков; при учёте состава подачу задаёт расстановка
         $setHasPoints = MatchRallyEvent::where('match_id', $match->id)->where('set_number', $setNumber)->exists();
-        $canServeMark = !empty($urls['serve_mark']) && !$match->isCompleted() && $match->hasTeams()
+        // Пляжка 2×2: порядок подачи (карточки игроков, «Подаёт первым»); тогда старая отметка «Подаёт: [A][B]» не нужна
+        $serve = app(BeachServeOrderService::class)->forRally($match, $setNumber, (bool) $board['decided']);
+        $canServeMark = empty($serve['enabled']) && !empty($urls['serve_mark']) && !$match->isCompleted() && $match->hasTeams()
             && !$setHasPoints && !$board['decided'] && empty($lineup['enabled'])
             && $setNumber === $this->rally->getActiveSetNumber($match);
         $serveMarkTeamId = $canServeMark
             ? MatchServeMark::where('match_id', $match->id)->where('set_number', $setNumber)->value('team_id')
             : null;
 
-        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore', 'canMatchStart', 'canMatchUnstart', 'canServeMark', 'serveMarkTeamId');
+        return compact('event', 'match', 'stage', 'board', 'setNumber', 'matchReady', 'lineup', 'journal', 'urls', 'unattributed', 'finalScore', 'canMatchStart', 'canMatchUnstart', 'canServeMark', 'serveMarkTeamId', 'serve');
     }
 
     public function fragmentHtml(TournamentMatch $match, int $setNumber, array $urls): string

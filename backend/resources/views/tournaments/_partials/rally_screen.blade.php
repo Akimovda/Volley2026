@@ -17,7 +17,7 @@
 		'bx_lineup_section' => __('tournaments.bx_lineup_section'), 'bx_server_other' => __('tournaments.bx_server_other'),
 		'bx_srv_title' => __('tournaments.bx_srv_title'), 'bx_srv_text' => __('tournaments.bx_srv_text'),
 		'bx_srv_keep' => __('tournaments.bx_srv_keep'), 'bx_srv_keep_sub' => __('tournaments.bx_srv_keep_sub'),
-		'bx_srv_rot' => __('tournaments.bx_srv_rot'), 'bx_srv_rot_sub' => __('tournaments.bx_srv_rot_sub'),
+		'bx_srv_rot' => __('tournaments.bx_srv_rot'), 'bx_srv_rot_beach' => __('tournaments.bx_srv_rot_beach'), 'bx_fix_banner_beach' => __('tournaments.bx_fix_banner_beach'), 'opp_rotation_error_beach' => __('tournaments.rally_action_opp_rotation_error_beach'), 'bx_srv_rot_sub' => __('tournaments.bx_srv_rot_sub'),
 		'bx_mm_title' => __('tournaments.bx_mm_title'), 'bx_mm_text' => __('tournaments.bx_mm_text'), 'bx_mm_record' => __('tournaments.bx_mm_record'),
 		'bx_mm_record_sub' => __('tournaments.bx_mm_record_sub'), 'bx_mm_fix' => __('tournaments.bx_mm_fix'), 'bx_mm_hint' => __('tournaments.bx_mm_hint'),
 		'bx_scores' => __('tournaments.bx_scores'),
@@ -157,6 +157,19 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .ls-num{width:52px;margin-top:4px;text-align:center;font-weight:800;font-size:16px;border:2px solid rgba(0,0,0,.2);border-radius:8px;padding:2px 4px;background:#fff;color:#111}
 .ls-num--ok{border-color:#16a34a}
 .ls-num--err{border-color:#dc2626}
+.rw-lbl-short{display:none}
+@media (max-width:480px){.rw-lbl-full{display:none}.rw-lbl-short{display:inline}}
+.so-pairs{display:flex;flex-direction:column;gap:10px}
+.so-pair{border:2px solid;border-radius:12px;overflow:hidden}
+.so-pair-name{text-align:center;font-weight:800;padding:6px 8px;line-height:1.2}
+.so-pair-cards{display:flex;gap:8px;padding:8px}
+.so-first-panel .so-pair-cards,.lf-box .so-pair-cards{padding:0}
+.so-card{flex:1 1 0;min-width:0;border:2px solid rgba(0,0,0,.15);border-radius:12px;display:flex;flex-direction:column;align-items:center;text-align:center;background:transparent;color:inherit}
+.so-card.so-sel{border-color:#EAB308;box-shadow:0 0 0 3px rgba(234,179,8,.45)}
+.so-av-wrap{position:relative;display:inline-block}
+.so-av-wrap .rw-pc-num{right:-6px;top:auto;bottom:-4px}
+.so-av28{width:28px;height:28px;font-size:11px;border-width:1px}
+.so-now .b-700{font-size:17px}
 .ls-libero-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px;border-radius:12px;background:rgba(124,58,237,.10);border:1px solid rgba(124,58,237,.35)}
 .ls-libero-txt{flex:1;min-width:0;display:flex;flex-direction:column}
 .ls-libero-txt b{font-size:14px}
@@ -307,6 +320,7 @@ window.RallyLive = (function () {
 		if (!live || !html) { return; }
 		var mcPrev = data().mc, mcSnap = mcSnapshot();
 		live.innerHTML = html;
+		document.dispatchEvent(new Event('rally-live-swapped'));
 		try { mcAnimate(mcSnap, mcPrev); } catch (e) {}
 		var jn = document.getElementById('jn-list');
 		if (jn) { jn.scrollTop = jn.scrollHeight; }
@@ -449,6 +463,12 @@ window.RallyLive = (function () {
 	var OPP_REQ = ['opp_serve_error', 'opp_attack_error'];
 	var OPP_LU = ['opp_rotation_error', 'opp_position_error'];   // ошибки расстановки (виновник необязателен)
 	function luOn() { var l = RallyLive.data().lu; return !!(l && l.hasStart); }
+	/* пляжка 2×2: порядок подачи по парам (BeachServeOrderService) */
+	function soOn() { var s = RallyLive.data().so; return !!(s && s.servingSide); }
+	function chkOn() { return luOn() || soOn(); }
+	function fixOpen(side, opts) {
+		if (soOn() && window.SoFix) { window.SoFix.open(side, opts); } else if (window.LuFix) { window.LuFix.open(side, opts); }
+	}
 	function otherSide(sd) { return sd === 'home' ? 'away' : 'home'; }
 	function findP(list, id) { for (var i = 0; i < (list || []).length; i++) { if (String(list[i].id) === String(id)) { return list[i]; } } return null; }
 	function lab(p) { var c = p.card || {}; return (c.number != null ? '№' + c.number + ' ' : '') + (c.surname || p.name || ''); }
@@ -464,7 +484,7 @@ window.RallyLive = (function () {
 	}
 	/* проверка подающего: игрок эйса/ошибки подачи ≠ подающий по расстановке → вопрос вместо записи */
 	function serverCheck(p) {
-		if (!luOn() || !st) { return null; }
+		if (!chkOn() || !st) { return null; }
 		var ownAce = st.kind === 'own' && st.action === 'ace', oppSrv = st.kind === 'opp' && st.action === 'opp_serve_error';
 		if (!ownAce && !oppSrv) { return null; }
 		var srvSide = ownAce ? st.side : otherSide(st.side), sid = DATA[srvSide] && DATA[srvSide].serverId;
@@ -523,9 +543,9 @@ window.RallyLive = (function () {
 			sending = false; setSending(false);
 			close();
 			RallyLive.swap(j.html);
-			if (fixSide && window.LuFix) {
+			if (fixSide && (window.LuFix || window.SoFix)) {
 				var sc = (j.board && j.board.score) ? (j.board.score.home + ':' + j.board.score.away) : '';
-				window.LuFix.open(fixSide, {banner: T.bx_fix_banner.replace(':team', scorerName).replace(':score', sc)});
+				fixOpen(fixSide, {banner: (soOn() ? T.bx_fix_banner_beach : T.bx_fix_banner).replace(':team', scorerName).replace(':score', sc)});
 			}
 		}, function (m, net) {
 			sending = false; setSending(false);
@@ -589,19 +609,19 @@ window.RallyLive = (function () {
 						var od = DATA[otherSide(st.side)];
 						if (od && od.serverId) { st.player = String(od.serverId); submit(); return; }
 						// по расстановке подаёт ЭТА (набравшая очко) команда, а ошибку подачи записывают сопернику → расхождение: предупреждаем
-						if (luOn() && dd && dd.serving) { go('srvmismatch'); return; }
+						if (dd && dd.serving && (luOn() || (soOn() && dd.serverId))) { go('srvmismatch'); return; }
 					}
 					if (a === 'unattributed') { submit(); } else { go('player'); }
 				}, list.length % 2 === 1 && a === list[list.length - 1]));
 			});
-			if (st.kind === 'opp' && luOn()) {
+			if (st.kind === 'opp' && chkOn()) {
 				var sec = document.createElement('div'); sec.className = 'rw-sec rw-wide'; sec.textContent = T.bx_lineup_section; elGrid.appendChild(sec);
-				OPP_LU.forEach(function (a) {
-					elGrid.appendChild(btn(T[a], 'btn-secondary rw-lu-btn', function () { st.action = a; go('player'); }));
+				(soOn() ? ['opp_rotation_error'] : OPP_LU).forEach(function (a) {
+					elGrid.appendChild(btn(soOn() && a === 'opp_rotation_error' ? T.opp_rotation_error_beach : T[a], 'btn-secondary rw-lu-btn', function () { st.action = a; go('player'); }));
 				});
 			}
 			var srvSide0 = st.kind === 'own' ? st.side : otherSide(st.side);
-			if (luOn() && DATA[srvSide0] && DATA[srvSide0].serverId) {
+			if (chkOn() && DATA[srvSide0] && DATA[srvSide0].serverId) {
 				elGrid.appendChild(btn(T.bx_server_other, 'btn-secondary rw-lite' + (st.forcePick ? ' on' : ''), function () { st.forcePick = !st.forcePick; render(); }, true));
 			}
 		} else if (st.step === 'srvmismatch') {
@@ -620,7 +640,7 @@ window.RallyLive = (function () {
 				elGrid.appendChild(recB); elGrid.appendChild(recS);
 			}
 			var fixSide0 = st.side;
-			elGrid.appendChild(btn(T.bx_mm_fix, 'btn-secondary', function () { close(); if (window.LuFix) { window.LuFix.open(fixSide0); } }, true));
+			elGrid.appendChild(btn(T.bx_mm_fix, 'btn-secondary', function () { close(); fixOpen(fixSide0); }, true));
 			var hintEl = document.createElement('div'); hintEl.className = 'rw-sub2 rw-wide'; hintEl.textContent = T.bx_mm_hint; elGrid.appendChild(hintEl);
 		} else if (st.step === 'srvcheck') {
 			var ck = st.chk;
@@ -631,7 +651,7 @@ window.RallyLive = (function () {
 			elGrid.appendChild(pcs);
 			var keepB = btn(T.bx_srv_keep.replace(':action', T[st.action]).replace(':who', lab(ck.srv)), 'btn-primary', function () { st.player = String(ck.srv.id); submit(); }, true);
 			var keepS = document.createElement('div'); keepS.className = 'rw-sub2 rw-wide'; keepS.textContent = T.bx_srv_keep_sub;
-			var rotB = btn(T.bx_srv_rot.replace(':who', lab(ck.pick)), 'btn-secondary rw-danger', function () {
+			var rotB = btn((soOn() ? T.bx_srv_rot_beach : T.bx_srv_rot).replace(':who', lab(ck.pick)), 'btn-secondary rw-danger', function () {
 				// ошибка перехода: очко сопернику нарушившей (подающей) команды, затем экран «Исправить расстановку»
 				var scorer = otherSide(ck.srvSide), pid = String(ck.pick.id);
 				st.side = scorer; st.kind = 'opp'; st.action = 'opp_rotation_error'; st.player = pid; st.fixSide = ck.srvSide; st.rid = '';
@@ -707,6 +727,11 @@ window.RallyLive = (function () {
 
 @if($luOn)
 @include('tournaments._partials.lineup_popup_js')
+@include('tournaments._partials.player_card_js')
 @include('tournaments._partials.lineup_rally_js')
 @include('tournaments._partials.lineup_fix_js')
+@endif
+@if(!empty($serve['enabled']))
+@include('tournaments._partials.player_card_js')
+@include('tournaments._partials.beach_serve_js')
 @endif
