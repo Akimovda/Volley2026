@@ -25,7 +25,7 @@
 					<span class="mc-z">{{ $z }}</span>
 					@if($c)
 					<div class="mc-av{{ $c['libero'] ? ' mc-av--lib' : '' }}{{ $tm['serving'] && $z === 1 && !$c['libero'] ? ' mc-av--srv' : '' }}" style="{{ $c['photo'] ? '' : 'background:rgba(0,0,0,.28)' }}">
-						@if($c['photo'])<img src="{{ $c['photo'] }}" alt="" loading="lazy">@else<span class="mc-ini" style="color:{{ $tm['text'] === '#111' ? '#111' : '#fff' }}">{{ $c['initials'] }}</span>@endif
+						@if($c['photo'])<img src="{{ $c['photo'] }}" alt="" loading="lazy" data-ini="{{ $c['initials'] }}" data-bg="rgba(0,0,0,.28)" data-fg="{{ $tm['text'] === '#111' ? '#111' : '#fff' }}" data-cls="mc-ini">@else<span class="mc-ini" style="color:{{ $tm['text'] === '#111' ? '#111' : '#fff' }}">{{ $c['initials'] }}</span>@endif
 						@if($c['number'] !== null)<span class="mc-num">{{ $c['number'] }}</span>@endif
 					</div>
 					<div class="mc-nm">{{ $c['surname'] }}</div>

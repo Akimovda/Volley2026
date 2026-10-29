@@ -48,7 +48,7 @@ return [
     'scorer_invite_body'         => 'You were assigned as scorer of court “:court” — tournament “:event”. Open the link and enter the score point by point.',
     'scorer_invite_button'       => 'Open score entry',
     'enable_sound' => 'Enable preview sound',
-    'match_start_btn'            => '▶ Match started',
+    'match_start_btn'            => 'Match started',
     'match_start_confirm'        => 'Has the match started? The 0:0 scoreboard will appear on air.',
     'match_start_yes'            => 'Yes, started',
     'match_start_no'             => 'Cancel',

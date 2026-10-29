@@ -3190,6 +3190,20 @@ class TournamentController extends Controller
         });
     }
 
+    /** Пляжка 2×2: «Подаёт первым» (пара + игрок) и первый подающий второй пары. */
+    public function rallyServeFirst(Request $request, TournamentMatch $match)
+    {
+        if ($this->guardRallyMode($request, $match)) {
+            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+        }
+
+        $validated = $request->validate(\App\Services\RallyInputService::serveFirstRules());
+
+        return $this->rallyLineupAction($request, $match, (int) $validated['set_number'], function () use ($match, $validated, $request) {
+            app(\App\Services\RallyInputService::class)->serveFirst($match, $validated, \App\Support\RallyActor::user($request->user()));
+        });
+    }
+
     /** Номер на футболке с экрана расстановки (те же права, что у ввода состава). */
     public function rallyJersey(Request $request, TournamentMatch $match)
     {

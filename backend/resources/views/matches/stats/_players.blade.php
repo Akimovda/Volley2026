@@ -4,6 +4,7 @@
     $showBlk = $stats['has_block_errors'];
     $scopes = array_merge(['all'], $stats['set_numbers']);
     $cols = array_filter([
+        'serves' => !empty($stats['has_serves']) ? __('match_stats.col_serves') : null,
         'attack' => __('match_stats.col_attack'), 'block' => __('match_stats.col_block'), 'ace' => __('match_stats.col_ace'),
         'serve_err' => __('match_stats.col_err_serve'), 'attack_err' => __('match_stats.col_err_attack'),
         'reception_err' => $showRecv ? __('match_stats.col_err_reception') : null,
@@ -41,13 +42,13 @@
     @php
         $rows = collect($stats['players'][$side])
             ->map(fn ($r) => ['r' => $r, 'c' => $r['scopes'][$scope] ?? null])
-            ->filter(fn ($x) => $scope === 'all' || ($x['c'] && ($x['c']['plus'] + $x['c']['minus']) > 0))
+            ->filter(fn ($x) => $scope === 'all' || ($x['c'] && ($x['c']['plus'] + $x['c']['minus'] + ($x['c']['serves'] ?? 0)) > 0))
             ->sortByDesc(fn ($x) => [$x['c']['balance'] ?? 0, $x['c']['plus'] ?? 0])
             ->values();
     @endphp
     <tbody data-scope="{{ $scope }}" @if($scope !== 'all') style="display:none" @endif>
         @forelse($rows as $x)
-        @php $c = $x['c'] ?? array_fill_keys(['attack','block','ace','serve_err','attack_err','reception_err','block_err','plus','minus','balance'], 0); @endphp
+        @php $c = $x['c'] ?? array_fill_keys(['serves','attack','block','ace','serve_err','attack_err','reception_err','block_err','plus','minus','balance'], 0); @endphp
         <tr data-player="{{ $x['r']['user_id'] }}" class="{{ ($c['plus'] + $c['minus']) === 0 ? 'mx-muted' : '' }} {{ ($highlight ?? null) === $x['r']['user_id'] ? 'mx-row--hl' : '' }}">
             <td><a href="{{ route('users.show', $x['r']['user_id']) }}" class="blink">{{ $x['r']['name'] }}</a>@if(!empty($x['r']['role'])) <span class="mx-role" style="opacity:.6;font-size:.85em">{{ $x['r']['role'] }}</span>@endif</td>
             @foreach($cols as $k => $label)

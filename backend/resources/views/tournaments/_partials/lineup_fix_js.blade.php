@@ -51,7 +51,7 @@
 				h += '<div class="mc-cell lf-cell' + (c && S.sel === c.id ? ' lf-sel' : '') + '" data-uid="' + (c ? c.id : '') + '"><span class="mc-z">' + esc(T.zone.replace(':n', z)) + '</span>';
 				if (c) {
 					h += '<div class="mc-av' + (c.libero ? ' mc-av--lib' : '') + (srv ? ' mc-av--srv' : '') + '">' +
-						(c.photo ? '<img src="' + esc(c.photo) + '" alt="">' : '<span class="mc-ini">' + esc(c.initials) + '</span>') +
+						(c.photo ? '<img src="' + esc(c.photo) + '" alt="" data-ini="' + esc(c.initials) + '" data-bg="rgba(0,0,0,.28)" data-fg="#fff" data-cls="mc-ini">' : '<span class="mc-ini">' + esc(c.initials) + '</span>') +
 						(c.number != null ? '<span class="mc-num">' + esc(c.number) + '</span>' : '') + '</div>' +
 						'<div class="mc-nm">' + esc(c.surname) + '</div><div class="mc-pos' + (c.libero ? ' mc-pos--lib' : '') + '">' + esc(c.pos_abbr) + '</div>';
 				}

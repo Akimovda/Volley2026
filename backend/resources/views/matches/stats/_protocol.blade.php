@@ -33,7 +33,7 @@
         } else {
             $whoTxt = $who ?: $teams[$side]['name'];
         }
-        $text = $ev['action'] === 'unattributed' ? __('match_stats.act_unattributed') : __('match_stats.act_' . $ev['action'], ['who' => $whoTxt]);
+        $text = $ev['action'] === 'unattributed' ? __('match_stats.act_unattributed') : __('match_stats.act_' . $ev['action'] . (!empty($stats['is_beach']) && $ev['action'] === 'opp_rotation_error' ? '_beach' : ''), ['who' => $whoTxt]);
         if (($ev['action'] === 'kill') && !empty($ev['attack_type'])) {
             // «Атака (накат) — Игрок»
             $text = __('match_stats.act_kill_t', ['type' => __('match_stats.at_' . $ev['attack_type']), 'who' => $whoTxt]);

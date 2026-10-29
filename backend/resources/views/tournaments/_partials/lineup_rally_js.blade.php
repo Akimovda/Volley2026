@@ -182,32 +182,13 @@
 		function nameOf(side, uid) { return R[side][uid] ? R[side][uid].name : '#' + uid; }
 		/* кружок 56px: фото или инициалы на цвете команды (без внешних сервисов); либеро — фиолетовый */
 		function avatar(p, side, lib) {
-			var a = document.createElement('span');
-			a.className = 'ls-av' + (lib ? ' ls-av--lib' : '');
 			var team = C.teams[side] || {};
-			a.style.background = lib ? '#7C3AED' : (team.color || '#2967BA');
-			a.style.color = lib ? '#fff' : (team.text || '#fff');
-			if (p.photo) { var im = document.createElement('img'); im.src = p.photo; im.alt = ''; a.style.background = 'transparent'; a.appendChild(im); }
-			else { a.textContent = p.initials || '?'; }
-			return a;
+			return PlayerCardUi.avatar(p, team.color, team.text, lib);
 		}
 		/* поле «№»: правка сразу сохраняется (event_jersey_numbers), расстановку и выбор не сбрасывает */
 		function numInput(side, uid) {
-			var i = document.createElement('input');
-			i.type = 'text'; i.className = 'ls-num'; i.setAttribute('inputmode', 'numeric'); i.maxLength = 2;
-			i.placeholder = T.jerseyPh; i.value = (R[side][uid] && R[side][uid].number != null) ? R[side][uid].number : '';
-			i.addEventListener('click', function (e) { e.stopPropagation(); });
-			i.addEventListener('input', function () { i.value = i.value.replace(/[^0-9]/g, ''); });
-			i.addEventListener('change', function () {
-				var v = i.value.trim();
-				i.classList.remove('ls-num--ok'); i.classList.remove('ls-num--err');
-				if (!C.jerseyUrl) { return; }
-				RallyLive.send(C.jerseyUrl, {set_number: C.setNumber, user_id: uid, number: v}, {json: true, retry: true}, function () {
-					if (R[side][uid]) { R[side][uid].number = v === '' ? null : parseInt(v, 10); }
-					i.classList.add('ls-num--ok'); setTimeout(function () { i.classList.remove('ls-num--ok'); }, 1200);
-				}, function (m) { i.classList.add('ls-num--err'); i.title = m; });
-			});
-			return i;
+			return PlayerCardUi.numInput(C.jerseyUrl, C.setNumber, uid, (R[side][uid] && R[side][uid].number != null) ? R[side][uid].number : '',
+				function (n) { if (R[side][uid]) { R[side][uid].number = n; } }, T.jerseyPh);
 		}
 		function placedIds(side) { return Object.keys(S[side].zones).map(function (z) { return S[side].zones[z].uid; }); }
 		function validPos(p) { return p && C.positions.indexOf(p) !== -1 ? p : null; }
