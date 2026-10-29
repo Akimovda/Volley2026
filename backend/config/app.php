@@ -53,7 +53,7 @@ return [
     |--------------------------------------------------------------------------
     */
     // Ссылка на APK для скачивания (файл лежит в public/downloads/, не в git). Используется в футере и на /about.
-    'android_apk_url' => '/downloads/VolleyClub-1.1.6-release.apk',
+    'android_apk_url' => '/downloads/VolleyClub-1.2.1-release.apk',
 
     'locale' => env('APP_LOCALE', 'ru'),
 
