@@ -450,6 +450,13 @@ class MatchRallyService
      */
     private function upsertAggregates(TournamentMatch $match, int $setNumber, $events, array $roster): void
     {
+        // Пляжка 2×2 с порядком подачи: каждый розыгрыш — подача известного игрока, «Подачи» считаются автоматически
+        $serveCount = [];
+        foreach (app(BeachServeOrderService::class)->serversBySeq($match) as $s) {
+            if ($setNumber === 0 || (int) $s['set'] === $setNumber) {
+                $serveCount[(int) $s['user_id']] = ($serveCount[(int) $s['user_id']] ?? 0) + 1;
+            }
+        }
         foreach ($roster as $teamId => $teamPlayers) {
             foreach ($teamPlayers as $p) {
                 $userId = $p['id'];
@@ -463,7 +470,7 @@ class MatchRallyService
                     ->first();
 
                 $data = [
-                    'serves_total'  => $existing->serves_total ?? 0,
+                    'serves_total'  => $serveCount ? ($serveCount[$userId] ?? 0) : ($existing->serves_total ?? 0),
                     'attacks_total' => $existing->attacks_total ?? 0,
                     'aces' => 0, 'serve_errors' => 0, 'kills' => 0, 'attack_errors' => 0,
                     'blocks' => 0, 'block_errors' => 0, 'digs' => 0, 'reception_errors' => 0, 'assists' => 0,

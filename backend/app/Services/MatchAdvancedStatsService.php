@@ -26,10 +26,10 @@ use Illuminate\Support\Facades\DB;
  */
 class MatchAdvancedStatsService
 {
-    private const CACHE_VERSION = 'v6';
+    private const CACHE_VERSION = 'v7';
 
     /** Версия шаблона PDF — повышать при правке matches/stats_pdf и его partial'ов (кэш PDF на диске). */
-    private const PDF_TEMPLATE_VERSION = 't7';
+    private const PDF_TEMPLATE_VERSION = 't8';
 
     public const ERROR_ACTIONS = [
         MatchRallyEvent::ACTION_OPP_SERVE_ERROR,
@@ -253,7 +253,9 @@ class MatchAdvancedStatsService
         }
 
         // ---- игроки: матч и по сетам ----
-        $players = $this->playerTables($events, $roster, $names, $homeId, $awayId, $sideOf, $roles);
+        // пляжка 2×2 с порядком подачи: «Подачи» на игрока считаются автоматически (каждый розыгрыш = подача известного игрока)
+        $serveBySeq = app(BeachServeOrderService::class)->serversBySeq($match);
+        $players = $this->playerTables($events, $roster, $names, $homeId, $awayId, $sideOf, $roles, $serveBySeq);
 
         // ---- составы и замены ----
         $lineup = $this->lineupBlock($match, $setLineups, $lineupEvents, $names, $sideOf, $homeId, $awayId);
@@ -297,6 +299,8 @@ class MatchAdvancedStatsService
                 'sets_used'    => $setsReliable,
             ],
             'players'   => $players,
+            'has_serves'           => (bool) $serveBySeq,
+            'is_beach'             => ($match->stage?->event?->direction ?? null) === 'beach',
             'has_block_errors'     => $this->anyAction($events, MatchRallyEvent::ACTION_OPP_BLOCK_ERROR),
             'has_reception_errors' => $this->anyAction($events, MatchRallyEvent::ACTION_OPP_RECEPTION_ERROR),
             'lineup'    => $lineup,
@@ -423,9 +427,9 @@ class MatchAdvancedStatsService
     /**
      * @return array{home: array, away: array} — строки игроков: scopes['all'|номер сета] => счётчики
      */
-    private function playerTables(Collection $events, array $roster, array $names, int $homeId, int $awayId, callable $sideOf, array $roles = []): array
+    private function playerTables(Collection $events, array $roster, array $names, int $homeId, int $awayId, callable $sideOf, array $roles = [], array $serveBySeq = []): array
     {
-        $blank = fn () => ['attack' => 0, 'block' => 0, 'ace' => 0, 'serve_err' => 0, 'attack_err' => 0,
+        $blank = fn () => ['serves' => 0, 'attack' => 0, 'block' => 0, 'ace' => 0, 'serve_err' => 0, 'attack_err' => 0,
             'reception_err' => 0, 'block_err' => 0, 'plus' => 0, 'minus' => 0, 'balance' => 0,
             'at' => ['power' => 0, 'cut' => 0, 'poke' => 0, 'roll' => 0, 'tip' => 0, 'none' => 0]];
 
@@ -470,6 +474,19 @@ class MatchAdvancedStatsService
                     $rows[$side][$uid]['scopes'][$scope]['at'][$atKey]++;
                 }
             }
+        }
+
+        foreach ($serveBySeq as $sv) {
+            $side = $sideOf((int) $sv['team_id']);
+            if (!$side) {
+                continue;
+            }
+            $uid = (int) $sv['user_id'];
+            $ensure($side, $uid);
+            $set = (int) $sv['set'];
+            $rows[$side][$uid]['scopes'][$set] ??= $blank();
+            $rows[$side][$uid]['scopes']['all']['serves']++;
+            $rows[$side][$uid]['scopes'][$set]['serves']++;
         }
 
         foreach (['home', 'away'] as $side) {
