@@ -175,7 +175,7 @@
 				@endphp
 				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
 					@csrf
-					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{{ $sd['team']->name ?? 'TBD' }}@include('tournaments._partials.team_sub_lines', ['team' => $sd['team'], 'inline' => true])</button>
+					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{!! str_replace('/', '/<wbr>', e($sd['team']->name ?? 'TBD')) !!}@unless($isBeachMatch)@include('tournaments._partials.team_sub_lines', ['team' => $sd['team'], 'inline' => true])@endunless</button>
 				</form>
 				@endforeach
 			</div>
