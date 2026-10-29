@@ -88,7 +88,7 @@ class RallyInputService
         return [
             'set_number'        => 'required|integer|min:1|max:5',
             'team_id'           => 'required|integer',
-            'type'              => 'required|in:substitution,libero_in,libero_out,rotate,swap,fix',
+            'type'              => 'required|in:substitution,libero_in,libero_out,rotate,swap,fix,serve_flip',
             'out_user_id'       => 'nullable|integer',
             'in_user_id'        => 'nullable|integer',
             // «Исправить расстановку»: rotate — delta; swap — out/in; fix — delta + swaps (один шаг пользователя, отдельные события)
@@ -168,6 +168,13 @@ class RallyInputService
         );
     }
 
+    public function serveFirst(TournamentMatch $match, array $v, RallyActor $actor): void
+    {
+        app(BeachServeOrderService::class)->setFirst(
+            $match, (int) $v['set_number'], (int) $v['team_id'], (int) $v['user_id'], $actor->user, $actor->name, $v['client_request_id'] ?? null, $actor->linkId
+        );
+    }
+
     public function jersey(TournamentMatch $match, array $v, RallyActor $actor): void
     {
         app(JerseyNumberService::class)->setForMatch($match, (int) $v['user_id'], $v['number'] ?? null, $actor->user, $actor->linkId);
@@ -181,6 +188,13 @@ class RallyInputService
         $out = isset($v['out_user_id']) ? (int) $v['out_user_id'] : 0;
         $in = isset($v['in_user_id']) ? (int) $v['in_user_id'] : 0;
         $rid = $v['client_request_id'] ?? null;
+
+        if ($v['type'] === 'serve_flip') {
+            // пляжка: «ошибка порядка подачи» — флип очереди подачи пары (lineup-событие rotate +1)
+            app(BeachServeOrderService::class)->flip($match, $set, $team, $actor->user, $actor->name, $rid, $actor->linkId);
+
+            return;
+        }
 
         match ($v['type']) {
             'substitution' => $svc->substitute($match, $set, $team, $out, $in, $actor->user, $actor->name, $rid, $actor->linkId),
@@ -256,6 +270,17 @@ class RallyInputService
         if ($changed) {
             $this->afterMatchStateChange($match, false);
         }
+    }
+
+    /** Пляжка 2×2: «Подаёт первым» (пара + игрок) / первый подающий второй пары. */
+    public static function serveFirstRules(): array
+    {
+        return [
+            'set_number'        => 'required|integer|min:1|max:5',
+            'team_id'           => 'required|integer',
+            'user_id'           => 'required|integer',
+            'client_request_id' => 'nullable|uuid',
+        ];
     }
 
     public static function serveMarkRules(): array
