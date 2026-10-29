@@ -363,7 +363,7 @@
                                 <th>{{ __('admin.sub_col_amount') }}</th>
                                 <th>{{ __('admin.sub_col_status') }}</th>
                                 <th>{{ __('admin.sub_col_date') }}</th>
-                                <th></th>
+                                <th class="text-right">{{ __('admin.sub_col_action') }}</th>
                             </tr>
                         </thead>
                         <tbody>

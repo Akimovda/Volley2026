@@ -332,6 +332,7 @@ return [
     'sub_col_amount'       => 'Amount',
     'sub_col_status'       => 'Status',
     'sub_col_date'         => 'Date',
+    'sub_col_action'       => 'Action',
     'sub_kind_premium'     => 'Premium',
     'sub_kind_pro'         => 'PRO',
     'sub_plan_trial'       => 'Trial',
