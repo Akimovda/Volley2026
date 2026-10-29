@@ -310,8 +310,13 @@
 		@include('tournaments._partials.lineup_journal')
 		@endif
 
-		<div class="d-flex text-center gap-1 mt-2" style="flex-wrap:wrap">
-			<form method="POST" action="{{ $urls['undo'] }}" style="flex:1" class="js-rw-undo">
+		@if($matchReady && !$match->isCompleted())
+		<div class="alert alert-success w-100 mt-2" style="margin-bottom:.5rem">
+			{{ ($match->stage?->type === \App\Models\TournamentStage::TYPE_FRIENDLY) ? __('tournaments.rally_match_decided_friendly') : __('tournaments.rally_match_decided') }}
+		</div>
+		@endif
+		<div class="rw-foot mt-2{{ !empty($urls['back']) ? '' : ' rw-foot--2' }}">
+			<form method="POST" action="{{ $urls['undo'] }}" class="js-rw-undo">
 				@csrf
 				<input type="hidden" name="set_number" value="{{ $setNumber }}">
 				<input type="hidden" name="expected_last_seq" value="{{ $board['last_action_seq'] }}">
@@ -319,24 +324,19 @@
 					@include('tournaments._partials.ui_icon', ['n' => 'undo', 'size' => 18]) <span class="rw-lbl-full">{{ $luOn ? __('tournaments.lineup_btn_undo') : __('tournaments.rally_btn_undo') }}</span><span class="rw-lbl-short">{{ $luOn ? __('tournaments.lineup_btn_undo_short') : __('tournaments.rally_btn_undo_short') }}</span>
 				</button>
 			</form>
-			@if($matchReady && !$match->isCompleted())
-			<div class="alert alert-success w-100" style="flex-basis:100%;margin:0 0 .5rem">
-				{{ ($match->stage?->type === \App\Models\TournamentStage::TYPE_FRIENDLY) ? __('tournaments.rally_match_decided_friendly') : __('tournaments.rally_match_decided') }}
-			</div>
-			@endif
-			<form method="POST" action="{{ $urls['finalize'] }}" style="flex:1" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
+			<form method="POST" action="{{ $urls['finalize'] }}" class="{{ $urls['mode'] === 'scorer' ? 'js-rw-finalize-ajax' : 'js-rw-finalize' }}" data-unattributed="{{ $unattributed }}" data-score="{{ $finalScore }}">
 				@csrf
 				<button type="submit" class="btn btn-primary w-100" {{ $matchReady ? '' : 'disabled' }}>
 					@include('tournaments._partials.ui_icon', ['n' => 'save', 'size' => 18]) <span class="rw-lbl-full">{{ __('tournaments.rally_btn_finalize') }}</span><span class="rw-lbl-short">{{ __('tournaments.rally_btn_finalize_short') }}</span>
 				</button>
 			</form>
 			@if($urls['back'])
-			<a href="{{ $urls['back'] }}" class="btn btn-secondary" style="flex:1;text-align:center">
-				{{ __('tournaments.btn_back') }}
+			<a href="{{ $urls['back'] }}" class="btn btn-secondary">
+				@include('tournaments._partials.ui_icon', ['n' => 'back', 'size' => 18]) <span>{{ __('tournaments.rally_btn_back') }}</span>
 			</a>
 			@endif
 			@if($match->isCompleted() && $urls['pdf'])
-			<a href="{{ $urls['pdf'] }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
+			<a href="{{ $urls['pdf'] }}" data-file-download class="btn btn-secondary btn-small rw-foot-pdf" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
 				@include('tournaments._partials.ui_icon', ['n' => 'chart', 'size' => 18]) PDF
 			</a>
 			@endif

@@ -1158,7 +1158,8 @@ return [
     'bx_fix_banner_beach' => 'Ошибка порядка подачи записана · очко :team (:score)',
     'rally_action_opp_rotation_error_beach' => 'Ошибка порядка подачи',
     'rally_no_attempts_note_attacks' => 'Попытки атак не считаются автоматически — при необходимости уточни на странице статистики.',
-    'rally_btn_undo_short' => 'Отменить очко',
+    'rally_btn_undo_short' => 'Отменить',
     'lineup_btn_undo_short' => 'Отменить',
     'rally_btn_finalize_short' => 'Записать',
+    'rally_btn_back' => 'Назад',
 ];
