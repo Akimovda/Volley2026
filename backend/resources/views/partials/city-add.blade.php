@@ -18,5 +18,5 @@
 			t: @json(__('city_add'))
 		};
 	</script>
-	<script src="@asset_v('js/city-add.js')"></script>
+	<script src="@asset_v('js/city-add.js')" defer></script>
 @endif

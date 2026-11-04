@@ -1626,6 +1626,20 @@ document.addEventListener("trix-file-accept", function (event) {
 			if (on) loc.innerHTML = '<option value="">Загрузка локаций…</option>';
 		}
 		
+		// Перерисовка кастомного списка локаций. safeRerenderEl определяется инлайн-скриптом страницы ПОСЛЕ этого файла;
+		// ответ с локациями может прийти раньше (быстрая сеть/кеш, новые синхронные скрипты между ними) — тогда прежний код
+		// молча пропускал перерисовку, и кастомный список оставался пустым при заполненном <select>. Ждём функцию (до ~3 с).
+		function rerenderLocationsSelect() {
+			var tries = 0;
+			(function attempt() {
+				if (typeof window.safeRerenderEl === 'function') {
+					setTimeout(function () { window.safeRerenderEl('#location_id'); }, 50);
+					return;
+				}
+				if (++tries < 60) setTimeout(attempt, 50);
+			})();
+		}
+
 		function fillLocationsSelect(items) {
 			const loc = document.getElementById('location_id');
 			if (!loc) return;
@@ -1637,12 +1651,8 @@ document.addEventListener("trix-file-accept", function (event) {
 				loc.innerHTML = '<option value="">Нет локаций для выбранного города</option>';
 				loc.disabled = false;
 				
-				// Перерисовываем кастомный селект
-				if (typeof window.safeRerenderEl === 'function') {
-					setTimeout(function() {
-						window.safeRerenderEl('#location_id');
-					}, 50);
-				}
+				// Перерисовываем кастомный селект (ждём, пока страница определит safeRerenderEl — см. rerenderLocationsSelect)
+				rerenderLocationsSelect();
 				return;
 			}
 			
@@ -1672,12 +1682,8 @@ document.addEventListener("trix-file-accept", function (event) {
 			loc.disabled = false;
 			loc.value = ''; // Не выбираем локацию автоматически
 			
-			// Перерисовываем кастомный селект
-			if (typeof window.safeRerenderEl === 'function') {
-				setTimeout(function() {
-					window.safeRerenderEl('#location_id');
-				}, 50);
-			}
+			// Перерисовываем кастомный селект (ждём, пока страница определит safeRerenderEl — см. rerenderLocationsSelect)
+			rerenderLocationsSelect();
 			
 			// Если есть функция обновления превью
 			try { if (typeof updatePreview === 'function') updatePreview(); } catch(e) {}
