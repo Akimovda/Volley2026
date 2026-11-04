@@ -35,6 +35,7 @@ class TelegramNotifyBindingController extends Controller
             'telegram_chat_id' => null,
             'used_at' => null,
             'raw_update' => null,
+            'created_by_admin_id' => \App\Support\ImpersonationBindGuard::adminId(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);

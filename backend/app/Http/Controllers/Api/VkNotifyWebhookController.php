@@ -38,6 +38,8 @@ class VkNotifyWebhookController extends Controller
             abort_if(!is_null($binding->used_at), 422, 'Bind request already used.');
             abort_if(!empty($binding->expires_at) && strtotime((string) $binding->expires_at) <= now()->getTimestamp(), 422, 'Bind request expired.');
 
+            \App\Support\ImpersonationBindGuard::assertNotAdminIdentity($binding, 'vk', [$data['vk_user_id'], $data['peer_id']]);
+
             $userId = (int) $binding->user_id;
 
             DB::table('users')

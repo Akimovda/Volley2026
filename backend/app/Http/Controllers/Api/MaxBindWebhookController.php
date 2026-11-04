@@ -106,6 +106,8 @@ class MaxBindWebhookController extends Controller
             $kind = (string) ($meta['kind'] ?? 'channel');
             abort_if($kind !== 'personal', 422, 'Bind request is not personal.');
 
+            \App\Support\ImpersonationBindGuard::assertNotAdminIdentity($binding, 'max', [$data['max_chat_id']]);
+
             $userId = (int) $binding->user_id;
 
             DB::table('users')

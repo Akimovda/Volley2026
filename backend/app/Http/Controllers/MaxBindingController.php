@@ -39,6 +39,7 @@ class MaxBindingController extends Controller
         $token = Str::random(48);
 
         DB::table('max_bindings')->insert([
+            'created_by_admin_id' => \App\Support\ImpersonationBindGuard::adminId(),
             'user_id' => (int) $user->id,
             'token' => $token,
             'expires_at' => now()->addMinutes(15),

@@ -36,6 +36,7 @@ class VkNotifyBindingController extends Controller
             'used_at' => null,
             'vk_user_id' => null,
             'raw_update' => null,
+            'created_by_admin_id' => \App\Support\ImpersonationBindGuard::adminId(),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
