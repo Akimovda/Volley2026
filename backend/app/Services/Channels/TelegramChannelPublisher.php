@@ -221,7 +221,19 @@ class TelegramChannelPublisher implements ChannelPublisher
             }
 
             $fellBackFrom = null;
-            $response = $this->postWithThreadFallback($token, 'sendPhoto', $payload, $fellBackFrom);
+            try {
+                $response = $this->postWithThreadFallback($token, 'sendPhoto', $payload, $fellBackFrom);
+            } catch (\Illuminate\Http\Client\RequestException $e) {
+                // Telegram не смог скачать картинку по ссылке (кэш DNS на старый адрес сервера, недоступный хостинг картинок и т.п.) —
+                // загружаем файл сами; нет локального файла — публикуем анонс текстом без картинки, но не теряем его
+                if (!$this->isPhotoFetchError($e)) {
+                    throw $e;
+                }
+                $response = $this->sendPhotoByUpload($token, $payload, (string) $message->imageUrl, $fellBackFrom);
+                if ($response === null) {
+                    return $this->sendTextOnly($token, $chatId, $message, $keyboard);
+                }
+            }
 
             return [
                 'external_chat_id' => (string) data_get($response, 'result.chat.id'),
@@ -261,6 +273,93 @@ class TelegramChannelPublisher implements ChannelPublisher
             'meta' => array_filter([
                 'message_kind' => self::MESSAGE_KIND_TEXT,
                 'thread_fallback_from' => $fellBackFrom,
+            ], fn ($v) => $v !== null),
+        ];
+    }
+
+    private function isPhotoFetchError(\Throwable $e): bool
+    {
+        $msg = strtolower($e->getMessage());
+        return str_contains($msg, 'failed to get http url content')
+            || str_contains($msg, 'wrong file identifier')
+            || str_contains($msg, 'wrong type of the web page content')
+            || str_contains($msg, 'wrong remote file identifier');
+    }
+
+    /** Локальный файл по URL нашего сайта (/storage/…, /img/…) — иначе null. */
+    private function localPathFromUrl(string $url): ?string
+    {
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $host = (string) parse_url($url, PHP_URL_HOST);
+        $appHost = (string) parse_url((string) config('app.url'), PHP_URL_HOST);
+        if ($path === '' || ($host !== '' && $appHost !== '' && !str_ends_with($host, $appHost))) {
+            return null;
+        }
+        $file = public_path(ltrim(rawurldecode($path), '/'));
+        return is_file($file) ? $file : null;
+    }
+
+    /** sendPhoto файлом (multipart). null — файла нет локально. С тем же запасным вариантом для неверной темы. */
+    private function sendPhotoByUpload(string $token, array $payload, string $imageUrl, ?int &$fellBackFrom): ?array
+    {
+        $file = $this->localPathFromUrl($imageUrl);
+        if ($file === null) {
+            return null;
+        }
+        $fields = [];
+        foreach ($payload as $k => $v) {
+            if ($k === 'photo') {
+                continue;
+            }
+            $fields[$k] = is_array($v) ? json_encode($v, JSON_UNESCAPED_UNICODE) : (is_bool($v) ? ($v ? 'true' : 'false') : (string) $v);
+        }
+        $url  = \App\Services\TelegramApi::url($token, 'sendPhoto');
+        $send = fn (array $f) => \App\Services\TelegramApi::http(30)
+            ->attach('photo', file_get_contents($file), basename($file))
+            ->post($url, $f);
+
+        Log::warning('TelegramChannelPublisher: картинка не скачалась по ссылке — загружаем файлом', ['url' => $imageUrl]);
+        $resp = $send($fields);
+
+        if ($resp->status() === 400 && !empty($fields['message_thread_id'])) {
+            $desc = strtolower((string) data_get($resp->json(), 'description', ''));
+            if (str_contains($desc, 'thread not found') || str_contains($desc, 'topic_id_invalid') || str_contains($desc, 'topic_closed') || str_contains($desc, 'topic closed')) {
+                $fellBackFrom = (int) $fields['message_thread_id'];
+                unset($fields['message_thread_id']);
+                $resp = $send($fields);
+            }
+        }
+
+        return $resp->throw()->json();
+    }
+
+    /** Анонс текстом (без картинки) — когда картинку невозможно ни скачать по ссылке, ни загрузить. */
+    private function sendTextOnly(string $token, string $chatId, ChannelMessageData $message, ?array $keyboard): array
+    {
+        Log::warning('TelegramChannelPublisher: картинка недоступна — публикуем анонс без неё', ['chat_id' => $chatId]);
+        $payload = [
+            'chat_id' => $chatId,
+            'text' => $message->text,
+            'parse_mode' => 'HTML',
+            'disable_notification' => $message->silent,
+        ];
+        if ($thread = \App\Support\TelegramTopic::normalize($message->messageThreadId)) {
+            $payload['message_thread_id'] = $thread;
+        }
+        if ($keyboard) {
+            $payload['reply_markup'] = $keyboard;
+        }
+        $fellBackFrom = null;
+        $response = $this->postWithThreadFallback($token, 'sendMessage', $payload, $fellBackFrom);
+
+        return [
+            'external_chat_id' => (string) data_get($response, 'result.chat.id'),
+            'external_message_id' => (string) data_get($response, 'result.message_id'),
+            'raw' => $response,
+            'meta' => array_filter([
+                'message_kind' => self::MESSAGE_KIND_TEXT,
+                'thread_fallback_from' => $fellBackFrom,
+                'photo_fallback' => 'text_only',
             ], fn ($v) => $v !== null),
         ];
     }
