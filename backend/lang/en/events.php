@@ -197,6 +197,8 @@ return [
     'dur_min_short'   => 'm',
 
     // «Date at time» format for Carbon::translatedFormat (English letters must be escaped to be literal)
+    'relative_today_at'    => 'today at :time',
+    'relative_tomorrow_at' => 'tomorrow at :time',
     'dt_format_date_at_time' => 'd F \\a\\t H:i',
 
     // Registration buttons / states

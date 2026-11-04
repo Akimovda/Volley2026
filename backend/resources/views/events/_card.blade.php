@@ -647,7 +647,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                             <div class="alert alert-info">
                                 {{ __('events.msg_reg_opens') }}
                                 @if($regStartsLocal)
-                                {{ $regStartsLocal->locale(app()->getLocale())->translatedFormat(__('events.dt_format_date_at_time')) }}
+                                {{ \App\Support\RelativeDay::dateAtTime($regStartsLocal) }}
                                 @endif
 							</div>
 						</div>

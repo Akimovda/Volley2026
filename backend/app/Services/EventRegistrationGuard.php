@@ -109,7 +109,7 @@
 
 				$regStartsAt = $occurrence->effectiveRegistrationStartsAt();
 				if ($regStartsAt && $nowUtc->lessThan($regStartsAt)) {
-					$opens = $regStartsAt->copy()->setTimezone($tz)->locale('ru')->translatedFormat('d F в H:i');
+					$opens = \App\Support\RelativeDay::dateAtTime($regStartsAt->copy()->setTimezone($tz), 'd F в H:i', 'ru');
 					$result->addError('Регистрация ещё не началась — откроется ' . $opens . '.');
 					$result->data['meta'] = $teamsMeta;
 					return $result;
@@ -523,7 +523,7 @@
                 if ($nowUtc->lessThan($restrictedOpensAt)) {
                     $label = $side === 'female' ? 'девушек' : 'мужчин';
                     $tz = $occurrence->event?->timezone ?? 'Europe/Moscow';
-                    $opensFormatted = $restrictedOpensAt->copy()->setTimezone($tz)->format('d.m.Y H:i');
+                    $opensFormatted = \App\Support\RelativeDay::dateAtTime($restrictedOpensAt->copy()->setTimezone($tz), 'd.m.Y H:i', 'ru');
                     return (object)[
                         'allowed' => false,
                         'code'    => 'gender_reg_not_started',
@@ -839,8 +839,9 @@
 						if (!$skipGenderWindow) {
 							$label = $side === 'female' ? 'девушек' : 'мужчин';
 							$result->errors[] = 'Регистрация для ' . $label . ' ещё не началась — откроется ' .
-								$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow')
-									->format('d.m.Y H:i') . '.';
+								\App\Support\RelativeDay::dateAtTime(
+									$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow'), 'd.m.Y H:i', 'ru'
+								) . '.';
 						}
 					}
 				}

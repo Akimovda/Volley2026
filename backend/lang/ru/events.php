@@ -204,6 +204,8 @@ return [
     'dur_min_short'   => 'м',
 
     // Формат «дата в время» для Carbon::translatedFormat (литералы вне символов формата)
+    'relative_today_at'    => 'сегодня в :time',
+    'relative_tomorrow_at' => 'завтра в :time',
     'dt_format_date_at_time' => 'd F \\в H:i',
 
     // Кнопки/состояния регистрации
