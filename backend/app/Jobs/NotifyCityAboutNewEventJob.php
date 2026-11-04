@@ -72,11 +72,16 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
         // остальные форматы — только жителям города мероприятия.
         $isBroadcast = in_array((string) $event->format, self::BROADCAST_FORMATS, true);
 
-        $chunkUsers = User::query()
+        // Точечная рассылка: если у мероприятия задан диапазон уровней — только игрокам, чей уровень (по направлению
+        // мероприятия: классика/пляжка) указан и попадает в диапазон. Без ограничения по уровню — всем, как и раньше.
+        $recipients = User::query()
             ->when(!$isBroadcast, fn ($q) => $q->where('city_id', $this->cityId))
             ->where('is_bot', false)
             ->where('notify_new_events_in_city', true)
-            ->where('id', '!=', $this->organizerId)
+            ->where('id', '!=', $this->organizerId);
+        self::applyLevelFilter($recipients, $event, $occurrence);
+
+        $chunkUsers = $recipients
             ->orderBy('id')
             ->skip($this->offset)
             ->take($chunkSize)
@@ -122,6 +127,29 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             self::dispatch($this->eventId, $this->cityId, $this->organizerId, $this->offset + $chunkSize)
                 ->onQueue('broadcasts');
         }
+    }
+
+    /**
+     * Ограничивает получателей диапазоном уровней мероприятия: classic_level для классики, beach_level для пляжки
+     * (уровни тура приоритетнее уровней серии). У игрока уровень должен быть заполнен и лежать в [min; max];
+     * если задана только одна граница — вторая открыта. Диапазон не задан — фильтра нет.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $users запрос к User
+     */
+    public static function applyLevelFilter($users, Event $event, EventOccurrence $occurrence): void
+    {
+        $isBeach = (string) ($event->direction ?? 'classic') === 'beach';
+        $min = $isBeach ? $occurrence->effectiveBeachLevelMin() : $occurrence->effectiveClassicLevelMin();
+        $max = $isBeach ? $occurrence->effectiveBeachLevelMax() : $occurrence->effectiveClassicLevelMax();
+
+        if ($min === null && $max === null) {
+            return;
+        }
+
+        $column = $isBeach ? 'beach_level' : 'classic_level';
+        $users->whereNotNull($column)
+            ->when($min !== null, fn ($q) => $q->where($column, '>=', (int) $min))
+            ->when($max !== null, fn ($q) => $q->where($column, '<=', (int) $max));
     }
 
     /**
