@@ -41,8 +41,8 @@ class EventNotificationChannelService
 
         $rows = [];
         foreach ($channels as $channel) {
-            $rawThread = $threadIds[$channel->id] ?? null;
-            $threadId = ($rawThread !== null && $rawThread !== '') ? (int) $rawThread : null;
+            // «1» (главная тема форума) не запоминаем: Telegram не принимает message_thread_id=1, анонс и так уходит в главную тему
+            $threadId = \App\Support\TelegramTopic::normalize($threadIds[$channel->id] ?? null);
 
             $rows[] = [
                 'event_id'               => (int) $event->id,

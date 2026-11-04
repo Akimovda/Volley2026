@@ -55,7 +55,7 @@ class PublishOccurrenceAnnouncementService
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
 
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             $message = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,
@@ -318,7 +318,7 @@ class PublishOccurrenceAnnouncementService
             if ($link->use_private_link || $event->is_private) {
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             // Пересобираем текст заново (актуальные дата/место/список и т.п.),
             // затем приклеиваем баннер отмены сверху — не трогаем сам builder.
@@ -448,7 +448,7 @@ class PublishOccurrenceAnnouncementService
             if ($link->use_private_link || $event->is_private) {
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             $finalMessage = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,

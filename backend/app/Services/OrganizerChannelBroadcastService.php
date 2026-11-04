@@ -30,14 +30,14 @@ class OrganizerChannelBroadcastService
         foreach ($channels as $channel) {
             try {
                 $publisher = $this->factory->forChannel($channel);
-                $threadId = data_get($channel->meta, 'message_thread_id');
+                $threadId = \App\Support\TelegramTopic::normalize(data_get($channel->meta, 'message_thread_id'));
 
                 $message = new ChannelMessageData(
                     title: $title,
                     text: $text,
                     buttonUrl: $buttonUrl,
                     buttonText: $buttonText,
-                    messageThreadId: $threadId ? (int) $threadId : null,
+                    messageThreadId: $threadId,
                 );
 
                 $publisher->send((string) $channel->chat_id, $message);

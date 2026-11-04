@@ -166,8 +166,9 @@ class TelegramChannelPublisher implements ChannelPublisher
                     'disable_notification' => $message->silent,
                 ];
 
-                if ($message->messageThreadId) {
-                    $payload['message_thread_id'] = $message->messageThreadId;
+                // главная тема форума (№1) и «не задано» — параметр не передаём (иначе Telegram: «message thread not found»)
+                if ($thread = \App\Support\TelegramTopic::normalize($message->messageThreadId)) {
+                    $payload['message_thread_id'] = $thread;
                 }
 
                 if ($keyboard) {
@@ -206,8 +207,9 @@ class TelegramChannelPublisher implements ChannelPublisher
                 'disable_notification' => $message->silent,
             ];
 
-            if ($message->messageThreadId) {
-                $payload['message_thread_id'] = $message->messageThreadId;
+            // главная тема форума (№1) и «не задано» — параметр не передаём (иначе Telegram: «message thread not found»)
+            if ($thread = \App\Support\TelegramTopic::normalize($message->messageThreadId)) {
+                $payload['message_thread_id'] = $thread;
             }
 
             if ($caption) {
@@ -241,8 +243,9 @@ class TelegramChannelPublisher implements ChannelPublisher
             'disable_notification' => $message->silent,
         ];
 
-        if ($message->messageThreadId) {
-            $payload['message_thread_id'] = $message->messageThreadId;
+        // главная тема форума (№1) и «не задано» — параметр не передаём (иначе Telegram: «message thread not found»)
+        if ($thread = \App\Support\TelegramTopic::normalize($message->messageThreadId)) {
+            $payload['message_thread_id'] = $thread;
         }
 
         if ($keyboard) {

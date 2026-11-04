@@ -39,14 +39,21 @@ class ChannelSetThreadController extends Controller
         }
 
         $meta = (array) ($channel->meta ?? []);
-        $meta['message_thread_id'] = (int) $data['message_thread_id'];
+        $threadId = \App\Support\TelegramTopic::normalize($data['message_thread_id']);
+
+        // тема №1 — главная тема форума: запоминать нельзя (Telegram отвечает «message thread not found»), анонс и так идёт в неё
+        if ($threadId === null) {
+            unset($meta['message_thread_id']);
+        } else {
+            $meta['message_thread_id'] = $threadId;
+        }
 
         $channel->update(['meta' => $meta]);
 
         return response()->json([
             'ok' => true,
             'channel_id' => $channel->id,
-            'topic_name' => "#{$data['message_thread_id']}",
+            'topic_name' => $threadId === null ? 'главная тема' : "#{$threadId}",
         ]);
     }
 }
