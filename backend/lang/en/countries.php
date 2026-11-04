@@ -12,6 +12,7 @@ return [
     'US' => 'United States',
     'ID' => 'Indonesia (Bali)',
     'TH' => 'Thailand',
+    'VN' => 'Vietnam',
     'AT' => 'Austria',
     'BE' => 'Belgium',
     'BG' => 'Bulgaria',

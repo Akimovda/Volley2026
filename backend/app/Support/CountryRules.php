@@ -21,7 +21,7 @@ class CountryRules
     /** Страны, доступные для выбора в профиле. */
     public const SUPPORTED = [
         'RU', 'KZ', 'UZ',
-        'GE', 'AM', 'AE', 'TR', 'US', 'ID', 'TH',
+        'GE', 'AM', 'AE', 'TR', 'US', 'ID', 'TH', 'VN',
         // Европа
         'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT',
         'LV', 'LT', 'LU', 'MT', 'ME', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB',
