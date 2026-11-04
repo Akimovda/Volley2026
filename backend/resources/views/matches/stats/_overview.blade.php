@@ -69,6 +69,8 @@
             $max = max($hv, $av, 1);
             $isErr = str_starts_with($bar['key'], 'opp');
         @endphp
+        {{-- уточняющие строки без данных (0:0) не показываем: «на приёме», «на блоке», «ошибка перехода/расположения», «без атрибуции» --}}
+        @continue(($bar['sub'] || $bar['key'] === 'unattributed') && $hv === 0 && $av === 0)
         <div class="ms-bar-row {{ $bar['sub'] ? 'mx-origin-sub' : '' }}">
             <div class="ms-bar-value ms-bar-value--home">{{ $hv }}</div>
             <div class="ms-bar-track ms-bar-track--home"><div class="ms-bar-fill ms-bar-fill--home" style="width:{{ round($hv / $max * 100) }}%"></div></div>
