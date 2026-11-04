@@ -33,11 +33,9 @@
 	.upcoming-special-arrows { display:flex; gap:.6rem; flex:0 0 auto; }
 	.upcoming-special-arrows button { width:3.6rem; height:3.6rem; border-radius:50%; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 	.upcoming-special-arrows button:disabled { opacity:.35; cursor:default; }
-	.upcoming-special-list { display:flex; align-items:stretch; gap:2rem; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; padding-bottom:.8rem; scrollbar-width:thin; }
-	/* карточка ленты лежит в колонке сетки (.col-*): внутри прокрутки делаем её фиксированной ширины */
-	.upcoming-special-list .upcoming-item { flex:0 0 34rem; max-width:86vw; scroll-snap-align:start; display:flex; }
-	.upcoming-special-list .upcoming-item > [class*="col-"] { flex:1 1 100%; width:100%; max-width:100%; padding:0; margin:0; }
-	@media (max-width: 575px) { .upcoming-special-list .upcoming-item { flex-basis:30rem; } }
+	/* та же сетка, что у ленты дат (.row + .col-*): карточка лежит в колонке и получает ту же ширину; здесь ряд не переносится, а прокручивается */
+	.upcoming-special-list { flex-wrap:nowrap; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; padding-bottom:.8rem; scrollbar-width:thin; }
+	.upcoming-special-list > [class*="col-"] { scroll-snap-align:start; }
 </style>
 @endonce
 <div class="ramka upcoming-special" data-upcoming-special>
@@ -48,11 +46,9 @@
 			<button type="button" data-dir="1" aria-label="{{ __('events.upcoming_next') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
 		</div>
 	</div>
-	<div class="upcoming-special-list">
+	<div class="row mb-0 upcoming-special-list">
 		@foreach($__occs as $occ)
-		<div class="upcoming-item">
-			@include('events._card', array_merge($__card, ['occ' => $occ, 'cardLinkOnly' => $cardLinkOnly ?? false]))
-		</div>
+		@include('events._card', array_merge($__card, ['occ' => $occ, 'cardLinkOnly' => $cardLinkOnly ?? false]))
 		@endforeach
 	</div>
 </div>
