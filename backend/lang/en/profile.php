@@ -194,6 +194,11 @@ return [
     'notif_org_dest_none'  => 'To receive notifications in a group, channel or forum topic, connect it first below in “Notification channels” (Telegram or MAX).',
     'notif_org_also_dm'    => 'Also send as direct messages',
     'notif_org_channel_invalid' => 'Choose a connected and verified channel.',
+    'level_notice_title'   => 'Set your playing level',
+    'level_notice_text'    => 'Then you will get notifications about suitable tournaments and camps, and organizers can place you correctly. Level not set: :which.',
+    'level_notice_classic' => 'indoor',
+    'level_notice_beach'   => 'beach',
+    'level_notice_btn'     => 'Set level',
     'notif_org_on'     => 'Enabled',
     'notif_org_off'    => 'Disabled',
 

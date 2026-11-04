@@ -832,7 +832,7 @@
 										
 										{{-- -------- Classic -------- --}}
 										
-										<h2 class="-mt-05">{{ __('profile.cp_sec_classic') }}</h2>
+										<h2 class="-mt-05" id="levels-classic">{{ __('profile.cp_sec_classic') }}</h2>
 										<div class="row">		
 											<div class="col-12">		
 												<div class="hideselect">									
@@ -959,7 +959,7 @@
 									</div>
 									<div class="ramka">		
 										
-										<h2 class="-mt-05">{{ __('profile.cp_sec_beach') }}</h2>
+										<h2 class="-mt-05" id="levels-beach">{{ __('profile.cp_sec_beach') }}</h2>
 										
 										<label>
 											<div>{{ __('profile.cp_lvl_label') }}</div>

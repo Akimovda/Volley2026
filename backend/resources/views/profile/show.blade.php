@@ -241,6 +241,22 @@
 				</div>
 			</div>
 			<div class="col-lg-8 col-xl-9 order-1">
+				@php
+					// Плашка «укажите уровень»: по уровню игрока работает точечная рассылка о новых турнирах/кемпах и допуск на мероприятия
+					$__noClassic = is_null($u->classic_level);
+					$__noBeach   = is_null($u->beach_level);
+				@endphp
+				@if(($__noClassic || $__noBeach) && !$u->is_bot && !$u->is_test)
+				<div class="ramka">
+					<div class="alert alert-info">
+						<div class="alert-title b-700">{{ __('profile.level_notice_title') }}</div>
+						<p class="mt-1 mb-1">
+							{{ __('profile.level_notice_text', ['which' => implode(', ', array_filter([$__noClassic ? __('profile.level_notice_classic') : null, $__noBeach ? __('profile.level_notice_beach') : null]))]) }}
+						</p>
+						<a href="{{ url('/profile/complete#' . ($__noClassic ? 'levels-classic' : 'levels-beach')) }}" class="btn btn-small">{{ __('profile.level_notice_btn') }}</a>
+					</div>
+				</div>
+				@endif
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}
 					
