@@ -1085,6 +1085,9 @@ if ($role === 'admin') {
             throw \Illuminate\Validation\ValidationException::withMessages($trainerResult['errors']);
         }
         $trainerIds = $trainerResult['trainerIds'];
+        if ($needTrainers) {
+            app(\App\Services\EventTrainerService::class)->ensureSelfTrainerProfile($trainerIds, $user ?? auth()->user());
+        }
 
         // Переключение режима регистрации турнира (командная <-> индивидуальная):
         // если уже есть команды дальше стадии draft, менять режим нельзя — данные потеряются.

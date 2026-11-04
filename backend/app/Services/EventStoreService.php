@@ -242,6 +242,10 @@ class EventStoreService
 
         $trainerIds = $trainers['trainerIds'];
 
+        if ($needTrainers) {
+            $this->trainerService->ensureSelfTrainerProfile($trainerIds, auth()->user());
+        }
+
 
         /*
             |--------------------------------------------------------------------------

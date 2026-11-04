@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Event;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 
@@ -79,6 +80,25 @@ class EventTrainerService
             'trainerIds' => $trainerIds,
             'errors' => [],
         ];
+    }
+
+
+    /**
+     * Организатор отметил «Тренер — я», а анкеты тренера нет — создаём её автоматически (публичную, без текста:
+     * специализацию, опыт и «О себе» можно дополнить в профиле). Без анкеты человек не смог бы быть тренером события.
+     */
+    public function ensureSelfTrainerProfile(array $trainerIds, ?User $user): void
+    {
+        if (!$user || !in_array((int) $user->id, array_map('intval', $trainerIds), true)) {
+            return;
+        }
+        if (!Schema::hasTable('trainer_profiles')) {
+            return;
+        }
+        TrainerProfile::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_public' => true]
+        );
     }
 
 

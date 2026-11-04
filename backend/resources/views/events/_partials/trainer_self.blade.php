@@ -4,7 +4,7 @@
     $meTrainer = $me && $me->trainerProfile && $me->trainerProfile->is_public;
     $meLabel = $me ? (trim(($me->last_name ?? '') . ' ' . ($me->first_name ?? '')) ?: ($me->name ?? ('#' . $me->id))) : '';
 @endphp
-@if($meTrainer)
+@if($me)
 <div class="mb-1" id="trainer-self-wrap">
     <label class="checkbox-item">
         <input type="checkbox" id="trainer-self-cb">
@@ -17,7 +17,7 @@
     var meId = {{ (int) $me->id }};
     var meLabel = @json($meLabel);
     var mode = @json($mode);
-    var defaultOn = @json((bool) ($defaultOn ?? false));
+    var defaultOn = @json((bool) ($defaultOn ?? false) && $meTrainer); // без анкеты тренера сами себя по умолчанию не добавляем
     var cb = document.getElementById('trainer-self-cb');
     if (!cb) return;
 
