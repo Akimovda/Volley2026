@@ -28,4 +28,10 @@ return [
     'new_event_in_city_title'       => 'New event in your city',
     'new_event_in_city_body'        => 'Hi! We have a new event: :title — :address, starting :datetime! You might be interested!',
     'new_event_in_city_unsubscribe' => 'Turn off: :url',
+    // Camps and master classes go to ALL users who have the "new events in my city" setting on (any city)
+    'new_event_broadcast_title_camp'         => 'New camp',
+    'new_event_broadcast_title_master_class' => 'New master class',
+    'new_event_broadcast_kind_camp'          => 'camp',
+    'new_event_broadcast_kind_master_class'  => 'master class',
+    'new_event_broadcast_body'               => 'Hi! A new :kind has been announced: :title — :address, starting :datetime. Details and sign-up via the button!',
 ];

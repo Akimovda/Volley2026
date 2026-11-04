@@ -29,6 +29,9 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** Форматы, о которых оповещаем всех пользователей сервиса (с включённой настройкой), а не только жителей города. */
+    public const BROADCAST_FORMATS = ['camp', 'master_class'];
+
     public int $tries   = 3;
     public int $backoff = 30;
 
@@ -65,8 +68,12 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
 
         $chunkSize = max(1, (int) config('notifications.new_event_city_notify_chunk_size', 75));
 
+        // Кэмпы и мастер-классы — всем с включённой настройкой, в любом городе (см. BROADCAST_FORMATS);
+        // остальные форматы — только жителям города мероприятия.
+        $isBroadcast = in_array((string) $event->format, self::BROADCAST_FORMATS, true);
+
         $chunkUsers = User::query()
-            ->where('city_id', $this->cityId)
+            ->when(!$isBroadcast, fn ($q) => $q->where('city_id', $this->cityId))
             ->where('is_bot', false)
             ->where('notify_new_events_in_city', true)
             ->where('id', '!=', $this->organizerId)
@@ -80,7 +87,8 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
         }
 
         $rateLimitHours = (int) config('notifications.new_event_city_notify_rate_limit_hours', 1);
-        $alreadyNotifiedIds = $this->alreadyNotifiedUserIds($chunkUsers->pluck('id')->all(), $rateLimitHours);
+        $notifType = $isBroadcast ? 'new_event_broadcast' : 'new_event_in_city';
+        $alreadyNotifiedIds = $this->alreadyNotifiedUserIds($chunkUsers->pluck('id')->all(), $rateLimitHours, $notifType);
 
         $address = $this->buildAddress($event);
 
@@ -95,7 +103,11 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             }
 
             try {
-                $notif->createNewEventInCityNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                if ($isBroadcast) {
+                    $notif->createNewEventBroadcastNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                } else {
+                    $notif->createNewEventInCityNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                }
             } catch (\Throwable $e) {
                 Log::warning('NotifyCityAboutNewEventJob: failed for user', [
                     'user_id'  => $user->id,
@@ -117,11 +129,11 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
      * И чья occurrence (из payload прошлого уведомления) всё ещё актуальна —
      * не отменена и не удалена физически.
      */
-    private function alreadyNotifiedUserIds(array $userIds, int $rateLimitHours): array
+    private function alreadyNotifiedUserIds(array $userIds, int $rateLimitHours, string $type = 'new_event_in_city'): array
     {
         $recentNotifs = UserNotification::query()
             ->whereIn('user_id', $userIds)
-            ->where('type', 'new_event_in_city')
+            ->where('type', $type)
             ->where('created_at', '>=', now()->subHours($rateLimitHours))
             ->get(['user_id', 'payload']);
 

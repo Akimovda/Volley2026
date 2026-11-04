@@ -31,7 +31,7 @@
                 'Команды' => ['team_join_request','team_join_accepted','team_join_declined','team_member_left','team_disbanded','team_captain_transferred','team_reserve_spot_offered','tournament_application_received','tournament_organizer_added'],
                 'Брони кортов' => ['court_booking_requested','court_booking_confirmed','court_booking_paid','court_booking_changed','court_booking_cancelled','court_booking_rejected','court_booking_expired','court_booking_refunded','court_booking_reminder'],
                 'Приглашения'  => ['event_invite','group_invite','tournament_team_invite'],
-                'Мероприятия'  => ['event_reminder','event_cancelled','event_cancelled_quorum','friend_joined_event','new_event_in_city','weekly_digest'],
+                'Мероприятия'  => ['event_reminder','event_cancelled','event_cancelled_quorum','friend_joined_event','new_event_in_city','new_event_broadcast','weekly_digest'],
                 'Платежи'      => ['payment_confirmed','payment_cancelled','payment_rejected','payment_user_confirmed','cash_payment_reminder','cash_payment_confirmed','cash_payment_control_reminder','cash_payment_banned'],
                 'Турниры'      => ['broadcast_scorer_invited','tournament_match_upcoming','tournament_match_result','tournament_advancement','tournament_completed','tournament_started','tournament_photos','tournament_application_incomplete','tournament_application_completed','tournament_application_auto_rejected'],
                 'Лиги и сезоны'=> ['season_promotion','season_elimination','season_reserve_activated','season_confirm_participation','promotion','reserve_spot_offered'],

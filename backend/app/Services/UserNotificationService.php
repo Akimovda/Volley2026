@@ -968,6 +968,46 @@ final class UserNotificationService
         );
     }
 
+    /**
+     * Кэмп / мастер-класс — рассылка ВСЕМ пользователям с включённой настройкой «о новых мероприятиях в моём городе»,
+     * независимо от города (на такие события едут из других городов). Свой тип — свой rate-limit (1/час) и шаблон.
+     */
+    public function createNewEventBroadcastNotification(
+        User $user,
+        Event $event,
+        EventOccurrence $occurrence,
+        string $address,
+        string $dateTimeStr
+    ): UserNotification {
+        $locale = (string) ($user->locale ?: 'ru');
+        $kind   = $event->format === 'master_class' ? 'master_class' : 'camp';
+
+        $eventUrl       = route('events.show', ['event' => $event->id, 'occurrence' => $occurrence->id]);
+        $unsubscribeUrl = route('profile.show', ['highlight' => 'city_notify']);
+
+        $body = __('notifications.new_event_broadcast_body', [
+            'kind'     => __('notifications.new_event_broadcast_kind_' . $kind, [], $locale),
+            'title'    => $event->title,
+            'address'  => $address,
+            'datetime' => $dateTimeStr,
+        ], $locale)
+            . "\n\n" . __('notifications.new_event_in_city_unsubscribe', ['url' => $unsubscribeUrl], $locale);
+
+        return $this->create(
+            userId: (int) $user->id,
+            type: 'new_event_broadcast',
+            title: __('notifications.new_event_broadcast_title_' . $kind, [], $locale),
+            body: $body,
+            payload: [
+                'event_id'      => $event->id,
+                'occurrence_id' => $occurrence->id,
+                'button_text'   => __('notifications.btn_open_event', [], $locale),
+                'button_url'    => $eventUrl,
+            ],
+            channels: ['in_app', 'telegram', 'vk', 'max']
+        );
+    }
+
     public function markAsRead(int $notificationId, int $userId): void
     {
         $notification = UserNotification::query()

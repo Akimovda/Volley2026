@@ -28,4 +28,10 @@ return [
     'new_event_in_city_title'       => 'Новое мероприятие в вашем городе',
     'new_event_in_city_body'        => 'Привет! У нас появилось новое мероприятие: :title — :address, начало в :datetime! Может, вам будет интересно!',
     'new_event_in_city_unsubscribe' => 'Отключить: :url',
+    // Кэмпы и мастер-классы рассылаются ВСЕМ с включённой настройкой «о новых мероприятиях в моём городе» (в любом городе)
+    'new_event_broadcast_title_camp'         => 'Новый кемп',
+    'new_event_broadcast_title_master_class' => 'Новый мастер-класс',
+    'new_event_broadcast_kind_camp'          => 'кемп',
+    'new_event_broadcast_kind_master_class'  => 'мастер-класс',
+    'new_event_broadcast_body'               => 'Привет! Появился новый :kind: :title — :address, начало :datetime. Подробности и запись — по кнопке!',
 ];
