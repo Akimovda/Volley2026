@@ -567,7 +567,7 @@ border:1rem solid #fff;
 		
 		
         {{-- ===== СКОРО: кемпы, мастер-классы, турниры ===== --}}
-        @include('events._upcoming_special', ['items' => app(\App\Services\UpcomingSpecialService::class)->forUser(auth()->user())])
+        @include('events._upcoming_special', ['upcoming' => app(\App\Services\UpcomingSpecialService::class)->forUser(auth()->user()), 'cardLinkOnly' => true])
 
         {{-- ===== ДЛЯ КОГО ===== --}}
         <div class="ramka">

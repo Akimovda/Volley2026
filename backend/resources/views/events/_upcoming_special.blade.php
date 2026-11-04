@@ -1,5 +1,31 @@
-{{-- Блок «Скоро: кемпы, мастер-классы, турниры». @include('events._upcoming_special', ['items' => $upcomingSpecial]) --}}
-@if(!empty($items) && count($items) > 0)
+{{-- Блок «Скоро: кемпы, мастер-классы, турниры» — те же карточки, что в ленте дат (events/_card.blade.php), горизонтальная прокрутка.
+     @include('events._upcoming_special', ['upcoming' => ['occurrences' => ..., 'card' => [...]], 'cardLinkOnly' => bool])
+     cardLinkOnly — на главной (нет JS ленты: окно выбора позиции) кнопка записи заменяется ссылкой «Подробнее». --}}
+@php
+	$__occs = $upcoming['occurrences'] ?? collect();
+@endphp
+@if(count($__occs) > 0)
+@php
+	// контекст карточки (как в events/index.blade.php)
+	$userTz        = \App\Support\DateTime::effectiveUserTz(auth()->user());
+	$userHasCityTz = !is_null(auth()->user()?->city?->timezone);
+	$nowUtc        = \Illuminate\Support\Carbon::now('UTC');
+	$fmtDate = function ($occ) use ($userTz, $userHasCityTz) {
+		$eventTz = $occ->timezone ?: ($occ->event?->timezone ?: 'UTC');
+		$effectiveTz = $userHasCityTz ? $userTz : $eventTz;
+		$sUser = $occ->starts_at ? \Illuminate\Support\Carbon::parse($occ->starts_at, 'UTC')->setTimezone($effectiveTz) : null;
+		if (!$sUser) {
+			return ['date' => '—', 'time' => '—', 'tz' => $effectiveTz, 'tzLabel' => $effectiveTz, 'eventTz' => $eventTz];
+		}
+		return ['date' => $sUser->format('d.m.Y'), 'time' => $sUser->format('H:i'), 'tz' => $effectiveTz,
+			'tzLabel' => $sUser->format('T') . ' (UTC' . $sUser->format('P') . ')', 'eventTz' => $eventTz];
+	};
+	$trainersById   = [];
+	$usersById      = [];
+	$trainerColumn  = null;
+	$trainerIconUrl = asset('icons/trainer.png');
+	$__card = (array) ($upcoming['card'] ?? []);
+@endphp
 @once
 <style>
 	.upcoming-special-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
@@ -7,20 +33,11 @@
 	.upcoming-special-arrows { display:flex; gap:.6rem; flex:0 0 auto; }
 	.upcoming-special-arrows button { width:3.6rem; height:3.6rem; border-radius:50%; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 	.upcoming-special-arrows button:disabled { opacity:.35; cursor:default; }
-	.upcoming-special-list { display:flex; gap:1.2rem; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; padding-bottom:.8rem; scrollbar-width:thin; }
-	.upcoming-card { flex:0 0 26rem; scroll-snap-align:start; display:flex; flex-direction:column; border:1px solid rgba(128,128,128,.3); border-radius:1.2rem; overflow:hidden; text-decoration:none; color:inherit; background:inherit; }
-	.upcoming-card:hover { border-color:rgba(128,128,128,.6); }
-	.upcoming-card-img { position:relative; aspect-ratio:16/10; background:rgba(128,128,128,.15); }
-	.upcoming-card-img img { width:100%; height:100%; object-fit:cover; display:block; }
-	.upcoming-card-kind { position:absolute; left:.8rem; top:.8rem; padding:.2rem .9rem; border-radius:99px; font-size:1.2rem; font-weight:600; background:rgba(0,0,0,.65); color:#fff; }
-	.upcoming-card-body { padding:1.1rem 1.2rem 1.3rem; display:flex; flex-direction:column; gap:.4rem; flex:1; }
-	.upcoming-card-title { font-size:1.6rem; font-weight:600; line-height:1.25; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-	.upcoming-card-meta { font-size:1.3rem; opacity:.75; }
-	.upcoming-card-status { margin-top:auto; padding-top:.6rem; font-size:1.3rem; font-weight:600; }
-	.upcoming-card-status.is-open { color:#2a8a3b; }
-	.upcoming-card-status.is-opens { color:#b7791f; }
-	.upcoming-card-status.is-full { color:#d33; }
-	@media (max-width: 575px) { .upcoming-card { flex-basis:22.5rem; } }
+	.upcoming-special-list { display:flex; align-items:stretch; gap:2rem; overflow-x:auto; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch; padding-bottom:.8rem; scrollbar-width:thin; }
+	/* карточка ленты лежит в колонке сетки (.col-*): внутри прокрутки делаем её фиксированной ширины */
+	.upcoming-special-list .upcoming-item { flex:0 0 34rem; max-width:86vw; scroll-snap-align:start; display:flex; }
+	.upcoming-special-list .upcoming-item > [class*="col-"] { flex:1 1 100%; width:100%; max-width:100%; padding:0; margin:0; }
+	@media (max-width: 575px) { .upcoming-special-list .upcoming-item { flex-basis:30rem; } }
 </style>
 @endonce
 <div class="ramka upcoming-special" data-upcoming-special>
@@ -32,61 +49,38 @@
 		</div>
 	</div>
 	<div class="upcoming-special-list">
-		@foreach($items as $it)
-		@php
-			$ev   = $it['event'];
-			$s    = $it['startsLocal'];
-			$e    = $it['endsLocal'];
-			$loc  = app()->getLocale();
-			$when = $e
-				? ($s->format('Y-m') === $e->format('Y-m')
-					? $s->format('j') . '–' . $e->locale($loc)->translatedFormat('j F')
-					: $s->locale($loc)->translatedFormat('j F') . ' – ' . $e->locale($loc)->translatedFormat('j F'))
-				: $s->locale($loc)->translatedFormat('j F, D') . ' · ' . $s->format('H:i');
-			$city = $ev->location?->city?->name;
-			$url  = route('events.show', ['event' => $ev->id, 'occurrence' => $it['occ']->id]);
-		@endphp
-		<a class="upcoming-card" href="{{ $url }}">
-			<div class="upcoming-card-img">
-				<img src="{{ $it['image'] }}" alt="{{ $ev->title }}" loading="lazy">
-				<span class="upcoming-card-kind">{{ __('events.upcoming_kind_' . $it['kind']) }}</span>
-			</div>
-			<div class="upcoming-card-body">
-				<div class="upcoming-card-title">{{ $ev->title }}</div>
-				<div class="upcoming-card-meta">{{ $when }}</div>
-				@if($city)<div class="upcoming-card-meta">📍 {{ $city }}</div>@endif
-				<div class="upcoming-card-status is-{{ $it['status'] }}">
-					@if($it['status'] === 'opens')
-						{{ __('events.msg_reg_opens') }} {{ \App\Support\RelativeDay::dateAtTime($it['opensAt']) }}
-					@elseif($it['status'] === 'full')
-						{{ __('events.upcoming_full') }}
-					@else
-						{{ __('events.upcoming_reg_open') }}@if($it['remaining'] !== null) · {{ __('events.upcoming_seats_left', ['n' => $it['remaining']]) }}@endif
-					@endif
-				</div>
-			</div>
-		</a>
+		@foreach($__occs as $occ)
+		<div class="upcoming-item">
+			@include('events._card', array_merge($__card, ['occ' => $occ, 'cardLinkOnly' => $cardLinkOnly ?? false]))
+		</div>
 		@endforeach
 	</div>
 </div>
 @once
 <script>
 (function () {
-	document.querySelectorAll('[data-upcoming-special]').forEach(function (box) {
-		var list = box.querySelector('.upcoming-special-list');
-		var prev = box.querySelector('[data-dir="-1"]'), next = box.querySelector('[data-dir="1"]');
-		if (!list || !prev || !next) return;
-		function sync() {
-			prev.disabled = list.scrollLeft <= 2;
-			next.disabled = list.scrollLeft + list.clientWidth >= list.scrollWidth - 2;
-		}
-		function step(dir) { list.scrollBy({ left: dir * Math.max(list.clientWidth * 0.8, 240), behavior: 'smooth' }); }
-		prev.addEventListener('click', function () { step(-1); });
-		next.addEventListener('click', function () { step(1); });
-		list.addEventListener('scroll', sync, { passive: true });
-		window.addEventListener('resize', sync);
-		sync();
-	});
+	function init() {
+		document.querySelectorAll('[data-upcoming-special]').forEach(function (box) {
+			// картинки карточек: на главной нет ленивой подгрузки ленты — подставляем сразу (их ≤ 10)
+			box.querySelectorAll('img[data-src]').forEach(function (img) {
+				img.src = img.getAttribute('data-src'); img.removeAttribute('data-src');
+			});
+			var list = box.querySelector('.upcoming-special-list');
+			var prev = box.querySelector('[data-dir="-1"]'), next = box.querySelector('[data-dir="1"]');
+			if (!list || !prev || !next) return;
+			function sync() {
+				prev.disabled = list.scrollLeft <= 2;
+				next.disabled = list.scrollLeft + list.clientWidth >= list.scrollWidth - 2;
+			}
+			function step(dir) { list.scrollBy({ left: dir * Math.max(list.clientWidth * 0.8, 240), behavior: 'smooth' }); }
+			prev.addEventListener('click', function () { step(-1); });
+			next.addEventListener('click', function () { step(1); });
+			list.addEventListener('scroll', sync, { passive: true });
+			window.addEventListener('resize', sync);
+			sync();
+		});
+	}
+	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
 </script>
 @endonce

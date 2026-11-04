@@ -605,7 +605,10 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					{{-- Кнопки записи --}}
 					<div class="mt-1">
 						
-						@if (!$regEnabled)
+						@if (!empty($cardLinkOnly))
+						{{-- вне ленты (главная): без окна выбора позиции — ссылка на страницу события --}}
+						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
+						@elseif (!$regEnabled)
 						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
 						@else
 						@if ($eventStarted2)

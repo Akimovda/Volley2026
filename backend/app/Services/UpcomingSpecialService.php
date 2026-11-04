@@ -24,10 +24,9 @@ class UpcomingSpecialService
     /**
      * @param Carbon|null $afterUtc показывать туры, начинающиеся строго позже (по умолчанию — позже сейчас;
      *                              лента передаёт конец своего 10-дневного окна, чтобы не дублировать то, что уже в ленте)
-     * @return Collection<int, array> элементы: occ, event, kind(camp|master_class|tournament), status(open|opens|full),
-     *                                opensAt(Carbon|null, в поясе пользователя), startsLocal, endsLocal, remaining(int|null), image
+     * @return array{occurrences: Collection, card: array} туры в случайном порядке + данные для events/_card.blade.php
      */
-    public function forUser($user, ?Carbon $afterUtc = null, int $limit = self::LIMIT): Collection
+    public function forUser($user, ?Carbon $afterUtc = null, int $limit = self::LIMIT): array
     {
         $userId  = (int) ($user?->id ?? 0);
         $role    = strtolower(trim((string) ($user?->role ?? 'user')));
@@ -63,15 +62,15 @@ class UpcomingSpecialService
         }
 
         $seen = [];
-        $items = [];
+        $picked = [];
         foreach ($occs as $occ) {
             $event = $occ->event;
             if (!$event || isset($seen[$event->id])) {
                 continue;
             }
-            $kind = $event->format === 'camp' ? 'camp' : ($event->format === 'master_class' ? 'master_class' : 'tournament');
+            $isTournament = !in_array($event->format, ['camp', 'master_class'], true);
 
-            if ($kind === 'tournament' && $regionCityIds !== null) {
+            if ($isTournament && $regionCityIds !== null) {
                 $cityId = (int) ($event->location?->city_id ?? 0);
                 if ($cityId > 0 && !in_array($cityId, $regionCityIds, true)) {
                     continue;
@@ -86,87 +85,15 @@ class UpcomingSpecialService
             }
 
             $seen[$event->id] = true;
-            $regStarts = $occ->effectiveRegistrationStartsAt();
-            $opensAt   = ($regStarts && $nowUtc->lessThan($regStarts)) ? $regStarts->copy()->setTimezone($tz) : null;
-
-            $startsLocal = Carbon::parse($occ->starts_at, 'UTC')->setTimezone($tz);
-            $durationSec = (int) ($occ->duration_sec ?? 0);
-            $endsLocal   = $durationSec >= 86400 ? $startsLocal->copy()->addSeconds($durationSec) : null;
-
-            $items[] = [
-                'occ'         => $occ,
-                'event'       => $event,
-                'kind'        => $kind,
-                'status'      => $opensAt ? 'opens' : 'open',
-                'opensAt'     => $opensAt,
-                'startsLocal' => $startsLocal,
-                'endsLocal'   => ($endsLocal && !$endsLocal->isSameDay($startsLocal)) ? $endsLocal : null,
-                'remaining'   => null,
-                'image'       => null,
-            ];
+            $picked[] = $occ;
         }
 
         // случайный порядок, затем лимит
-        $items = collect($items)->shuffle()->take($limit)->values();
+        $occurrences = collect($picked)->shuffle()->take($limit)->values();
 
-        $this->fillSeats($items);
-        $this->fillImages($items);
-
-        return $items;
-    }
-
-    /** Свободные места (кемпы и мастер-классы — индивидуальная запись); «Мест нет» — статус full. */
-    private function fillSeats(Collection $items): void
-    {
-        $ids = $items->filter(fn ($i) => $i['kind'] !== 'tournament')->map(fn ($i) => (int) $i['occ']->id)->all();
-        if (!$ids) {
-            return;
-        }
-        $booked = DB::table('event_registrations')
-            ->whereIn('occurrence_id', $ids)
-            ->whereNull('cancelled_at')
-            ->where(fn ($q) => $q->whereNull('status')->orWhere('status', 'confirmed'))
-            ->select('occurrence_id', DB::raw('count(*) as c'))
-            ->groupBy('occurrence_id')
-            ->pluck('c', 'occurrence_id');
-
-        $items->transform(function ($i) use ($booked) {
-            if ($i['kind'] === 'tournament') {
-                return $i;
-            }
-            $occ = $i['occ'];
-            $max = (int) ($occ->max_players ?? ($occ->event->gameSettings->max_players ?? 0));
-            if ($max > 0) {
-                $left = max(0, $max - (int) ($booked[$occ->id] ?? 0));
-                $i['remaining'] = $left;
-                if ($left === 0 && $i['status'] === 'open') {
-                    $i['status'] = 'full';
-                }
-            }
-            return $i;
-        });
-    }
-
-    /** Обложка: первое фото события → cover → картинка направления (как в карточке ленты). */
-    private function fillImages(Collection $items): void
-    {
-        $firstIds = $items->map(fn ($i) => (int) (((array) ($i['event']->event_photos ?? []))[0] ?? 0))->filter()->unique()->all();
-        $media = $firstIds
-            ? \Spatie\MediaLibrary\MediaCollections\Models\Media::whereIn('id', $firstIds)->get()->keyBy('id')
-            : collect();
-
-        $items->transform(function ($i) use ($media) {
-            $event = $i['event'];
-            $pid = (int) (((array) ($event->event_photos ?? []))[0] ?? 0);
-            $url = null;
-            if ($pid && $media->has($pid)) {
-                $url = $media[$pid]->getUrl('event_thumb');
-            }
-            if (!$url) {
-                $url = $event->getFirstMediaUrl('cover') ?: null;
-            }
-            $i['image'] = $url ?: '/img/' . ($event->direction === 'beach' ? 'beach.webp' : 'classic.webp');
-            return $i;
-        });
+        return [
+            'occurrences' => $occurrences,
+            'card'        => $occurrences->isEmpty() ? [] : $this->index->cardData($user, $occurrences),
+        ];
     }
 }

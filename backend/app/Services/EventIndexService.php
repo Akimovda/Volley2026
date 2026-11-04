@@ -395,7 +395,7 @@ class EventIndexService
         // показывает события дальше конца текущего окна, порядок случайный
         $upcomingSpecial = ($format === '' && $direction === '' && $level === null && $location === '')
             ? app(\App\Services\UpcomingSpecialService::class)->forUser($user, $windowEnd->clone()->setTimezone('UTC'))
-            : collect();
+            : ['occurrences' => collect(), 'card' => []];
 
         return view('events.index',[
             'upcomingSpecial' => $upcomingSpecial,
@@ -411,6 +411,46 @@ class EventIndexService
             'eventLikeCounts' => $eventLikeCounts,
             'likedEventIds' => $likedEventIds,
         ]);
+    }
+
+    /**
+     * Данные для events/_card.blade.php вне ленты (блок «Скоро»): обогащает туры (availability/join/cancel — как в occurrenceIndex)
+     * и отдаёт массивы для карточки (записи пользователя, лайки). Саму ленту не затрагивает.
+     *
+     * @param \Illuminate\Support\Collection $occurrences коллекция EventOccurrence
+     */
+    public function cardData($user, \Illuminate\Support\Collection $occurrences): array
+    {
+        $userId        = (int) ($user?->id ?? 0);
+        $occurrenceIds = $occurrences->pluck('id')->all();
+        $registered    = $this->registrationSnapshot($occurrenceIds);
+        $userRegs      = $this->userRegistrations($user, $occurrenceIds);
+
+        foreach ($occurrences as $occ) {
+            $reg = $registered[$occ->id] ?? 0;
+            $max = $occ->max_players ?? ($occ->event->gameSettings->max_players ?? 0);
+
+            $occ->availability = ['registered' => $reg, 'remaining' => max(0, $max - $reg), 'max' => $max];
+
+            $isJoined = in_array((int) $occ->id, $userRegs, true);
+            $quick    = app(\App\Services\EventRegistrationGuard::class)->quickCheck($user, $occ);
+
+            $occ->join = !$quick->allowed
+                ? (object) ['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
+                : (object) ['allowed' => !$isJoined, 'code' => null, 'message' => $isJoined ? 'Вы уже записаны.' : null];
+
+            $occ->cancel = (object) ['allowed' => $isJoined, 'message' => null];
+        }
+
+        [$joinedIds, $restrictedIds] = $this->joinedIds('occurrence_id');
+        [$likeCounts, $likedIds]     = $this->eventLikesData($occurrenceIds, $userId);
+
+        return [
+            'joinedOccurrenceIds'     => $joinedIds,
+            'restrictedOccurrenceIds' => $restrictedIds,
+            'eventLikeCounts'         => $likeCounts,
+            'likedEventIds'           => $likedIds,
+        ];
     }
 
     /*
