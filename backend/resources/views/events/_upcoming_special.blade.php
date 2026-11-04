@@ -28,8 +28,8 @@
 @endphp
 @once
 <style>
-	.upcoming-special-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
-	.upcoming-special-head h2 { margin:0; }
+	.upcoming-special-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+	.upcoming-special-head .day-section-title { margin-bottom:0; }
 	.upcoming-special-arrows { display:flex; gap:.6rem; flex:0 0 auto; }
 	.upcoming-special-arrows button { width:3.6rem; height:3.6rem; border-radius:50%; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 	.upcoming-special-arrows button:disabled { opacity:.35; cursor:default; }
@@ -38,9 +38,9 @@
 	.upcoming-special-list > [class*="col-"] { scroll-snap-align:start; }
 </style>
 @endonce
-<div class="ramka upcoming-special" data-upcoming-special>
+<section class="day-section upcoming-special" data-upcoming-special>
 	<div class="upcoming-special-head">
-		<h2 class="title-h">{{ __('events.upcoming_title') }}</h2>
+		<h3 class="day-section-title">{{ __('events.upcoming_title') }}</h3>
 		<div class="upcoming-special-arrows">
 			<button type="button" data-dir="-1" aria-label="{{ __('events.upcoming_prev') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
 			<button type="button" data-dir="1" aria-label="{{ __('events.upcoming_next') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
@@ -51,7 +51,7 @@
 		@include('events._card', array_merge($__card, ['occ' => $occ, 'cardLinkOnly' => $cardLinkOnly ?? false]))
 		@endforeach
 	</div>
-</div>
+</section>
 @once
 <script>
 (function () {
