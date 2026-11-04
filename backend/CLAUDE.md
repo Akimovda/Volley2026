@@ -5,7 +5,7 @@
 ## Язык и стек
 - Всегда отвечай на русском.
 - Laravel 12, PHP 8.3, PostgreSQL, Blade (частично Vue), jQuery 3.7.1; Telegram/VK/MAX боты.
-- Dev: `/var/www/volley-bot/backend` (volley-bot.store, ветка `main`). Prod: `/var/www/volleyplay/backend` (volleyplay.club, ветка `production`, НЕ `main`). Перед правкой проверять `pwd`/`git branch` — не править прод напрямую.
+- **Окружения (после переезда на новый сервер 141.98.188.140, 2026-11-04):** dev-контура (`/var/www/volley-bot/backend`, volley-bot.store, dev-боты 8091/8092) БОЛЬШЕ НЕТ — остался только prod: `/var/www/volleyplay/backend` (volleyplay.club). Корень git-репозитория на сервере — `/var/www/volleyplay` (`backend/` внутри), `origin` = https://github.com/Akimovda/Volley2026.git (только fetch), локальная ветка `production` отслеживает `origin/main`; ветки `production` на GitHub нет, разработка и пуши — в `main` (с Mac). Деплой: `git fetch origin && git merge origin/main --no-edit` (+ шаги из раздела «Деплой»). На сервере код руками не править (иначе merge упрётся в конфликт); любая правка — коммит в `main` и деплой. Перед деплоем: `git status` (должен быть чистым), свежий бэкап БД. Т.к. dev нет, проверки — на Mac или в откатываемой транзакции на проде. Боты теперь в `/opt/volleybot` (`deploy.sh`) и `/opt/volleyplay-*-bot`, а не в `/home/appuser/volley-bots`. `backend/.env` на проде не в git, права/владелец проверять.
 - Ops (GlitchTip, Uptime Kuma, бэкапы) — в `~/.claude/CLAUDE.md`; при прод-багах сначала issues в GlitchTip.
 
 ## Оглавление docs/ — «перед работой над темой X прочитай docs/X.md»
