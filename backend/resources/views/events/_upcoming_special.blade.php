@@ -29,7 +29,8 @@
 @once
 <style>
 	.upcoming-special-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
-	.upcoming-special-head .day-section-title { margin-bottom:0; }
+	.upcoming-special-head .day-section-title { margin-bottom:0; min-width:0; flex:1 1 auto; white-space:normal; }
+	.upcoming-special-arrows { margin-left:auto; }
 	.upcoming-special-arrows { display:flex; gap:.6rem; flex:0 0 auto; }
 	.upcoming-special-arrows button { width:3.6rem; height:3.6rem; border-radius:50%; border:1px solid rgba(128,128,128,.35); background:transparent; color:inherit; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
 	.upcoming-special-arrows button:disabled { opacity:.35; cursor:default; }
