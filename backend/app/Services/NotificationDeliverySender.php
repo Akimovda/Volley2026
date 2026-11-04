@@ -432,7 +432,7 @@ final class NotificationDeliverySender
         }
 
         $lines = [];
-        $lines[] = $emoji . ' ' . $rich['title'];
+        $lines[] = $this->withEmoji($emoji, (string) $rich['title']);
 
         // ---- Дата/время ----
         $datetime = trim((string) (
@@ -464,7 +464,23 @@ final class NotificationDeliverySender
     private function buildOrganizerPlayerText(string $emoji, string $title, array $payload, string $type): string
     {
         $eventTitle = trim((string) ($payload['event_title'] ?? ''));
-        $header = $emoji . ' ' . $title;
+
+        // Заголовок шаблона бывает пустым или равным названию мероприятия («{event_title}») — тогда подставляем понятную подпись по типу,
+        // иначе название мероприятия выводилось бы дважды. Эмодзи шаблона («✅ Регистрация подтверждена») не дублируем.
+        $plainTitle = trim((string) preg_replace('/^[\s\p{So}\p{Sk}\x{FE0F}\x{200D}]+/u', '', $title));
+        if ($plainTitle === '' || mb_strtolower($plainTitle) === mb_strtolower($eventTitle)) {
+            $title = match ($type) {
+                'organizer_player_registered'  => 'Регистрация подтверждена',
+                'organizer_player_cancelled'   => 'Бронь отменена',
+                'organizer_player_auto_booked' => 'Авто-запись из листа ожидания',
+                'organizer_registered_player'  => 'Вы записали игрока',
+                'organizer_cancelled_player'   => 'Вы отменили запись игрока',
+                'organizer_deleted_player'     => 'Вы удалили запись игрока',
+                default                        => $title,
+            };
+        }
+
+        $header = $this->withEmoji($emoji, $title);
         if ($eventTitle !== '') {
             $header .= ' 🏐 ' . $eventTitle;
         }
@@ -505,9 +521,20 @@ final class NotificationDeliverySender
 
         $lines[] = '';
         $lines[] = '--';
-        $lines[] = config('app.name', 'Volley Club');
+        $lines[] = config('app.notification_signature', 'VolleyClub');
 
         return implode("\n", $lines);
+    }
+
+    /** «эмодзи + заголовок»; если заголовок уже начинается со своего эмодзи — оставляем как есть (без дубля). */
+    private function withEmoji(string $emoji, string $title): string
+    {
+        $title = trim($title);
+        if ($title !== '' && preg_match('/^[\p{So}\p{Sk}]/u', $title)) {
+            return $title;
+        }
+
+        return trim($emoji . ' ' . $title);
     }
 
     private function buildOrganizerWaitlistText(array $payload): string
