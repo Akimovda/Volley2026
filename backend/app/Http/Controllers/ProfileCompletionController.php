@@ -104,17 +104,12 @@
 
 			$requiredKeys = $required->unique()->values()->all();
 
-			// Редирект только когда все значимые поля (включая дополнительные) заполнены
-			$allOptionalFilled = !empty($target->birth_date)
-				&& !empty($target->gender)
-				&& !empty($target->patronymic)
-				&& !empty($target->city_id);
-
-			if (empty($requiredKeys) && empty($section) && empty($eventId) && empty($missingKeys)
-				&& $target->id === $actor->id && $target->isProfileComplete() && $allOptionalFilled
-				&& !ProfileUpdateGuard::isAdmin($actor) && !ProfileUpdateGuard::isOrganizer($actor)) {
-				return redirect('/user/profile')->with('status', 'Ваш профиль уже заполнен ✅');
-			}
+			// Форма профиля открывается ВСЕГДА, когда пользователь идёт на неё сам (меню «Редактировать профиль»), — даже если
+			// обязательные поля уже заполнены: здесь же правятся уровни, рост, амплуа и всё, что осталось пустым.
+			// Раньше (май 2026) здесь стоял редирект «Ваш профиль уже заполнен ✅» на /user/profile — он учитывал только
+			// ФИО/телефон/дату рождения/пол/отчество/город и не пускал в форму тех, у кого не указан уровень, рост и т.п.
+			// Заполненные поля защищены от изменения на сохранении (ProfileExtraController, блок «Защита после заполнения»),
+			// пустые — редактируются.
 			$request->session()->put('pending_profile_required', $requiredKeys);
 			
 			// -------------------------------------------------
