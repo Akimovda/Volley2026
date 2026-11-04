@@ -112,7 +112,6 @@ body.dark .mx-ev--lineup { background:rgba(255,255,255,.04); }
   .mx-ev { grid-template-columns:2.6rem 5.6rem 1fr; }
   .mx-table { min-width:48rem; }
 }
-</style>
 /* ===== Расстановки (блок C) ===== */
 .mx-rot-table th { white-space:nowrap; }
 .mx-rot-table td { white-space:nowrap; }
@@ -128,3 +127,4 @@ body.dark .mx-ev--lineup { background:rgba(255,255,255,.04); }
 .mx-rot-table td:first-child { max-width:none; }
 .mx-print .mx-rot-table { min-width:0; font-size:1.1rem; }
 .mx-print .mx-rot-table td, .mx-print .mx-rot-table th { padding:.3rem .4rem; white-space:normal; }
+</style>
