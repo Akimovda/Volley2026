@@ -209,10 +209,15 @@
 													
 													<div class="ac-box">
 														{{-- chips --}}
+														@php
+															// имена для восстановленных тренеров (черновик / ошибка валидации), а не голые «#id»
+															$__trNames = \App\Models\User::whereIn('id', array_map('intval', (array) $oldTrainerIds))->get()->keyBy('id');
+														@endphp
 														<div id="trainer_chips" class="mb-1">
 															@foreach($oldTrainerIds as $tid)
+															@php $__tu = $__trNames[(int)$tid] ?? null; @endphp
 															<div class="d-flex fvc mb-1 between f-16 pl-1 pr-1">
-																<span>#{{ (int)$tid }}</span>
+																<span>{{ $__tu ? (trim(($__tu->last_name ?? '') . ' ' . ($__tu->first_name ?? '')) ?: ($__tu->name ?? ('#' . (int)$tid))) : ('#' . (int)$tid) }}</span>
 																<button type="button" class="btn btn-small btn-secondary trainer-chip-remove" data-id="{{ (int)$tid }}">×</button>
 															</div>
 															<input type="hidden" name="trainer_user_ids[]" value="{{ (int)$tid }}" data-trainer-hidden="{{ (int)$tid }}">
