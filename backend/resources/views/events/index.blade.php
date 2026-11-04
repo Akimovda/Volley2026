@@ -365,9 +365,12 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						отключена, чтобы ряд не прыгал). Стрелки-иконки стоят по бокам ленты
 						чипов на всех ширинах (.days-nav-row), не скроллятся вместе с чипами. --}}
 						@php
+						$archiveFloor = !empty($archiveFloorDate)
+						? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $archiveFloorDate, $userTz)->startOfDay()
+						: (clone $today);
 						$prevWindowStart = (clone $windowStart)->subDays(10);
-						if ($prevWindowStart->lt($today)) $prevWindowStart = clone $today;
-						$showPrevNav = $windowStart->gt($today);
+						if ($prevWindowStart->lt($archiveFloor)) $prevWindowStart = clone $archiveFloor;
+						$showPrevNav = $windowStart->gt($archiveFloor);
 						$nextDateParam = (clone $windowStart)->addDays(10)->format('Y-m-d');
 						$prevDateParam = $prevWindowStart->format('Y-m-d');
 						$baseParams    = array_filter([

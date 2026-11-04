@@ -96,7 +96,8 @@ class EventIndexService
             ]);
         
         $this->applyActiveOccurrenceScope($occQ);
-        $this->applyDateFilter($occQ);
+        // applyDateFilter() (скрыть уже завершившиеся) применяется ниже — только к окнам «с сегодняшнего дня»;
+        // окна в прошлом (архив дат, стрелка ‹) показывают и завершённые мероприятия.
         
         $occQ->orderBy('starts_at', 'asc');
 
@@ -253,6 +254,14 @@ class EventIndexService
         $windowTz = \App\Support\DateTime::effectiveUserTz($user);
         $today    = Carbon::now($windowTz)->startOfDay();
 
+        $archiveFloorUtc = (clone $occQ)->reorder()->min('starts_at');
+        $archiveFloor    = $archiveFloorUtc
+            ? Carbon::parse($archiveFloorUtc, 'UTC')->setTimezone($windowTz)->startOfDay()
+            : (clone $today);
+        if ($archiveFloor->gt($today)) {
+            $archiveFloor = clone $today;
+        }
+
         $dateParam    = trim((string) request('date', ''));
         $explicitDate = null;
         if ($dateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)) {
@@ -264,15 +273,17 @@ class EventIndexService
         }
 
         if ($explicitDate) {
-            // Не даём старой/битой ссылке с прошедшей датой открыть заведомо
-            // пустое окно — прошедшие occurrences и так исключены applyDateFilter().
-            $windowStart = $explicitDate->lt($today) ? $today : $explicitDate;
+            // Прошедшая дата открывает архив; раньше границы архива (самая ранняя запись) не уходим —
+            // пустое окно из далёкого прошлого бессмысленно.
+            $windowStart = $explicitDate->lt($archiveFloor) ? clone $archiveFloor : $explicitDate;
         } else {
             $offset = max(0, (int) request('offset', 0));
             if ($offset > 0) {
                 $windowStart = (clone $today)->addDays($offset * 10);
             } else {
-                $nearestStartsAtUtc = (clone $occQ)->orderBy('starts_at')->value('starts_at');
+                $nearestQ = clone $occQ;
+                $this->applyDateFilter($nearestQ);
+                $nearestStartsAtUtc = $nearestQ->orderBy('starts_at')->value('starts_at');
                 if ($nearestStartsAtUtc) {
                     $nearestLocalDay = Carbon::parse($nearestStartsAtUtc, 'UTC')->setTimezone($windowTz)->startOfDay();
                     $windowStart = $nearestLocalDay->lt($today) ? $today : $nearestLocalDay;
@@ -283,6 +294,10 @@ class EventIndexService
         }
 
         $windowEnd = (clone $windowStart)->addDays(9)->endOfDay();
+
+        if (!$windowStart->lt($today)) {
+            $this->applyDateFilter($occQ);
+        }
 
         $occurrences = $occQ
             ->where('starts_at', '>=', $windowStart->clone()->setTimezone('UTC'))
@@ -373,6 +388,7 @@ class EventIndexService
             'restrictedEventIds' => [],
             'activeLocationNames' => $activeLocationNames,
             'windowStartDate' => $windowStart->format('Y-m-d'),
+            'archiveFloorDate' => $archiveFloor->format('Y-m-d'),
             'eventLikeCounts' => $eventLikeCounts,
             'likedEventIds' => $likedEventIds,
         ]);

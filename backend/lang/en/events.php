@@ -204,6 +204,7 @@ return [
     'btn_join'           => 'Sign up',
     'btn_cancel_join'    => 'Cancel sign-up',
     'msg_event_started'  => 'The event has already started',
+    'msg_event_finished' => 'The event has finished',
     'msg_login_required' => 'You need to sign in!',
     'msg_you_joined'     => 'You\'re signed up!',
     'msg_cancel_blocked' => 'Cancellation is not available',

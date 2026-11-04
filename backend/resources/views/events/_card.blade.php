@@ -609,7 +609,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
 						@else
 						@if ($eventStarted2)
-                        <div class="alert alert-info">{{ __('events.msg_event_started') }}</div>
+                        <div class="alert alert-info">{{ !empty($eventFinished) ? __('events.msg_event_finished') : __('events.msg_event_started') }}</div>
 						
 						@elseif (!auth()->check())
                         <button type="button" class="btn w-100 js-open-login-popup" data-return-url="{{ $eventPageUrl }}">{{ __('events.btn_join') }}</button>

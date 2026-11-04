@@ -211,6 +211,7 @@ return [
     'btn_join'            => 'Записаться',
     'btn_cancel_join'     => 'Отменить запись',
     'msg_event_started'   => 'Мероприятие уже началось',
+    'msg_event_finished' => 'Мероприятие завершено',
     'msg_login_required'  => 'Вам нужно войти!',
     'msg_you_joined'      => 'Вы записаны!',
     'msg_cancel_blocked'  => 'Отмена недоступна',
