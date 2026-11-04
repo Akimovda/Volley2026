@@ -107,19 +107,25 @@ class EventIndexService
             // Житель города видит мероприятия всего своего региона
             // (Москва ↔ Московская область, СПб ↔ Ленинградская область, остальные — регион города)
             $scope = \App\Models\City::feedRegionScope($userCityId);
-            $occQ->whereHas('event', function ($eq) use ($userCityId, $scope) {
-                $eq->whereHas('location', function ($lq) use ($userCityId, $scope) {
-                    $lq->where(function ($w) use ($userCityId, $scope) {
-                        $w->where('city_id', $userCityId);
-                        if ($scope) {
-                            [$country, $regions] = $scope;
-                            $w->orWhereIn('city_id', \DB::table('cities')
-                                ->whereIn('region', $regions)
-                                ->when($country !== '', fn ($c) => $c->where('country_code', $country))
-                                ->select('id'));
-                        }
+            // Кэмпы и другие многодневные мероприятия (длительность ≥ 24 ч) показываем всем регионам: на них едут из
+            // других городов. Фильтр города к ним не применяется; остальные фильтры (приватность, направление, уровень…) действуют.
+            $occQ->where(function ($cityOrMultiDay) use ($userCityId, $scope) {
+                $cityOrMultiDay->whereHas('event', function ($eq) use ($userCityId, $scope) {
+                    $eq->whereHas('location', function ($lq) use ($userCityId, $scope) {
+                        $lq->where(function ($w) use ($userCityId, $scope) {
+                            $w->where('city_id', $userCityId);
+                            if ($scope) {
+                                [$country, $regions] = $scope;
+                                $w->orWhereIn('city_id', \DB::table('cities')
+                                    ->whereIn('region', $regions)
+                                    ->when($country !== '', fn ($c) => $c->where('country_code', $country))
+                                    ->select('id'));
+                            }
+                        });
                     });
-                });
+                })
+                ->orWhere('event_occurrences.duration_sec', '>=', 86400)
+                ->orWhereHas('event', fn ($eq) => $eq->where('format', 'camp'));
             });
         }
 
