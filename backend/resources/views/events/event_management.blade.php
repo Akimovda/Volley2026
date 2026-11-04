@@ -109,6 +109,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 		</x-slot>    
 		
 		<div class="container">
+			@include('events._partials.trainer_profile_created_notice')
 			@if (session('status'))
 			<div class="ramka">    
 				<div class="alert alert-success">

@@ -84,21 +84,27 @@ class EventTrainerService
 
 
     /**
-     * Организатор отметил «Тренер — я», а анкеты тренера нет — создаём её автоматически (публичную, без текста:
+     * Организатор отметил «Тренер — я», а анкеты тренера нет — создаём её автоматически (публичную, без текста, возвращает true при создании:
      * специализацию, опыт и «О себе» можно дополнить в профиле). Без анкеты человек не смог бы быть тренером события.
      */
-    public function ensureSelfTrainerProfile(array $trainerIds, ?User $user): void
+    public function ensureSelfTrainerProfile(array $trainerIds, ?User $user): bool
     {
         if (!$user || !in_array((int) $user->id, array_map('intval', $trainerIds), true)) {
-            return;
+            return false;
         }
         if (!Schema::hasTable('trainer_profiles')) {
-            return;
+            return false;
         }
-        TrainerProfile::query()->firstOrCreate(
+        $profile = TrainerProfile::query()->firstOrCreate(
             ['user_id' => $user->id],
             ['is_public' => true]
         );
+        if ($profile->wasRecentlyCreated) {
+            // подсказка «дополните анкету» на следующей странице (events.show / управление событием)
+            session()->flash('trainer_profile_created', true);
+            return true;
+        }
+        return false;
     }
 
 
