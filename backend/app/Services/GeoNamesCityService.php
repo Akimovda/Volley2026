@@ -143,14 +143,15 @@ class GeoNamesCityService
         } catch (\Throwable $e) {
             throw new \RuntimeException('unavailable');
         }
-        if (!$res->ok()) {
-            throw new \RuntimeException('unavailable');
-        }
         $json = $res->json() ?: [];
+        // GeoNames отдаёт ошибки логина/лимитов с HTTP 401/403 и телом {"status":{"message","value"}} — читаем тело до проверки кода
         if (isset($json['status']['value'])) {
             // 10 — логин/сервисы не включены; 18/19/20 — лимиты; прочее — недоступно
             $v = (int) $json['status']['value'];
             throw new \RuntimeException(in_array($v, [18, 19, 20], true) ? 'limit' : ($v === 10 ? 'not_configured' : 'unavailable'));
+        }
+        if (!$res->ok()) {
+            throw new \RuntimeException('unavailable');
         }
         return $json;
     }
