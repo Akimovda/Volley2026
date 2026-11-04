@@ -21,7 +21,7 @@ class CountryRules
     /** Страны, доступные для выбора в профиле. */
     public const SUPPORTED = [
         'RU', 'KZ', 'UZ',
-        'GE', 'AM', 'AE', 'TR', 'US', 'ID', 'TH', 'VN',
+        'GE', 'AM', 'AE', 'TR', 'US', 'ID', 'TH', 'VN', 'EG',
         // Европа
         'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IS', 'IE', 'IT',
         'LV', 'LT', 'LU', 'MT', 'ME', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB',
@@ -32,6 +32,7 @@ class CountryRules
         'TR' => ['turkey', 'turkiye', 'турция'],
         'TH' => ['тайланд', 'thailand', 'siam'],
         'VN' => ['viet nam', 'vietnam', 'вьетнам'],
+        'EG' => ['egypt', 'misr', 'masr', 'египет'],
         'US' => ['usa', 'сша', 'америка', 'штаты'],
         'GB' => ['uk', 'england', 'англия', 'великобритания'],
         'AE' => ['uae', 'оаэ', 'эмираты', 'дубай'],

@@ -13,6 +13,7 @@ return [
     'ID' => 'Indonesia (Bali)',
     'TH' => 'Thailand',
     'VN' => 'Vietnam',
+    'EG' => 'Egypt',
     'AT' => 'Austria',
     'BE' => 'Belgium',
     'BG' => 'Bulgaria',
