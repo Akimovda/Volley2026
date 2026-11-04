@@ -159,6 +159,11 @@ Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Повтор анонсов в каналы для кемпов, мастер-классов и турниров (настройка «Повторять анонс»: раз в 7 / 14 дней) — каждые 15 минут.
+Schedule::command('events:repeat-announcements --limit=50')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping();
+
 // Финализация анонсов в каналах (каждые 5 минут):
 // находит occurrences, которые только что завершились (starts_at+duration_sec < now,
 // в пределах config('channels.finalize_announcement_max_age_hours') — не будим

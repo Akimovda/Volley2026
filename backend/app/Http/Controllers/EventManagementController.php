@@ -267,6 +267,7 @@ if ($role === 'admin') {
             'update_message'          => (bool) ($first->update_message ?? true),
             'include_image'           => (bool) ($first->include_image ?? true),
             'include_registered_list' => (bool) ($first->include_registered_list ?? true),
+            'repeat_interval_days'    => $first->repeat_interval_days ?? null,
         ];
 
         // Автоопределение сезона по дате события (только подсказка) +

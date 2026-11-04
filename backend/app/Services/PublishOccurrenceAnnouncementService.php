@@ -22,8 +22,10 @@ class PublishOccurrenceAnnouncementService
      * @param bool $refreshOnly  true = только обновить существующий анонс,
      *                           не отправлять новое сообщение если записи нет.
      *                           Используется при записи/отписке игрока.
+     * @param int|null $repostChannelId  повтор анонса (кемпы/мастер-классы/турниры): отправить НОВОЕ сообщение только в этот
+     *                           канал; запись переходит на новое сообщение, чтобы дальше обновлялось оно. Прежнее остаётся в канале.
      */
-    public function publish(EventOccurrence $occurrence, bool $refreshOnly = false): void
+    public function publish(EventOccurrence $occurrence, bool $refreshOnly = false, ?int $repostChannelId = null): void
     {
         $event = $occurrence->event()
             ->with([
@@ -36,6 +38,9 @@ class PublishOccurrenceAnnouncementService
             ->firstOrFail();
 
         foreach ($event->notificationChannels as $link) {
+            if ($repostChannelId !== null && (int) $link->channel_id !== $repostChannelId) {
+                continue;
+            }
             $channel = $link->channel;
 
             if (!$channel || !$channel->is_verified) {
@@ -99,6 +104,49 @@ class PublishOccurrenceAnnouncementService
                     $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'skip', [
                         'reason' => 'already_finalized',
                     ]);
+                    continue;
+                }
+
+                // ── Повтор анонса: новое сообщение в канал, запись переезжает на него ──
+                if ($repostChannelId !== null) {
+                    try {
+                        $result = $publisher->send((string) $channel->chat_id, $message);
+                        $fellBackFrom = (int) ($result['meta']['thread_fallback_from'] ?? 0);
+                        $prevMeta = (array) ($record->meta ?? []);
+
+                        $record->update([
+                            'external_chat_id'    => $result['external_chat_id'] ?? (string) $channel->chat_id,
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'last_payload_hash'   => $hash,
+                            'last_synced_at'      => now(),
+                            'meta'                => array_merge(
+                                $prevMeta,
+                                ['message_kind' => $messageKind],
+                                (array) ($result['meta'] ?? []),
+                                [
+                                    'message_thread_id' => ($threadId && !$fellBackFrom) ? (int) $threadId : null,
+                                    'raw'               => $result['raw'] ?? [],
+                                    'reposts'           => (int) ($prevMeta['reposts'] ?? 0) + 1,
+                                    'last_repost_at'    => now('UTC')->toIso8601String(),
+                                ],
+                            ),
+                        ]);
+
+                        if ($fellBackFrom) {
+                            $this->notifyTopicFallback($channel, $event, $occurrence, $fellBackFrom);
+                        }
+
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'repost', [
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'reposts'             => (int) ($prevMeta['reposts'] ?? 0) + 1,
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::warning('PublishOccurrenceAnnouncement: repost failed', ['channel' => $channel->platform, 'error' => $e->getMessage()]);
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                            'action' => 'repost',
+                            'error'  => $e->getMessage(),
+                        ]);
+                    }
                     continue;
                 }
 

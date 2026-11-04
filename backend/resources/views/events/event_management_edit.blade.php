@@ -1585,6 +1585,8 @@
                         $chUpdateMsg  = (bool) old('channel_update_message', $cs['update_message']);
                         $chIncImg     = (bool) old('channel_include_image', $cs['include_image']);
                         $chIncReg     = (bool) old('channel_include_registered', $cs['include_registered_list']);
+                        $chRepeatDays = (int) old('channel_repeat_days', $cs['repeat_interval_days'] ?? 0);
+                        $chRepeatOk   = in_array((string) ($event->format ?? ''), \App\Models\EventNotificationChannel::REPEAT_FORMATS, true);
                         $savedThreadIds = $savedThreadIds ?? [];
                         @endphp
                         <div class="col-md-6">
@@ -1681,6 +1683,21 @@
                                         <div class="custom-checkbox"></div>
                                         <span>{{ __('events.channels_with_players') }}</span>
                                     </label>
+
+                                    {{-- Повтор анонса — только кемпы, мастер-классы, турниры --}}
+                                    @if($chRepeatOk)
+                                    <div class="mt-2">
+                                        <label>{{ __('events.channels_repeat_label') }}</label>
+                                        @foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14'] as $__rd => $__rk)
+                                        <label class="radio-item">
+                                            <input type="radio" name="channel_repeat_days" value="{{ $__rd }}" @checked($chRepeatDays === $__rd)>
+                                            <div class="custom-radio"></div>
+                                            <span>{{ __('events.' . $__rk) }}</span>
+                                        </label>
+                                        @endforeach
+                                        <div class="text-muted f-12" style="max-width:420px">{{ __('events.channels_repeat_hint') }}</div>
+                                    </div>
+                                    @endif
                                 </div>
                                 @endif
                             </div>

@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EventNotificationChannel extends Model
 {
+    /** Форматы, для которых доступен повтор анонса, и допустимые интервалы (дни). */
+    public const REPEAT_FORMATS = ['camp', 'master_class', 'tournament', 'tournament_classic', 'tournament_beach'];
+    public const REPEAT_DAYS    = [7, 14];
+
     protected $fillable = [
         'event_id',
         'channel_id',
@@ -17,6 +21,7 @@ class EventNotificationChannel extends Model
         'include_image',
         'include_registered_list',
         'message_thread_id',
+        'repeat_interval_days',
     ];
 
     protected $casts = [
@@ -26,6 +31,7 @@ class EventNotificationChannel extends Model
         'include_image'           => 'boolean',
         'include_registered_list' => 'boolean',
         'message_thread_id'       => 'integer',
+        'repeat_interval_days'    => 'integer',
     ];
 
     public function event(): BelongsTo
