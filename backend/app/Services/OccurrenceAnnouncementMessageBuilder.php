@@ -15,6 +15,10 @@ class OccurrenceAnnouncementMessageBuilder
     // выбрано с запасом ниже типичных ограничений на пост/сообщение.
     private const CAMP_TEXT_LIMIT_VK_MAX = 4000;
 
+    /** Лимиты длины анонса с запасом: подпись к фото в Telegram — 1024 символа, текстовое сообщение — 4096. */
+    private const TELEGRAM_CAPTION_SAFE = 1000;
+    private const TELEGRAM_TEXT_SAFE    = 4000;
+
     public function build(EventOccurrence $occurrence, array $options = []): ChannelMessageData
     {
         $event    = $occurrence->event;
@@ -97,8 +101,13 @@ class OccurrenceAnnouncementMessageBuilder
         // Текст анонса — у кемпа принципиально другой макет (даты кемпа вместо
         // времени начала/окончания, без блока "Мест/Команд", без списка игроков,
         // с описанием мероприятия) — см. buildCampText().
+        // лимит длины текста: подпись к фото Telegram — 1024, обычное сообщение — 4096, VK/MAX — ~4000 (нужен блоку «Описание»)
+        $options['_text_limit'] = $platform === 'telegram'
+            ? ($imageUrl ? self::TELEGRAM_CAPTION_SAFE : self::TELEGRAM_TEXT_SAFE)
+            : self::CAMP_TEXT_LIMIT_VK_MAX;
+
         $text = $isCamp
-            ? $this->buildCampText($occurrence, $starts, $ends, $platform, $textShort)
+            ? $this->buildCampText($occurrence, $starts, $ends, $platform, $textShort, $options)
             : $this->buildText($occurrence, $options, $starts, $ends, $tz, $platform, $listTitle, $listText, $textShort);
 
         $finalized = (bool) ($options['finalized'] ?? false);
@@ -133,7 +142,8 @@ class OccurrenceAnnouncementMessageBuilder
         Carbon $starts,
         ?Carbon $ends,
         string $platform,
-        ?string &$textShort = null
+        ?string &$textShort = null,
+        array $options = []
     ): string {
         $event     = $occurrence->event;
         $location  = $event->location;
@@ -202,7 +212,8 @@ class OccurrenceAnnouncementMessageBuilder
         // Telegram отправляется classic-сообщением (parse_mode=HTML) — сохраняем
         // жирный/курсив/подчёркнутый/зачёркнутый текст и ссылки из Trix-описания.
         // VK/MAX HTML не поддерживают вообще — только чистый текст.
-        $rawDescription = (string) ($event->description_html ?? '');
+        // Чекбокс «Описание» в настройках каналов (по умолчанию для кемпа — включено, как было всегда)
+        $rawDescription = ($options['include_description'] ?? true) ? (string) ($event->description_html ?? '') : '';
         $description = $platform === 'telegram'
             ? $this->htmlToTelegramSafe($rawDescription)
             : $this->htmlToPlainText($rawDescription);
@@ -298,8 +309,9 @@ class OccurrenceAnnouncementMessageBuilder
      * Обрезка текста — на уровне DOM (бюджет символов), а не сырой HTML-строки, поэтому
      * теги всегда остаются закрытыми и Telegram не падает с ошибкой парсинга.
      */
-    private function htmlToTelegramSafe(string $html): string
+    private function htmlToTelegramSafe(string $html, ?int $htmlBudget = null): string
     {
+        $htmlBudget = $htmlBudget ?? self::TELEGRAM_DESCRIPTION_HTML_BUDGET;
         if (trim($html) === '') {
             return '';
         }
@@ -321,12 +333,12 @@ class OccurrenceAnnouncementMessageBuilder
         // и т.п.) добавляют сверху. Поэтому целимся итеративно: если готовый HTML всё ещё
         // длиннее целевого лимита, уменьшаем текстовый бюджет и рендерим заново (DOM не
         // меняется, только счётчик, поэтому пересчёт дёшев и детерминирован).
-        $textBudget = self::TELEGRAM_DESCRIPTION_HTML_BUDGET;
+        $textBudget = $htmlBudget;
         $text = '';
         for ($attempt = 0; $attempt < 8; $attempt++) {
             $consumed = $textBudget;
             $text = $this->renderTelegramSafeNode($root, $consumed);
-            $overshoot = mb_strlen($text) - self::TELEGRAM_DESCRIPTION_HTML_BUDGET;
+            $overshoot = mb_strlen($text) - $htmlBudget;
             if ($overshoot <= 0 || $textBudget <= 0) {
                 break;
             }
@@ -556,6 +568,14 @@ class OccurrenceAnnouncementMessageBuilder
                     : ($free <= 3 ? "Осталось мест: {$free} из {$totalMax} 🟡" : "Осталось мест: {$free} из {$totalMax}!");
                 $lines[] = "🧑‍🧑‍🧒 {$freeLabel}";
             }
+
+            // Средний уровень записавшихся — пересчитывается при каждом обновлении анонса вместе со списком игроков
+            if (!$finalized) {
+                $avgLevel = $this->averagePlayerLevel((int) $occurrence->id, $direction);
+                if ($avgLevel !== null) {
+                    $lines[] = '💪 : ' . $avgLevel . ' из 7';
+                }
+            }
         }
 
         // Снимок текста ДО списка — для rich-параграфа Telegram (список рендерится
@@ -606,12 +626,94 @@ class OccurrenceAnnouncementMessageBuilder
             }
         }
 
-        return implode("\n", $lines);
+        $full = implode("\n", $lines);
+
+        // ── Описание (чекбокс «Описание» у кемпов, мастер-классов, турниров) ────
+        // Блок идёт сразу после названия. Бюджет длины считаем ПО ИТОГУ — после списка игроков: описание сокращается
+        // («…» в конце), а если места почти нет — не выводится вовсе, но дата/адрес/список игроков не режутся.
+        if (!empty($options['include_description'])) {
+            $head = $lines[0] . "\n\n";
+            $block = $this->descriptionBlock($event, $options, $platform, mb_strlen($full));
+            if ($block !== '' && str_starts_with($full, $head)) {
+                $full      = $head . $block . "\n\n" . substr($full, strlen($head));
+                $textShort = ($textShort !== null && str_starts_with($textShort, $head))
+                    ? $head . $block . "\n\n" . substr($textShort, strlen($head))
+                    : $textShort;
+            }
+        }
+
+        return $full;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Helpers
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Блок «📃 Описание:» для анонса, не длиннее свободного места (лимит сообщения минус остальной текст).
+     * Telegram — с жирным/курсивом/ссылками (HTML), VK/MAX — чистый текст. Обрезка — по словам/DOM, с «…» в конце.
+     * Свободного места меньше минимума — пустая строка (описание не показываем, чтобы не резать список игроков).
+     */
+    private function descriptionBlock(object $event, array $options, string $platform, int $baseLen): string
+    {
+        $raw = trim((string) ($event->description_html ?? ''));
+        if ($raw === '') {
+            return '';
+        }
+
+        $limit    = (int) ($options['_text_limit'] ?? self::TELEGRAM_CAPTION_SAFE);
+        $header   = $this->bold($platform, '📃 Описание:');
+        $overhead = mb_strlen($header) + 1 /* перенос после заголовка */ + 2 /* пустая строка после блока */;
+        $budget   = $limit - $baseLen - $overhead;
+        if ($budget < 60) {
+            return '';
+        }
+
+        if ($platform === 'telegram') {
+            $body = $this->htmlToTelegramSafe($raw, $budget);
+            if (mb_strlen($body) > $budget) { // разметка не уложилась — безопасный запасной вариант: чистый текст
+                $body = htmlspecialchars($this->truncateAtWord($this->htmlToPlainText($raw), $budget), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            }
+        } else {
+            $body = $this->truncateAtWord($this->htmlToPlainText($raw), $budget);
+        }
+
+        $body = trim($body);
+
+        return $body === '' ? '' : $header . "\n" . $body;
+    }
+
+    /** Обрезка по границе слова до $max символов с «…» в конце (если обрезали). */
+    private function truncateAtWord(string $text, int $max): string
+    {
+        if (mb_strlen($text) <= $max) {
+            return $text;
+        }
+        $cut = mb_substr($text, 0, max(1, $max - 1));
+        $pos = max(mb_strrpos($cut, ' ') ?: 0, mb_strrpos($cut, "\n") ?: 0);
+        if ($pos > $max * 0.6) {
+            $cut = mb_substr($cut, 0, $pos);
+        }
+
+        return rtrim($cut, " \t\n.,;:—-") . '…';
+    }
+
+    /** Средний уровень записавшихся (по направлению мероприятия), «3.82»; null — ни у кого не указан уровень. */
+    private function averagePlayerLevel(int $occurrenceId, string $direction): ?string
+    {
+        $col = $direction === 'beach' ? 'beach_level' : 'classic_level';
+        $avg = DB::table('event_registrations as er')
+            ->join('users as u', 'u.id', '=', 'er.user_id')
+            ->where('er.occurrence_id', $occurrenceId)
+            ->whereNull('er.cancelled_at')
+            ->where(function ($q) {
+                $q->whereNull('er.status')->orWhere('er.status', 'confirmed');
+            })
+            ->whereNotNull('u.' . $col)
+            ->avg('u.' . $col);
+
+        return $avg === null ? null : number_format((float) $avg, 2, '.', '');
+    }
 
     private function bold(string $platform, string $text): string
     {

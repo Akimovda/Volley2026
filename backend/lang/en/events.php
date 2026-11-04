@@ -950,6 +950,8 @@ return [
     'channels_none_pre'      => 'No connected channels —',
     'channels_none_link'     => 'connect',
     'channels_no_title'      => 'No title',
+    'channels_with_description' => 'Description',
+    'channels_with_description_hint' => 'Adds the event description block to the announcement. If the announcement does not fit the Telegram limit, the description is shortened (“…” at the end) — the full text is behind the “Записаться!” button.',
     'channels_repeat_label'  => 'Repeat the announcement',
     'channels_repeat_none'   => 'Do not repeat — sent once, when registration opens',
     'channels_repeat_7'      => 'Every week',

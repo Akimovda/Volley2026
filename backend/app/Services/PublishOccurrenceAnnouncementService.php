@@ -70,6 +70,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => (bool) ($link->include_description ?? ((string) $event->format === 'camp')),
             ]);
 
             $isRich = count($message->imageUrls ?? []) > 1 || !empty($message->listText);
@@ -393,6 +394,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => false, // у баннера отмены свой текст — описание не добавляем
             ]);
 
             $banner = __('events.channel_announcement_cancelled_banner', [], 'ru');
@@ -521,6 +523,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => (bool) ($link->include_description ?? ((string) $event->format === 'camp')),
                 'finalized'               => true,
             ]);
 

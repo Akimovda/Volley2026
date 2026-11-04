@@ -268,6 +268,7 @@ if ($role === 'admin') {
             'include_image'           => (bool) ($first->include_image ?? true),
             'include_registered_list' => (bool) ($first->include_registered_list ?? true),
             'repeat_interval_days'    => $first->repeat_interval_days ?? null,
+            'include_description'     => $first->include_description ?? null,
         ];
 
         // Автоопределение сезона по дате события (только подсказка) +

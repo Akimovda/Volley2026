@@ -416,6 +416,8 @@
 								$channelIncludeImage = (bool) old('channel_include_image', true);
 								$channelIncludeRegistered = (bool) old('channel_include_registered', true);
 								$channelRepeatDays = (int) old('channel_repeat_days', 0);
+								$channelDescHasOld = old('channel_include_description') !== null;
+								$channelIncludeDescription = (bool) old('channel_include_description', false);
                                 
 								$selectedOrganizerId = (int) old('organizer_id', $prefill['organizer_id'] ?? auth()->id());
                                 
@@ -521,6 +523,27 @@
 
 											{{-- Повтор анонса — только кемпы, мастер-классы, турниры --}}
 											<div class="mt-2" data-show-if="format=camp|master_class|tournament|tournament_classic|tournament_beach">
+												<label class="checkbox-item">
+													<input type="hidden" name="channel_include_description" value="0">
+													<input type="checkbox" name="channel_include_description" value="1" @checked($channelIncludeDescription)>
+													<div class="custom-checkbox"></div>
+													<span>{{ __('events.channels_with_description') }}</span>
+												</label>
+												<div class="text-muted f-12 mb-1" style="max-width:420px">{{ __('events.channels_with_description_hint') }}</div>
+												<script>
+												(function(){
+													// по умолчанию: у кемпа описание в анонсе было всегда → включено; у мастер-классов и турниров → выключено.
+													// Пока организатор сам не трогал галочку (и нет возврата формы с ошибкой), следуем выбранному формату.
+													var f = document.getElementById('format');
+													var cb = document.querySelector('input[type="checkbox"][name="channel_include_description"]');
+													if (!f || !cb) return;
+													var touched = @json($channelDescHasOld);
+													cb.addEventListener('change', function(){ touched = true; });
+													function apply(){ if (!touched) cb.checked = (f.value === 'camp'); }
+													f.addEventListener('change', apply);
+													apply();
+												})();
+												</script>
 												<label>{{ __('events.channels_repeat_label') }}</label>
 												@foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14'] as $__rd => $__rk)
 												<label class="radio-item">

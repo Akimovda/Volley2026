@@ -956,6 +956,8 @@ return [
     'channels_none_pre'      => 'Нет подключенных каналов —',
     'channels_none_link'     => 'подключить',
     'channels_no_title'      => 'Без названия',
+    'channels_with_description' => 'Описание',
+    'channels_with_description_hint' => 'Добавляет в анонс блок описания мероприятия. Если анонс не помещается в лимит Telegram, описание сокращается («…» в конце) — полный текст по кнопке «Записаться!».',
     'channels_repeat_label'  => 'Повторять анонс',
     'channels_repeat_none'   => 'Не повторять — анонс уходит один раз, при открытии регистрации',
     'channels_repeat_7'      => 'Раз в неделю',

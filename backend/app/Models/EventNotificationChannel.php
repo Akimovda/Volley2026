@@ -22,6 +22,7 @@ class EventNotificationChannel extends Model
         'include_registered_list',
         'message_thread_id',
         'repeat_interval_days',
+        'include_description',
     ];
 
     protected $casts = [
@@ -32,6 +33,7 @@ class EventNotificationChannel extends Model
         'include_registered_list' => 'boolean',
         'message_thread_id'       => 'integer',
         'repeat_interval_days'    => 'integer',
+        'include_description'     => 'boolean',
     ];
 
     public function event(): BelongsTo

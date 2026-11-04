@@ -32,6 +32,7 @@ class EventNotificationChannelSyncService
                 'update_message' => (bool) ($payload['update_message'] ?? true),
                 'include_image' => (bool) ($payload['include_image'] ?? true),
                 'include_registered_list' => (bool) ($payload['include_registered_list'] ?? true),
+                'include_description' => array_key_exists('include_description', $payload) ? (bool) $payload['include_description'] : null,
                 'repeat_interval_days' => in_array((int) ($payload['repeat_interval_days'] ?? 0), \App\Models\EventNotificationChannel::REPEAT_DAYS, true) ? (int) $payload['repeat_interval_days'] : null,
             ]);
         }

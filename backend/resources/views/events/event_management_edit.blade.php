@@ -1586,6 +1586,7 @@
                         $chIncImg     = (bool) old('channel_include_image', $cs['include_image']);
                         $chIncReg     = (bool) old('channel_include_registered', $cs['include_registered_list']);
                         $chRepeatDays = (int) old('channel_repeat_days', $cs['repeat_interval_days'] ?? 0);
+                        $chIncDesc    = (bool) old('channel_include_description', $cs['include_description'] ?? ((string) ($event->format ?? '') === 'camp'));
                         $chRepeatOk   = in_array((string) ($event->format ?? ''), \App\Models\EventNotificationChannel::REPEAT_FORMATS, true);
                         $savedThreadIds = $savedThreadIds ?? [];
                         @endphp
@@ -1687,6 +1688,13 @@
                                     {{-- Повтор анонса — только кемпы, мастер-классы, турниры --}}
                                     @if($chRepeatOk)
                                     <div class="mt-2">
+                                        <label class="checkbox-item">
+                                            <input type="hidden" name="channel_include_description" value="0">
+                                            <input type="checkbox" name="channel_include_description" value="1" @checked($chIncDesc)>
+                                            <div class="custom-checkbox"></div>
+                                            <span>{{ __('events.channels_with_description') }}</span>
+                                        </label>
+                                        <div class="text-muted f-12 mb-1" style="max-width:420px">{{ __('events.channels_with_description_hint') }}</div>
                                         <label>{{ __('events.channels_repeat_label') }}</label>
                                         @foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14'] as $__rd => $__rk)
                                         <label class="radio-item">
