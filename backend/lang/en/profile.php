@@ -187,6 +187,13 @@ return [
 
     'notif_org_label'  => 'Notifications about player sign-ups',
     'notif_org_lead'   => 'A notification on the site and in the app, plus a personal message from our bot via Telegram, VK or MAX (if connected), every time someone signs up or cancels for your events. The organizer\'s assistants get the same notifications.',
+    'notif_org_dest_label' => 'Where to send player registration notifications',
+    'notif_org_dest_dm'    => 'Direct messages from the bot (default)',
+    'notif_org_dest_topic' => 'topic #:n',
+    'notif_org_dest_hint'  => 'You can pick your own group, channel or forum topic — connect them below in “Notification channels”. Notifications on the site and in the app stay on.',
+    'notif_org_dest_none'  => 'To receive notifications in a group, channel or forum topic, connect it first below in “Notification channels” (Telegram or MAX).',
+    'notif_org_also_dm'    => 'Also send as direct messages',
+    'notif_org_channel_invalid' => 'Choose a connected and verified channel.',
     'notif_org_on'     => 'Enabled',
     'notif_org_off'    => 'Disabled',
 

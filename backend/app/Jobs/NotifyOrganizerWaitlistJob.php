@@ -122,7 +122,7 @@ class NotifyOrganizerWaitlistJob implements ShouldQueue
                     title:    $title,
                     body:     null,
                     payload:  $payload,
-                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                    channels: $notificationService->organizerRegistrationChannels($recipientId),
                 );
             } catch (\Throwable $e) {
                 Log::warning('NotifyOrganizerWaitlistJob: create failed', [

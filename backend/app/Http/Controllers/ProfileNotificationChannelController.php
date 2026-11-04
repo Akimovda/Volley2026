@@ -102,6 +102,10 @@ class ProfileNotificationChannelController extends Controller
             abort(403);
         }
 
+        // канал был выбран для уведомлений о записях — возвращаем личные сообщения
+        \App\Models\User::where('registration_notify_channel_id', $channel->id)
+            ->update(['registration_notify_channel_id' => null, 'registration_notify_also_dm' => false]);
+
         $channel->delete();
 
         return redirect()
@@ -121,11 +125,33 @@ class ProfileNotificationChannelController extends Controller
 
         $data = $request->validate([
             'notify_player_registrations' => ['nullable', 'boolean'],
+            'registration_channel_id'     => ['nullable', 'integer'],
+            'registration_also_dm'        => ['nullable', 'boolean'],
         ]);
 
-        $user->update([
+        $update = [
             'notify_player_registrations' => (bool) ($data['notify_player_registrations'] ?? false),
-        ]);
+        ];
+
+        // куда присылать уведомления о записях: пусто — личные сообщения бота; иначе — свой подтверждённый канал/группа
+        if ($request->has('registration_channel_id')) {
+            $channelId = (int) ($data['registration_channel_id'] ?? 0);
+            if ($channelId > 0) {
+                $ok = UserNotificationChannel::query()
+                    ->where('id', $channelId)
+                    ->where('user_id', (int) $user->id)
+                    ->where('is_verified', true)
+                    ->whereIn('platform', ['telegram', 'max'])
+                    ->exists();
+                if (!$ok) {
+                    return redirect()->back()->withErrors(['registration_channel_id' => __('profile.notif_org_channel_invalid')]);
+                }
+            }
+            $update['registration_notify_channel_id'] = $channelId > 0 ? $channelId : null;
+            $update['registration_notify_also_dm']    = $channelId > 0 && (bool) ($data['registration_also_dm'] ?? false);
+        }
+
+        $user->update($update);
 
         return redirect()
             ->back()

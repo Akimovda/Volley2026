@@ -79,10 +79,41 @@ final class NotificationDeliverySender
                 return;
             }
 
+            if ($channel === 'group') {
+                $this->sendGroup($user, $payload);
+                $this->markSent($deliveryId);
+                return;
+            }
+
             $this->markFailed($deliveryId, 'Неизвестный канал доставки.', $isRetry);
         } catch (\Throwable $e) {
             $this->markFailed($deliveryId, $e->getMessage(), $isRetry);
         }
+    }
+
+    /**
+     * Уведомление организатору в выбранный им канал/группу (Telegram — с темой форума, MAX — чат).
+     * Канал выбирается в профиле (users.registration_notify_channel_id); если он пропал — это сбой доставки.
+     */
+    private function sendGroup(User $user, array $payload): void
+    {
+        $channel = app(\App\Services\UserNotificationService::class)->registrationChannelFor($user);
+        if (!$channel) {
+            throw new \RuntimeException('Канал для уведомлений о записях не выбран или не подтверждён.');
+        }
+
+        if ($channel->platform === 'telegram') {
+            $thread = \App\Support\TelegramTopic::normalize(($channel->meta ?? [])['message_thread_id'] ?? null);
+            $this->sendTelegram($user, $payload, (string) $channel->chat_id, $thread, $channel->resolveToken());
+            return;
+        }
+
+        if ($channel->platform === 'max') {
+            $this->sendMax($user, $payload, (string) $channel->chat_id);
+            return;
+        }
+
+        throw new \RuntimeException('Платформа канала не поддерживается: ' . $channel->platform);
     }
 
     private function sendPush(User $user, array $payload): void
@@ -124,17 +155,18 @@ final class NotificationDeliverySender
         return trim(implode("\n", $lines));
     }
 
-    private function sendTelegram(User $user, array $payload): void
+    private function sendTelegram(User $user, array $payload, ?string $chatIdOverride = null, ?int $threadId = null, ?string $tokenOverride = null): void
     {
         // telegram_notify_chat_id — реальный chat_id личного диалога с ботом, появляется
         // только после /start notify_<token>. telegram_id (OAuth-логин) НЕ годится как
         // chat_id — Telegram не разрешает боту первым писать пользователю, который
         // никогда не открывал с ним чат: "chat not found"/"bot can't initiate conversation".
-        if (empty($user->telegram_notify_chat_id)) {
+        $chatId = $chatIdOverride ?? (string) $user->telegram_notify_chat_id;
+        if ($chatId === '') {
             throw new \RuntimeException('У пользователя не подключены Telegram-уведомления (telegram_notify_chat_id пуст).');
         }
 
-        $token = (string) config('services.telegram.bot_token');
+        $token = $tokenOverride ?: (string) config('services.telegram.bot_token');
         if ($token === '') {
             throw new \RuntimeException('Не настроен services.telegram.bot_token.');
         }
@@ -158,7 +190,8 @@ final class NotificationDeliverySender
         if ($rich['image_url'] !== '') {
             $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendPhoto'),
                 array_filter([
-                    'chat_id'      => (string) $user->telegram_notify_chat_id,
+                    'chat_id'      => $chatId,
+                    'message_thread_id' => $threadId,
                     'photo'        => $rich['image_url'],
                     'caption'      => $text,
                     'parse_mode'   => $this->telegramParseMode($rich['format']),
@@ -180,7 +213,8 @@ final class NotificationDeliverySender
 
         $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendMessage'),
             array_filter([
-                'chat_id'                  => (string) $user->telegram_notify_chat_id,
+                'chat_id'                  => $chatId,
+                'message_thread_id'        => $threadId,
                 'text'                     => $text,
                 'parse_mode'               => $this->telegramParseMode($rich['format']),
                 'disable_web_page_preview' => false,
@@ -248,9 +282,9 @@ final class NotificationDeliverySender
         }
     }
 
-    private function sendMax(User $user, array $payload): void
+    private function sendMax(User $user, array $payload, ?string $chatIdOverride = null): void
     {
-        if (empty($user->max_chat_id)) {
+        if ($chatIdOverride === null && empty($user->max_chat_id)) {
             throw new \RuntimeException('У пользователя нет max_chat_id.');
         }
 
@@ -260,7 +294,7 @@ final class NotificationDeliverySender
         }
 
         $rich   = $this->buildRichPayload($payload);
-        $chatId = (string) $user->max_chat_id;
+        $chatId = $chatIdOverride ?? (string) $user->max_chat_id;
 
         if ($rich['image_url'] !== '') {
             $this->sendMaxImageByUrl($token, $chatId, $rich['image_url']);

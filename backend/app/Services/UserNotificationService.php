@@ -68,8 +68,9 @@ final class UserNotificationService
             // выбирают каналы галочками вручную и считают охват — им push не добавляем.
             // Игрокам без активного токена push отсеет normalizeChannels().
             $channels = array_values((array) $channels);
+            // 'group' (канал/группа организатора) — не личный канал: сам по себе push не добавляет
             if (!in_array($type, ['organizer_broadcast', 'admin_broadcast', 'admin_broadcast_test'], true)
-                && array_diff($channels, ['in_app']) !== []
+                && array_diff($channels, ['in_app', 'group']) !== []
                 && !in_array('push', $channels, true)) {
                 $channels[] = 'push';
             }
@@ -104,7 +105,7 @@ final class UserNotificationService
                     'updated_at'    => now(),
                 ]);
 
-                if (in_array($channel, ['telegram', 'vk', 'max', 'push'], true)) {
+                if (in_array($channel, ['telegram', 'vk', 'max', 'push', 'group'], true)) {
                     SendNotificationDeliveryJob::dispatch($deliveryId)
                         ->onQueue('default')
                         ->afterCommit();
@@ -1074,11 +1075,40 @@ final class UserNotificationService
     // Private
     // -------------------------------------------------------------------------
 
+    /**
+     * Выбранный организатором канал/группа для уведомлений о записях игроков (Telegram/MAX, подтверждённый, свой).
+     * null — не выбран или устарел (канал удалён/не подтверждён) → работаем как раньше, личными сообщениями.
+     */
+    public function registrationChannelFor(User $user): ?\App\Models\UserNotificationChannel
+    {
+        $id = (int) ($user->registration_notify_channel_id ?? 0);
+        if ($id <= 0) {
+            return null;
+        }
+        return \App\Models\UserNotificationChannel::query()
+            ->where('id', $id)
+            ->where('user_id', $user->id)
+            ->where('is_verified', true)
+            ->whereIn('platform', ['telegram', 'max'])
+            ->first();
+    }
+
+    /** Каналы доставки уведомлений организатору о записях: канал/группа вместо личных (или вместе с ними). */
+    public function organizerRegistrationChannels(int $userId): array
+    {
+        $personal = ['in_app', 'telegram', 'vk', 'max'];
+        $user = User::query()->find($userId);
+        if (!$user || !$this->registrationChannelFor($user)) {
+            return $personal;
+        }
+        return $user->registration_notify_also_dm ? array_merge($personal, ['group']) : ['in_app', 'group'];
+    }
+
     private function normalizeChannels(array $channels, User $user): array
     {
         $channels = collect($channels)
             ->map(fn ($v) => (string) $v)
-            ->filter(fn ($v) => in_array($v, ['in_app', 'telegram', 'vk', 'max', 'push'], true))
+            ->filter(fn ($v) => in_array($v, ['in_app', 'telegram', 'vk', 'max', 'push', 'group'], true))
             ->unique()
             ->values();
 
@@ -1099,6 +1129,9 @@ final class UserNotificationService
             // max_notifications_enabled существовал и раньше, но нигде не читался как гейт —
             // отправка шла независимо от флага. Теперь подключён по-настоящему.
             if ($channel === 'max' && (empty($user->max_chat_id) || !$user->max_notifications_enabled)) {
+                continue;
+            }
+            if ($channel === 'group' && !$this->registrationChannelFor($user)) {
                 continue;
             }
             if ($channel === 'push') {

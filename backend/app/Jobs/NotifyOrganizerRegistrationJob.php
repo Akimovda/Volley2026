@@ -113,7 +113,7 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
                     title:    $fallbackTitle,
                     body:     null,
                     payload:  $payload,
-                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                    channels: $notificationService->organizerRegistrationChannels($recipientId),
                 );
             } catch (\Throwable $e) {
                 Log::warning('NotifyOrganizerRegistrationJob: create failed', [

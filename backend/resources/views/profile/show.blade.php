@@ -950,7 +950,13 @@
 						<p>
 							{{ __('profile.notif_org_lead') }}
 						</p>
-						<form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
+						@php
+							$__regChannels = \App\Models\UserNotificationChannel::query()
+								->where('user_id', (int) $u->id)->where('is_verified', true)
+								->whereIn('platform', ['telegram', 'max'])->orderBy('platform')->orderBy('title')->get();
+							$__regSelected = (int) ($u->registration_notify_channel_id ?? 0);
+						@endphp
+						<form method="POST" action="{{ route('profile.notification_channels.settings') }}">
 							@csrf
 							<label class="checkbox-item">
 								<input type="hidden" name="notify_player_registrations" value="0">
@@ -960,6 +966,33 @@
 								<div class="custom-checkbox"></div>	   
 								<span>{{ $notifyPlayerRegistrations ? __('profile.notif_org_on') : __('profile.notif_org_off') }}</span>
 							</label>
+
+							<div class="mt-2">
+								<label for="registration_channel_id">{{ __('profile.notif_org_dest_label') }}</label>
+								<select name="registration_channel_id" id="registration_channel_id" onchange="this.form.submit()">
+									<option value="">{{ __('profile.notif_org_dest_dm') }}</option>
+									@foreach($__regChannels as $__rc)
+									@php
+										$__rcThread = $__rc->platform === 'telegram' ? \App\Support\TelegramTopic::normalize(($__rc->meta ?? [])['message_thread_id'] ?? null) : null;
+									@endphp
+									<option value="{{ $__rc->id }}" {{ $__regSelected === (int) $__rc->id ? 'selected' : '' }}>
+										{{ $__rc->title ?: $__rc->chat_id }} · {{ $__rc->platform === 'max' ? 'MAX' : 'Telegram' }}{{ $__rcThread ? ' · ' . __('profile.notif_org_dest_topic', ['n' => $__rcThread]) : '' }}
+									</option>
+									@endforeach
+								</select>
+								@error('registration_channel_id')<div class="f-14 mt-05" style="color:#d33;">{{ $message }}</div>@enderror
+								<p class="f-14 mt-05" style="opacity:.7;">
+									{{ $__regChannels->isEmpty() ? __('profile.notif_org_dest_none') : __('profile.notif_org_dest_hint') }}
+								</p>
+								@if($__regSelected > 0 && $__regChannels->contains('id', $__regSelected))
+								<label class="checkbox-item mt-1">
+									<input type="hidden" name="registration_also_dm" value="0">
+									<input type="checkbox" name="registration_also_dm" value="1" onchange="this.form.submit()" {{ $u->registration_notify_also_dm ? 'checked' : '' }}>
+									<div class="custom-checkbox"></div>
+									<span>{{ __('profile.notif_org_also_dm') }}</span>
+								</label>
+								@endif
+							</div>
 						</form>
 					</div>
 					@endif
