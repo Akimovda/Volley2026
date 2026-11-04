@@ -114,10 +114,14 @@
 			var open = panel.style.display === 'none';
 			panel.style.display = open ? 'block' : 'none';
 			if (open) {
-				// страна по умолчанию: страна уже выбранного города (если есть в подписи), иначе страна профиля
-				setCountry(state.country);
-				var typed = hostInput.value.replace(/\s*\(.*$/, '').trim();
-				if (typed && !nInput.value) nInput.value = typed;
+				// Выбранный город в поле выглядит как «Название (XX, регион)» — это не поисковый запрос: берём из него только
+				// страну (по умолчанию), а в поле названия подставляем лишь то, что пользователь набрал сам (без скобок).
+				var label = hostInput.value || '';
+				var m = label.match(/\(([A-Z]{2})[,)]/);
+				var fromLabel = m && (C.countries || []).some(function (c) { return c.code === m[1]; }) ? m[1] : null;
+				setCountry(fromLabel || state.country);
+				var typed = label.trim();
+				if (typed && typed.indexOf('(') === -1 && !nInput.value) nInput.value = typed;
 				nInput.focus();
 			}
 		});
