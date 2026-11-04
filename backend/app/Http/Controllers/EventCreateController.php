@@ -126,8 +126,10 @@ use App\Services\StaffLogService;
                    $lock->release();
                    $event = $result['event'];
 
-                   // событие создано — черновик больше не нужен
-                   \App\Models\EventDraft::where('user_id', $user->id)->delete();
+                   // событие создано — черновик, с которого оно создавалось, больше не нужен (остальные черновики остаются)
+                   if ((int) $request->input('draft_id') > 0) {
+                       \App\Models\EventDraft::where('user_id', $user->id)->where('id', (int) $request->input('draft_id'))->delete();
+                   }
 
                    // Рекламное мероприятие — оплата через ЮKassa
                    if (!(bool)($event->allow_registration ?? true)) {
@@ -433,15 +435,17 @@ use App\Services\StaffLogService;
 
             // Несохранённый черновик (баннер «продолжить»): не показываем, если форма уже
             // заполнена (редисплей после ошибки, восстановление черновика, «создать на основе»)
-            $draft = null;
+            $drafts = collect();
             if ($fromId <= 0 && !$request->session()->hasOldInput()) {
-                $draft = \App\Models\EventDraft::where('user_id', $user->id)
+                $drafts = \App\Models\EventDraft::where('user_id', $user->id)
                     ->where('updated_at', '>=', now()->subDays(30))
-                    ->first(['id', 'step', 'payload', 'updated_at']);
+                    ->orderByDesc('updated_at')
+                    ->limit(\App\Http\Controllers\EventDraftController::MAX_DRAFTS)
+                    ->get(['id', 'step', 'payload', 'updated_at']);
             }
 
             return view('events.create', [
-			'draft' => $draft,
+			'drafts' => $drafts,
 			'cityId' => $cityId,
 			'userCityId' => $user->city_id ?? null,
 			

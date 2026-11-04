@@ -672,13 +672,15 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         ->middleware('no-store-html')
         ->name('events.create');
 		
-		// черновик мастера создания (один на пользователя)
+		// черновики мастера создания (несколько на пользователя)
 		Route::post('/events/create/draft', [EventDraftController::class, 'save'])
         ->middleware('throttle:60,1')
         ->name('events.draft.save');
-		Route::get('/events/create/draft/restore', [EventDraftController::class, 'restore'])
+		Route::get('/events/create/draft/restore/{draft?}', [EventDraftController::class, 'restore'])
+        ->whereNumber('draft')
         ->name('events.draft.restore');
-		Route::delete('/events/create/draft', [EventDraftController::class, 'destroy'])
+		Route::delete('/events/create/draft/{draft?}', [EventDraftController::class, 'destroy'])
+        ->whereNumber('draft')
         ->name('events.draft.destroy');
 
 		// store event

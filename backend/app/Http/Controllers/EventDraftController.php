@@ -15,7 +15,10 @@ use Illuminate\Http\Request;
 class EventDraftController extends Controller
 {
     /** Поля, которые в черновик не кладём. */
-    private const SKIP = ['_token', '_method', 'wizard_step', 'from_event_id'];
+    private const SKIP = ['_token', '_method', 'wizard_step', 'from_event_id', 'draft_id'];
+
+    /** Сколько черновиков хранится у одного пользователя (старше — удаляются). */
+    public const MAX_DRAFTS = 10;
 
     private const MAX_BYTES = 300000;
 
@@ -43,21 +46,38 @@ class EventDraftController extends Controller
         // wizard_step в форме — номер шага 1..3
         $step = max(1, min(3, (int) $request->input('wizard_step', 1)));
 
-        EventDraft::updateOrCreate(
-            ['user_id' => $user->id],
-            ['step' => $step, 'payload' => $fields]
-        );
+        // draft_id — черновик, с которым работает форма; чужой/несуществующий id → создаём новый
+        $draft = null;
+        $draftId = (int) $request->input('draft_id', 0);
+        if ($draftId > 0) {
+            $draft = EventDraft::where('user_id', $user->id)->where('id', $draftId)->first();
+        }
+        if ($draft) {
+            $draft->update(['step' => $step, 'payload' => $fields]);
+        } else {
+            $draft = EventDraft::create(['user_id' => $user->id, 'step' => $step, 'payload' => $fields]);
+            $this->prune($user->id);
+        }
 
-        return response()->json(['ok' => true, 'saved' => true]);
+        return response()->json(['ok' => true, 'saved' => true, 'draft_id' => $draft->id]);
     }
 
-    // GET /events/create/draft/restore
-    public function restore(Request $request): RedirectResponse
+    /** Оставляем MAX_DRAFTS самых свежих черновиков пользователя. */
+    private function prune(int $userId): void
+    {
+        $keep = EventDraft::where('user_id', $userId)->orderByDesc('updated_at')->orderByDesc('id')
+            ->limit(self::MAX_DRAFTS)->pluck('id');
+        EventDraft::where('user_id', $userId)->whereNotIn('id', $keep)->delete();
+    }
+
+    // GET /events/create/draft/restore/{draft?} — без id (старые ссылки) берём самый свежий
+    public function restore(Request $request, ?int $draft = null): RedirectResponse
     {
         $user = $request->user();
         $this->access->ensureCanCreateEvents($user);
 
-        $draft = EventDraft::where('user_id', $user->id)->first();
+        $q = EventDraft::where('user_id', $user->id);
+        $draft = $draft ? $q->where('id', $draft)->first() : $q->orderByDesc('updated_at')->first();
         if (!$draft) {
             return redirect()->route('events.create');
         }
@@ -73,14 +93,23 @@ class EventDraftController extends Controller
             ->route('events.create', $query)
             ->withInput($payload)
             ->with('wizard_initial_step', max(1, min(3, (int) $draft->step)))
+            ->with('draft_id', $draft->id)
             ->with('draft_restored', true);
     }
 
-    // DELETE /events/create/draft
-    public function destroy(Request $request): RedirectResponse|JsonResponse
+    // DELETE /events/create/draft/{draft?} — без id (старые страницы) удаляем самый свежий
+    public function destroy(Request $request, ?int $draft = null): RedirectResponse|JsonResponse
     {
         $user = $request->user();
-        EventDraft::where('user_id', $user->id)->delete();
+        $q = EventDraft::where('user_id', $user->id);
+        if ($draft) {
+            $q->where('id', $draft)->delete();
+        } else {
+            $latest = (clone $q)->orderByDesc('updated_at')->value('id');
+            if ($latest) {
+                EventDraft::where('id', $latest)->delete();
+            }
+        }
 
         if ($request->expectsJson()) {
             return response()->json(['ok' => true]);
