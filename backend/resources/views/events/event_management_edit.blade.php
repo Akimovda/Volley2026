@@ -1696,7 +1696,7 @@
                                         </label>
                                         <div class="text-muted f-12 mb-1" style="max-width:420px">{{ __('events.channels_with_description_hint') }}</div>
                                         <label>{{ __('events.channels_repeat_label') }}</label>
-                                        @foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14'] as $__rd => $__rk)
+                                        @foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14', 30 => 'channels_repeat_30'] as $__rd => $__rk)
                                         <label class="radio-item">
                                             <input type="radio" name="channel_repeat_days" value="{{ $__rd }}" @checked($chRepeatDays === $__rd)>
                                             <div class="custom-radio"></div>

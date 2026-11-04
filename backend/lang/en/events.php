@@ -956,6 +956,7 @@ return [
     'channels_repeat_none'   => 'Do not repeat — sent once, when registration opens',
     'channels_repeat_7'      => 'Every week',
     'channels_repeat_14'     => 'Every 2 weeks',
+    'channels_repeat_30'     => 'Once a month',
     'channels_repeat_hint'   => 'The repeat is posted as a new message while registration is open and spots remain. Earlier messages stay in the channel.',
     'channels_silent'        => 'Silent update',
     'channels_update_msg'    => 'Update message',

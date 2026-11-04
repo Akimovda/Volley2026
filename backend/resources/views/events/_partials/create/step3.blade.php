@@ -545,7 +545,7 @@
 												})();
 												</script>
 												<label>{{ __('events.channels_repeat_label') }}</label>
-												@foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14'] as $__rd => $__rk)
+												@foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14', 30 => 'channels_repeat_30'] as $__rd => $__rk)
 												<label class="radio-item">
 													<input type="radio" name="channel_repeat_days" value="{{ $__rd }}" @checked($channelRepeatDays === $__rd)>
 													<div class="custom-radio"></div>

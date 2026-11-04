@@ -9,7 +9,7 @@ class EventNotificationChannel extends Model
 {
     /** Форматы, для которых доступен повтор анонса, и допустимые интервалы (дни). */
     public const REPEAT_FORMATS = ['camp', 'master_class', 'tournament', 'tournament_classic', 'tournament_beach'];
-    public const REPEAT_DAYS    = [7, 14];
+    public const REPEAT_DAYS    = [7, 14, 30]; // неделя, 2 недели, месяц (30 дней)
 
     protected $fillable = [
         'event_id',
