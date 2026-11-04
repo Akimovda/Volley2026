@@ -507,6 +507,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 	{{-- Page JS --}}
 	<script src="/js/config/volleyball-config.js"></script>
 	<script src="@asset_v('js/events-create.js')"></script>
+		@include('partials.city-add')
 	
 	<script>
 		let rerenderTimer = null;

@@ -299,6 +299,14 @@ Route::get('/logout', fn () => redirect('/'));
 	
 	Route::get('/cities/search', [CitySearchController::class, 'search'])
     ->name('cities.search');
+
+	// «+ Добавить город» (Админ/Организатор/Staff): поиск в GeoNames и создание города
+	Route::middleware(['auth'])->group(function () {
+		Route::get('/cities/suggest', [\App\Http\Controllers\CityAddController::class, 'suggest'])
+			->middleware('throttle:30,1')->name('cities.suggest');
+		Route::post('/cities', [\App\Http\Controllers\CityAddController::class, 'store'])
+			->middleware('throttle:10,1')->name('cities.store');
+	});
     
     Route::get('/ajax/locations/with-events', LocationsByCityController::class)
     ->name('ajax.locations.withEvents');

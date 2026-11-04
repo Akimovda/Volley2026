@@ -236,6 +236,7 @@
 
     <x-slot name="script">
     <script src="@asset_v('js/occurrence-edit.js')"></script>
+		@include('partials.city-add')
     <script src="@asset_v('assets/trix.js')"></script>
     <script>
     // Терминология уровней (питерская/стандартная) — тот же паттерн, что в
