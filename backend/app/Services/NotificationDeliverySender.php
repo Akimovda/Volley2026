@@ -50,6 +50,13 @@ final class NotificationDeliverySender
         try {
             $channel = (string) $delivery->channel;
 
+            // Массовые рассылки о новых мероприятиях: один чат мессенджера — одно сообщение по событию
+            // (чат могут быть привязан к нескольким аккаунтам — иначе человек получает «Новый кемп» дважды)
+            if ($this->isDuplicateChatDelivery($delivery, $user)) {
+                $this->markSkipped($deliveryId, 'duplicate chat: уже отправлено в этот чат другому аккаунту');
+                return;
+            }
+
             if ($channel === 'in_app') {
                 $this->markSent($deliveryId);
                 return;
@@ -114,6 +121,43 @@ final class NotificationDeliverySender
         }
 
         throw new \RuntimeException('Платформа канала не поддерживается: ' . $channel->platform);
+    }
+
+    /** Типы массовых рассылок, где в один и тот же чат нельзя слать дубль по одному событию. */
+    private const DEDUPE_BY_CHAT_TYPES = ['new_event_broadcast', 'new_event_in_city'];
+
+    /**
+     * true — в тот же чат этого мессенджера уже ушла доставка того же типа по тому же событию (от другого аккаунта).
+     * Чат берём из профиля получателя: telegram_notify_chat_id / max_chat_id / vk_notify_user_id.
+     */
+    private function isDuplicateChatDelivery(object $delivery, User $user): bool
+    {
+        $channel = (string) $delivery->channel;
+        $type    = (string) $delivery->type;
+        $column  = match ($channel) {
+            'telegram' => 'telegram_notify_chat_id',
+            'max'      => 'max_chat_id',
+            'vk'       => 'vk_notify_user_id',
+            default    => null,
+        };
+        if ($column === null || !in_array($type, self::DEDUPE_BY_CHAT_TYPES, true) || empty($delivery->event_id)) {
+            return false;
+        }
+        $chat = trim((string) ($user->{$column} ?? ''));
+        if ($chat === '') {
+            return false;
+        }
+
+        return DB::table('notification_deliveries as d')
+            ->join('users as u', 'u.id', '=', 'd.user_id')
+            ->where('d.event_id', (int) $delivery->event_id)
+            ->where('d.type', $type)
+            ->where('d.channel', $channel)
+            ->where('d.status', 'sent')
+            ->where('d.id', '<>', (int) $delivery->id)
+            ->where('d.user_id', '<>', (int) $user->id)
+            ->where('u.' . $column, $chat)
+            ->exists();
     }
 
     private function sendPush(User $user, array $payload): void
