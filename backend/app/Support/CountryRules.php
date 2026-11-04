@@ -36,7 +36,7 @@ class CountryRules
         'US' => ['usa', 'сша', 'америка', 'штаты'],
         'GB' => ['uk', 'england', 'англия', 'великобритания'],
         'AE' => ['uae', 'оаэ', 'эмираты', 'дубай'],
-        'ID' => ['bali', 'бали', 'индонезия'],
+        'ID' => ['indonesia', 'индонезия'],   // «Бали» — не синоним страны: острова ищутся по алиасам и региону
         'DE' => ['germany', 'германия', 'deutschland'],
         'CZ' => ['czechia', 'чехия'],
         'CN' => ['china', 'китай', 'кнр', 'prc'],
@@ -133,6 +133,9 @@ class CountryRules
             $row[0], $row[1], $row[2], $row[3],
             ...(self::SEARCH_SYNONYMS[$code] ?? []),
         ];
+        // Пояснение в скобках — не название страны («Индонезия (Бали)» → «Индонезия»; «Макао (САР)» → «Макао»):
+        // иначе запрос «Бали» возвращал бы все города страны.
+        $names = array_map(fn ($n) => is_string($n) ? trim(preg_replace('/\s*\(.*?\)/u', '', $n)) : $n, $names);
         return array_values(array_filter($names, fn ($n) => is_string($n) && $n !== '' && $n !== "countries.$code"));
     }
 
