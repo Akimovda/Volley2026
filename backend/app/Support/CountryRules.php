@@ -27,6 +27,60 @@ class CountryRules
         'LV', 'LT', 'LU', 'MT', 'ME', 'NL', 'NO', 'PL', 'PT', 'RO', 'RS', 'SK', 'SI', 'ES', 'SE', 'CH', 'GB',
     ];
 
+    /** Дополнительные написания стран для поиска города (помимо названий из lang/ru и lang/en). */
+    public const SEARCH_SYNONYMS = [
+        'TR' => ['turkey', 'turkiye', 'турция'],
+        'TH' => ['тайланд', 'thailand', 'siam'],
+        'VN' => ['viet nam', 'vietnam', 'вьетнам'],
+        'US' => ['usa', 'сша', 'америка', 'штаты'],
+        'GB' => ['uk', 'england', 'англия', 'великобритания'],
+        'AE' => ['uae', 'оаэ', 'эмираты', 'дубай'],
+        'ID' => ['bali', 'бали', 'индонезия'],
+        'DE' => ['germany', 'германия', 'deutschland'],
+        'CZ' => ['czechia', 'чехия'],
+    ];
+
+    /** Нижний регистр, ё→е; латиница — без диакритики (Türkiye → turkiye). Кириллицу не транслитерируем. */
+    public static function searchNorm(string $s): string
+    {
+        $s = mb_strtolower(trim($s));
+        $s = str_replace('ё', 'е', $s);
+        if (!preg_match('/\p{Cyrillic}/u', $s)) {
+            $s = \Illuminate\Support\Str::ascii($s);
+        }
+        return $s;
+    }
+
+    /**
+     * Коды стран из SUPPORTED, чьё название (ru/en из lang/*, синонимы) содержит запрос.
+     * Для запросов короче 3 символов не используется (слишком много случайных совпадений).
+     */
+    public static function codesMatchingName(string $query): array
+    {
+        $q = self::searchNorm($query);
+        if (mb_strlen($q) < 3) {
+            return [];
+        }
+        $codes = [];
+        foreach (self::SUPPORTED as $code) {
+            $names = [
+                trans("countries.$code", [], 'ru'),
+                trans("countries.$code", [], 'en'),
+                ...(self::SEARCH_SYNONYMS[$code] ?? []),
+            ];
+            foreach ($names as $n) {
+                if (!is_string($n) || $n === "countries.$code") {
+                    continue;
+                }
+                if (str_contains(self::searchNorm($n), $q)) {
+                    $codes[] = $code;
+                    break;
+                }
+            }
+        }
+        return $codes;
+    }
+
     public static function normalizeCountry(?string $code): string
     {
         $code = strtoupper(trim((string) $code));

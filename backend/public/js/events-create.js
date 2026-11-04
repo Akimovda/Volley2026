@@ -1746,7 +1746,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				// Формируем подпись под городом (страна и регион)
 				const subParts = [];
 				if (CITY_CONFIG.showCountry && item.country_code) {
-					subParts.push(escapeHtml(item.country_code));
+					subParts.push(escapeHtml(item.country_name || item.country_code));
 				}
 				if (CITY_CONFIG.showRegion && item.region_display) {
 					subParts.push(escapeHtml(item.region_display));
@@ -1763,7 +1763,7 @@ document.addEventListener("trix-file-accept", function (event) {
 					'data-country="' + escapeHtml(item.country_code || '') + '" ' +
 					'data-region="' + escapeHtml(item.region_display || '') + '" ' +
 					'data-timezone="' + escapeHtml(item.timezone || '') + '">' +
-					'<div class="city-item-name">' + escapeHtml(item.name) + '</div>' +
+					'<div class="city-item-name">' + escapeHtml(item.name) + (item.name_alt ? ' <span style="opacity:.6">· ' + escapeHtml(item.name_alt) + '</span>' : '') + '</div>' +
 					(subText ? '<div class="city-item-sub">' + subText + tzText + '</div>' : '') +
 					'</button>'
 				);
