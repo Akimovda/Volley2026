@@ -146,7 +146,7 @@ class ProfileExtraController extends Controller
                 $fail(CountryRules::phoneMessage($country));
             }
         }]);
-        $addRuleIfAllowed('country_code', ['nullable', 'string', 'in:' . implode(',', CountryRules::SUPPORTED)]);
+        $addRuleIfAllowed('country_code', ['nullable', 'string', 'in:' . implode(',', CountryRules::supported())]);
         $addRuleIfAllowed('phone_masked', ['nullable', 'string', 'max:50']);
 
         $addRuleIfAllowed('birth_date',   ['nullable', 'date']);

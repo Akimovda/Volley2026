@@ -39,6 +39,12 @@ class CountryRules
         'ID' => ['bali', 'бали', 'индонезия'],
         'DE' => ['germany', 'германия', 'deutschland'],
         'CZ' => ['czechia', 'чехия'],
+        'CN' => ['china', 'китай', 'кнр', 'prc'],
+        'KR' => ['korea', 'южная корея', 'корея'],
+        'JP' => ['japan', 'япония'],
+        'IN' => ['india', 'индия'],
+        'MV' => ['maldives', 'мальдивы'],
+        'LK' => ['sri lanka', 'шри-ланка', 'цейлон'],
     ];
 
     /** Нижний регистр, ё→е; латиница — без диакритики (Türkiye → turkiye). Кириллицу не транслитерируем. */
@@ -53,7 +59,99 @@ class CountryRules
     }
 
     /**
-     * Коды стран из SUPPORTED, чьё название (ru/en из lang/*, синонимы) содержит запрос.
+     * Страны как данные (таблица countries, миграция 2026_11_04_170000): код => [ru, en, alt_ru, alt_en, active].
+     * Пока таблицы нет (до миграции) — только исходные SUPPORTED.
+     */
+    private static function map(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember('countries_map_v1', 300, function () {
+            $map = [];
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('countries')) {
+                    foreach (\Illuminate\Support\Facades\DB::table('countries')->get() as $r) {
+                        $map[$r->code] = [$r->name_ru, $r->name_en, $r->alt_ru, $r->alt_en, (bool) $r->is_active];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // БД недоступна — работаем с исходным списком
+            }
+            foreach (self::SUPPORTED as $code) {
+                $map[$code] = ($map[$code] ?? [$code, $code, null, null, true]);
+                $map[$code][4] = true;
+            }
+            return $map;
+        });
+    }
+
+    /** Поддерживаемые страны: исходные SUPPORTED + включённые автоматически (countries.is_active). */
+    public static function supported(): array
+    {
+        return array_values(array_keys(array_filter(self::map(), fn ($r) => $r[4])));
+    }
+
+    /** Код есть в справочнике стран мира (можно добавлять города). */
+    public static function isKnown(?string $code): bool
+    {
+        return $code !== null && isset(self::map()[strtoupper(trim($code))]);
+    }
+
+    /** Включить страну (после добавления в ней первого города): она появляется в профиле и в поиске городов. */
+    public static function activate(string $code): void
+    {
+        $code = strtoupper(trim($code));
+        if (!self::isKnown($code)) {
+            return;
+        }
+        \Illuminate\Support\Facades\DB::table('countries')->where('code', $code)->update(['is_active' => true, 'updated_at' => now()]);
+        \Illuminate\Support\Facades\Cache::forget('countries_map_v1');
+    }
+
+    /** Название страны: сначала lang/{locale}/countries.php (для исходных — своё, напр. «Индонезия (Бали)»), затем справочник. */
+    public static function countryName(string $code, ?string $locale = null): string
+    {
+        $code = strtoupper($code);
+        $locale = $locale ?: app()->getLocale();
+        $key = 'countries.' . $code;
+        $t = trans($key, [], $locale);
+        if (is_string($t) && $t !== $key) {
+            return $t;
+        }
+        $row = self::map()[$code] ?? null;
+        if ($row) {
+            return $locale === 'ru' ? $row[0] : $row[1];
+        }
+        return $code;
+    }
+
+    /** Все названия страны для поиска (ru, en, короткие, синонимы). */
+    private static function namesFor(string $code): array
+    {
+        $row = self::map()[$code] ?? [null, null, null, null, false];
+        $names = [
+            trans("countries.$code", [], 'ru'),
+            trans("countries.$code", [], 'en'),
+            $row[0], $row[1], $row[2], $row[3],
+            ...(self::SEARCH_SYNONYMS[$code] ?? []),
+        ];
+        return array_values(array_filter($names, fn ($n) => is_string($n) && $n !== '' && $n !== "countries.$code"));
+    }
+
+    /** Список для выбора страны в виджете «+ Добавить город»: все страны мира, сортировка по названию. */
+    public static function pickerList(?string $locale = null): array
+    {
+        $locale = $locale ?: app()->getLocale();
+        $list = [];
+        foreach (array_keys(self::map()) as $code) {
+            $name = self::countryName($code, $locale);
+            $alt = array_values(array_unique(array_filter(self::namesFor($code), fn ($n) => $n !== $name)));
+            $list[] = ['code' => $code, 'name' => $name, 'alt' => implode(' | ', $alt)];
+        }
+        usort($list, fn ($a, $b) => strcmp(mb_strtolower($a['name']), mb_strtolower($b['name'])));
+        return $list;
+    }
+
+    /**
+     * Коды поддерживаемых стран, чьё название (ru/en, короткие, синонимы) содержит запрос.
      * Для запросов короче 3 символов не используется (слишком много случайных совпадений).
      */
     public static function codesMatchingName(string $query): array
@@ -63,16 +161,8 @@ class CountryRules
             return [];
         }
         $codes = [];
-        foreach (self::SUPPORTED as $code) {
-            $names = [
-                trans("countries.$code", [], 'ru'),
-                trans("countries.$code", [], 'en'),
-                ...(self::SEARCH_SYNONYMS[$code] ?? []),
-            ];
-            foreach ($names as $n) {
-                if (!is_string($n) || $n === "countries.$code") {
-                    continue;
-                }
+        foreach (self::supported() as $code) {
+            foreach (self::namesFor($code) as $n) {
                 if (str_contains(self::searchNorm($n), $q)) {
                     $codes[] = $code;
                     break;
@@ -85,7 +175,7 @@ class CountryRules
     public static function normalizeCountry(?string $code): string
     {
         $code = strtoupper(trim((string) $code));
-        return in_array($code, self::SUPPORTED, true) ? $code : self::DEFAULT_COUNTRY;
+        return in_array($code, self::supported(), true) ? $code : self::DEFAULT_COUNTRY;
     }
 
     public static function usesCyrillicNames(?string $country): bool

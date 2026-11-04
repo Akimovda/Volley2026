@@ -84,7 +84,7 @@ class GeoNamesCityService
     private function normalize(array $g, string $country): ?array
     {
         $cc = strtoupper((string) ($g['countryCode'] ?? ''));
-        if ($cc === '' || !in_array($cc, CountryRules::SUPPORTED, true)) {
+        if ($cc === '' || !CountryRules::isKnown($cc)) {
             return null;
         }
         if (($g['fcl'] ?? 'P') !== 'P') {

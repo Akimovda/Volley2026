@@ -67,15 +67,15 @@
 		
 		// Страна — ось правил ФИО/телефона/города
 		$userCountry = \App\Support\CountryRules::normalizeCountry(old('country_code', $user?->country_code));
-		$countryOptions = collect(\App\Support\CountryRules::SUPPORTED)
-			->mapWithKeys(fn ($c) => [$c => __('countries.' . $c)])
+		$countryOptions = collect(\App\Support\CountryRules::supported())
+			->mapWithKeys(fn ($c) => [$c => \App\Support\CountryRules::countryName($c)])
 			->sort()->all();
 		// RU/KZ/UZ — ФИО кириллицей; остальные — любые буквы
 		$cyrCountries = \App\Support\CountryRules::CYRILLIC_NAME_COUNTRIES;
-		$dialCodes = collect(\App\Support\CountryRules::SUPPORTED)
+		$dialCodes = collect(\App\Support\CountryRules::supported())
 			->mapWithKeys(fn ($c) => [$c => '+' . \libphonenumber\PhoneNumberUtil::getInstance()->getCountryCodeForRegion($c)])->all();
 		// Пример номера для placeholder — свой формат у каждой страны
-		$phoneExamples = collect(\App\Support\CountryRules::SUPPORTED)
+		$phoneExamples = collect(\App\Support\CountryRules::supported())
 			->mapWithKeys(fn ($c) => [$c => \App\Support\CountryRules::phoneExample($c)])->all();
 
 		// Prefill маски телефона на сервере

@@ -35,7 +35,7 @@ class CityAddController extends Controller
         if (mb_strlen($q) < 2 || mb_strlen($q) > 80) {
             return response()->json(['error' => 'query', 'items' => []], 422);
         }
-        if (!in_array($country, CountryRules::SUPPORTED, true)) {
+        if (!CountryRules::isKnown($country)) {
             return response()->json(['error' => 'country_unsupported', 'items' => []], 422);
         }
 
@@ -65,7 +65,7 @@ class CityAddController extends Controller
             'query'      => ['nullable', 'string', 'max:120'],
         ]);
         $country = strtoupper($data['country']);
-        if (!in_array($country, CountryRules::SUPPORTED, true)) {
+        if (!CountryRules::isKnown($country)) {
             return response()->json(['error' => 'country_unsupported'], 422);
         }
 
@@ -134,13 +134,15 @@ class CityAddController extends Controller
             return $city;
         });
 
+        // Страна без поддержки включается автоматически: появляется в профиле и в поиске городов
+        CountryRules::activate((string) $c['country_code']);
+
         return response()->json(['city' => $this->payload($city->fresh(), $c['name_ru']), 'created' => true], 201);
     }
 
     private function countryName(string $code): string
     {
-        $n = trans('countries.' . $code);
-        return $n !== 'countries.' . $code ? $n : $code;
+        return CountryRules::countryName($code);
     }
 
     /** Тот же формат, что у /cities/search — чтобы страница могла сразу выбрать город. */

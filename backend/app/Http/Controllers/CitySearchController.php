@@ -40,7 +40,8 @@ class CitySearchController extends Controller
         // Необязательный фильтр по стране (селектор страны в профиле); без него — все поддерживаемые страны,
         // но RU/KZ/UZ в выдаче выше остальных — для привычных запросов результат прежний.
         $country = strtoupper(trim((string) $request->query('country', '')));
-        $countries = in_array($country, CountryRules::SUPPORTED, true) ? [$country] : CountryRules::SUPPORTED;
+        $supported = CountryRules::supported();
+        $countries = in_array($country, $supported, true) ? [$country] : $supported;
 
         $query = DB::table('cities')
             ->select(['id', 'name', 'region', 'country_code', 'population']);
@@ -97,8 +98,7 @@ class CitySearchController extends Controller
         $items->each(function ($item) {
             $item->region_display = City::displayRegion($item->name, $item->region);
             // Подписи для интерфейса: страна словами и русское написание города (только в русской локали)
-            $cn = trans('countries.' . $item->country_code);
-            $item->country_name = $cn !== 'countries.' . $item->country_code ? $cn : $item->country_code;
+            $item->country_name = CountryRules::countryName((string) $item->country_code);
             if (app()->getLocale() !== 'ru' || !property_exists($item, 'name_alt')) {
                 $item->name_alt = null;
             }

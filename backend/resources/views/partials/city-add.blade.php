@@ -5,9 +5,8 @@
 @endphp
 @if($__cityAddCan)
 	@php
-		$__cityAddCountries = collect(\App\Support\CountryRules::SUPPORTED)
-			->map(fn ($c) => ['code' => $c, 'name' => __('countries.' . $c)])
-			->sortBy('name')->values();
+		// все страны мира (таблица countries): поиск по названию на ru/en, коротким формам и синонимам (Китай, China, КНР)
+		$__cityAddCountries = \App\Support\CountryRules::pickerList();
 	@endphp
 	<script>
 		window.CITY_ADD = {

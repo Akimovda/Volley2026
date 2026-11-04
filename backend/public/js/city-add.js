@@ -13,7 +13,10 @@
 	var T = C.t || {};
 
 	function norm(s) {
-		return String(s || '').toLowerCase().replace(/ё/g, 'е').trim();
+		s = String(s || '').toLowerCase().replace(/ё/g, 'е').trim();
+		// латиница без диакритики (Türkiye → turkiye); кириллицу не трогаем (иначе «й» превратится в «и»)
+		if (!/[а-я]/.test(s) && s.normalize) s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+		return s;
 	}
 	function csrf() {
 		var m = document.querySelector('meta[name="csrf-token"]');
@@ -80,9 +83,19 @@
 		function renderCountryList(q) {
 			cList.innerHTML = '';
 			var nq = norm(q);
-			var list = (C.countries || []).filter(function (c) {
-				return !nq || norm(c.name).indexOf(nq) !== -1 || c.code.toLowerCase() === nq;
-			}).slice(0, 12);
+			// поиск по всем странам мира: основное название, альтернативные (ru/en, короткие, синонимы) и код; совпадения с начала — выше
+			var list = (C.countries || []).map(function (c) {
+				var n = norm(c.name), al = norm(c.alt), rank = 9;
+				if (!nq) rank = 5;
+				else if (c.code.toLowerCase() === nq) rank = 0;
+				else if (n.indexOf(nq) === 0) rank = 1;
+				else if (al.split(' | ').some(function (x) { return x.indexOf(nq) === 0; })) rank = 2;
+				else if (n.indexOf(nq) !== -1) rank = 3;
+				else if (al.indexOf(nq) !== -1) rank = 4;
+				return { c: c, rank: rank };
+			}).filter(function (x) { return x.rank < 9; })
+			.sort(function (a, b) { return a.rank - b.rank; })
+			.map(function (x) { return x.c; }).slice(0, 12);
 			list.forEach(function (c) {
 				var b = el('button', { type: 'button', style: 'display:block;width:100%;text-align:left;padding:.7rem 1rem;background:none;border:0;cursor:pointer;font-size:1.4rem' }, c.name);
 				b.addEventListener('click', function () { setCountry(c.code); });
