@@ -5682,15 +5682,20 @@ body.dark .btn-outline-primary:hover {
 /* Лента дат: [‹] чипы [›] — стрелки-иконки по бокам (вместо больших кнопок «Предыдущие/Следующие 10 дней»),
    на всех ширинах; сама лента (#daysStrip) скроллится между ними. Вид — как у круглых иконок топбара. */
 .event-dates-ramka .days-nav-row {
-	flex: 1 1 auto;
+	/* группа [‹ чипы ›] по центру карточки, стрелки вплотную к первой/последней дате;
+	   при нехватке места лента между стрелками скроллится (min-width:0) */
+	flex: 0 1 auto;
 	min-width: 0;
+	max-width: 100%;
+	margin: 0 auto;
 	display: flex;
 	align-items: center;
 	gap: 0.6rem;
 }
 .event-dates-ramka .days-nav-row #daysStrip {
-	flex: 1 1 auto;
+	flex: 0 1 auto;
 	width: auto;
+	max-width: 100%;
 	min-width: 0;
 }
 .event-dates-ramka .day-nav-arrow {
