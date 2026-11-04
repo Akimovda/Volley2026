@@ -78,6 +78,8 @@ final class ApnsChannel implements PushChannelInterface
             CURLOPT_HTTPHEADER     => [
                 'Authorization: Bearer ' . $jwt,
                 'apns-topic: ' . $this->bundleId,
+                'apns-push-type: alert',
+                'apns-priority: 10',
                 'Content-Type: application/json',
             ],
         ]);
