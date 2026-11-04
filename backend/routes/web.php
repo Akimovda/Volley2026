@@ -237,6 +237,11 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::post('/user/profile/notification-channels/settings', [ProfileNotificationChannelController::class, 'updateSettings'])
         ->name('profile.notification_channels.settings');
+
+		Route::post('/user/profile/notification-channels/{channel}/check', [ProfileNotificationChannelController::class, 'check'])
+        ->whereNumber('channel')
+        ->middleware('throttle:20,1')
+        ->name('profile.notification_channels.check');
 	});
 
 	Route::middleware(['auth'])->group(function () {

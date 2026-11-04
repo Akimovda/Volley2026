@@ -1637,6 +1637,7 @@
                                                style="width:180px; font-size:13px; padding:3px 6px">
                                         <div class="text-muted f-12" style="max-width:420px">{{ __('events.channel_thread_hint') }}</div>
                                         <div class="text-muted f-12" style="max-width:420px;opacity:.8">{{ __('events.channel_thread_hint_howto') }}</div>
+                                        @include('partials.channel-check', ['channel' => $channel, 'threadInput' => 'input[name="channel_thread_ids[' . $channel->id . ']"]'])
                                     </div>
                                     @endif
                                     @endforeach

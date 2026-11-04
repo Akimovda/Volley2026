@@ -113,6 +113,18 @@ class ProfileNotificationChannelController extends Controller
             ->with('status', 'Канал уведомлений удалён.');
     }
 
+    /** POST /user/profile/notification-channels/{channel}/check — проверка канала/группы/темы (Telegram). */
+    public function check(Request $request, UserNotificationChannel $channel): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user && (int) $channel->user_id === (int) $user->id, 403);
+
+        // номер темы: из формы (поле рядом с кнопкой), иначе — сохранённый у канала
+        $raw = $request->has('thread_id') ? $request->input('thread_id') : (($channel->meta ?? [])['message_thread_id'] ?? null);
+
+        return response()->json(app(\App\Services\TelegramChannelChecker::class)->check($channel, $raw));
+    }
+
     public function updateSettings(Request $request): RedirectResponse
     {
         $user = $request->user();

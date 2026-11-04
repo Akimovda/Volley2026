@@ -307,6 +307,13 @@
                             @if(!empty($channel->verified_at))
                                 <div class="f-13 text-muted">Подтверждён: {{ $channel->verified_at->format('d.m.Y H:i') }}</div>
                             @endif
+                            @if($channel->platform === 'telegram' && $channel->is_verified)
+                                @php $__thr = \App\Support\TelegramTopic::normalize(($channel->meta ?? [])['message_thread_id'] ?? null); @endphp
+                                @if($__thr)
+                                    <div class="f-13 text-muted">{{ __('profile.notif_org_dest_topic', ['n' => $__thr]) }}</div>
+                                @endif
+                                @include('partials.channel-check', ['channel' => $channel, 'threadInput' => null])
+                            @endif
 
                             @if(($channel->bot_type ?? 'system') === 'user')
                             <div id="upd-{{ $channel->id }}" class="d-none mt-1">
