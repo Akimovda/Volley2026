@@ -111,6 +111,8 @@ class PublishOccurrenceAnnouncementService
                     $channel->platform === 'telegram'
                     && array_key_exists('message_thread_id', $recMeta)
                     && (int) ($recMeta['message_thread_id'] ?? 0) !== (int) ($threadId ?: 0)
+                    // анонс уже ушёл в главную из-за этой же недоступной темы — не пересылаем при каждом обновлении
+                    && (int) ($recMeta['thread_fallback_from'] ?? 0) !== (int) ($threadId ?: 0)
                 ) {
                     try {
                         if (!empty($record->external_message_id) && $publisher->supportsDelete()) {
@@ -125,6 +127,7 @@ class PublishOccurrenceAnnouncementService
                         }
 
                         $result = $publisher->send((string) $channel->chat_id, $message);
+                        $resendFellBack = (int) ($result['meta']['thread_fallback_from'] ?? 0);
 
                         $record->update([
                             'external_chat_id'    => $result['external_chat_id'] ?? (string) $channel->chat_id,
@@ -135,9 +138,13 @@ class PublishOccurrenceAnnouncementService
                             'meta'                => array_merge(
                                 ['message_kind' => $messageKind],
                                 (array) ($result['meta'] ?? []),
-                                ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
+                                ['message_thread_id' => ($threadId && !$resendFellBack) ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
                             ),
                         ]);
+
+                        if ($resendFellBack) {
+                            $this->notifyTopicFallback($channel, $event, $occurrence, $resendFellBack);
+                        }
 
                         $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'send', [
                             'external_message_id' => $result['external_message_id'] ?? null,
@@ -233,11 +240,19 @@ class PublishOccurrenceAnnouncementService
             try {
                 $result = $publisher->send((string) $channel->chat_id, $message);
 
+                // тема оказалась недоступна — анонс ушёл в главную: запоминаем это (message_thread_id = null), чтобы после
+                // исправления номера темы сработал пересыл в нужную тему, и предупреждаем организатора
+                $fellBackFrom = (int) ($result['meta']['thread_fallback_from'] ?? 0);
+
                 $newMeta = array_merge(
                     ['message_kind' => $messageKind],
                     (array) ($result['meta'] ?? []),
-                    ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
+                    ['message_thread_id' => ($threadId && !$fellBackFrom) ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
                 );
+
+                if ($fellBackFrom) {
+                    $this->notifyTopicFallback($channel, $event, $occurrence, $fellBackFrom);
+                }
 
                 $record->fill([
                     'platform'            => (string) $channel->platform,
@@ -614,5 +629,35 @@ class PublishOccurrenceAnnouncementService
             return route('events.public', ['token' => $event->public_token]);
         }
         return null;
+    }
+
+    /**
+     * Организатору: указанная тема Telegram недоступна, анонс ушёл в главную тему. Не чаще раза в 12 часов на тему канала.
+     */
+    private function notifyTopicFallback($channel, $event, $occurrence, int $thread): void
+    {
+        $ownerId = (int) ($channel->user_id ?? 0);
+        if ($ownerId <= 0 || !\Illuminate\Support\Facades\Cache::add("tg_topic_fallback_{$channel->id}_{$thread}", 1, now()->addHours(12))) {
+            return;
+        }
+        try {
+            $title = (string) ($event->title ?? '');
+            $channelTitle = trim((string) ($channel->title ?? '')) ?: (string) $channel->chat_id;
+            app(\App\Services\UserNotificationService::class)->create(
+                userId:  $ownerId,
+                type:    'channel_topic_invalid',
+                title:   __('channel_check.fallback_title'),
+                body:    __('channel_check.fallback_body', ['title' => $title, 'channel' => $channelTitle, 'n' => $thread]),
+                payload: [
+                    'event_id'      => (int) $event->id,
+                    'occurrence_id' => (int) $occurrence->id,
+                    'button_text'   => __('channel_check.fallback_button'),
+                    'button_url'    => route('profile.notification_channels'),
+                ],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('PublishOccurrenceAnnouncement: topic fallback notice failed', ['error' => $e->getMessage()]);
+        }
     }
 }

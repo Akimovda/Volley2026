@@ -220,18 +220,17 @@ class TelegramChannelPublisher implements ChannelPublisher
                 $payload['reply_markup'] = $keyboard;
             }
 
-            $response = $this->getHttpClient()
-                ->post(\App\Services\TelegramApi::url($token, 'sendPhoto'), $payload)
-                ->throw()
-                ->json();
+            $fellBackFrom = null;
+            $response = $this->postWithThreadFallback($token, 'sendPhoto', $payload, $fellBackFrom);
 
             return [
                 'external_chat_id' => (string) data_get($response, 'result.chat.id'),
                 'external_message_id' => (string) data_get($response, 'result.message_id'),
                 'raw' => $response,
-                'meta' => [
+                'meta' => array_filter([
                     'message_kind' => self::MESSAGE_KIND_PHOTO,
-                ],
+                    'thread_fallback_from' => $fellBackFrom,
+                ], fn ($v) => $v !== null),
             ];
         }
 
@@ -252,19 +251,45 @@ class TelegramChannelPublisher implements ChannelPublisher
             $payload['reply_markup'] = $keyboard;
         }
 
-        $response = $this->getHttpClient()
-            ->post(\App\Services\TelegramApi::url($token, 'sendMessage'), $payload)
-            ->throw()
-            ->json();
+        $fellBackFrom = null;
+        $response = $this->postWithThreadFallback($token, 'sendMessage', $payload, $fellBackFrom);
 
         return [
             'external_chat_id' => (string) data_get($response, 'result.chat.id'),
             'external_message_id' => (string) data_get($response, 'result.message_id'),
             'raw' => $response,
-            'meta' => [
+            'meta' => array_filter([
                 'message_kind' => self::MESSAGE_KIND_TEXT,
-            ],
+                'thread_fallback_from' => $fellBackFrom,
+            ], fn ($v) => $v !== null),
         ];
+    }
+
+    /**
+     * POST в Bot API с запасным вариантом для неверной темы: если Telegram отвечает «message thread not found» /
+     * TOPIC_ID_INVALID / TOPIC_CLOSED (тему удалили, закрыли или номер указан неверно) — публикуем БЕЗ темы
+     * (в главную), чтобы анонс не пропал. $fellBackFrom получает номер темы, от которой отказались.
+     */
+    private function postWithThreadFallback(string $token, string $method, array $payload, ?int &$fellBackFrom): array
+    {
+        $url  = \App\Services\TelegramApi::url($token, $method);
+        $resp = $this->getHttpClient()->post($url, $payload);
+
+        if ($resp->status() === 400 && !empty($payload['message_thread_id'])) {
+            $desc = strtolower((string) data_get($resp->json(), 'description', ''));
+            if (str_contains($desc, 'thread not found') || str_contains($desc, 'topic_id_invalid') || str_contains($desc, 'topic_closed') || str_contains($desc, 'topic closed')) {
+                $fellBackFrom = (int) $payload['message_thread_id'];
+                Log::warning('TelegramChannelPublisher: тема недоступна, публикуем без темы (в главную)', [
+                    'chat_id' => $payload['chat_id'] ?? null,
+                    'thread'  => $fellBackFrom,
+                    'error'   => $desc,
+                ]);
+                unset($payload['message_thread_id']);
+                $resp = $this->getHttpClient()->post($url, $payload);
+            }
+        }
+
+        return $resp->throw()->json();
     }
 
     public function update(string $chatId, string $messageId, ChannelMessageData $message, array $previousMeta = []): array

@@ -17,4 +17,7 @@ return [
     'topic_not_found'      => 'There is no topic #:n in this chat. Check the number: open the topic in Telegram, tap “Copy link” — the number after the last “/” (t.me/c/…/TOPIC) is the topic number.',
     'topic_unknown'        => 'The chat and permissions are fine, but we could not verify topic #:n. Publish a test announcement to be sure.',
     'unavailable'          => 'Telegram is not responding right now — could not check, try again later.',
+    'fallback_title'  => 'Telegram topic unavailable — announcement went to the main topic',
+    'fallback_body'   => 'The announcement “:title” was posted in “:channel” without a topic: there is no topic #:n in this chat (deleted, closed or a wrong number). Check the topic number with the “Check settings” button and fix it in the event or channel settings — the announcement will then move to the right topic.',
+    'fallback_button' => 'Check channels',
 ];
