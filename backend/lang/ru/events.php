@@ -128,6 +128,8 @@ return [
     'days_prev' => 'Предыдущие',
     'days_next' => 'Следующие',
     'days_n_days' => '10 дней',
+    'days_prev_title' => 'Предыдущие 10 дней',
+    'days_next_title' => 'Следующие 10 дней',
     'day_header_today' => 'Сегодня',
     'day_header_tomorrow' => 'Завтра',
 

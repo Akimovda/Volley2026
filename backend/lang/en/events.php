@@ -122,6 +122,8 @@ return [
     'days_prev'   => 'Previous',
     'days_next'   => 'Next',
     'days_n_days' => '10 days',
+    'days_prev_title' => 'Previous 10 days',
+    'days_next_title' => 'Next 10 days',
     'day_header_today' => 'Today',
     'day_header_tomorrow' => 'Tomorrow',
 

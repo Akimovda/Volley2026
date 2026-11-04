@@ -361,11 +361,9 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						$windowStart (который может быть не выровнен по границе "сегодня +
 						N*10", если старт был вычислен как "ближайший день с событиями"),
 						поэтому вперёд/назад считаем от него, не по offset-арифметике.
-						"Предыдущие" — только если окно не упирается в сегодня. Рендерится
-						ДВАЖДЫ: на узком экране — внутри скроллящейся ленты
-						(day-nav-buttons--inline, едет вместе с чипами), на широком —
-						отдельным блоком справа (day-nav-buttons--pinned, не скроллится).
-						Показывается только одна копия через CSS media query. --}}
+						"Предыдущие" — только если окно не упирается в сегодня (иначе стрелка
+						отключена, чтобы ряд не прыгал). Стрелки-иконки стоят по бокам ленты
+						чипов на всех ширинах (.days-nav-row), не скроллятся вместе с чипами. --}}
 						@php
 						$prevWindowStart = (clone $windowStart)->subDays(10);
 						if ($prevWindowStart->lt($today)) $prevWindowStart = clone $today;
@@ -381,25 +379,21 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						], fn($v) => $v !== '' && $v !== null);
 						@endphp
 						@php
-						$dayNavButtonsHtml = '';
-						ob_start();
-						@endphp
-						@if($showPrevNav)
-						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) }}"
-						class="no-highlight day-chip last-tab tab">
-							<div class="dc-dow">{{ __('events.days_prev') }}</div>
-							<div class="dc-date">{{ __('events.days_n_days') }}</div>
-						</a>
-						@endif
-						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $nextDateParam])) }}"
-						class="no-highlight day-chip last-tab tab">
-							<div class="dc-dow">{{ __('events.days_next') }}</div>
-							<div class="dc-date">{{ __('events.days_n_days') }}</div>
-						</a>
-						@php
-						$dayNavButtonsHtml = ob_get_clean();
+						$prevNavHref = $showPrevNav ? route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) : null;
+						$nextNavHref = route('events.index', array_merge($baseParams, ['date' => $nextDateParam]));
 						@endphp
 
+						<div class="days-nav-row">
+						@if($prevNavHref)
+						<a href="{{ $prevNavHref }}" class="day-nav-arrow day-nav-arrow--prev no-highlight"
+						title="{{ __('events.days_prev_title') }}" aria-label="{{ __('events.days_prev_title') }}">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						</a>
+						@else
+						<span class="day-nav-arrow day-nav-arrow--prev is-disabled" aria-hidden="true">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						</span>
+						@endif
 						<div class="days-strip" id="daysStrip">
 						<div class="tabs mb-0">
                             {{-- Чипы дат --}}
@@ -434,17 +428,14 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							</a>
                             @endforeach
                             <div class="tab-highlight"></div>
-							{{-- Узкий экран: кнопки едут вместе с чипами --}}
-							<div class="day-nav-buttons day-nav-buttons--inline">
-								{!! $dayNavButtonsHtml !!}
-							</div>
 						</div>
 						</div>
 
-						{{-- Широкий экран: кнопки отдельным блоком справа, не скроллятся --}}
-						<div class="day-nav-buttons day-nav-buttons--pinned">
-							{!! $dayNavButtonsHtml !!}
-						</div>
+						<a href="{{ $nextNavHref }}" class="day-nav-arrow day-nav-arrow--next no-highlight"
+						title="{{ __('events.days_next_title') }}" aria-label="{{ __('events.days_next_title') }}">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+						</a>
+						</div>{{-- /.days-nav-row --}}
 					</div>
 				</div>
 
