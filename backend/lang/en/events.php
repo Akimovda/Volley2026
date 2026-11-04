@@ -199,6 +199,15 @@ return [
     // «Date at time» format for Carbon::translatedFormat (English letters must be escaped to be literal)
     'relative_today_at'    => 'today at :time',
     'relative_tomorrow_at' => 'tomorrow at :time',
+    'upcoming_title'        => 'Coming soon: camps, master classes, tournaments',
+    'upcoming_prev'         => 'Previous',
+    'upcoming_next'         => 'Next',
+    'upcoming_kind_camp'    => 'Camp',
+    'upcoming_kind_master_class' => 'Master class',
+    'upcoming_kind_tournament'   => 'Tournament',
+    'upcoming_reg_open'     => 'Registration is open',
+    'upcoming_full'         => 'Sold out',
+    'upcoming_seats_left'   => ':n spots left',
     'dt_format_date_at_time' => 'd F \\a\\t H:i',
 
     // Registration buttons / states

@@ -443,6 +443,8 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				</div>
 
 
+				@include('events._upcoming_special', ['items' => $upcomingSpecial ?? collect()])
+
 				<div class="days-feed" id="daysFeed">
                     @foreach($groupedByDate as $dateKey => $dayData)
                     @php

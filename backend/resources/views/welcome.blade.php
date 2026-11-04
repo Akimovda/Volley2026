@@ -566,6 +566,9 @@ border:1rem solid #fff;
 		</div>
 		
 		
+        {{-- ===== СКОРО: кемпы, мастер-классы, турниры ===== --}}
+        @include('events._upcoming_special', ['items' => app(\App\Services\UpcomingSpecialService::class)->forUser(auth()->user())])
+
         {{-- ===== ДЛЯ КОГО ===== --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('welcome.audience_title') }}</h2>

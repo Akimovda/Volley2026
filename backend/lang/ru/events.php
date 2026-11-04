@@ -206,6 +206,15 @@ return [
     // Формат «дата в время» для Carbon::translatedFormat (литералы вне символов формата)
     'relative_today_at'    => 'сегодня в :time',
     'relative_tomorrow_at' => 'завтра в :time',
+    'upcoming_title'        => 'Скоро: кемпы, мастер-классы, турниры',
+    'upcoming_prev'         => 'Назад',
+    'upcoming_next'         => 'Вперёд',
+    'upcoming_kind_camp'    => 'Кемп',
+    'upcoming_kind_master_class' => 'Мастер-класс',
+    'upcoming_kind_tournament'   => 'Турнир',
+    'upcoming_reg_open'     => 'Регистрация открыта',
+    'upcoming_full'         => 'Мест нет',
+    'upcoming_seats_left'   => 'осталось мест: :n',
     'dt_format_date_at_time' => 'd F \\в H:i',
 
     // Кнопки/состояния регистрации

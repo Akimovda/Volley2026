@@ -85,7 +85,12 @@ class EventIndexService
     |--------------------------------------------------------------------------
     */
 
-    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '')
+    /**
+     * Базовый запрос туров ленты: активные туры + фильтр города/региона (кэмпы и многодневные — всем) + правила видимости
+     * (приватность, направление, формат, уровень, локация, бренд). Окно дат и сортировка — снаружи.
+     * $cityFilter=false — без фильтра города (блок «Скоро» применяет свой: кэмпы и мастер-классы всем, турниры по региону).
+     */
+    public function buildOccurrenceQuery($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '', bool $cityFilter = true)
     {
         $occQ = EventOccurrence::query()
             ->with([
@@ -103,7 +108,7 @@ class EventIndexService
 
         // Фильтр по городу пользователя (по умолчанию)
         $cityParam = trim((string) request('city', ''));
-        if ($cityParam !== 'all' && $user && $user->city_id) {
+        if ($cityFilter && $cityParam !== 'all' && $user && $user->city_id) {
             $userCityId = (int) $user->city_id;
             // Житель города видит мероприятия всего своего региона
             // (Москва ↔ Московская область, СПб ↔ Ленинградская область, остальные — регион города)
@@ -239,6 +244,13 @@ class EventIndexService
                 });
             }
         });
+
+        return $occQ;
+    }
+
+    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '')
+    {
+        $occQ = $this->buildOccurrenceQuery($user, $userId, $isAdmin, $direction, $format, $level, $location);
 
         // Окно — 10 календарных дней подряд, а НЕ 10 ближайших дат где реально
         // есть события — иначе чипы дней показывали бы только дни с событиями,
@@ -379,7 +391,14 @@ class EventIndexService
             ->orderBy('l.name')
             ->pluck('l.name');
 
+        // Блок «Скоро: кемпы, мастер-классы, турниры» — только на обычной ленте (без фильтров формата/направления/уровня/локации);
+        // показывает события дальше конца текущего окна, порядок случайный
+        $upcomingSpecial = ($format === '' && $direction === '' && $level === null && $location === '')
+            ? app(\App\Services\UpcomingSpecialService::class)->forUser($user, $windowEnd->clone()->setTimezone('UTC'))
+            : collect();
+
         return view('events.index',[
+            'upcomingSpecial' => $upcomingSpecial,
             'occurrences' => $occurrences,
             'joinedOccurrenceIds' => $joinedIds,
             'restrictedOccurrenceIds' => $restrictedIds,
