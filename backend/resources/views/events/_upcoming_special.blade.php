@@ -32,8 +32,12 @@
 	.upcoming-special-head .day-section-title { margin-bottom:0; min-width:0; flex:1 1 auto; white-space:normal; }
 	.upcoming-special-arrows { margin-left:auto; }
 	.upcoming-special-list .event-card { position:relative; }
-	.upcoming-dismiss { position:absolute; top:.6rem; right:.6rem; z-index:5; width:3.2rem; height:3.2rem; border-radius:50%; border:0; background:rgba(0,0,0,.45); color:#fff; font-size:2.2rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 .2rem; }
-	.upcoming-dismiss:hover { background:rgba(0,0,0,.7); }
+	.upcoming-dismiss { position:absolute; top:.6rem; right:.6rem; z-index:5; width:3.2rem; height:3.2rem; border-radius:50%; border:0; background:rgba(0,0,0,.3); color:rgba(255,255,255,.7); font-size:2.2rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 .2rem; }
+	.upcoming-dismiss:hover { background:rgba(0,0,0,.6); color:#fff; }
+	/* кнопки заголовка (скрыть блок, стрелки) — приглушённые, чтобы не перетягивали внимание */
+	.upcoming-special-arrows button { opacity:.55; border-color:rgba(128,128,128,.25); }
+	.upcoming-special-arrows button:hover:not(:disabled) { opacity:.9; }
+	.upcoming-special-arrows button:disabled { opacity:.3; }
 	.upcoming-toast { position:fixed; left:50%; bottom:2.4rem; transform:translateX(-50%); z-index:10050; max-width:calc(100vw - 3.2rem); background:#222333; color:#fff; border-radius:1.2rem; padding:1.2rem 1.8rem; font-size:1.4rem; box-shadow:0 .6rem 2rem rgba(0,0,0,.35); display:flex; gap:1.4rem; align-items:center; }
 	.upcoming-toast a { color:#ffb171; font-weight:600; text-decoration:underline; cursor:pointer; white-space:nowrap; }
 	.upcoming-special-arrows { display:flex; gap:.6rem; flex:0 0 auto; }
