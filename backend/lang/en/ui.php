@@ -85,6 +85,7 @@ return [
     'auth_apple'    => 'Sign in with Apple',
     'auth_vk'       => 'Sign in with VK',
     'auth_yandex'   => 'Sign in with Yandex ID',
+    'auth_max'      => 'Sign in with MAX',
     'auth_telegram' => 'Sign in with Telegram',
     'auth_google'   => 'Sign in with Google',
 

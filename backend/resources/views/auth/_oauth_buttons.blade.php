@@ -41,6 +41,14 @@
         <span class="auth-text">{{ __('ui.auth_yandex') }}</span>
     </a>
 
+    <!-- Кнопка MAX: вход через бота (без OAuth), страница внутри приложения/браузера -->
+    <a href="{{ route('auth.max.page', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-max">
+        <span class="auth-icon-circle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 18V6l8 8 8-8v12" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="auth-text">{{ __('ui.auth_max') }}</span>
+    </a>
+
     @if(!$isRussianIp)
     <a href="{{ route('auth.telegram.redirect', ['return' => $returnUrl]) }}" data-href="{{ route('auth.telegram.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-telegram">
         <span class="auth-icon-circle">

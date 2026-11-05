@@ -59,6 +59,7 @@ class AccountDeleteRequestController extends Controller
             'vk_email'          => null,
             'vk_phone'          => null,
             'yandex_id'         => null,
+            'max_user_id'       => null,
             'yandex_email'      => null,
             'yandex_phone'      => null,
             'yandex_avatar'     => null,

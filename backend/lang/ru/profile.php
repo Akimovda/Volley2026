@@ -124,6 +124,7 @@ return [
     'tg_setup_error' => 'Ошибка настройки бота',
     'tg_button'      => 'Telegram',
 
+    'unlink_confirm_max'    => 'Отвязать вход через MAX?',
     'max_in_dev'     => 'В разработке',
 
     // Face ID секция

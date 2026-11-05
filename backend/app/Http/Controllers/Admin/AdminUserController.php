@@ -55,6 +55,7 @@ class AdminUserController extends Controller
                     ->orWhere('vk_id', 'like', "%{$q}%")
                     ->orWhere('vk_email', 'like', "%{$q}%")
                     ->orWhere('yandex_id', 'like', "%{$q}%")
+                    ->orWhere('max_user_id', 'like', "%{$q}%")
                     ->orWhere('yandex_email', 'like', "%{$q}%");
             });
         }

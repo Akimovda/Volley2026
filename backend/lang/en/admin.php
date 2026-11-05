@@ -61,6 +61,8 @@ return [
     'providers_total'     => 'With ≥1 provider:',
     'p_apple_any'         => '🍎 Apple',
     'p_apple_only'        => '🍎 Apple only',
+    'p_max_any' => 'MAX sign-in (total)',
+    'p_hint_max_any' => 'Users with MAX sign-in linked (regardless of other sign-ins).',
     'p_google_any'        => '🔵 Google',
     'p_tg_only'           => '🤖 TG only',
     'p_vk_only'           => '💙 VK only',

@@ -179,6 +179,7 @@
                             ['label' => __('admin.p_apple_any'), 'key' => 'apple_any',  'hint' => __('admin.p_hint_apple_any'), 'bold' => true],
                             ['label' => __('admin.p_apple_only'), 'key' => 'apple_only', 'hint' => __('admin.p_hint_apple_only')],
                             ['label' => __('admin.p_google_any'), 'key' => 'google_any', 'hint' => __('admin.p_hint_google_any'), 'bold' => true],
+                            ['label' => __('admin.p_max_any'), 'key' => 'max_any', 'hint' => __('admin.p_hint_max_any'), 'bold' => true],
                             ['label' => __('admin.p_tg_only'), 'key' => 'tg_only', 'hint' => __('admin.p_hint_tg_only')],
                             ['label' => __('admin.p_vk_only'), 'key' => 'vk_only', 'hint' => __('admin.p_hint_vk_only')],
                             ['label' => __('admin.p_ya_only'), 'key' => 'ya_only', 'hint' => __('admin.p_hint_ya_only')],

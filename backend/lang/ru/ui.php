@@ -85,6 +85,7 @@ return [
     'auth_apple'    => 'Войти через Apple',
     'auth_vk'       => 'Войти через ВКонтакте',
     'auth_yandex'   => 'Войти с Яндекс ID',
+    'auth_max'      => 'Войти через MAX',
     'auth_telegram' => 'Войти через Telegram',
     'auth_google'   => 'Войти через Google',
 

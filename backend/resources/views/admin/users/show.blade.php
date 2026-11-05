@@ -180,6 +180,15 @@
 								@endif
 							</div>
 							
+							{{-- MAX (вход) --}}
+							<div class="mb-2">
+								<span class="text-muted" style="min-width:80px; display:inline-block;">MAX:</span>
+								<strong>{{ $user->max_user_id ? '✅' : '—' }}</strong>
+								@if($user->max_user_id)
+								<span class="text-muted ms-2">id: {{ $user->max_user_id }}</span>
+								@endif
+							</div>
+
 							{{-- Google --}}
 							<div class="mb-2">
 								<span class="text-muted" style="min-width:80px; display:inline-block;">Google:</span>

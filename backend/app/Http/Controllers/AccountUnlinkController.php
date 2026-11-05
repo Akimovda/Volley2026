@@ -32,6 +32,11 @@ class AccountUnlinkController extends Controller
         return $this->unlink($request, 'google');
     }
 
+    public function max(Request $request)
+    {
+        return $this->unlink($request, 'max');
+    }
+
     private function unlink(Request $request, string $provider)
     {
         /** @var User $u */
@@ -43,6 +48,7 @@ class AccountUnlinkController extends Controller
             'yandex'   => !empty($u->yandex_id),
             'apple'    => !empty($u->apple_id),
             'google'   => !empty($u->google_id),
+            'max'      => !empty($u->max_user_id),
         ];
 
         if (empty($providers[$provider])) {
@@ -82,6 +88,11 @@ class AccountUnlinkController extends Controller
             $u->google_id = null;
         }
 
+        if ($provider === 'max') {
+            // отвязывается только вход через MAX; личные уведомления в MAX (max_chat_id) управляются отдельно в профиле
+            $u->max_user_id = null;
+        }
+
         $u->save();
 
         // если отвязали текущий provider в сессии — подчистим метки
@@ -95,6 +106,7 @@ class AccountUnlinkController extends Controller
             'yandex' => 'Yandex',
             'apple' => 'Apple',
             'google' => 'Google',
+            'max' => 'MAX',
             default => 'Provider',
         };
 

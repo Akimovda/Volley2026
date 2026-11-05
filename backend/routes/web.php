@@ -399,6 +399,8 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.yandex.redirect');
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
+	Route::get('/auth/max', [\App\Http\Controllers\Auth\MaxAuthController::class, 'page'])->middleware('no-store-html')->name('auth.max.page');
+	Route::get('/auth/max/status/{id}', [\App\Http\Controllers\Auth\MaxAuthController::class, 'status'])->where('id', '[A-Za-z0-9]{40}')->middleware(['no-store-html', 'throttle:150,10'])->name('auth.max.status');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
 	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
 	Route::post('/auth/apple/native-callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'nativeCallback'])->name('auth.apple.native_callback');
@@ -644,6 +646,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex')->middleware('block.impersonation');
 		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple')->middleware('block.impersonation');
 		Route::post('/account/unlink/google', [AccountUnlinkController::class, 'google'])->name('account.unlink.google')->middleware('block.impersonation');
+		Route::post('/account/unlink/max', [AccountUnlinkController::class, 'max'])->name('account.unlink.max')->middleware('block.impersonation');
 
 		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request')->middleware('block.impersonation');
 		

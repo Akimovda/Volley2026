@@ -18,6 +18,8 @@ Route::post(
 );
 Route::post('/integrations/max/bind-info', [MaxBindWebhookController::class, 'bindInfo']);
 Route::post('/integrations/max/complete-personal-bind', [MaxBindWebhookController::class, 'completePersonalBind']);
+Route::post('/integrations/max/login/begin', [\App\Http\Controllers\Api\MaxLoginWebhookController::class, 'begin']);
+Route::post('/integrations/max/login/code', [\App\Http\Controllers\Api\MaxLoginWebhookController::class, 'code']);
 
 Route::get(
     '/occurrences/{occurrence}/participants',

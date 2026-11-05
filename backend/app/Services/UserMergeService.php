@@ -40,13 +40,14 @@ class UserMergeService
             // report/account_links_audit_2026-09-25.md), а сохраняется как псевдоним в
             // account_links (user_id=primary, source='merge') — при повторном входе тем же
             // провайдером старый secondary-аккаунт корректно резолвится в primary.
-            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id'];
+            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id', 'max_user_id'];
             $providerNames = [
                 'telegram_id' => 'telegram',
                 'vk_id'       => 'vk',
                 'yandex_id'   => 'yandex',
                 'apple_id'    => 'apple',
                 'google_id'   => 'google',
+                'max_user_id' => 'max',
             ];
             $toNull = [];
             $transferredToPrimary = [];

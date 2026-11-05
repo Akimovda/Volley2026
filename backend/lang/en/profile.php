@@ -124,6 +124,7 @@ return [
     'tg_setup_error' => 'Bot setup error',
     'tg_button'      => 'Telegram',
 
+    'unlink_confirm_max'    => 'Unlink MAX sign-in?',
     'max_in_dev'     => 'In development',
 
     // Face ID section

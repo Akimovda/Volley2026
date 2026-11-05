@@ -3184,6 +3184,20 @@ body.dark .theme-icon {
     background-color: #fc3f1d;
 }
 
+/* MAX */
+.auth-btn-max {
+    border-color: rgba(0, 122, 255, 0.2);
+    color: #5a3df0;
+    background-color: #f5f3ff;
+}
+.auth-btn-max:hover {
+    border-color: #6a4cf5;
+    background-color: #ece8ff;
+}
+.auth-btn-max .auth-icon-circle {
+    background: linear-gradient(135deg, #007aff, #8a2be2);
+}
+
 /* Telegram */
 .auth-btn-telegram {
     border-color: rgba(42, 171, 238, 0.2); /*  #e8f7fe; на белом */

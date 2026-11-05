@@ -118,6 +118,7 @@
     $hasYa = !empty($u?->yandex_id);
     $hasApple = !empty($u?->apple_id);
     $hasGoogle = !empty($u?->google_id);
+    $hasMaxLogin = !empty($u?->max_user_id); // вход через MAX (max_chat_id — отдельно, личные уведомления)
 	// персональные уведомления
     $hasMaxNotify = !empty($u?->max_chat_id);
     $hasTelegramNotify = !empty($u?->telegram_notify_chat_id);
@@ -138,6 +139,8 @@
 	$provider = 'apple';
 	} elseif ($hasGoogle && (string) $u->google_id === $providerId) {
 	$provider = 'google';
+	} elseif ($hasMaxLogin && (string) $u->max_user_id === $providerId) {
+	$provider = 'max';
 	}
     }
 
@@ -149,6 +152,7 @@
 	'yandex' => $hasYa,
 	'apple' => $hasApple,
 	'google' => $hasGoogle,
+	'max' => $hasMaxLogin,
 	]);
     
 	if (count($linkedProviders) === 1) {
@@ -161,7 +165,7 @@
 	$provider = 'password';
     }
 
-    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple + (int)$hasGoogle;
+    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple + (int)$hasGoogle + (int)$hasMaxLogin;
     
     // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
 	
@@ -171,7 +175,7 @@
     $yandexLinkUrl  = route('auth.yandex.redirect', ['link' => 1]);
     $googleLinkUrl  = route('auth.google.redirect', ['link' => 1]);
 
-    $allLinked = $hasTg && $hasVk && $hasYa && $hasApple && $hasGoogle;
+    $allLinked = $hasTg && $hasVk && $hasYa && $hasApple && $hasGoogle && $hasMaxLogin;
     
     $tgBotUsername = config('services.telegram.bot_username');
     
@@ -202,6 +206,9 @@
 	if ($p === 'google') {
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#4285F4;"></span><span class="'.$txt.'">Google</span></span>';
 	}
+	if ($p === 'max') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:linear-gradient(135deg,#007aff,#8a2be2);"></span><span class="'.$txt.'">MAX</span></span>';
+	}
 	if ($p === 'password') {
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход 🤝</span></span>';
 	}
@@ -222,6 +229,7 @@
     if ($p === 'yandex') return '<span title="Yandex" class="'.$dot.'" style="background:#FF0000;"></span>';
     if ($p === 'apple') return '<span title="Apple" class="'.$dot.'" style="background:#000000;"></span>';
     if ($p === 'google') return '<span title="Google" class="'.$dot.'" style="background:#4285F4;"></span>';
+    if ($p === 'max') return '<span title="MAX" class="'.$dot.'" style="background:linear-gradient(135deg,#007aff,#8a2be2);"></span>';
     return '<span class="'.$dot.'" style="background:#9CA3AF;"></span>';
     };
     @endphp
@@ -377,7 +385,7 @@
 					
 				</div>	
 				@php
-    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id) + (int)!empty($u?->apple_id) + (int)!empty($u?->google_id);
+    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id) + (int)!empty($u?->apple_id) + (int)!empty($u?->google_id) + (int)!empty($u?->max_user_id);
 @endphp
 
 @if(session('show_providers_hint') || $providerCount < 4)
@@ -622,22 +630,37 @@
 									</div>
 								</div>
 							</div>
-							{{-- MAX card (placeholder) --}}
+							{{-- MAX card: вход через бота MAX (код подтверждения), привязка и отвязка --}}
 							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-max"></span>
 										<span class="provider-card__title">MAX</span>
 									</div>
-									
+
 									<div class="provider-card__status">
-										<span class="badge badge-muted"></span>
+										{!! $badge($hasMaxLogin) !!}
 									</div>
-									
+
 									<div class="provider-card__actions">
-										<button class="btn btn-disabled w-100 btn-small" disabled>
-											{{ __('profile.max_in_dev') }}
-										</button>
+										@if($hasMaxLogin)
+										@if($canUnlink)
+										<form method="POST"
+										action="{{ route('account.unlink.max') }}"
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_max') }}');">
+											@csrf
+											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
+											data-title="{{ __('profile.unlink_confirm_max') }}"
+											data-icon="warning"
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
+										</form>
+										@else
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
+										@endif
+										@else
+										<a href="{{ route('auth.max.page') }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
+										@endif
 									</div>
 								</div>
 							</div>
