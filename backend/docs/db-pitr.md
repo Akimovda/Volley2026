@@ -28,7 +28,7 @@
 2. **Скачать копию и WAL с сервера бэкапов под root-ключом (с Мака)**: пользователь `pgwal` только пишет и читать не может.
    Нужно: последний каталог из `/home/pgwal/base/` и все `*.gz` из `/home/pgwal/wal/`. Перенести на новый сервер: базу — в `/root/restore/`, WAL — в `/var/lib/postgresql/wal_restore/` (владелец postgres).
 3. Распаковать базу от имени postgres: `sudo -u postgres tar -xzf /root/restore/base.tar.gz -C /var/lib/postgresql/16/main`.
-4. Конфиги (`postgresql.conf`, `pg_hba.conf`) — из `server-config_*.tar.gz` в `/etc/postgresql/16/main/`.
+4. Конфиги — из `server-config_*.tar.gz`: `etc/postgresql/16/main/postgresql.conf` и `pgcfg/pg_hba.conf` → в `/etc/postgresql/16/main/` (`pg_hba.conf`, `postgresql.auto.conf` и `enable-wal-archiving.sh` читает только root/postgres, поэтому root-скрипт `/usr/local/sbin/pg_config_snapshot.sh` по cron в 02:05 копирует их в `pgcfg/` для ночного бэкапа в 02:10).
    **Файл `postgresql.auto.conf` из копии удалить/очистить** (иначе восстановленный сервер начнёт архивировать в тот же архив). Часовой пояс сессии — UTC (см. `server-recovery.md`).
 5. В `/etc/postgresql/16/main/postgresql.conf` добавить на время восстановления:
    `restore_command = 'gunzip -c /var/lib/postgresql/wal_restore/%f.gz > %p'`, `recovery_target_action = 'promote'`
