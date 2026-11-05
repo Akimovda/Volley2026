@@ -84,14 +84,20 @@ class GoogleAuthController extends Controller
         /* LOGIN */
         $user = User::where('google_id', $googleId)->first();
 
-        if (!$user && $email) {
-            $user = User::where('email', $email)->first();
-            if ($user) {
-                if (User::where('google_id', $googleId)->where('id', '!=', $user->id)->exists()) {
+        // Привязка к существующему аккаунту по email — только если Google подтвердил этот адрес (email_verified),
+        // и только к аккаунту без другого Google (чужую привязку не перехватываем)
+        $rawGoogle     = (array) ($googleUser->user ?? []);
+        $emailVerified = $email !== '' && filter_var($rawGoogle['email_verified'] ?? ($rawGoogle['verified_email'] ?? false), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$user && $emailVerified) {
+            $candidate = User::where('email', $email)->first();
+            if ($candidate && (empty($candidate->google_id) || (string) $candidate->google_id === $googleId)) {
+                if (User::where('google_id', $googleId)->where('id', '!=', $candidate->id)->exists()) {
                     return redirect()->route('login')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
                 }
-                $user->google_id = $googleId;
-                $user->save();
+                $candidate->google_id = $googleId;
+                $candidate->save();
+                $user = $candidate;
             }
         }
 
@@ -106,7 +112,7 @@ class GoogleAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $user = $this->createOAuthUser('google_id', $googleId, trim($googleUser->getName() ?: 'Пользователь'), $email, "google_{$googleId}@google.local");
+            $user = $this->createOAuthUser('google_id', $googleId, trim($googleUser->getName() ?: 'Пользователь'), $emailVerified ? $email : '', "google_{$googleId}@google.local");
             $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
