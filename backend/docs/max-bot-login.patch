@@ -1,0 +1,69 @@
+--- a/bot.py	2026-11-03 01:09:53.083622195 +0300
++++ b/bot.py	2026-11-05 15:29:09.259621788 +0300
+@@ -555,6 +555,22 @@
+     return resp.json()
+ 
+ 
++def _login_backend(path: str, payload: dict[str, Any]) -> dict[str, Any]:
++    """Вход через MAX: шаги begin/code на бэкенде (тексты ответов отдаёт сервер)."""
++    resp = requests.post(
++        f"{BACKEND_URL}/api/integrations/max/login/{path}",
++        headers={
++            "X-Bind-Secret": BIND_WEBHOOK_SECRET,
++            "Accept": "application/json",
++            "Content-Type": "application/json",
++        },
++        json=payload,
++        timeout=20,
++    )
++    resp.raise_for_status()
++    return resp.json()
++
++
+ def _lt_cleanup() -> None:
+     now = int(time.time())
+     for k in [k for k, v in LEVEL_TEST_STATE.items() if now - int(v.get("ts", 0)) > LEVEL_TEST_TTL_SECONDS]:
+@@ -787,6 +803,25 @@
+ 
+     if update_type == "bot_started":
+         token = str(update.get("payload") or "").strip()
++        # ВХОД ЧЕРЕЗ MAX: токен «LGN…» (35 символов) из ссылки на сайте — сервер просит ввести код, показанный на сайте
++        if token.startswith("LGN") and len(token) == 35:
++            _mu = extract_user(update)
++            try:
++                res = _login_backend("begin", {
++                    "token": token,
++                    "max_user_id": webhook_user_id,
++                    "chat_id": personal_chat_id,
++                    "name": str(_mu.get("name") or _mu.get("first_name") or "")[:190],
++                    "username": str(_mu.get("username") or "")[:190],
++                })
++                send_max_message(str(res.get("message") or "Вход не удался. Попробуйте ещё раз на сайте."), user_id=webhook_user_id)
++            except Exception as e:
++                log_message(f"LOGIN BEGIN ERROR: {e}")
++                try:
++                    send_max_message("❌ Не удалось начать вход. Попробуйте ещё раз на сайте.", user_id=webhook_user_id)
++                except Exception:
++                    pass
++            return {"ok": True, "mode": "login_begin"}
+         if token == "leveltest":
+             try:
+                 lt_start(session_key(personal_chat_id, user_id or "unknown"), webhook_user_id)
+@@ -912,6 +947,17 @@
+                 except Exception as e:
+                     log_message(f"LEVEL TEST GROUP HINT ERROR: {e}")
+                 return {"ok": True, "mode": "level_test_group_hint"}
++        # ВХОД ЧЕРЕЗ MAX: 4 цифры в личке — код с сайта (нет ожидающей попытки — сервер ответит ignore, бот продолжит как обычно)
++        _txt4 = text.strip()
++        if len(_txt4) == 4 and _txt4.isdigit() and str(msg_recipient.get("chat_type") or "dialog") == "dialog":
++            try:
++                res = _login_backend("code", {"max_user_id": webhook_user_id, "text": _txt4})
++                if not res.get("ignore"):
++                    if res.get("message"):
++                        send_max_message(str(res["message"]), user_id=webhook_user_id)
++                    return {"ok": True, "mode": "login_code"}
++            except Exception as e:
++                log_message(f"LOGIN CODE ERROR: {e}")
+         _lt_cleanup()
+         try:
+             if text.strip().lower() in LEVEL_TEST_COMMANDS:
