@@ -26,7 +26,7 @@ class LocationController extends Controller
                 ->with(['city:id,name,region,timezone']);
         
             // если есть soft deletes
-            if (Schema::hasColumn('locations', 'deleted_at')) {
+            if (\App\Support\SchemaCache::hasColumn('locations', 'deleted_at')) {
                 $q->whereNull('deleted_at');
             }
         
@@ -38,7 +38,7 @@ class LocationController extends Controller
                 $nowUtc = CarbonImmutable::now('UTC');
         
                 // если есть occurrences — берём по ним
-                if (Schema::hasTable('event_occurrences') && Schema::hasColumn('event_occurrences', 'location_id')) {
+                if (\App\Support\SchemaCache::hasTable('event_occurrences') && \App\Support\SchemaCache::hasColumn('event_occurrences', 'location_id')) {
                     $q->whereExists(function ($sub) use ($nowUtc) {
                         $sub->select(DB::raw(1))
                             ->from('event_occurrences as eo')
@@ -47,12 +47,12 @@ class LocationController extends Controller
                             ->where('eo.starts_at', '>=', $nowUtc)
                             ->where(function ($w) {
                                 // публичность (мягко: если колонок нет — не упадёт)
-                                if (Schema::hasColumn('events', 'is_private')) {
+                                if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
                                     $w->where(function ($x) {
                                         $x->where('e.is_private', 0)->orWhereNull('e.is_private');
                                     });
                                 }
-                                if (Schema::hasColumn('events', 'visibility')) {
+                                if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                                     $w->where(function ($x) {
                                         $x->where('e.visibility', '!=', 'private')->orWhereNull('e.visibility');
                                     });
@@ -61,7 +61,7 @@ class LocationController extends Controller
                     });
                 }
                 // fallback: если occurrences нет — пробуем по events.location_id
-                elseif (Schema::hasTable('events') && Schema::hasColumn('events', 'location_id')) {
+                elseif (\App\Support\SchemaCache::hasTable('events') && \App\Support\SchemaCache::hasColumn('events', 'location_id')) {
                     $q->whereExists(function ($sub) use ($nowUtc) {
                         $sub->select(DB::raw(1))
                             ->from('events as e')
@@ -152,16 +152,16 @@ class LocationController extends Controller
             $location->name = $data['name'];
             $location->address = $data['address'] ?? null;
 
-            if (Schema::hasColumn('locations', 'city_id')) {
+            if (\App\Support\SchemaCache::hasColumn('locations', 'city_id')) {
                 $location->city_id = $data['city_id'] ?? null;
             }
 
             $location->short_text = $data['short_text'] ?? null;
             $location->long_text = $data['long_text'] ?? null;
-            if (Schema::hasColumn('locations', 'long_text_full')) {
+            if (\App\Support\SchemaCache::hasColumn('locations', 'long_text_full')) {
                 $location->long_text_full = $data['long_text_full'] ?? null;
             }
-            if (Schema::hasColumn('locations', 'note')) {
+            if (\App\Support\SchemaCache::hasColumn('locations', 'note')) {
                 $location->note = $data['note'] ?? null;
             }
 

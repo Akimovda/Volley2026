@@ -57,16 +57,16 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($user);
         $this->ensureCanManageEvent($user, $event);
 
-        if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
-        $hasPosition    = Schema::hasColumn('event_registrations', 'position');
-        $hasGroupKey    = Schema::hasColumn('event_registrations', 'group_key');
+        $hasPosition    = \App\Support\SchemaCache::hasColumn('event_registrations', 'position');
+        $hasGroupKey    = \App\Support\SchemaCache::hasColumn('event_registrations', 'group_key');
         $hasCancelledAt = true; // уже проверили выше
-        $hasIsCancelled = Schema::hasColumn('event_registrations', 'is_cancelled');
-        $hasStatus      = Schema::hasColumn('event_registrations', 'status');
-        $hasOrgNote     = Schema::hasColumn('event_registrations', 'organizer_note');
+        $hasIsCancelled = \App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled');
+        $hasStatus      = \App\Support\SchemaCache::hasColumn('event_registrations', 'status');
+        $hasOrgNote     = \App\Support\SchemaCache::hasColumn('event_registrations', 'organizer_note');
  
         // Game context для позиций и группировки
         $event->loadMissing('gameSettings');
@@ -222,7 +222,7 @@ class EventRegistrationsManagementController extends Controller
             ->get();
 
         $location = null;
-        if (!empty($event->location_id) && Schema::hasTable('locations')) {
+        if (!empty($event->location_id) && \App\Support\SchemaCache::hasTable('locations')) {
             $location = DB::table('locations')
                 ->where('id', (int) $event->location_id)
                 ->first(['id', 'name', 'address', 'city_id']);
@@ -257,7 +257,7 @@ class EventRegistrationsManagementController extends Controller
         }
 
         $groupInvites = collect();
-        if ($direction === 'beach' && Schema::hasTable('event_registration_group_invites')) {
+        if ($direction === 'beach' && \App\Support\SchemaCache::hasTable('event_registration_group_invites')) {
             $groupInvites = DB::table('event_registration_group_invites as i')
                 ->join('users as fu', 'fu.id', '=', 'i.from_user_id')
                 ->join('users as tu', 'tu.id', '=', 'i.to_user_id')
@@ -293,7 +293,7 @@ class EventRegistrationsManagementController extends Controller
 
         // История действий по occurrence (или всему event если occurrence не выбран)
         $registrationLogs = collect();
-        if (Schema::hasTable('event_registration_logs')) {
+        if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
             $logsQuery = DB::table('event_registration_logs as rl')
                 ->join('users as u', 'u.id', '=', 'rl.user_id')
                 ->leftJoin('users as a', 'a.id', '=', 'rl.actor_id')
@@ -380,7 +380,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($authUser);
         $this->ensureCanManageEvent($authUser, $event);
 
-        if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
@@ -580,7 +580,7 @@ class EventRegistrationsManagementController extends Controller
                     'updated_at' => now(),
                 ] + \App\Models\EventRegistration::autoBookingResetAttributes();
 
-                if (Schema::hasColumn('event_registrations', 'position')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
                     $upd['position'] = $pos;
                 }
 
@@ -588,7 +588,7 @@ class EventRegistrationsManagementController extends Controller
                     ->where('id', (int) $existing->id)
                     ->update($upd);
 
-                if (Schema::hasTable('event_registration_logs')) {
+                if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
                     DB::table('event_registration_logs')->insert([
                         'registration_id' => (int) $existing->id,
                         'event_id'        => (int) $event->id,
@@ -635,13 +635,13 @@ class EventRegistrationsManagementController extends Controller
             'updated_at' => now(),
         ];
 
-        if (Schema::hasColumn('event_registrations', 'position')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
             $insert['position'] = $pos;
         }
 
         $newRegId = DB::table('event_registrations')->insertGetId($insert);
 
-        if (Schema::hasTable('event_registration_logs')) {
+        if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
             DB::table('event_registration_logs')->insert([
                 'registration_id' => $newRegId,
                 'event_id'        => (int) $event->id,
@@ -693,7 +693,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($user);
         $this->ensureCanManageEvent($user, $event);
 
-        if (!Schema::hasColumn('event_registrations', 'position')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
             return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
         }
 
@@ -789,7 +789,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($authUser);
         $this->ensureCanManageEvent($authUser, $event);
 
-        if (!Schema::hasColumn('event_registrations', 'position')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
             return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
         }
 
@@ -865,7 +865,7 @@ class EventRegistrationsManagementController extends Controller
             DB::table('event_registrations')->where('id', $regA->id)->update(['position' => $posB, 'updated_at' => now()]);
             DB::table('event_registrations')->where('id', $regB->id)->update(['position' => $posA, 'updated_at' => now()]);
 
-            if (Schema::hasTable('event_registration_logs')) {
+            if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
                 DB::table('event_registration_logs')->insert([
                     [
                         'registration_id' => (int) $regA->id,
@@ -927,7 +927,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanCreateEvents($authUser);
         $this->ensureCanManageEvent($authUser, $event);
 
-        if (!Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
         }
 
@@ -1023,7 +1023,7 @@ class EventRegistrationsManagementController extends Controller
             ->where('id', $registration)
             ->update($upd);
 
-        if (Schema::hasTable('event_registration_logs')) {
+        if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
             DB::table('event_registration_logs')->insert([
                 'registration_id' => $registration,
                 'event_id'        => (int) $event->id,
@@ -1437,7 +1437,7 @@ class EventRegistrationsManagementController extends Controller
             ? Carbon::parse($event->ends_at, 'UTC')->setTimezone($tz)
             : null;
 
-        $hasOrgNote  = Schema::hasColumn('event_registrations', 'organizer_note');
+        $hasOrgNote  = \App\Support\SchemaCache::hasColumn('event_registrations', 'organizer_note');
         $locationId  = $occurrence->location_id ?? $event->location_id ?? null;
 
         $select = [
@@ -1472,7 +1472,7 @@ class EventRegistrationsManagementController extends Controller
             ->get();
 
         $location = null;
-        if ($locationId && Schema::hasTable('locations')) {
+        if ($locationId && \App\Support\SchemaCache::hasTable('locations')) {
             $location = DB::table('locations as l')
                 ->leftJoin('cities as c', 'c.id', '=', 'l.city_id')
                 ->where('l.id', (int) $locationId)

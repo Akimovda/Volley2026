@@ -20,13 +20,13 @@ class SendEventRegistrationReminders extends Command
 
     public function handle(): int
     {
-        if (!Schema::hasTable('event_registrations')) {
+        if (!\App\Support\SchemaCache::hasTable('event_registrations')) {
             $this->warn('event_registrations table not found — skip');
             return self::SUCCESS;
         }
 
-        $hasOccTable = Schema::hasTable('event_occurrences');
-        $hasEvents = Schema::hasTable('events');
+        $hasOccTable = \App\Support\SchemaCache::hasTable('event_occurrences');
+        $hasEvents = \App\Support\SchemaCache::hasTable('events');
 
         if (!$hasOccTable || !$hasEvents) {
             $this->warn('events/event_occurrences not found — skip');
@@ -45,13 +45,13 @@ class SendEventRegistrationReminders extends Command
 
         $dryRun = (bool) $this->option('dry-run');
 
-        $hasDeliveries = Schema::hasTable('notification_deliveries');
+        $hasDeliveries = \App\Support\SchemaCache::hasTable('notification_deliveries');
 
-        $hasOccStarts = Schema::hasColumn('event_occurrences', 'starts_at');
-        $hasOccRemEnabled = Schema::hasColumn('event_occurrences', 'remind_registration_enabled');
-        $hasOccRemMinutes = Schema::hasColumn('event_occurrences', 'remind_registration_minutes_before');
-        $hasEvRemEnabled = Schema::hasColumn('events', 'remind_registration_enabled');
-        $hasEvRemMinutes = Schema::hasColumn('events', 'remind_registration_minutes_before');
+        $hasOccStarts = \App\Support\SchemaCache::hasColumn('event_occurrences', 'starts_at');
+        $hasOccRemEnabled = \App\Support\SchemaCache::hasColumn('event_occurrences', 'remind_registration_enabled');
+        $hasOccRemMinutes = \App\Support\SchemaCache::hasColumn('event_occurrences', 'remind_registration_minutes_before');
+        $hasEvRemEnabled = \App\Support\SchemaCache::hasColumn('events', 'remind_registration_enabled');
+        $hasEvRemMinutes = \App\Support\SchemaCache::hasColumn('events', 'remind_registration_minutes_before');
 
         if (!$hasOccStarts) {
             $this->warn('event_occurrences.starts_at not found — skip');
@@ -81,22 +81,22 @@ class SendEventRegistrationReminders extends Command
             })
             ->whereNull('eo.cancelled_at');
 
-        if (Schema::hasColumn('event_registrations', 'deleted_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'deleted_at')) {
             $q->whereNull('er.deleted_at');
         }
 
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $q->whereNull('er.cancelled_at');
         }
 
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $q->where(function ($w) {
                 $w->whereNull('er.is_cancelled')
                   ->orWhere('er.is_cancelled', false);
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $q->where(function ($w) {
                 $w->whereNull('er.status')
                   ->orWhere('er.status', 'confirmed');

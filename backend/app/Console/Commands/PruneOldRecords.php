@@ -34,7 +34,7 @@ class PruneOldRecords extends Command
         $cutoff = now()->subDays($days);
 
         foreach (['channel_publish_logs', 'notification_deliveries', 'page_views', 'auth_login_events'] as $table) {
-            if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'created_at')) {
+            if (!\App\Support\SchemaCache::hasTable($table) || !\App\Support\SchemaCache::hasColumn($table, 'created_at')) {
                 continue;
             }
 
@@ -74,7 +74,7 @@ class PruneOldRecords extends Command
                 return 0;
             }
 
-            if (Schema::hasTable('page_view_totals')) {
+            if (\App\Support\SchemaCache::hasTable('page_view_totals')) {
                 $groups = DB::table('page_views')->whereIn('id', $ids)
                     ->select('entity_type', 'entity_id', DB::raw('count(*) as c'))
                     ->groupBy('entity_type', 'entity_id')->get();

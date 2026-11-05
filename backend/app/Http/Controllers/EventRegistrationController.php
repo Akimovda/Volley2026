@@ -41,7 +41,7 @@ class EventRegistrationController extends Controller
 
         $occ = null;
 
-        if ($occId > 0 && Schema::hasTable('event_occurrences')) {
+        if ($occId > 0 && \App\Support\SchemaCache::hasTable('event_occurrences')) {
             $occ = EventOccurrence::query()
                 ->where('id', $occId)
                 ->where('event_id', (int) $event->id)
@@ -84,7 +84,7 @@ class EventRegistrationController extends Controller
 
         $occ = null;
 
-        if ($occId > 0 && Schema::hasTable('event_occurrences')) {
+        if ($occId > 0 && \App\Support\SchemaCache::hasTable('event_occurrences')) {
             $occ = EventOccurrence::query()
                 ->where('id', $occId)
                 ->where('event_id', (int) $event->id)
@@ -300,19 +300,19 @@ class EventRegistrationController extends Controller
                 ->first();
 
             if ($existing) {
-                if (Schema::hasColumn('event_registrations', 'status')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                     $existing->status = 'confirmed';
                 }
 
-                if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                     $existing->is_cancelled = false;
                 }
 
-                if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
                     $existing->cancelled_at = null;
                 }
 
-                if (Schema::hasColumn('event_registrations', 'position')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
                     $existing->position = $position ?: null;
                 }
 
@@ -394,23 +394,23 @@ class EventRegistrationController extends Controller
             $reg = new EventRegistration();
             $reg->user_id = $user->id;
 
-            if (Schema::hasColumn('event_registrations', 'event_id')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'event_id')) {
                 $reg->event_id = $occurrence->event_id;
             }
 
-            if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
                 $reg->occurrence_id = $occurrence->id;
             }
 
-            if (Schema::hasColumn('event_registrations', 'status')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                 $reg->status = 'confirmed';
             }
 
-            if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                 $reg->is_cancelled = false;
             }
 
-            if (Schema::hasColumn('event_registrations', 'position')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
                 $reg->position = $position ?: null;
             }
 
@@ -679,7 +679,7 @@ class EventRegistrationController extends Controller
                 return $target('status', 'Вы не были записаны.');
             }
 
-            if (Schema::hasColumn('event_registrations', 'group_key') && !empty($reg->group_key)) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'group_key') && !empty($reg->group_key)) {
                 $this->groupService->leaveGroup(
                     (int) $occurrence->event_id,
                     (int) $user->id
@@ -688,15 +688,15 @@ class EventRegistrationController extends Controller
                 $reg->refresh();
             }
 
-            if (Schema::hasColumn('event_registrations', 'status')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                 $reg->status = 'cancelled';
             }
 
-            if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                 $reg->is_cancelled = true;
             }
 
-            if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
                 $reg->cancelled_at = now();
             }
 
@@ -736,7 +736,7 @@ class EventRegistrationController extends Controller
 
             $reg->save();
 
-            if (Schema::hasTable('event_registration_logs')) {
+            if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
                 DB::table('event_registration_logs')->insert([
                     'registration_id' => $reg->id,
                     'event_id'        => (int) $occurrence->event_id,
@@ -775,7 +775,7 @@ class EventRegistrationController extends Controller
 
     private function getOrCreateFirstOccurrenceForEvent(Event $event): ?EventOccurrence
     {
-        if (!Schema::hasTable('event_occurrences')) {
+        if (!\App\Support\SchemaCache::hasTable('event_occurrences')) {
             return null;
         }
 

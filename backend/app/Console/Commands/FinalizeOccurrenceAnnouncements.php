@@ -19,7 +19,7 @@ class FinalizeOccurrenceAnnouncements extends Command
 
     public function handle(): int
     {
-        if (!Schema::hasTable('event_occurrences') || !Schema::hasTable('event_channel_messages')) {
+        if (!\App\Support\SchemaCache::hasTable('event_occurrences') || !\App\Support\SchemaCache::hasTable('event_channel_messages')) {
             $this->warn('Required tables missing — skip');
             return self::SUCCESS;
         }

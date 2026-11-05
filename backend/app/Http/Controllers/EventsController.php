@@ -50,10 +50,10 @@
 			if (is_null($level)) return;
 			
 			// защитимся, если колонок уровней нет (иначе SQL упадёт)
-			$hasClassicMin = Schema::hasColumn('events', 'classic_level_min');
-			$hasClassicMax = Schema::hasColumn('events', 'classic_level_max');
-			$hasBeachMin   = Schema::hasColumn('events', 'beach_level_min');
-			$hasBeachMax   = Schema::hasColumn('events', 'beach_level_max');
+			$hasClassicMin = \App\Support\SchemaCache::hasColumn('events', 'classic_level_min');
+			$hasClassicMax = \App\Support\SchemaCache::hasColumn('events', 'classic_level_max');
+			$hasBeachMin   = \App\Support\SchemaCache::hasColumn('events', 'beach_level_min');
+			$hasBeachMax   = \App\Support\SchemaCache::hasColumn('events', 'beach_level_max');
 			
 			// если вообще ничего нет — не фильтруем
 			if (!$hasClassicMin && !$hasClassicMax && !$hasBeachMin && !$hasBeachMax) {
@@ -125,7 +125,7 @@
 			if ($hasStatus) {
 				$q->where($prefix . 'status', 'confirmed');
 			}
-			if (Schema::hasColumn('event_registrations', 'deleted_at')) {
+			if (\App\Support\SchemaCache::hasColumn('event_registrations', 'deleted_at')) {
 				$q->whereNull($prefix . 'deleted_at');
 			}
 		}
@@ -138,7 +138,7 @@
 			$userId = (int) $user->id;
 			
 			$joinedEventIds = [];
-			if (Schema::hasTable('event_registrations') && Schema::hasColumn('event_registrations', 'event_id')) {
+			if (\App\Support\SchemaCache::hasTable('event_registrations') && \App\Support\SchemaCache::hasColumn('event_registrations', 'event_id')) {
 				$q = DB::table('event_registrations')->where('user_id', $userId);
 				$this->applyActiveScope($q, $hasCancelledAt, $hasIsCancelled, $hasStatus);
 				
@@ -150,9 +150,9 @@
 			}
 			
 			$restrictedEventIds = [];
-			if (Schema::hasTable('events')) {
-				$hasIsPrivate  = Schema::hasColumn('events', 'is_private');
-				$hasVisibility = Schema::hasColumn('events', 'visibility');
+			if (\App\Support\SchemaCache::hasTable('events')) {
+				$hasIsPrivate  = \App\Support\SchemaCache::hasColumn('events', 'is_private');
+				$hasVisibility = \App\Support\SchemaCache::hasColumn('events', 'visibility');
 				
 				if ($hasIsPrivate || $hasVisibility) {
 					$restrictedQ = DB::table('events')
@@ -183,7 +183,7 @@
 			$userId = (int) $user->id;
 			
 			$joinedOccurrenceIds = [];
-			if (Schema::hasTable('event_registrations') && Schema::hasColumn('event_registrations', 'occurrence_id')) {
+			if (\App\Support\SchemaCache::hasTable('event_registrations') && \App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
 				$q = DB::table('event_registrations')
                 ->where('user_id', $userId)
                 ->whereNotNull('occurrence_id');
@@ -198,9 +198,9 @@
 			}
 			
 			$restrictedOccurrenceIds = [];
-			if (Schema::hasTable('event_occurrences')) {
-				$hasIsPrivate  = Schema::hasColumn('events', 'is_private');
-				$hasVisibility = Schema::hasColumn('events', 'visibility');
+			if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
+				$hasIsPrivate  = \App\Support\SchemaCache::hasColumn('events', 'is_private');
+				$hasVisibility = \App\Support\SchemaCache::hasColumn('events', 'visibility');
 				
 				if ($hasIsPrivate || $hasVisibility) {
 					$restrictedQ = DB::table('event_occurrences as eo')
@@ -226,7 +226,7 @@
 		
 		private function getOrCreateFirstOccurrenceForEvent(Event $event): ?EventOccurrence
 		{
-			if (!Schema::hasTable('event_occurrences')) return null;
+			if (!\App\Support\SchemaCache::hasTable('event_occurrences')) return null;
 			
 			$occ = EventOccurrence::query()
             ->where('event_id', (int) $event->id)
@@ -344,9 +344,9 @@
             ];
         
             foreach ($candidates as $c) {
-                if (!Schema::hasTable($c['table'])) continue;
-                if (!Schema::hasColumn($c['table'], $c['org'])) continue;
-                if (!Schema::hasColumn($c['table'], $c['staff'])) continue;
+                if (!\App\Support\SchemaCache::hasTable($c['table'])) continue;
+                if (!\App\Support\SchemaCache::hasColumn($c['table'], $c['org'])) continue;
+                if (!\App\Support\SchemaCache::hasColumn($c['table'], $c['staff'])) continue;
         
                 return DB::table($c['table'])
                     ->where($c['staff'], $staffUserId)
@@ -357,7 +357,7 @@
                     ->all();
             }
         
-            if (Schema::hasColumn('users', 'organizer_id')) {
+            if (\App\Support\SchemaCache::hasColumn('users', 'organizer_id')) {
                 $orgId = (int) DB::table('users')
                     ->where('id', $staffUserId)
                     ->value('organizer_id');

@@ -58,11 +58,11 @@ public function store(Request $request)
     $location->name = $data['name'];
     $location->address = $data['address'] ?? null;
 
-    if (Schema::hasColumn('locations', 'city_id')) {
+    if (\App\Support\SchemaCache::hasColumn('locations', 'city_id')) {
         $location->city_id = (int)$data['city_id'];
     }
 
-    if (Schema::hasColumn('locations', 'timezone')) {
+    if (\App\Support\SchemaCache::hasColumn('locations', 'timezone')) {
         $tz = trim((string)($data['timezone'] ?? ''));
         if ($tz === '') $tz = (string)($city->timezone ?? 'Europe/Moscow');
         $location->timezone = $tz;
@@ -149,11 +149,11 @@ public function update(Request $request, Location $location)
     $location->name = $data['name'];
     $location->address = $data['address'] ?? null;
 
-    if (Schema::hasColumn('locations', 'city_id')) {
+    if (\App\Support\SchemaCache::hasColumn('locations', 'city_id')) {
         $location->city_id = (int)$data['city_id'];
     }
 
-    if (Schema::hasColumn('locations', 'timezone')) {
+    if (\App\Support\SchemaCache::hasColumn('locations', 'timezone')) {
         $tz = trim((string)($data['timezone'] ?? ''));
         if ($tz === '') $tz = (string)($city->timezone ?? $location->timezone ?? 'Europe/Moscow');
         $location->timezone = $tz;

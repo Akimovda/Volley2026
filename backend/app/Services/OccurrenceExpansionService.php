@@ -242,10 +242,10 @@ final class OccurrenceExpansionService
                 'registration_ends_at'      => $allowReg ? $regEnds   : null,
                 'cancel_self_until'         => $allowReg ? $cancelTil : null,
                 'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,
-                'age_policy' => Schema::hasColumn('event_occurrences', 'age_policy')
+                'age_policy' => \App\Support\SchemaCache::hasColumn('event_occurrences', 'age_policy')
                     ? (string)($event->age_policy ?? 'any')
                     : null,
-                'is_snow' => Schema::hasColumn('event_occurrences', 'is_snow')
+                'is_snow' => \App\Support\SchemaCache::hasColumn('event_occurrences', 'is_snow')
                     ? (bool)($event->is_snow ?? false)
                     : null,
             ]);
@@ -268,10 +268,10 @@ final class OccurrenceExpansionService
             'registration_ends_at'      => $allowReg ? $regEnds   : null,
             'cancel_self_until'         => $allowReg ? $cancelTil : null,
             'cancel_self_until_waitlist' => $allowReg ? $cancelTilWaitlist : null,
-            'age_policy' => Schema::hasColumn('event_occurrences', 'age_policy')
+            'age_policy' => \App\Support\SchemaCache::hasColumn('event_occurrences', 'age_policy')
                 ? (string)($event->age_policy ?? 'any')
                 : null,
-            'is_snow' => Schema::hasColumn('event_occurrences', 'is_snow')
+            'is_snow' => \App\Support\SchemaCache::hasColumn('event_occurrences', 'is_snow')
                 ? (bool)($event->is_snow ?? false)
                 : null,
         ]);

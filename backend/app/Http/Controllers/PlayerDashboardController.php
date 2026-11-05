@@ -34,7 +34,7 @@ class PlayerDashboardController extends Controller
             ->where('entity_type', 'user')
             ->where('entity_id', $userId)
             ->count()
-            + (\Illuminate\Support\Facades\Schema::hasTable('page_view_totals')
+            + (\App\Support\SchemaCache::hasTable('page_view_totals')
                 ? (int) DB::table('page_view_totals')->where('entity_type', 'user')->where('entity_id', $userId)->value('views')
                 : 0);
 

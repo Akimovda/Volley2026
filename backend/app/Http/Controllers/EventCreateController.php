@@ -282,8 +282,8 @@ use App\Services\StaffLogService;
 				$now = now();
 				
 				if (
-                Schema::hasColumn('events', 'starts_at') &&
-                Schema::hasColumn('events', 'duration_sec')
+                \App\Support\SchemaCache::hasColumn('events', 'starts_at') &&
+                \App\Support\SchemaCache::hasColumn('events', 'duration_sec')
 				) {
 					
 					$q->whereNotNull('events.starts_at')
@@ -293,7 +293,7 @@ use App\Services\StaffLogService;
 					[$now]
 					);
 					
-					} elseif (Schema::hasColumn('events', 'starts_at')) {
+					} elseif (\App\Support\SchemaCache::hasColumn('events', 'starts_at')) {
 					
 					// fallback если duration_sec ещё нет
 					$q->whereNotNull('events.starts_at')
@@ -308,7 +308,7 @@ use App\Services\StaffLogService;
 				$ownerCol = null;
 				
 				foreach (['organizer_id', 'owner_id', 'created_by', 'user_id'] as $c) {
-					if (Schema::hasColumn('events', $c)) {
+					if (\App\Support\SchemaCache::hasColumn('events', $c)) {
 						$ownerCol = $c;
 						break;
 					}

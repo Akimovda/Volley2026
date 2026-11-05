@@ -14,7 +14,7 @@ class PublicEventController extends Controller
     {
         $query = Event::query()->where('public_token', $token);
 
-        if (Schema::hasColumn('events', 'is_private')) {
+        if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
             $query->where('is_private', 1);
         }
 

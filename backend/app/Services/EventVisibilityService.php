@@ -13,11 +13,11 @@ class EventVisibilityService
     {
         $isPrivate = false;
 
-        if (Schema::hasColumn('events', 'is_private')) {
+        if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
             $isPrivate = $isPrivate || ((int) ($event->is_private ?? 0) === 1);
         }
 
-        if (Schema::hasColumn('events', 'visibility')) {
+        if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
             $isPrivate = $isPrivate || ((string) ($event->visibility ?? '') === 'private');
         }
 
@@ -60,7 +60,7 @@ class EventVisibilityService
 
         // Раньше открывал приватное по ссылке /e/{token} — доступ сохранён (как и в ленте /events),
         // иначе ссылки из уведомлений/анонсов на /events/{id} дают 404.
-        if (Schema::hasTable('event_private_accesses')
+        if (\App\Support\SchemaCache::hasTable('event_private_accesses')
             && DB::table('event_private_accesses')
                 ->where('user_id', $uid)->where('event_id', (int) $event->id)->exists()) {
             return true;
@@ -70,7 +70,7 @@ class EventVisibilityService
             return true;
         }
 
-        $eventOrgId = Schema::hasColumn('events', 'organizer_id')
+        $eventOrgId = \App\Support\SchemaCache::hasColumn('events', 'organizer_id')
             ? (int) ($event->organizer_id ?? 0)
             : 0;
 
@@ -96,7 +96,7 @@ class EventVisibilityService
         }
 
         foreach (['created_by', 'creator_user_id', 'created_user_id'] as $col) {
-            if (!Schema::hasColumn('events', $col)) continue;
+            if (!\App\Support\SchemaCache::hasColumn('events', $col)) continue;
 
             $cid = (int) ($event->{$col} ?? 0);
             if ($cid > 0 && in_array($cid, $ownerUserIds, true)) {
@@ -109,8 +109,8 @@ class EventVisibilityService
 
     public function applyPrivateVisibilityScope($q, ?User $user, string $prefix = ''): void
     {
-        $hasIsPrivate  = Schema::hasColumn('events', 'is_private');
-        $hasVisibility = Schema::hasColumn('events', 'visibility');
+        $hasIsPrivate  = \App\Support\SchemaCache::hasColumn('events', 'is_private');
+        $hasVisibility = \App\Support\SchemaCache::hasColumn('events', 'visibility');
 
         if (!$hasIsPrivate && !$hasVisibility) return;
 
@@ -143,7 +143,7 @@ class EventVisibilityService
 
             });
 
-            if ($brandId !== null && Schema::hasColumn('events', 'brand_id')) {
+            if ($brandId !== null && \App\Support\SchemaCache::hasColumn('events', 'brand_id')) {
                 $w->orWhere($prefix.'brand_id', $brandId);
             }
 
@@ -153,7 +153,7 @@ class EventVisibilityService
                 $uid  = (int) $user->id;
 
                 // Приватные события к которым был доступ по токену
-                if (Schema::hasTable('event_private_accesses')) {
+                if (\App\Support\SchemaCache::hasTable('event_private_accesses')) {
                     $accessIds = DB::table('event_private_accesses')
                         ->where('user_id', $uid)
                         ->pluck('event_id')
@@ -164,7 +164,7 @@ class EventVisibilityService
                     }
                 }
 
-                if (Schema::hasColumn('events', 'organizer_id')) {
+                if (\App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
 
                     $w->orWhere($prefix.'organizer_id', $uid);
 
@@ -187,7 +187,7 @@ class EventVisibilityService
 
                 foreach (['created_by','creator_user_id','created_user_id'] as $col) {
 
-                    if (Schema::hasColumn('events',$col)) {
+                    if (\App\Support\SchemaCache::hasColumn('events',$col)) {
                         $w->orWhereIn($prefix.$col,$ownerUserIds);
                     }
 
@@ -212,7 +212,7 @@ class EventVisibilityService
 
         $q->where(function ($w) use ($role,$uid,$prefix) {
 
-            if (Schema::hasColumn('events','organizer_id')) {
+            if (\App\Support\SchemaCache::hasColumn('events','organizer_id')) {
 
                 $w->where($prefix.'organizer_id','!=',$uid);
 
@@ -229,7 +229,7 @@ class EventVisibilityService
 
                 foreach (['created_by','creator_user_id','created_user_id'] as $col) {
 
-                    if (Schema::hasColumn('events',$col)) {
+                    if (\App\Support\SchemaCache::hasColumn('events',$col)) {
                         $w->where($prefix.$col,'!=',$uid);
                     }
 
@@ -251,9 +251,9 @@ class EventVisibilityService
     
         foreach ($candidates as $c) {
     
-            if (!Schema::hasTable('organizer_staff')) continue;
-            if (!Schema::hasColumn('organizer_staff',$c['org'])) continue;
-            if (!Schema::hasColumn('organizer_staff',$c['staff'])) continue;
+            if (!\App\Support\SchemaCache::hasTable('organizer_staff')) continue;
+            if (!\App\Support\SchemaCache::hasColumn('organizer_staff',$c['org'])) continue;
+            if (!\App\Support\SchemaCache::hasColumn('organizer_staff',$c['staff'])) continue;
     
             return DB::table('organizer_staff')
                 ->where($c['org'],$organizerId)
@@ -284,9 +284,9 @@ class EventVisibilityService
     
         foreach ($candidates as $c) {
     
-            if (!Schema::hasTable('organizer_staff')) continue;
-            if (!Schema::hasColumn('organizer_staff',$c['org'])) continue;
-            if (!Schema::hasColumn('organizer_staff',$c['staff'])) continue;
+            if (!\App\Support\SchemaCache::hasTable('organizer_staff')) continue;
+            if (!\App\Support\SchemaCache::hasColumn('organizer_staff',$c['org'])) continue;
+            if (!\App\Support\SchemaCache::hasColumn('organizer_staff',$c['staff'])) continue;
     
             return DB::table('organizer_staff')
                 ->where($c['staff'],$staffUserId)
@@ -297,7 +297,7 @@ class EventVisibilityService
                 ->all();
         }
     
-        if (Schema::hasColumn('users','organizer_id')) {
+        if (\App\Support\SchemaCache::hasColumn('users','organizer_id')) {
     
             $orgId = (int) DB::table('users')
                 ->where('id',$staffUserId)

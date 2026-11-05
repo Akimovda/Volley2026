@@ -881,7 +881,7 @@
 				return;
 			}
 
-			if (!Schema::hasColumn('users', 'birth_date') || !$user->birth_date) {
+			if (!\App\Support\SchemaCache::hasColumn('users', 'birth_date') || !$user->birth_date) {
 				$result->errors[] = $policy === 'adult'
 					? 'Для записи на это мероприятие укажи дату рождения в профиле.'
 					: 'Для записи на детское мероприятие укажи дату рождения в профиле.';
@@ -1274,7 +1274,7 @@
 			
 			$viewerGender = null;
 			
-			if ($user && Schema::hasColumn('users', 'gender')) {
+			if ($user && \App\Support\SchemaCache::hasColumn('users', 'gender')) {
 				
 				$g = strtolower(trim((string)$user->gender));
 				

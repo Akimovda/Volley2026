@@ -308,7 +308,7 @@ if ($endType === 'until') {
         array $data
 		): void {
 			
-			if (!Schema::hasTable('event_occurrences') || empty($event->starts_at)) {
+			if (!\App\Support\SchemaCache::hasTable('event_occurrences') || empty($event->starts_at)) {
 				return;
 			}
 			
@@ -328,7 +328,7 @@ if ($endType === 'until') {
             'max_players' => $gs?->max_players ?? null,
 			];
 			
-			if (Schema::hasColumn('event_occurrences', 'location_id')) {
+			if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'location_id')) {
 				$payload['location_id'] = $event->location_id ?? null;
 			}
 			
@@ -340,17 +340,17 @@ if ($endType === 'until') {
             'cancel_self_until_waitlist',
 			] as $col) {
 				
-				if (Schema::hasColumn('event_occurrences', $col)) {
+				if (\App\Support\SchemaCache::hasColumn('event_occurrences', $col)) {
 					$payload[$col] = $data[$col] ?? null;
 				}
 				
 			}
 			
-			if (Schema::hasColumn('event_occurrences', 'age_policy')) {
+			if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'age_policy')) {
 				$payload['age_policy'] = $agePolicy ?: 'any';
 			}
 			
-			if (Schema::hasColumn('event_occurrences', 'is_snow')) {
+			if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_snow')) {
 				$payload['is_snow'] = (bool)($event->is_snow ?? false);
 			}
 			

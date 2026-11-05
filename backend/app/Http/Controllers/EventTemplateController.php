@@ -73,7 +73,7 @@ class EventTemplateController extends Controller
         $ownerCol = $this->ownerColumn();
         $tpl->{$ownerCol} = (int)$user->id;
 
-        if (Schema::hasColumn('event_templates', 'user_id')) {
+        if (\App\Support\SchemaCache::hasColumn('event_templates', 'user_id')) {
             $tpl->user_id = (int)$user->id;
         }
 
@@ -185,7 +185,7 @@ logger()->info('TPL APPLY HIT', ['tpl' => $eventTemplate->id, 'user' => Auth::id
 
     private function ownerColumn(): string
     {
-        return Schema::hasColumn('event_templates', 'owner_user_id')
+        return \App\Support\SchemaCache::hasColumn('event_templates', 'owner_user_id')
             ? 'owner_user_id'
             : 'user_id';
     }

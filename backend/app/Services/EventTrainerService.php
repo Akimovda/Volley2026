@@ -92,7 +92,7 @@ class EventTrainerService
         if (!$user || !in_array((int) $user->id, array_map('intval', $trainerIds), true)) {
             return false;
         }
-        if (!Schema::hasTable('trainer_profiles')) {
+        if (!\App\Support\SchemaCache::hasTable('trainer_profiles')) {
             return false;
         }
         $profile = TrainerProfile::query()->firstOrCreate(
@@ -118,7 +118,7 @@ class EventTrainerService
     {
         if (
             method_exists($event, 'trainers') &&
-            Schema::hasTable('event_trainers')
+            \App\Support\SchemaCache::hasTable('event_trainers')
         ) {
             $event->trainers()->sync(
                 $needTrainers ? $trainerIds : []

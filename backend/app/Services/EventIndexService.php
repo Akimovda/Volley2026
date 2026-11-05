@@ -25,22 +25,22 @@ class EventIndexService
     {
         $this->visibility = $visibility;
 
-        $this->hasOccurrences   = Schema::hasTable('event_occurrences');
-        $this->hasRegistrations = Schema::hasTable('event_registrations');
+        $this->hasOccurrences   = \App\Support\SchemaCache::hasTable('event_occurrences');
+        $this->hasRegistrations = \App\Support\SchemaCache::hasTable('event_registrations');
 
-        $this->hasCancelledAt = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'cancelled_at');
-        $this->hasIsCancelled = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'is_cancelled');
-        $this->hasStatus      = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'status');
+        $this->hasCancelledAt = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at');
+        $this->hasIsCancelled = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled');
+        $this->hasStatus      = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'status');
 
         $this->locationColumns = $this->detectLocationColumns();
     }
     private function applyActiveOccurrenceScope($query): void
     {
-        if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
             $query->whereNull('cancelled_at');
         }
     
-        if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
             $query->where(function ($q) {
                 $q->whereNull('is_cancelled')
                   ->orWhere('is_cancelled', false);
@@ -182,7 +182,7 @@ class EventIndexService
 
                     // 2b. White-label: мероприятия бренда текущего приложения (в т.ч. приватные)
                     $brandId = $this->visibility->currentBrandId();
-                    if ($brandId !== null && \Schema::hasColumn('events', 'brand_id')) {
+                    if ($brandId !== null && \App\Support\SchemaCache::hasColumn('events', 'brand_id')) {
                         $outer->orWhere(function ($w) use ($brandId) {
                             $w->where('brand_id', $brandId)->where('allow_registration', true);
                         });
@@ -195,18 +195,18 @@ class EventIndexService
 
                     // 4. Свои события (Organizer/Staff) — все включая приватные и неоплаченные
                     if ($userId > 0) {
-                        if (\Schema::hasColumn('events', 'organizer_id')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                             $outer->orWhere('organizer_id', $userId);
                         }
                         foreach (['created_by', 'creator_user_id', 'created_user_id'] as $col) {
-                            if (\Schema::hasColumn('events', $col)) {
+                            if (\App\Support\SchemaCache::hasColumn('events', $col)) {
                                 $outer->orWhere($col, $userId);
                             }
                         }
                     }
 
                     // 5. Staff видит все события своего Organizer
-                    if (!empty($staffOrganizerIds) && \Schema::hasColumn('events', 'organizer_id')) {
+                    if (!empty($staffOrganizerIds) && \App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                         $outer->orWhereIn('organizer_id', $staffOrganizerIds);
                     }
                 });
@@ -227,7 +227,7 @@ class EventIndexService
             // White-label: приложение видит только мероприятия организаторов
             // своего бренда; основное приложение (is_default) видит все бренды
             // (приватность уже отфильтрована выше, это ортогональная ось).
-            if (\Schema::hasColumn('events', 'brand_id')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'brand_id')) {
                 $currentBrand = app(\App\Models\Brand::class);
                 if (!$currentBrand->is_default) {
                     $q->where('brand_id', $currentBrand->id);
@@ -463,7 +463,7 @@ class EventIndexService
 
     private function eventLikesData(array $occurrenceIds, int $userId): array
     {
-        if (empty($occurrenceIds) || !Schema::hasTable('event_likes')) {
+        if (empty($occurrenceIds) || !\App\Support\SchemaCache::hasTable('event_likes')) {
             return [[], []];
         }
 
@@ -639,7 +639,7 @@ class EventIndexService
     */
     private function applyDateFilter($query): void
     {
-        if (!Schema::hasColumn('event_occurrences','starts_at')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_occurrences','starts_at')) {
             return;
         }
     
@@ -651,7 +651,7 @@ class EventIndexService
         |--------------------------------------------------------------------------
         */
     
-        if (Schema::hasColumn('event_occurrences','ends_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences','ends_at')) {
     
             $query->where(function($q) use ($now){
     
@@ -676,7 +676,7 @@ class EventIndexService
         |--------------------------------------------------------------------------
         */
     
-        if (Schema::hasColumn('event_occurrences','duration_sec')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences','duration_sec')) {
     
             $query->whereRaw(
                 "starts_at + ((duration_sec) * interval '1 second') > ?",
@@ -708,10 +708,10 @@ class EventIndexService
     {
         if (is_null($level)) return;
 
-        $hasClassicMin = Schema::hasColumn('events','classic_level_min');
-        $hasClassicMax = Schema::hasColumn('events','classic_level_max');
-        $hasBeachMin   = Schema::hasColumn('events','beach_level_min');
-        $hasBeachMax   = Schema::hasColumn('events','beach_level_max');
+        $hasClassicMin = \App\Support\SchemaCache::hasColumn('events','classic_level_min');
+        $hasClassicMax = \App\Support\SchemaCache::hasColumn('events','classic_level_max');
+        $hasBeachMin   = \App\Support\SchemaCache::hasColumn('events','beach_level_min');
+        $hasBeachMax   = \App\Support\SchemaCache::hasColumn('events','beach_level_max');
 
         if (!$hasClassicMin && !$hasClassicMax && !$hasBeachMin && !$hasBeachMax) {
             return;
@@ -807,7 +807,7 @@ class EventIndexService
         $cols = ['id','name','address','city_id'];
 
         foreach (['lat','lng','latitude','longitude'] as $c) {
-            if (Schema::hasColumn('locations',$c)) {
+            if (\App\Support\SchemaCache::hasColumn('locations',$c)) {
                 $cols[] = $c;
             }
         }

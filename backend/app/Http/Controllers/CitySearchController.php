@@ -33,7 +33,7 @@ class CitySearchController extends Controller
         $hasCyr = (bool) preg_match('/\p{Cyrillic}/u', $q);
         $qNorm = CountryRules::searchNorm($q);
         $likeNorm = '%' . str_replace(['%', '_'], ['\%', '\_'], $qNorm) . '%';
-        $hasAliases = Cache::remember('city_search_aliases_v1', 300, fn () => Schema::hasTable('city_aliases') && Schema::hasColumn('cities', 'is_featured'));
+        $hasAliases = Cache::remember('city_search_aliases_v1', 300, fn () => \App\Support\SchemaCache::hasTable('city_aliases') && \App\Support\SchemaCache::hasColumn('cities', 'is_featured'));
         $useUnaccent = !$hasCyr && Cache::remember('city_search_unaccent_v1', 300, fn () => (int) DB::selectOne("select count(*) c from pg_extension where extname = 'unaccent'")->c > 0);
         $nameCodes = CountryRules::codesMatchingName($q);
 

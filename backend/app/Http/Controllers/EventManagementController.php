@@ -46,21 +46,21 @@ class EventManagementController extends Controller
         }
 
         $regsSub = null;
-        if (Schema::hasTable('event_registrations')) {
+        if (\App\Support\SchemaCache::hasTable('event_registrations')) {
             $regsSub = DB::table('event_registrations')
             ->select('event_id', DB::raw('COUNT(*)::int as active_regs'));
         
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $regsSub->whereNull('cancelled_at');
         }
         
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $regsSub->where(function ($w) {
                 $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
             });
         }
         
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $regsSub->where(function ($w) {
                 $w->whereNull('status')->orWhere('status', 'confirmed');
             });
@@ -70,15 +70,15 @@ class EventManagementController extends Controller
         }
 
         $nextOccSub = null;
-        if (Schema::hasTable('event_occurrences')) {
+        if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $nextOccSub = DB::table('event_occurrences as eo')
                 ->select('eo.event_id', DB::raw('MIN(eo.starts_at) as next_occurrence_starts_at'))
                 ->where('eo.starts_at', '>', $nowUtc);
 
-            if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                 $nextOccSub->whereNull('eo.cancelled_at');
             }
-            if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                 $nextOccSub->where(function ($w) {
                     $w->whereNull('eo.is_cancelled')->orWhere('eo.is_cancelled', false);
                 });
@@ -212,20 +212,20 @@ if ($role === 'admin') {
         }
 
         $activeRegs = 0;
-        if (Schema::hasTable('event_registrations')) {
+        if (\App\Support\SchemaCache::hasTable('event_registrations')) {
             $r = DB::table('event_registrations')->where('event_id', (int) $event->id);
 
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $r->whereNull('cancelled_at');
         }
         
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $r->where(function ($w) {
                 $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
             });
         }
         
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $r->where(function ($w) {
                 $w->whereNull('status')->orWhere('status', 'confirmed');
             });
@@ -1437,7 +1437,7 @@ if ($role === 'admin') {
             $oldTrainerIds = $event->trainers()->pluck('users.id')->map(fn ($v) => (int) $v)->sort()->values()->all();
             $newTrainerIdsSorted = collect($trainerIds)->sort()->values()->all();
 
-            if ($oldTrainerIds !== $newTrainerIdsSorted && !empty($oldTrainerIds) && Schema::hasTable('event_occurrence_trainers')) {
+            if ($oldTrainerIds !== $newTrainerIdsSorted && !empty($oldTrainerIds) && \App\Support\SchemaCache::hasTable('event_occurrence_trainers')) {
                 $pastOccurrenceIds = DB::table('event_occurrences')
                     ->where('event_id', $event->id)
                     ->where('starts_at', '<=', now('UTC'))
@@ -1674,7 +1674,7 @@ if ($role === 'admin') {
                 );
             }
     
-            if (Schema::hasTable('event_occurrences') && $event->starts_at) {
+            if (\App\Support\SchemaCache::hasTable('event_occurrences') && $event->starts_at) {
                 $startUtc = Carbon::parse($event->starts_at, 'UTC');
                 $uniq = "event:{$event->id}:{$startUtc->format('YmdHis')}";
                 $nowUtc = Carbon::now('UTC');
@@ -1684,7 +1684,7 @@ if ($role === 'admin') {
                         ->where('event_id', (int) $event->id)
                         ->where('uniq_key', '!=', $uniq);
     
-                    if (Schema::hasColumn('event_occurrences', 'starts_at')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'starts_at')) {
                         $cleanupQ->where('starts_at', '>=', $nowUtc);
                     }
     
@@ -1692,11 +1692,11 @@ if ($role === 'admin') {
                         'updated_at' => $nowUtc,
                     ];
     
-                    if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                         $payload['cancelled_at'] = $nowUtc;
                     }
     
-                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                         $payload['is_cancelled'] = true;
                     }
     
@@ -1833,7 +1833,7 @@ if ($role === 'admin') {
         if (
             $futureOccurrencesAction === 'cancel'
             && (bool) $event->is_recurring
-            && Schema::hasTable('event_occurrences')
+            && \App\Support\SchemaCache::hasTable('event_occurrences')
         ) {
             $nowUtc = CarbonImmutable::now('UTC');
 
@@ -1869,7 +1869,7 @@ if ($role === 'admin') {
                 // С регистрациями — отменяем и уведомляем
                 if (!empty($withRegs)) {
                     $cancelPayload = ['cancelled_at' => $nowUtc, 'updated_at' => $nowUtc];
-                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                         $cancelPayload['is_cancelled'] = true;
                     }
                     DB::table('event_occurrences')
@@ -1904,7 +1904,7 @@ if ($role === 'admin') {
             $eventId = (int) $event->id;
     
             $occurrenceIds = [];
-            if (Schema::hasTable('event_occurrences')) {
+            if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
                 $occurrenceIds = DB::table('event_occurrences')
                     ->where('event_id', $eventId)
                     ->pluck('id')
@@ -1912,21 +1912,21 @@ if ($role === 'admin') {
                     ->all();
             }
     
-            if (Schema::hasTable('notification_deliveries')) {
-                if (Schema::hasColumn('notification_deliveries', 'event_id')) {
+            if (\App\Support\SchemaCache::hasTable('notification_deliveries')) {
+                if (\App\Support\SchemaCache::hasColumn('notification_deliveries', 'event_id')) {
                     DB::table('notification_deliveries')
                         ->where('event_id', $eventId)
                         ->delete();
                 }
     
-                if (!empty($occurrenceIds) && Schema::hasColumn('notification_deliveries', 'occurrence_id')) {
+                if (!empty($occurrenceIds) && \App\Support\SchemaCache::hasColumn('notification_deliveries', 'occurrence_id')) {
                     DB::table('notification_deliveries')
                         ->whereIn('occurrence_id', $occurrenceIds)
                         ->delete();
                 }
             }
     
-            if (Schema::hasTable('event_trainers') && Schema::hasColumn('event_trainers', 'event_id')) {
+            if (\App\Support\SchemaCache::hasTable('event_trainers') && \App\Support\SchemaCache::hasColumn('event_trainers', 'event_id')) {
                 DB::table('event_trainers')
                     ->where('event_id', $eventId)
                     ->delete();
@@ -1980,7 +1980,7 @@ if ($role === 'admin') {
                 'updated_at' => $now,
             ];
     
-            if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                 $payload['is_cancelled'] = true;
             }
     
@@ -2000,17 +2000,17 @@ if ($role === 'admin') {
                 $event->recurrence_rule = null;
                 $event->save();
     
-                if (Schema::hasTable('event_occurrences')) {
+                if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
                     $q = DB::table('event_occurrences')
                         ->where('event_id', (int) $event->id)
                         ->whereNotNull('starts_at')
                         ->where('starts_at', '>', $now);
     
-                    if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                         $q->whereNull('cancelled_at');
                     }
     
-                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                         $q->where(function ($w) {
                             $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                         });
@@ -2044,7 +2044,7 @@ if ($role === 'admin') {
         $cancelledOccurrenceIds = [];
     
         DB::transaction(function () use ($event, $now, $buildCancelPayload, &$cancelledOccurrenceIds, $isRootRecurring) {
-            if (!Schema::hasTable('event_occurrences')) {
+            if (!\App\Support\SchemaCache::hasTable('event_occurrences')) {
                 return;
             }
     
@@ -2053,11 +2053,11 @@ if ($role === 'admin') {
                 ->whereNotNull('starts_at')
                 ->where('starts_at', '>', $now);
     
-            if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                 $q->whereNull('cancelled_at');
             }
     
-            if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                 $q->where(function ($w) {
                     $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                 });
@@ -2194,9 +2194,9 @@ if ($role === 'admin') {
         */
         $nowUtc = Carbon::now('UTC');
     
-        $hasOccTable = Schema::hasTable('event_occurrences');
-        $occHasCancelledAt = $hasOccTable && Schema::hasColumn('event_occurrences', 'cancelled_at');
-        $occHasIsCancelled = $hasOccTable && Schema::hasColumn('event_occurrences', 'is_cancelled');
+        $hasOccTable = \App\Support\SchemaCache::hasTable('event_occurrences');
+        $occHasCancelledAt = $hasOccTable && \App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at');
+        $occHasIsCancelled = $hasOccTable && \App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled');
     
         $buildCancelPayload = function () use ($nowUtc, $occHasIsCancelled) {
             $payload = [
@@ -2310,28 +2310,28 @@ if ($role === 'admin') {
     }
     private function notifyUsersAboutCancelledEvent(Event $event, ?int $occurrenceId, string $reason): void
     {
-        if (!Schema::hasTable('event_registrations')) {
+        if (!\App\Support\SchemaCache::hasTable('event_registrations')) {
             return;
         }
 
         $q = DB::table('event_registrations')
             ->where('event_id', (int) $event->id);
 
-        if (!is_null($occurrenceId) && Schema::hasColumn('event_registrations', 'occurrence_id')) {
+        if (!is_null($occurrenceId) && \App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
             $q->where('occurrence_id', (int) $occurrenceId);
         }
 
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $q->whereNull('cancelled_at');
         }
 
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $q->where(function ($w) {
                 $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $q->where(function ($w) {
                 $w->whereNull('status')->orWhere('status', 'confirmed');
             });
@@ -2361,7 +2361,7 @@ if ($role === 'admin') {
      */
     private function collectChannelMessagesForOccurrences(array $occurrenceIds): array
     {
-        if (empty($occurrenceIds) || !Schema::hasTable('event_channel_messages')) {
+        if (empty($occurrenceIds) || !\App\Support\SchemaCache::hasTable('event_channel_messages')) {
             return [];
         }
 
@@ -2376,7 +2376,7 @@ if ($role === 'admin') {
 
     private function collectChannelMessagesForEvent(int $eventId): array
     {
-        if (!Schema::hasTable('event_channel_messages')) {
+        if (!\App\Support\SchemaCache::hasTable('event_channel_messages')) {
             return [];
         }
 

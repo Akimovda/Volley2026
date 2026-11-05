@@ -61,7 +61,7 @@ class VolleyballSchoolController extends Controller
         // Остальные залогиненные видят приватные события, на которые уже получили доступ по
         // ссылке /e/{token} (event_private_accesses) — как и в ленте /events.
         $accessEventIds = [];
-        if (!$canSeePrivate && $viewer && Schema::hasTable('event_private_accesses')) {
+        if (!$canSeePrivate && $viewer && \App\Support\SchemaCache::hasTable('event_private_accesses')) {
             $accessEventIds = DB::table('event_private_accesses')
                 ->where('user_id', (int) $viewer->id)
                 ->pluck('event_id')
@@ -103,7 +103,7 @@ class VolleyballSchoolController extends Controller
         // по дням (чипы+навигация) — иначе он пропадал бы целиком, если фильтр
         // по типу/уровню (или навигация на 10 дней вперёд) сузил окно до 0 записей.
         $schoolHasAnyUpcomingEvents = false;
-        if (Schema::hasTable('event_occurrences')) {
+        if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $schoolHasAnyUpcomingEvents = EventOccurrence::query()
                 ->whereHas('event', fn($q) => $q
                     ->where('organizer_id', $school->organizer_id)
@@ -117,7 +117,7 @@ class VolleyballSchoolController extends Controller
 
         $occurrences = collect();
         $windowStart = $today;
-        if (Schema::hasTable('event_occurrences')) {
+        if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $baseOccQuery = EventOccurrence::query()
                 ->whereHas('event', function ($q) use ($school, $fFormat, $fLevel, $filterDirection, $publicOnly) {
                     $q->where('organizer_id', $school->organizer_id)
@@ -213,7 +213,7 @@ class VolleyballSchoolController extends Controller
      */
     private function eventLikesData(array $occurrenceIds, int $userId): array
     {
-        if (empty($occurrenceIds) || !Schema::hasTable('event_likes')) {
+        if (empty($occurrenceIds) || !\App\Support\SchemaCache::hasTable('event_likes')) {
             return [[], []];
         }
 

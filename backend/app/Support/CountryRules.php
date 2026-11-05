@@ -72,7 +72,7 @@ class CountryRules
         return \Illuminate\Support\Facades\Cache::remember('countries_map_v1', 300, function () {
             $map = [];
             try {
-                if (\Illuminate\Support\Facades\Schema::hasTable('countries')) {
+                if (\App\Support\SchemaCache::hasTable('countries')) {
                     foreach (\Illuminate\Support\Facades\DB::table('countries')->get() as $r) {
                         $map[$r->code] = [$r->name_ru, $r->name_en, $r->alt_ru, $r->alt_en, (bool) $r->is_active];
                     }

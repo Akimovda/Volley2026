@@ -217,7 +217,7 @@ final class BroadcastService
                 ->where('max_chat_id', '!=', '');
         }
 
-        if (!empty($filters['city']) && Schema::hasColumn('users', 'city')) {
+        if (!empty($filters['city']) && \App\Support\SchemaCache::hasColumn('users', 'city')) {
             $q->where('city', 'ilike', '%' . $filters['city'] . '%');
         }
 

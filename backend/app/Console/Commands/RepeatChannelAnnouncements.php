@@ -28,7 +28,7 @@ class RepeatChannelAnnouncements extends Command
 
     public function handle(): int
     {
-        if (!Schema::hasColumn('event_notification_channels', 'repeat_interval_days')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_notification_channels', 'repeat_interval_days')) {
             return self::SUCCESS;
         }
 

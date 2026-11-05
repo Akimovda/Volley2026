@@ -735,19 +735,19 @@ class EventGameSettingsService
                 'reserve_players_max' => null,
             ];
 
-            if (Schema::hasColumn('event_game_settings', 'gender_policy')) {
+            if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_policy')) {
                 $egsPayload['gender_policy'] = $gender['genderPolicy'] ?: ($data['game_gender_policy'] ?? null);
             }
-            if (Schema::hasColumn('event_game_settings', 'gender_limited_side')) {
+            if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_side')) {
                 $egsPayload['gender_limited_side'] = $gender['genderLimitedSide'] ?? ($data['game_gender_limited_side'] ?? null);
             }
-            if (Schema::hasColumn('event_game_settings', 'gender_limited_max')) {
+            if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_max')) {
                 $egsPayload['gender_limited_max'] = $gender['genderLimitedMax'] ?? ($data['game_gender_limited_max'] ?? null);
             }
-            if (Schema::hasColumn('event_game_settings', 'gender_limited_positions')) {
+            if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_positions')) {
                 $egsPayload['gender_limited_positions'] = $gender['genderLimitedPositions'] ?? ($data['game_gender_limited_positions'] ?? null);
             }
-            if (Schema::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
+            if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
                 $rawDays = $data['game_gender_limited_reg_starts_days_before'] ?? null;
                 $egsPayload['gender_limited_reg_starts_days_before'] = ($rawDays === null || $rawDays === '') ? null : (int) $rawDays;
             }
@@ -927,30 +927,30 @@ class EventGameSettingsService
             $egsPayload['subtype'] = ($direction === 'beach') ? '2x2' : '4x2';
         }
     
-        if (Schema::hasColumn('event_game_settings', 'gender_policy')) {
+        if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_policy')) {
             $egsPayload['gender_policy'] =
                 $gender['genderPolicy'] ?: ($data['game_gender_policy'] ?? null);
          }
         
-        if (Schema::hasColumn('event_game_settings', 'gender_limited_side')) {
+        if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_side')) {
             $egsPayload['gender_limited_side'] =
                 $gender['genderLimitedSide']
                 ?? ($data['game_gender_limited_side'] ?? null);
         }
         
-        if (Schema::hasColumn('event_game_settings', 'gender_limited_max')) {
+        if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_max')) {
             $egsPayload['gender_limited_max'] =
                 $gender['genderLimitedMax']
                 ?? ($data['game_gender_limited_max'] ?? null);
         }
         
-        if (Schema::hasColumn('event_game_settings', 'gender_limited_positions')) {
+        if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_positions')) {
             $egsPayload['gender_limited_positions'] =
                 $gender['genderLimitedPositions']
                 ?? ($data['game_gender_limited_positions'] ?? null);
         }
 
-        if (Schema::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
+        if (\App\Support\SchemaCache::hasColumn('event_game_settings', 'gender_limited_reg_starts_days_before')) {
             $rawDays = $data['game_gender_limited_reg_starts_days_before'] ?? null;
             $egsPayload['gender_limited_reg_starts_days_before'] =
                 ($rawDays === null || $rawDays === '') ? null : (int) $rawDays;
