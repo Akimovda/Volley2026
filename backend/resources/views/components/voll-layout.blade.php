@@ -1114,7 +1114,7 @@
 							title: @json(__('ui.biometric_login_title')),
 						}),
 						new Promise(function(_, reject) {
-							setTimeout(function() { reject(new Error('timeout')); }, 5000);
+							setTimeout(function() { reject(new Error('timeout')); }, 30000);
 						})
 						]);
 						
@@ -1140,7 +1140,8 @@
 						}
 						} catch(e) {
 						console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
-						localStorage.setItem('biometricFailedAt', Date.now().toString());
+						// по таймауту повторять можно сразу; после отмены/ошибки — не раньше чем через минуту
+						if (e.message !== 'timeout') localStorage.setItem('biometricFailedAt', Date.now().toString());
 						window._biometricInProgress = false;
 						// Не делаем redirect — сервер уже перенаправил на /events
 					}
@@ -1194,6 +1195,9 @@
 						} catch (e) { /* нет credentials — предложить */ }
 						
 						if (sessionStorage.getItem('biometric_offered')) return;
+						if (localStorage.getItem('biometric_never')) return;
+						var laterUntil = parseInt(localStorage.getItem('biometric_later_until') || '0');
+						if (laterUntil && Date.now() < laterUntil) return;
 						sessionStorage.setItem('biometric_offered', 'true');
 						
 						var result = await swal({
@@ -1202,10 +1206,12 @@
 							icon: 'info',
 							buttons: {
 								cancel: @json(__('ui.biometric_setup_later')),
+								never: { text: @json(__('ui.biometric_setup_never')), value: 'never' },
 								confirm: @json(__('ui.biometric_setup_enable'))
 							}
 						});
-						if (!result) return;
+						if (result === 'never') { localStorage.setItem('biometric_never', '1'); return; }
+						if (!result) { localStorage.setItem('biometric_later_until', String(Date.now() + 7 * 86400000)); return; }
 						
 						var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
 							return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);

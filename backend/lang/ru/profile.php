@@ -130,6 +130,11 @@ return [
     // Face ID секция
     'sec_quick_login'      => 'Быстрый вход',
     'quick_login_lead'     => 'Face ID / Touch ID для входа в приложение.',
+    'face_devices_title'   => 'Устройства с Face ID / Touch ID',
+    'face_device_current'  => 'это устройство',
+    'face_device_last'     => 'последний вход',
+    'face_device_never_used' => 'ещё не использовалось',
+    'face_device_remove'   => 'Отключить',
     'face_disable_btn'     => 'Отключить Face ID',
     'face_enable_btn'      => 'Включить Face ID',
     'face_unavailable'     => 'Face ID / Touch ID недоступен на этом устройстве.',

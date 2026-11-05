@@ -38,12 +38,15 @@ class BiometricController extends Controller
 
     public function login(Request $request): JsonResponse
     {
-        $user = $this->resolveUser($request);
+        [$user, $device] = $this->resolve($request);
         if (!$user) {
             return response()->json(['error' => 'Неверный токен биометрической авторизации.'], 401);
         }
 
-        $accessToken = $user->createToken('biometric')->plainTextToken;
+        // один API-токен на устройство: прежние токены этого устройства (и прежней схемы) удаляем, чтобы не копились
+        $name = 'biometric:' . $device->id;
+        $user->tokens()->whereIn('name', [$name, 'biometric'])->delete();
+        $accessToken = $user->createToken($name)->plainTextToken;
 
         return response()->json([
             'access_token' => $accessToken,
@@ -53,7 +56,7 @@ class BiometricController extends Controller
 
     public function webLogin(Request $request): JsonResponse
     {
-        $user = $this->resolveUser($request);
+        [$user] = $this->resolve($request);
         if (!$user) {
             return response()->json(['error' => 'Неверный токен биометрической авторизации.'], 401);
         }
@@ -67,31 +70,57 @@ class BiometricController extends Controller
     /** С biometric_token — отключает только это устройство, без него — все устройства пользователя. */
     public function revoke(Request $request): JsonResponse
     {
-        $query = BiometricDevice::where('user_id', $request->user()->id);
+        $userId = $request->user()->id;
         $token = (string) $request->input('biometric_token', '');
-        if ($token !== '') {
-            $query->where('token_hash', BiometricDevice::hashToken($token));
+        if ($token === '') {
+            BiometricDevice::revokeFor($userId);
+        } else {
+            $ids = BiometricDevice::where('user_id', $userId)->where('token_hash', BiometricDevice::hashToken($token))->pluck('id')->all();
+            BiometricDevice::revokeFor($userId, $ids);
         }
-        $query->delete();
 
         return response()->json(['ok' => true]);
     }
 
-    private function resolveUser(Request $request): ?User
+    /** Список устройств пользователя; с biometric_token помечает текущее. */
+    public function devices(Request $request): JsonResponse
+    {
+        $token = (string) $request->input('biometric_token', '');
+        $mine = $token !== '' ? BiometricDevice::hashToken($token) : null;
+
+        $list = BiometricDevice::where('user_id', $request->user()->id)
+            ->orderByRaw('COALESCE(last_used_at, created_at) DESC')->get()
+            ->map(fn ($d) => [
+                'id'           => $d->id,
+                'label'        => $d->label ?: 'Other',
+                'created_at'   => $d->created_at?->toIso8601String(),
+                'last_used_at' => $d->last_used_at?->toIso8601String(),
+                'current'      => $mine !== null && hash_equals($d->token_hash, $mine),
+            ])->values();
+
+        return response()->json(['devices' => $list]);
+    }
+
+    public function destroyDevice(Request $request, int $id): JsonResponse
+    {
+        BiometricDevice::revokeFor($request->user()->id, [$id]);
+
+        return response()->json(['ok' => true]);
+    }
+
+    /** @return array{0: ?User, 1: ?BiometricDevice} */
+    private function resolve(Request $request): array
     {
         $validated = $request->validate(self::RULES);
 
         $device = BiometricDevice::where('token_hash', BiometricDevice::hashToken($validated['biometric_token']))->first();
-        if (!$device) {
-            return null;
-        }
-        $user = User::find($device->user_id); // удалённые (soft delete) не входят
+        $user = $device ? User::find($device->user_id) : null; // удалённые (soft delete) не входят
         if (!$user) {
-            return null;
+            return [null, null];
         }
         $device->forceFill(['last_used_at' => now()])->save();
 
-        return $user;
+        return [$user, $device];
     }
 
     private function deviceLabel(Request $request): string

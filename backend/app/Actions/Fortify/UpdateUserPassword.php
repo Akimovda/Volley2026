@@ -28,5 +28,8 @@ class UpdateUserPassword implements UpdatesUserPasswords
         $user->forceFill([
             'password' => Hash::make($input['password']),
         ])->save();
+
+        // смена пароля отключает Face ID / Touch ID на всех устройствах
+        \App\Models\BiometricDevice::revokeFor($user->id);
     }
 }

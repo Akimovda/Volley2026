@@ -118,6 +118,7 @@ return [
     'biometric_setup_title'  => 'Быстрый вход',
     'biometric_setup_text'   => 'Хотите входить по Face ID / Touch ID?',
     'biometric_setup_later'  => 'Позже',
+    'biometric_setup_never'  => 'Больше не спрашивать',
     'biometric_setup_enable' => 'Включить',
     'biometric_done_title'   => 'Готово!',
     'biometric_done_text'    => 'Face ID / Touch ID включён. В следующий раз вы войдёте мгновенно.',

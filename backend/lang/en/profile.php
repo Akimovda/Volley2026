@@ -130,6 +130,11 @@ return [
     // Face ID section
     'sec_quick_login'      => 'Quick sign-in',
     'quick_login_lead'     => 'Face ID / Touch ID for signing into the app.',
+    'face_devices_title'   => 'Devices with Face ID / Touch ID',
+    'face_device_current'  => 'this device',
+    'face_device_last'     => 'last used',
+    'face_device_never_used' => 'not used yet',
+    'face_device_remove'   => 'Remove',
     'face_disable_btn'     => 'Disable Face ID',
     'face_enable_btn'      => 'Enable Face ID',
     'face_unavailable'     => 'Face ID / Touch ID is not available on this device.',

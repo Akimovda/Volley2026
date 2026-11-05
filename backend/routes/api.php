@@ -79,6 +79,8 @@ Route::middleware('auth:sanctum,web')->group(function () {
 Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login'])->middleware('throttle:20,1');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])->middleware('block.impersonation');
+    Route::post('/biometric/devices', [\App\Http\Controllers\Api\BiometricController::class, 'devices']);
+    Route::delete('/biometric/devices/{id}', [\App\Http\Controllers\Api\BiometricController::class, 'destroyDevice'])->whereNumber('id')->middleware('block.impersonation');
     Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke'])->middleware('block.impersonation');
 });
 

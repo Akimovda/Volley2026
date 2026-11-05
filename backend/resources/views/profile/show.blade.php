@@ -679,6 +679,7 @@
 					<h2 class="-mt-05">{{ __('profile.sec_quick_login') }}</h2>
 					<p>{{ __('profile.quick_login_lead') }}</p>
 					<div id="biometric-status" class="mb-2"></div>
+					<div id="biometric-devices" class="mb-2"></div>
 					<button id="biometric-disable-btn" class="btn btn-secondary btn-small" style="display:none">
 						{{ __('profile.face_disable_btn') }}
 					</button>
@@ -1781,6 +1782,7 @@
 		var enableBtn    = document.getElementById('biometric-enable-btn');
 
 		async function refreshStatus() {
+			if (typeof loadDevices === 'function') loadDevices();
 			try {
 				var avail = await NativeBiometric.isAvailable();
 				if (!avail.isAvailable) {
@@ -1802,6 +1804,52 @@
 			} catch (e) {
 				if (statusEl) statusEl.textContent = @json(__('profile.face_status_error'));
 			}
+		}
+
+		var devicesEl = document.getElementById('biometric-devices');
+		var csrf = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
+		async function myBiometricToken() {
+			try { var c = await NativeBiometric.getCredentials({ server: 'volleyplay.club' }); return (c && c.password) || ''; } catch (e) { return ''; }
+		}
+		function fmtDate(iso) { try { return new Date(iso).toLocaleString(document.documentElement.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return iso; } }
+		async function loadDevices() {
+			if (!devicesEl) return;
+			try {
+				var r = await fetch('/api/biometric/devices', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() },
+					credentials: 'same-origin',
+					body: JSON.stringify({ biometric_token: await myBiometricToken() })
+				});
+				if (!r.ok) return;
+				var list = (await r.json()).devices || [];
+				devicesEl.innerHTML = '';
+				if (!list.length) return;
+				var h = document.createElement('div');
+				h.style.fontWeight = '600';
+				h.textContent = @json(__('profile.face_devices_title'));
+				devicesEl.appendChild(h);
+				list.forEach(function (d) {
+					var row = document.createElement('div');
+					row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.6rem;font-size:1.4rem';
+					var txt = document.createElement('span');
+					txt.textContent = d.label + (d.current ? ' · ' + @json(__('profile.face_device_current')) : '') + ' · ' +
+						(d.last_used_at ? @json(__('profile.face_device_last')) + ' ' + fmtDate(d.last_used_at) : @json(__('profile.face_device_never_used')));
+					var b = document.createElement('button');
+					b.type = 'button'; b.className = 'btn btn-secondary btn-small';
+					b.textContent = @json(__('profile.face_device_remove'));
+					b.addEventListener('click', async function () {
+						b.disabled = true;
+						try {
+							await fetch('/api/biometric/devices/' + d.id, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() }, credentials: 'same-origin' });
+							if (d.current) { await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' }); }
+							await refreshStatus();
+						} catch (e) { b.disabled = false; }
+					});
+					row.appendChild(txt); row.appendChild(b);
+					devicesEl.appendChild(row);
+				});
+			} catch (e) { /* список — вспомогательный */ }
 		}
 
 		if (disableBtn) {
