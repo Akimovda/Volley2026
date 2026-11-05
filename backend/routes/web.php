@@ -406,7 +406,8 @@ Route::post('/auth/telegram/miniapp', [TelegramAuthController::class, 'miniapp']
 Route::get('/auth/tma-status', [TmaAuthController::class, 'status'])->name('auth.tma.status');
 Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name('auth.tma.exchange');
 	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.vk.redirect');
-	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.vk.callback');
+	// block(): параллельные callback одной сессии (пачка нажатий «Разрешить») выполняются по очереди — второй увидит уже созданный вход
+	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.yandex.redirect');
 	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
 	Route::get('/auth/max', [\App\Http\Controllers\Auth\MaxAuthController::class, 'page'])->middleware('no-store-html')->name('auth.max.page');

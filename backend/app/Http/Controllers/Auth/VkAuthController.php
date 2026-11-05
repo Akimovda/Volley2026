@@ -69,6 +69,13 @@ class VkAuthController extends Controller
 
     public function callback(Request $request)
     {
+        // Повторный callback: VK выдаёт новый код при каждом нажатии «Разрешить», и до нас доходит пачка вызовов.
+        // Пользователь уже вошёл и ожидающей привязки VK нет — ничего не обрабатываем, просто ведём дальше
+        // (иначе повтор шёл как «привязка» и мог показать ошибку или перезаписать сессию).
+        if (Auth::check() && $request->session()->get('oauth_intent') !== 'link') {
+            return redirect()->to($this->popReturnTo($request));
+        }
+
         $returnTo = $this->popReturnTo($request);
 
         try {
