@@ -61,6 +61,12 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request)
     {
+        // Повторный callback (двойной тап, провайдер повторно возвращает пользователя): пользователь уже вошёл и ожидающей
+        // привязки нет — ничего не обрабатываем, ведём дальше (иначе повтор шёл как «привязка» и мог показать ошибку или затереть сессию).
+        if (Auth::check() && $request->session()->get('oauth_intent') !== 'link') {
+            return redirect()->to($this->popReturnTo($request));
+        }
+
         $returnTo = $this->popReturnTo($request);
 
         try {

@@ -400,7 +400,7 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     ->name('league.reserve.confirm');
 
 Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
-Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.telegram.callback');
+Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.telegram.callback');
 Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->middleware('no-store-html')->name('auth.telegram.webapp');
 Route::post('/auth/telegram/miniapp', [TelegramAuthController::class, 'miniapp'])->name('auth.telegram.miniapp');
 Route::get('/auth/tma-status', [TmaAuthController::class, 'status'])->name('auth.tma.status');
@@ -409,14 +409,14 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	// block(): параллельные callback одной сессии (пачка нажатий «Разрешить») выполняются по очереди — второй увидит уже созданный вход
 	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.yandex.redirect');
-	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
+	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.yandex.callback');
 	Route::get('/auth/max', [\App\Http\Controllers\Auth\MaxAuthController::class, 'page'])->middleware('no-store-html')->name('auth.max.page');
 	Route::get('/auth/max/status/{id}', [\App\Http\Controllers\Auth\MaxAuthController::class, 'status'])->where('id', '[A-Za-z0-9]{40}')->middleware(['no-store-html', 'throttle:150,10'])->name('auth.max.status');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
-	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
+	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->block(10, 10)->name('auth.apple.callback');
 	Route::post('/auth/apple/native-callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'nativeCallback'])->name('auth.apple.native_callback');
 	Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.google.redirect');
-	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
+	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.google.callback');
 	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->middleware('throttle:20,1')->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->middleware('throttle:5,1')->name('auth.review.login');
