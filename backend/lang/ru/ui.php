@@ -114,13 +114,13 @@ return [
 
     // Face ID / биометрия
     'biometric_login_reason' => 'Войти в VolleyPlay',
-    'biometric_login_title'  => 'Вход по Face ID',
+    'biometric_login_title'  => 'Вход по Face ID / Touch ID',
     'biometric_setup_title'  => 'Быстрый вход',
-    'biometric_setup_text'   => 'Хотите входить по Face ID?',
+    'biometric_setup_text'   => 'Хотите входить по Face ID / Touch ID?',
     'biometric_setup_later'  => 'Позже',
     'biometric_setup_enable' => 'Включить',
     'biometric_done_title'   => 'Готово!',
-    'biometric_done_text'    => 'Face ID включён. В следующий раз вы войдёте мгновенно.',
+    'biometric_done_text'    => 'Face ID / Touch ID включён. В следующий раз вы войдёте мгновенно.',
 
     // Пагинация
     'pagination_jump_back'    => 'Назад на :n',

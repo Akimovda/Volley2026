@@ -114,13 +114,13 @@ return [
 
     // Face ID / biometrics
     'biometric_login_reason' => 'Sign in to VolleyPlay',
-    'biometric_login_title'  => 'Sign in with Face ID',
+    'biometric_login_title'  => 'Sign in with Face ID / Touch ID',
     'biometric_setup_title'  => 'Quick sign-in',
-    'biometric_setup_text'   => 'Would you like to sign in with Face ID?',
+    'biometric_setup_text'   => 'Would you like to sign in with Face ID / Touch ID?',
     'biometric_setup_later'  => 'Later',
     'biometric_setup_enable' => 'Enable',
     'biometric_done_title'   => 'Done!',
-    'biometric_done_text'    => 'Face ID is enabled. Next time you\'ll sign in instantly.',
+    'biometric_done_text'    => 'Face ID / Touch ID is enabled. Next time you\'ll sign in instantly.',
 
     // Pagination
     'pagination_jump_back'    => 'Back :n',
