@@ -1134,7 +1134,8 @@
 							localStorage.removeItem('biometricFailedAt');
 							window._biometricInProgress = false;
 							window.location.href = data.redirect || '/events';
-							} else if (resp.status === 422) {
+							} else if (resp.status === 422 || resp.status === 401) {
+							// токен на сервере не найден (сброшен/перезаписан/восстановление из бэкапа) — стираем устаревший, чтобы после обычного входа снова предложили включить Face ID
 							await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 						}
 						} catch(e) {
