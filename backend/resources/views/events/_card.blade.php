@@ -340,7 +340,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 				data-beach-max="{{ e($bMax) }}"
 				>
 					@if(!empty($upcomingDismiss))
-					<button type="button" class="upcoming-dismiss" data-upcoming-dismiss aria-label="{{ __('events.upcoming_dismiss') }}" title="{{ __('events.upcoming_dismiss') }}">&times;</button>
+					<button type="button" class="upcoming-dismiss" data-upcoming-dismiss aria-label="{{ __('events.upcoming_dismiss') }}" title="{{ __('events.upcoming_dismiss') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>
 					@endif
 					{{-- Фото --}}
 					

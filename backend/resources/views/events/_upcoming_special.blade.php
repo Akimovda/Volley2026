@@ -32,8 +32,11 @@
 	.upcoming-special-head .day-section-title { margin-bottom:0; min-width:0; flex:1 1 auto; white-space:normal; }
 	.upcoming-special-arrows { margin-left:auto; }
 	.upcoming-special-list .event-card { position:relative; }
-	.upcoming-dismiss { position:absolute; top:.6rem; right:.6rem; z-index:5; width:3.2rem; height:3.2rem; border-radius:50%; border:0; background:rgba(0,0,0,.3); color:rgba(255,255,255,.7); font-size:2.2rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 .2rem; }
-	.upcoming-dismiss:hover { background:rgba(0,0,0,.6); color:#fff; }
+	/* крестик — в стиле стрелок календаря дат (.day-nav-arrow): светлый кружок с контуром, цвет бренда */
+	.upcoming-dismiss { position:absolute; top:.6rem; right:.6rem; z-index:5; width:3.2rem; height:3.2rem; border-radius:50%; border:.2rem solid rgba(41,103,186,.25); background:rgba(255,255,255,.7); color:#2967BA; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; }
+	.upcoming-dismiss:hover { background:#2967BA; color:#fff; border-color:#2967BA; }
+	body.dark .upcoming-dismiss { background:rgba(255,255,255,.06); color:#E7612F; border-color:rgba(231,97,45,.35); }
+	body.dark .upcoming-dismiss:hover { background:#E7612F; color:#fff; border-color:#E7612F; }
 	/* кнопки заголовка (скрыть блок, стрелки) — приглушённые, чтобы не перетягивали внимание */
 	.upcoming-special-arrows button { opacity:.55; border-color:rgba(128,128,128,.25); }
 	.upcoming-special-arrows button:hover:not(:disabled) { opacity:.9; }
