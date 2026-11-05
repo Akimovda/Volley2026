@@ -174,7 +174,8 @@ class YandexAuthController extends Controller
             $user->name      = trim(($yaUser->getName() ?: '') ?: 'Пользователь');
             $user->yandex_id = $yandexId;
 
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'yandex_id', $yandexId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         } else {
             // Для существующих — обновляем пол и телефон если отсутствуют
             $changed = false;

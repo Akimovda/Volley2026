@@ -173,7 +173,8 @@ class MaxAuthController extends Controller
                 $user->max_linked_at = now();
                 $user->max_notifications_enabled = true;
             }
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'max_user_id', $mid);
+            $isNew = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         $a->update(['status' => 'used']);

@@ -417,7 +417,8 @@ class TelegramAuthController extends Controller
                 $user->telegram_username = $username;
             }
 
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'telegram_id', $tgId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
@@ -549,7 +550,8 @@ class TelegramAuthController extends Controller
             if (!empty($username)) {
                 $user->telegram_username = $username;
             }
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'telegram_id', $tgId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);

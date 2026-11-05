@@ -157,7 +157,8 @@ class VkAuthController extends Controller
             $user->password = Hash::make(Str::random(32));
             $user->name     = trim(($vkUser->getName() ?: '') ?: 'Пользователь');
             $user->vk_id    = $vkId;
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'vk_id', $vkId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);

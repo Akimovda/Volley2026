@@ -152,7 +152,8 @@ class AppleAuthController extends Controller
             $user->password   = Hash::make(Str::random(32));
             $user->name       = $rawName ?: 'Apple User';
             $user->apple_id   = $appleId;
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'apple_id', $appleId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
@@ -328,7 +329,8 @@ class AppleAuthController extends Controller
                 $user->first_name = $firstName;
                 $user->last_name  = $lastName;
             }
-            $user->save();
+            $user = \App\Support\RaceSafeUserSave::save($user, 'apple_id', $appleId);
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
