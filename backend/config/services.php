@@ -37,6 +37,11 @@ return [
         'queue' => env('KUMA_PUSH_QUEUE'),
         'retry_failed' => env('KUMA_PUSH_RETRY_FAILED'),
         'expand_recurring' => env('KUMA_PUSH_EXPAND_RECURRING'),
+        // метрики сервера (ops:report-metrics)
+        'disk' => env('KUMA_PUSH_DISK'),
+        'memory' => env('KUMA_PUSH_MEMORY'),
+        'load' => env('KUMA_PUSH_LOAD'),
+        'queue_backlog' => env('KUMA_PUSH_QUEUE_BACKLOG'),
     ],
 
     'vk' => [

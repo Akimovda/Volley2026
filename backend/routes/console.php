@@ -159,6 +159,16 @@ Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
     ->withoutOverlapping();
 
+// Метрики сервера (диск, память, нагрузка, очередь) → Uptime Kuma, каждые 5 минут
+Schedule::command('ops:report-metrics')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Плановая чистка разрастающихся служебных таблиц (записи старше 45 дней), раз в сутки ночью
+Schedule::command('maintenance:prune-old-records --days=45')
+    ->dailyAt('03:40')
+    ->withoutOverlapping();
+
 // Повтор анонсов в каналы для кемпов, мастер-классов и турниров (настройка «Повторять анонс»: раз в 7 / 14 дней) — каждые 15 минут.
 Schedule::command('events:repeat-announcements --limit=50')
     ->everyFifteenMinutes()
