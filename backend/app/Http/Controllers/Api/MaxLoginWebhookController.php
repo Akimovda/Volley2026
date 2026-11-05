@@ -95,7 +95,7 @@ class MaxLoginWebhookController extends Controller
         if (hash_equals((string) $attempt->code, $digits)) {
             $attempt->update(['status' => 'approved', 'approved_at' => now()]);
 
-            return response()->json(['ok' => true, 'message' => '✅ Готово! Вернитесь на сайт — вход выполнится автоматически.']);
+            return response()->json(['ok' => true, 'message' => '✅ Готово!👌 📲 Вернитесь в VolleyClub — вход выполнится автоматически.']);
         }
 
         $attempt->increment('attempts');
