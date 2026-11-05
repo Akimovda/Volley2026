@@ -63,7 +63,7 @@ class MaxLoginWebhookController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => "{$what}.\n\nВведите в этот чат 4-значный код, который показан на сайте.\n\nЕсли вы не начинали вход на сайте — просто проигнорируйте это сообщение.",
+            'message' => "{$what}.\n\nВведите в этот чат 4-значный код, который показан в VolleyClub.\n\nЕсли вы не начинали вход в VolleyClub — просто проигнорируйте это сообщение.",
         ]);
     }
 
