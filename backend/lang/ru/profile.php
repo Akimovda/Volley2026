@@ -130,8 +130,8 @@ return [
     // Face ID секция
     'sec_quick_login'      => 'Быстрый вход',
     'quick_login_lead'     => 'Face ID / Touch ID для входа в приложение.',
-    'upcoming_sec_title'   => 'Блок «Скоро»',
-    'upcoming_show_label'  => 'Показывать блок «Скоро: кемпы, мастер-классы, турниры» на странице мероприятий',
+    'upcoming_sec_title'   => 'Блок «Промо»',
+    'upcoming_show_label'  => 'Показывать блок «Промо» (кемпы, мастер-классы, турниры) на странице мероприятий',
     'upcoming_reset_btn'   => 'Показать скрытые мероприятия',
     'face_devices_title'   => 'Устройства с Face ID / Touch ID',
     'face_device_current'  => 'это устройство',
