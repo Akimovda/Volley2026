@@ -1000,6 +1000,14 @@
 								<p class="f-14 mt-05" style="opacity:.7;">
 									{{ $__regChannels->isEmpty() ? __('profile.notif_org_dest_none') : __('profile.notif_org_dest_hint') }}
 								</p>
+								{{-- Выбран канал с персональным ботом, а Организатор Pro не активен → отправка идёт через бота VolleyClub, которого в этом канале может не быть --}}
+								@php $__regSel = $__regChannels->firstWhere('id', $__regSelected); @endphp
+								@if($__regSel && $__regSel->isPersonalBot() && !$u->isOrganizerPro())
+								<div class="alert alert-warning mt-1" style="max-width:520px">
+									{{ __('profile.notif_org_pro_warn', ['bot' => '@' . ltrim((string) $__regSel->user_bot_username, '@')]) }}
+									<a href="{{ route('organizer_pro.index') }}" class="b-600">{{ __('profile.notif_org_pro_warn_link') }}</a>
+								</div>
+								@endif
 								@if($__regSelected > 0 && $__regChannels->contains('id', $__regSelected))
 								<label class="checkbox-item mt-1">
 									<input type="hidden" name="registration_also_dm" value="0">

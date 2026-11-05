@@ -192,6 +192,8 @@ return [
     'notif_org_dest_topic' => 'topic #:n',
     'notif_org_dest_own_bot' => 'your bot :bot',
     'notif_org_dest_sys_bot' => 'VolleyClub bot',
+    'notif_org_pro_warn'      => 'Your Organizer Pro subscription is not active, so your bot :bot is not used: registration notifications are sent by the VolleyClub bot. If it is not in this channel, messages will not arrive. Renew Pro or add the VolleyClub bot to the channel as an administrator.',
+    'notif_org_pro_warn_link' => 'Organizer Pro',
     'notif_org_dest_hint'  => 'You can pick your own group, channel or forum topic — connect them below in “Notification channels”. The message is sent by the bot connected to that channel (your personal bot with an active Organizer Pro, otherwise the VolleyClub bot). Notifications on the site and in the app stay on.',
     'notif_org_dest_none'  => 'To receive notifications in a group, channel or forum topic, connect it first below in “Notification channels” (Telegram or MAX).',
     'notif_org_also_dm'    => 'Also send as direct messages',
