@@ -1206,17 +1206,28 @@
 						if (laterUntil && Date.now() < laterUntil) return;
 						sessionStorage.setItem('biometric_offered', 'true');
 						
-						var result = await swal({
+						var neverClicked = false;
+						var dlg = swal({
 							title: @json(__('ui.biometric_setup_title')),
 							text: @json(__('ui.biometric_setup_text')),
 							icon: 'info',
+							className: 'swal-biometric',
 							buttons: {
 								cancel: @json(__('ui.biometric_setup_later')),
-								never: { text: @json(__('ui.biometric_setup_never')), value: 'never' },
 								confirm: @json(__('ui.biometric_setup_enable'))
 							}
 						});
-						if (result === 'never') { localStorage.setItem('biometric_never', '1'); return; }
+						// «Больше не спрашивать» — ссылка под кнопками
+						var footer = document.querySelector('.swal-biometric .swal-footer');
+						if (footer) {
+							var never = document.createElement('a');
+							never.className = 'swal-biometric-never';
+							never.textContent = @json(__('ui.biometric_setup_never'));
+							never.addEventListener('click', function () { neverClicked = true; swal.close(); });
+							footer.appendChild(never);
+						}
+						var result = await dlg;
+						if (neverClicked) { localStorage.setItem('biometric_never', '1'); return; }
 						if (!result) { localStorage.setItem('biometric_later_until', String(Date.now() + 7 * 86400000)); return; }
 						
 						var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {

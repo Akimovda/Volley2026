@@ -731,6 +731,39 @@ body.dark .swal-modal {
     background: #222333;
 }
 
+/* Иконка «успех»: маскирующие элементы закрашены цветом окна — в тёмной теме они были белыми и ломали анимацию */
+body.dark .swal-icon--success:before,
+body.dark .swal-icon--success:after,
+body.dark .swal-icon--success__hide-corners {
+    background: #222333;
+}
+
+/* Окно «Быстрый вход» (Face ID): две одинаковые кнопки в ряд + ссылка «Больше не спрашивать» под ними */
+.swal-biometric .swal-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+.swal-biometric .swal-button-container {
+    flex: 1 1 0;
+    margin: 0;
+}
+.swal-biometric .swal-button {
+    width: 100%;
+}
+.swal-biometric .swal-biometric-never {
+    flex: 0 0 100%;
+    margin-top: 0.4rem;
+    font-size: 1.3rem;
+    opacity: 0.7;
+    text-decoration: underline;
+    cursor: pointer;
+}
+.swal-biometric .swal-biometric-never:hover {
+    opacity: 1;
+}
+
 /* Анимация */
 @keyframes showSweetAlert {
     0% { transform: scale(1); }
