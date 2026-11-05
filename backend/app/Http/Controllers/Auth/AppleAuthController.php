@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -18,31 +19,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class AppleAuthController extends Controller
 {
-    private function storeReturnTo(Request $request): void
-    {
-        $returnTo = (string) ($request->query('return') ?: url()->previous() ?: '');
-        $request->session()->put('oauth_return_to', $this->sanitizeReturnTo($returnTo));
-    }
-
-    private function sanitizeReturnTo(string $url): string
-    {
-        $fallback = url('/events');
-        $url = trim($url);
-        if ($url === '') return $fallback;
-
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) return $fallback;
-        if (str_contains($url, '/auth/') || str_contains($url, '/logout')) return $fallback;
-
-        return $url;
-    }
-
-    private function popReturnTo(Request $request): string
-    {
-        return (string) $request->session()->pull('oauth_return_to', url('/events'));
-    }
+    use OAuthCallbackSupport;
 
     public function redirect(Request $request)
     {
@@ -59,17 +36,15 @@ class AppleAuthController extends Controller
 
     public function callback(Request $request)
     {
-        // Повторный callback (двойной тап, провайдер повторно возвращает пользователя): пользователь уже вошёл и ожидающей
-        // привязки нет — ничего не обрабатываем, ведём дальше (иначе повтор шёл как «привязка» и мог показать ошибку или затереть сессию).
-        if (Auth::check() && $request->session()->get('oauth_intent') !== 'link') {
-            return redirect()->to($this->popReturnTo($request));
+        if ($dup = $this->duplicateCallbackRedirect($request)) {
+            return $dup;
         }
 
         $returnTo = $this->popReturnTo($request);
 
         if ($request->has('error')) {
             Log::warning('[APPLE_OAUTH] error', ['error' => $request->input('error')]);
-            return redirect()->route('login')->with('error', 'Apple: ошибка авторизации');
+            return $this->authFail('apple', 'Apple: ошибка авторизации');
         }
 
         $code = (string) $request->input('code', '');
@@ -82,7 +57,7 @@ class AppleAuthController extends Controller
                 'method'    => $request->method(),
                 'keys'      => array_keys($request->all()),
             ]);
-            return redirect()->route('login')->with('error', 'Не удалось войти через Apple. Попробуйте ещё раз.');
+            return $this->authFail('apple', 'Не удалось войти через Apple. Попробуйте ещё раз.');
         }
 
         try {
@@ -92,12 +67,12 @@ class AppleAuthController extends Controller
                 'e'    => $e->getMessage(),
                 'code' => substr($code, 0, 8) . '…',
             ]);
-            return redirect()->route('login')->with('error', 'Не удалось войти через Apple. Попробуйте ещё раз.');
+            return $this->authFail('apple', 'Не удалось войти через Apple. Попробуйте ещё раз.');
         }
 
         $appleId = (string) $appleUser->getId();
         if ($appleId === '') {
-            return redirect()->route('login')->with('error', 'Apple: не удалось получить ID пользователя');
+            return $this->authFail('apple', 'Apple: не удалось получить ID пользователя');
         }
 
         // Имя приходит только при первом входе
@@ -148,17 +123,7 @@ class AppleAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $safeEmail = $email !== '' ? $email : 'apple_' . Str::random(8) . '@apple.local';
-            if (User::where('email', $safeEmail)->exists()) {
-                $safeEmail = 'apple_' . Str::random(8) . '@apple.local';
-            }
-
-            $user = new User();
-            $user->email      = $safeEmail;
-            $user->password   = Hash::make(Str::random(32));
-            $user->name       = $rawName ?: 'Apple User';
-            $user->apple_id   = $appleId;
-            $user = \App\Support\RaceSafeUserSave::save($user, 'apple_id', $appleId);
+            $user = $this->createOAuthUser('apple_id', $appleId, $rawName ?: 'Apple User', $email, 'apple_' . Str::random(8) . '@apple.local');
             $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
@@ -167,6 +132,7 @@ class AppleAuthController extends Controller
 
         $request->session()->put('auth_provider', 'apple');
         $request->session()->put('auth_provider_id', $appleId);
+        $this->authSuccess('apple', $isNewUser);
 
         if ($isNewUser) {
             return redirect()->route('profile.complete')->with('welcome', true);
@@ -319,23 +285,10 @@ class AppleAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $safeEmail = $email !== '' ? $email : 'apple_' . Str::random(8) . '@apple.local';
-            if (User::where('email', $safeEmail)->exists()) {
-                $safeEmail = 'apple_' . Str::random(8) . '@apple.local';
-            }
-
             $rawName = trim($firstName . ' ' . $lastName) ?: 'Apple User';
 
-            $user           = new User();
-            $user->email    = $safeEmail;
-            $user->password = Hash::make(Str::random(32));
-            $user->name     = $rawName;
-            $user->apple_id = $appleId;
-            if ($firstName !== '') {
-                $user->first_name = $firstName;
-                $user->last_name  = $lastName;
-            }
-            $user = \App\Support\RaceSafeUserSave::save($user, 'apple_id', $appleId);
+            $user = $this->createOAuthUser('apple_id', $appleId, $rawName, $email, 'apple_' . Str::random(8) . '@apple.local',
+                $firstName !== '' ? ['first_name' => $firstName, 'last_name' => $lastName] : []);
             $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
@@ -343,6 +296,7 @@ class AppleAuthController extends Controller
         $request->session()->regenerate();
         $request->session()->put('auth_provider', 'apple');
         $request->session()->put('auth_provider_id', $appleId);
+        $this->authSuccess('apple', $isNewUser);
 
         Log::info('[APPLE_NATIVE] Login success', ['user_id' => $user->id, 'is_new' => $isNewUser]);
 

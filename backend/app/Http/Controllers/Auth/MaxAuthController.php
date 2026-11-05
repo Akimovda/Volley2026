@@ -158,22 +158,8 @@ class MaxAuthController extends Controller
         if (!$user) {
             $isNew = true;
 
-            $email = "max_{$mid}@max.local";
-            if (User::where('email', $email)->exists()) {
-                $email = "max_{$mid}_" . Str::random(6) . '@max.local';
-            }
-
-            $user = new User();
-            $user->email    = $email;
-            $user->password = Hash::make(Str::random(32));
-            $user->name     = trim((string) $a->max_name) !== '' ? trim((string) $a->max_name) : 'Пользователь';
-            $user->max_user_id = $mid;
-            if ($a->max_chat_id) {
-                $user->max_chat_id = $a->max_chat_id;
-                $user->max_linked_at = now();
-                $user->max_notifications_enabled = true;
-            }
-            $user = \App\Support\RaceSafeUserSave::save($user, 'max_user_id', $mid);
+            $user = $this->createOAuthUser('max_user_id', $mid, trim((string) $a->max_name) !== '' ? trim((string) $a->max_name) : 'Пользователь', '', "max_{$mid}@max.local",
+                $a->max_chat_id ? ['max_chat_id' => $a->max_chat_id, 'max_linked_at' => now(), 'max_notifications_enabled' => true] : []);
             $isNew = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
@@ -184,6 +170,7 @@ class MaxAuthController extends Controller
         $request->session()->forget(self::SESSION_KEY);
         $request->session()->put('auth_provider', 'max');
         $request->session()->put('auth_provider_id', $mid);
+        $this->authSuccess('max', $isNew);
 
         $redirect = $isNew ? route('profile.complete') : ($a->return_to ?: url('/events'));
         if ($isNew) {

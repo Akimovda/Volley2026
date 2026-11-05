@@ -43,6 +43,8 @@ return [
         'load' => env('KUMA_PUSH_LOAD'),
         'queue_backlog' => env('KUMA_PUSH_QUEUE_BACKLOG'),
         'wal' => env('KUMA_PUSH_WAL'),
+        // исходы входа через провайдеров (auth_login_events)
+        'auth' => env('KUMA_PUSH_AUTH'),
     ],
 
     'vk' => [

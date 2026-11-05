@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Log;
  * Метрики сервера → Uptime Kuma (push-мониторы): диск, память, нагрузка CPU, очередь задач, архив WAL PostgreSQL.
  * Каждые 5 минут шлёт в Kuma статус up/down и значение (ping — число для графика). Превышение порога — status=down,
  * Kuma присылает оповещение в Telegram; если сервер умер и метрики перестали приходить — монитор тоже упадёт сам.
- * Адреса push — в .env: KUMA_PUSH_DISK, KUMA_PUSH_MEMORY, KUMA_PUSH_LOAD, KUMA_PUSH_QUEUE_BACKLOG, KUMA_PUSH_WAL (пусто — метрика не шлётся).
+ * Адреса push — в .env: KUMA_PUSH_DISK, KUMA_PUSH_MEMORY, KUMA_PUSH_LOAD, KUMA_PUSH_QUEUE_BACKLOG, KUMA_PUSH_WAL, KUMA_PUSH_AUTH (пусто — метрика не шлётся).
  *
  * Пороги (down): диск занят ≥ 80%; доступной памяти < 15%; load average (5 мин) на ядро > 1.0;
  * в очереди > 500 готовых задач или старейшая ждёт > 10 минут; архив WAL: последняя выгрузка > 30 минут назад или текущая ошибка.
@@ -123,6 +123,27 @@ class ReportServerMetrics extends Command
             }
         } catch (\Throwable $e) {
             $out['wal'] = ['ok' => false, 'ping' => 0, 'msg' => 'Архив WAL: не удалось прочитать pg_stat_archiver'];
+        }
+
+        // ── Входы через провайдеров (VK, Google, Яндекс, Apple, Telegram, MAX) за последние 30 минут ──
+        try {
+            $rows = DB::table('auth_login_events')->where('created_at', '>=', now()->subMinutes(30))
+                ->selectRaw("provider, sum(case when outcome like 'success%' then 1 else 0 end) as ok, sum(case when outcome = 'error' then 1 else 0 end) as err")
+                ->groupBy('provider')->orderBy('provider')->get();
+            $okTotal = (int) $rows->sum('ok');
+            $errTotal = (int) $rows->sum('err');
+            // тревога: ≥5 ошибок и их больше, чем успешных входов; либо у одного провайдера ≥3 ошибок и ни одного успеха
+            $badProviders = $rows->filter(fn ($r) => (int) $r->err >= 3 && (int) $r->ok === 0)->pluck('provider')->all();
+            $out['auth'] = [
+                'ok'   => !($errTotal >= 5 && $errTotal > $okTotal) && $badProviders === [],
+                'ping' => $errTotal,
+                'msg'  => $rows->isEmpty()
+                    ? 'Входы за 30 мин: нет данных'
+                    : 'Входы за 30 мин: ' . $rows->map(fn ($r) => sprintf('%s ✓%d ✗%d', $r->provider, $r->ok, $r->err))->implode(', ')
+                        . ($badProviders ? ' — НЕ РАБОТАЕТ: ' . implode(', ', $badProviders) : ''),
+            ];
+        } catch (\Throwable $e) {
+            $out['auth'] = ['ok' => true, 'ping' => 0, 'msg' => 'Входы: таблица событий недоступна'];
         }
 
         return $out;

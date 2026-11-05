@@ -33,7 +33,7 @@ class PruneOldRecords extends Command
         $dryRun = (bool) $this->option('dry-run');
         $cutoff = now()->subDays($days);
 
-        foreach (['channel_publish_logs', 'notification_deliveries', 'page_views'] as $table) {
+        foreach (['channel_publish_logs', 'notification_deliveries', 'page_views', 'auth_login_events'] as $table) {
             if (!Schema::hasTable($table) || !Schema::hasColumn($table, 'created_at')) {
                 continue;
             }

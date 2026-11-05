@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -18,6 +19,8 @@ use Illuminate\Support\Str;
 
 class TelegramAuthController extends Controller
 {
+    use OAuthCallbackSupport;
+
     private const AUTH_URL  = 'https://oauth.telegram.org/auth';
     private const TOKEN_URL = 'https://oauth.telegram.org/token';
     private const JWKS_URL  = 'https://oauth.telegram.org/.well-known/jwks.json';
@@ -45,31 +48,6 @@ class TelegramAuthController extends Controller
         return $this->sanitizeReturnTo(
             (string) (url()->previous() ?: url('/events'))
         );
-    }
-
-    private function sanitizeReturnTo(string $url): string
-    {
-        $fallback = url('/events');
-        $url = trim($url);
-        if ($url === '') return $fallback;
-
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) {
-            return $fallback;
-        }
-
-        if (
-            str_contains($url, '/auth/') ||
-            str_contains($url, '/login') ||
-            str_contains($url, '/register') ||
-            str_contains($url, '/logout')
-        ) {
-            return $fallback;
-        }
-
-        return $url;
     }
 
     /* ── PKCE helpers ── */
@@ -202,10 +180,8 @@ class TelegramAuthController extends Controller
 
     public function callback(Request $request)
     {
-        // Повторный callback (двойной тап, провайдер повторно возвращает пользователя): пользователь уже вошёл и ожидающей
-        // привязки нет — ничего не обрабатываем, ведём дальше (иначе повтор шёл как «привязка» и мог показать ошибку или затереть сессию).
-        if (Auth::check() && $request->session()->get('oauth_intent') !== 'link' && !$request->has('hash')) {
-            return redirect()->to($this->popReturnTo($request));
+        if ($dup = $this->duplicateCallbackRedirect($request, !$request->has('hash'))) {
+            return $dup;
         }
 
         $returnTo = $this->popReturnTo($request);
@@ -218,14 +194,14 @@ class TelegramAuthController extends Controller
         // ── OIDC flow ──
         if ($request->has('error')) {
             Log::warning('Telegram OIDC error', ['error' => $request->query('error')]);
-            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка авторизации');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: ошибка авторизации');
         }
 
         $code  = $request->query('code');
         $state = $request->query('state');
 
         if (!$code || !$state) {
-            return redirect()->to($returnTo)->with('error', 'Telegram: некорректный ответ');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: некорректный ответ');
         }
 
         // Verify state — сначала из сессии, при потере (Telegram WebView → system browser) из Cache
@@ -243,7 +219,7 @@ class TelegramAuthController extends Controller
                 $returnTo     = $cached['return_to'] ?: $returnTo;
                 Log::info('TG_OIDC: cache fallback used (session cookie lost)');
             } else {
-                return redirect()->to($returnTo)->with('error', 'Telegram: неверный state');
+                return $this->authFailTo('telegram', $returnTo, 'Telegram: неверный state');
             }
         }
 
@@ -269,7 +245,7 @@ class TelegramAuthController extends Controller
                 ]);
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
             Log::error('Telegram OIDC token exchange timeout/connection error', ['error' => $e->getMessage()]);
-            return redirect()->to($returnTo)->with('error', 'Telegram: сервис временно недоступен, попробуйте ещё раз');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: сервис временно недоступен, попробуйте ещё раз');
         }
 
         if (!$tokenResponse->successful()) {
@@ -277,14 +253,14 @@ class TelegramAuthController extends Controller
                 'status' => $tokenResponse->status(),
                 'body'   => $tokenResponse->body(),
             ]);
-            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка получения токена');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: ошибка получения токена');
         }
 
         $tokens  = $tokenResponse->json();
         $idToken = $tokens['id_token'] ?? null;
 
         if (!$idToken) {
-            return redirect()->to($returnTo)->with('error', 'Telegram: отсутствует id_token');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: отсутствует id_token');
         }
 
         // Validate JWT
@@ -292,7 +268,7 @@ class TelegramAuthController extends Controller
             $claims = $this->validateIdToken($idToken, $clientId);
         } catch (\Exception $e) {
             Log::error('Telegram OIDC JWT validation failed', ['error' => $e->getMessage()]);
-            return redirect()->to($returnTo)->with('error', 'Telegram: ошибка валидации токена');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: ошибка валидации токена');
         }
 
         $tgId     = (string) ($claims->id ?? $claims->sub ?? '');
@@ -301,7 +277,7 @@ class TelegramAuthController extends Controller
         $photoUrl = $claims->picture ?? null;
 
         if ($tgId === '') {
-            return redirect()->to($returnTo)->with('error', 'Telegram: отсутствует ID пользователя');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram: отсутствует ID пользователя');
         }
 
         Log::info('TG_OIDC_AUTH', [
@@ -408,26 +384,13 @@ class TelegramAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $email = "tg_{$tgId}@telegram.local";
-            if (User::where('email', $email)->exists()) {
-                $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
-            }
-
-            $user = new User();
-            $user->email      = $email;
-            $user->password   = Hash::make(Str::random(32));
-            $user->name       = trim($name) ?: 'Пользователь';
-            $user->telegram_id = $tgId;
-
-            if (!empty($username)) {
-                $user->telegram_username = $username;
-            }
-
-            $user = \App\Support\RaceSafeUserSave::save($user, 'telegram_id', $tgId);
+            $user = $this->createOAuthUser('telegram_id', $tgId, trim($name) ?: 'Пользователь', '', "tg_{$tgId}@telegram.local",
+                !empty($username) ? ['telegram_username' => $username] : []);
             $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
+        $this->authSuccess('telegram', $isNewUser ?? false);
         $request->session()->regenerate();
 
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $photoUrl, $isNewUser);
@@ -544,23 +507,13 @@ class TelegramAuthController extends Controller
 
         if (!$user) {
             $isNewUser = true;
-            $email = "tg_{$tgId}@telegram.local";
-            if (User::where('email', $email)->exists()) {
-                $email = "tg_{$tgId}_" . now()->timestamp . "@telegram.local";
-            }
-            $user             = new User();
-            $user->email      = $email;
-            $user->password   = Hash::make(Str::random(32));
-            $user->name       = trim($name) ?: 'Пользователь';
-            $user->telegram_id = $tgId;
-            if (!empty($username)) {
-                $user->telegram_username = $username;
-            }
-            $user = \App\Support\RaceSafeUserSave::save($user, 'telegram_id', $tgId);
+            $user = $this->createOAuthUser('telegram_id', $tgId, trim($name) ?: 'Пользователь', '', "tg_{$tgId}@telegram.local",
+                !empty($username) ? ['telegram_username' => $username] : []);
             $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
+        $this->authSuccess('telegram', $isNewUser ?? false);
         $request->session()->regenerate();
         $request->session()->put('auth_provider', 'telegram');
 
@@ -579,12 +532,12 @@ class TelegramAuthController extends Controller
         );
 
         if (!$this->isLegacyHashValid($tgData)) {
-            return redirect()->to($returnTo)->with('error', 'Telegram auth: invalid signature');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram auth: invalid signature');
         }
 
         $authDate = (int) ($tgData['auth_date'] ?? 0);
         if ($authDate <= 0 || (time() - $authDate) > 86400) {
-            return redirect()->to($returnTo)->with('error', 'Telegram auth: expired data');
+            return $this->authFailTo('telegram', $returnTo, 'Telegram auth: expired data');
         }
 
         $tgId     = (string) ($tgData['id'] ?? '');
