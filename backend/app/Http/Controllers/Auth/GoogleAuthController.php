@@ -135,7 +135,17 @@ class GoogleAuthController extends Controller
             $user->password = Hash::make(Str::random(32));
             $user->name     = trim($googleUser->getName() ?: 'Пользователь');
             $user->google_id = $googleId;
-            $user->save();
+            try {
+                $user->save();
+            } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
+                // Двойной запрос callback (двойной тап / повтор): параллельный запрос уже создал этого пользователя — берём его
+                $existing = User::where('google_id', $googleId)->first() ?: User::where('email', $safeEmail)->first();
+                if (!$existing) {
+                    throw $e;
+                }
+                $user = $existing;
+                $isNewUser = false;
+            }
         }
 
         Auth::login($user, true);
