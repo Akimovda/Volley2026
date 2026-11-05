@@ -116,7 +116,8 @@ final class NotificationDeliverySender
         }
 
         if ($channel->platform === 'max') {
-            $this->sendMax($user, $payload, (string) $channel->chat_id);
+            // бот канала: персональный бот организатора (Организатор Pro), иначе системный — как у анонсов
+            $this->sendMax($user, $payload, (string) $channel->chat_id, $channel->resolveToken());
             return;
         }
 
@@ -326,13 +327,13 @@ final class NotificationDeliverySender
         }
     }
 
-    private function sendMax(User $user, array $payload, ?string $chatIdOverride = null): void
+    private function sendMax(User $user, array $payload, ?string $chatIdOverride = null, ?string $tokenOverride = null): void
     {
         if ($chatIdOverride === null && empty($user->max_chat_id)) {
             throw new \RuntimeException('У пользователя нет max_chat_id.');
         }
 
-        $token = (string) config('services.max.bot_token');
+        $token = $tokenOverride ?: (string) config('services.max.bot_token');
         if ($token === '') {
             throw new \RuntimeException('Не настроен services.max.bot_token.');
         }

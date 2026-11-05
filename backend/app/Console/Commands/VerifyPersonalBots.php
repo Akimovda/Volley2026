@@ -19,17 +19,24 @@ class VerifyPersonalBots extends Command
     {
         $dryRun = $this->option('dry-run');
 
+        // Проверяем и подтверждённые каналы, и те, что были подтверждены раньше, но «потеряли» подтверждение
+        // (user_bot_verified_at задан): раньше случайный сбой сети навсегда снимал подтверждение, а перепроверялись
+        // только подтверждённые — канал уже не возвращался.
         $channels = UserNotificationChannel::query()
             ->where('bot_type', 'user')
-            ->where('is_verified', true)
             ->whereNotNull('user_bot_token')
+            ->where(function ($q) {
+                $q->where('is_verified', true)
+                  ->orWhere(function ($w) {
+                      $w->where('is_verified', false)->whereNotNull('user_bot_verified_at');
+                  });
+            })
             ->with('user')
             ->get();
 
         $this->info("Найдено каналов с персональным ботом: {$channels->count()}");
 
-        $ok     = 0;
-        $failed = 0;
+        $ok = 0; $failed = 0; $unknown = 0; $restored = 0;
 
         foreach ($channels as $channel) {
             try {
@@ -40,25 +47,41 @@ class VerifyPersonalBots extends Command
                 continue;
             }
 
+            // true — подтверждено; false — Telegram/MAX ТОЧНО отказали (нет прав, бот удалён, токен отозван);
+            // null — проверить не удалось (сеть, 5xx, лимиты): статус не меняем
             $isValid = match ($channel->platform) {
                 'telegram' => $this->verifyTelegram($token, $channel->chat_id),
                 'max'      => $this->verifyMax($token, $channel->chat_id),
-                default    => null,
+                default    => 'unsupported',
             };
 
-            if ($isValid === null) {
+            if ($isValid === 'unsupported') {
                 $this->warn("  [#{$channel->id}] Платформа {$channel->platform} не поддерживается");
+                continue;
+            }
+
+            if ($isValid === null) {
+                $unknown++;
+                $this->warn("  ⏳ [#{$channel->id}] {$channel->platform} «{$channel->title}» — проверить не удалось (сеть/API), статус не меняем");
                 continue;
             }
 
             if ($isValid) {
                 $ok++;
-                $this->line("  ✅ [#{$channel->id}] {$channel->platform} «{$channel->title}» — OK");
+                $wasVerified = (bool) $channel->is_verified;
+                $this->line("  ✅ [#{$channel->id}] {$channel->platform} «{$channel->title}» — OK" . ($wasVerified ? '' : ' (подтверждение восстановлено)'));
 
                 if (!$dryRun) {
-                    $channel->update(['user_bot_verified_at' => now()]);
+                    $channel->update(['is_verified' => true, 'user_bot_verified_at' => now()]);
                 }
-            } else {
+                if (!$wasVerified) {
+                    $restored++;
+                }
+                continue;
+            }
+
+            // false — точный отказ
+            if ($channel->is_verified) {
                 $failed++;
                 $this->warn("  ❌ [#{$channel->id}] {$channel->platform} «{$channel->title}» — бот потерял права!");
 
@@ -70,83 +93,77 @@ class VerifyPersonalBots extends Command
 
                     $this->notifyOrganizer($channel);
                 }
+            } else {
+                $this->line("  ⛔ [#{$channel->id}] {$channel->platform} «{$channel->title}» — по-прежнему нет прав");
             }
         }
 
-        $this->info("Итог: ✅ {$ok} OK, ❌ {$failed} проблем" . ($dryRun ? ' (dry-run)' : ''));
+        $this->info("Итог: ✅ {$ok} OK (восстановлено: {$restored}), ❌ {$failed} проблем, ⏳ {$unknown} не проверено" . ($dryRun ? ' (dry-run)' : ''));
 
         return self::SUCCESS;
     }
 
-    private function verifyTelegram(string $token, string $chatId): bool
+    /** GET с повторами при сетевых сбоях; null — ответ не получен/не разобран (5xx, лимит, таймаут). */
+    private function getJson(string $url, array $query = [], array $headers = []): ?array
     {
         try {
-            // getMe — проверяем что токен валиден
-            $me = Http::timeout(10)
-                ->get(\App\Services\TelegramApi::url($token, 'getMe'))
-                ->json();
-
-            if (empty($me['ok'])) {
-                return false;
-            }
-
-            $botId = $me['result']['id'] ?? null;
-            if (!$botId) {
-                return false;
-            }
-
-            // getChatMember — проверяем статус в чате
-            $member = Http::timeout(10)
-                ->get(\App\Services\TelegramApi::url($token, 'getChatMember'), [
-                    'chat_id' => $chatId,
-                    'user_id' => $botId,
-                ])
-                ->json();
-
-            if (empty($member['ok'])) {
-                return false;
-            }
-
-            $status = $member['result']['status'] ?? '';
-            return in_array($status, ['administrator', 'creator'], true);
-
+            $resp = Http::timeout(10)->retry(3, 700, throw: false)->withHeaders($headers)->get($url, $query);
         } catch (\Throwable $e) {
-            Log::warning('VerifyPersonalBots: Telegram check failed', [
-                'chat_id' => $chatId,
-                'error'   => $e->getMessage(),
-            ]);
-            return false;
+            return null;
         }
+        $json = $resp->json();
+        if (!is_array($json) || $resp->status() >= 500 || $resp->status() === 429) {
+            return null;
+        }
+
+        return $json;
     }
 
-    private function verifyMax(string $token, string $chatId): bool
+    private function verifyTelegram(string $token, string $chatId): ?bool
     {
-        try {
-            // getMe — проверяем токен
-            $me = Http::timeout(10)
-                ->withHeaders(['Authorization' => $token])
-                ->get(config('services.max.api_base_url') . '/me')
-                ->json();
-
-            if (empty($me['user_id'])) {
-                return false;
-            }
-
-            // getChat — проверяем доступ к чату
-            $chat = Http::timeout(10)
-                ->withHeaders(['Authorization' => $token])
-                ->get(config('services.max.api_base_url') . '/chats/' . urlencode($chatId))
-                ->json();
-
-            return empty($chat['error']);
-
-        } catch (\Throwable $e) {
-            Log::warning('VerifyPersonalBots: MAX check failed', [
-                'chat_id' => $chatId,
-                'error'   => $e->getMessage(),
-            ]);
-            return false;
+        $me = $this->getJson(\App\Services\TelegramApi::url($token, 'getMe'));
+        if ($me === null) {
+            return null;
         }
+        if (empty($me['ok'])) {
+            return in_array((int) ($me['error_code'] ?? 0), [401, 404], true) ? false : null; // токен отозван/неверен
+        }
+        $botId = $me['result']['id'] ?? null;
+        if (!$botId) {
+            return null;
+        }
+
+        $member = $this->getJson(\App\Services\TelegramApi::url($token, 'getChatMember'), ['chat_id' => $chatId, 'user_id' => $botId]);
+        if ($member === null) {
+            return null;
+        }
+        if (empty($member['ok'])) {
+            // 400 (чат не найден), 403 (бот удалён/заблокирован) — точный отказ; остальное (лимиты и т.п.) — неизвестно
+            return in_array((int) ($member['error_code'] ?? 0), [400, 403], true) ? false : null;
+        }
+
+        return in_array($member['result']['status'] ?? '', ['administrator', 'creator'], true);
+    }
+
+    private function verifyMax(string $token, string $chatId): ?bool
+    {
+        $base = (string) config('services.max.api_base_url');
+        $h = ['Authorization' => $token];
+
+        $me = $this->getJson($base . '/me', [], $h);
+        if ($me === null) {
+            return null;
+        }
+        if (empty($me['user_id'])) {
+            return isset($me['code']) || isset($me['error']) ? false : null;
+        }
+
+        $chat = $this->getJson($base . '/chats/' . urlencode($chatId), [], $h);
+        if ($chat === null) {
+            return null;
+        }
+
+        return empty($chat['error']) && empty($chat['code']);
     }
 
     private function notifyOrganizer(UserNotificationChannel $channel): void

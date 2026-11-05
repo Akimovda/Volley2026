@@ -992,7 +992,7 @@
 										$__rcThread = $__rc->platform === 'telegram' ? \App\Support\TelegramTopic::normalize(($__rc->meta ?? [])['message_thread_id'] ?? null) : null;
 									@endphp
 									<option value="{{ $__rc->id }}" {{ $__regSelected === (int) $__rc->id ? 'selected' : '' }}>
-										{{ $__rc->title ?: $__rc->chat_id }} · {{ $__rc->platform === 'max' ? 'MAX' : 'Telegram' }}{{ $__rcThread ? ' · ' . __('profile.notif_org_dest_topic', ['n' => $__rcThread]) : '' }}
+										{{ $__rc->title ?: $__rc->chat_id }} · {{ $__rc->platform === 'max' ? 'MAX' : 'Telegram' }}{{ $__rcThread ? ' · ' . __('profile.notif_org_dest_topic', ['n' => $__rcThread]) : '' }} · {{ $__rc->isPersonalBot() && $u->isOrganizerPro() ? __('profile.notif_org_dest_own_bot', ['bot' => '@' . ltrim((string) $__rc->user_bot_username, '@')]) : __('profile.notif_org_dest_sys_bot') }}
 									</option>
 									@endforeach
 								</select>
