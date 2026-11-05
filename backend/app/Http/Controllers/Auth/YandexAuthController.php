@@ -129,9 +129,14 @@ class YandexAuthController extends Controller
         }
 
         if (!$user) {
-            // Попытка найти существующего пользователя по телефону
+            // Попытка найти существующего пользователя по телефону. Только аккаунт с ПОДТВЕРЖДЁННЫМ телефоном
+            // (иначе кто угодно мог вписать в профиль чужой номер) и без другого Яндекса — чужую привязку не перехватываем.
             if ($yandexPhone) {
-                $user = User::where('phone', $yandexPhone)->whereNull('merged_into_user_id')->first();
+                $user = User::where('phone', $yandexPhone)
+                    ->whereNotNull('phone_verified_at')
+                    ->whereNull('yandex_id')
+                    ->whereNull('merged_into_user_id')
+                    ->first();
                 if ($user) {
                     $user->yandex_id    = $yandexId;
                     $user->yandex_phone = $yandexPhone;
