@@ -7993,7 +7993,26 @@ body.dark .auth-btn-max .auth-icon-circle,
 .auth-btn-max .auth-icon-circle img.auth-icon-img,
 .provider-card__icon.icon-max img.auth-icon-img {
 	display: block;
-	width: 4rem;
-	height: 4rem;
+	flex: none;
+	width: 4rem !important;
+	height: 4rem !important;
+	min-width: 4rem;
+	max-width: none !important;
+	object-fit: contain;
+	aspect-ratio: 1 / 1;
 	border-radius: 22%;
+}
+
+/* Белые кнопки внутри белых карточек профиля — тонкий контур, чтобы их было видно */
+.ramka .btn-secondary:not(.btn-alert) {
+	border: 0.15rem solid rgba(41, 103, 186, 0.35);
+}
+.ramka .btn-secondary:not(.btn-alert):hover {
+	border-color: #2967BA;
+}
+body.dark .ramka .btn-secondary:not(.btn-alert) {
+	border-color: rgba(255, 255, 255, 0.22);
+}
+body.dark .ramka .btn-secondary:not(.btn-alert):hover {
+	border-color: #E7612F;
 }
