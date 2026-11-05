@@ -195,7 +195,7 @@ return [
     'notif_org_also_dm'    => 'Also send as direct messages',
     'notif_org_channel_invalid' => 'Choose a connected and verified channel.',
     'level_notice_title'   => 'Set your playing level',
-    'level_notice_text'    => 'Then you will get notifications about suitable tournaments and camps, and organizers can place you correctly. Level not set: :which.',
+    'level_notice_text'    => 'You will get notifications about tournaments and camps that match your level, and organizers will be able to place you in the right team. Your level is not set: :which!',
     'level_notice_classic' => 'indoor',
     'level_notice_beach'   => 'beach',
     'level_notice_btn'     => 'Set level',
