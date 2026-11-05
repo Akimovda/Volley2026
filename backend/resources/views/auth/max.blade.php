@@ -21,7 +21,7 @@
                 <li class="mb-1">{{ __('auth.max_step_back') }}</li>
             </ol>
 
-            <div class="text-center mt-2 mb-2">
+            <div class="mt-2 mb-2" style="display:flex;flex-wrap:wrap;justify-content:center;gap:1.2rem">
                 <a href="{{ $link }}" target="_blank" rel="noopener" class="btn" id="max-open-btn">{{ __('auth.max_open_btn') }}</a>
                 <button type="button" class="btn btn-secondary" id="max-copy-btn">{{ __('auth.max_copy_btn') }}</button>
             </div>
