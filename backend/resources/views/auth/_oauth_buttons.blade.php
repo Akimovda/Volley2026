@@ -44,7 +44,7 @@
     <!-- Кнопка MAX: вход через бота (без OAuth), страница внутри приложения/браузера -->
     <a href="{{ route('auth.max.page', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-max">
         <span class="auth-icon-circle">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4 18V6l8 8 8-8v12" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2.6C6.7 2.6 2.6 6.4 2.6 11.2c0 2.4 1 4.5 2.8 6.1L4.9 21.4l4.3-1.9c.9.2 1.8.3 2.8.3 5.3 0 9.4-3.8 9.4-8.6S17.3 2.6 12 2.6z" fill="#fff"/><text x="12" y="14.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="800" fill="#6a4cf5">M</text></svg>
         </span>
         <span class="auth-text">{{ __('ui.auth_max') }}</span>
     </a>
