@@ -1008,6 +1008,16 @@
 									<a href="{{ route('organizer_pro.index') }}" class="b-600">{{ __('profile.notif_org_pro_warn_link') }}</a>
 								</div>
 								@endif
+								{{-- Тема (топик) Telegram-группы для этих уведомлений — можно отдельную ветку, не ту, что у анонсов --}}
+								@if($__regSel && $__regSel->platform === 'telegram')
+								<div class="mt-1" style="max-width:520px">
+									<label for="registration_thread_id">{{ __('profile.notif_org_thread_label') }}</label>
+									<input type="number" min="1" name="registration_thread_id" id="registration_thread_id" value="{{ $u->registration_notify_thread_id }}" placeholder="{{ __('profile.notif_org_thread_ph') }}" style="width:200px" onchange="this.form.submit()">
+									@error('registration_thread_id')<div class="f-14 mt-05" style="color:#d33;">{{ $message }}</div>@enderror
+									<div class="text-muted f-12 mt-05">{{ __('profile.notif_org_thread_hint') }}</div>
+									@include('partials.channel-check', ['channel' => $__regSel, 'threadInput' => '#registration_thread_id'])
+								</div>
+								@endif
 								@if($__regSelected > 0 && $__regChannels->contains('id', $__regSelected))
 								<label class="checkbox-item mt-1">
 									<input type="hidden" name="registration_also_dm" value="0">

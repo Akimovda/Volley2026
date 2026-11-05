@@ -104,7 +104,7 @@ class ProfileNotificationChannelController extends Controller
 
         // канал был выбран для уведомлений о записях — возвращаем личные сообщения
         \App\Models\User::where('registration_notify_channel_id', $channel->id)
-            ->update(['registration_notify_channel_id' => null, 'registration_notify_also_dm' => false]);
+            ->update(['registration_notify_channel_id' => null, 'registration_notify_also_dm' => false, 'registration_notify_thread_id' => null]);
 
         $channel->delete();
 
@@ -120,7 +120,9 @@ class ProfileNotificationChannelController extends Controller
         abort_unless($user && (int) $channel->user_id === (int) $user->id, 403);
 
         // номер темы: из формы (поле рядом с кнопкой), иначе — сохранённый у канала
-        $raw = $request->has('thread_id') ? $request->input('thread_id') : (($channel->meta ?? [])['message_thread_id'] ?? null);
+        // пустое поле темы = тема канала (как при отправке), а не «без темы»
+        $given = $request->input('thread_id');
+        $raw   = ($given !== null && $given !== '') ? $given : (($channel->meta ?? [])['message_thread_id'] ?? null);
 
         return response()->json(app(\App\Services\TelegramChannelChecker::class)->check($channel, $raw));
     }
@@ -139,6 +141,7 @@ class ProfileNotificationChannelController extends Controller
             'notify_player_registrations' => ['nullable', 'boolean'],
             'registration_channel_id'     => ['nullable', 'integer'],
             'registration_also_dm'        => ['nullable', 'boolean'],
+            'registration_thread_id'      => ['nullable', 'integer', 'min:1', 'max:2147483647'],
         ]);
 
         $update = [
@@ -161,6 +164,13 @@ class ProfileNotificationChannelController extends Controller
             }
             $update['registration_notify_channel_id'] = $channelId > 0 ? $channelId : null;
             $update['registration_notify_also_dm']    = $channelId > 0 && (bool) ($data['registration_also_dm'] ?? false);
+
+            // тема (топик) — только для Telegram-канала и только для того канала, к которому она относится:
+            // при смене канала тема сбрасывается (номера тем у разных групп не связаны)
+            $sameChannel = $channelId > 0 && (int) $user->registration_notify_channel_id === $channelId;
+            $isTelegram  = $channelId > 0 && UserNotificationChannel::where('id', $channelId)->value('platform') === 'telegram';
+            $thread      = ($sameChannel && $isTelegram && isset($data['registration_thread_id'])) ? (int) $data['registration_thread_id'] : null;
+            $update['registration_notify_thread_id'] = $thread;
         }
 
         $user->update($update);

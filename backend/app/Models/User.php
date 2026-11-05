@@ -57,6 +57,7 @@
         'notify_player_registrations',
         'registration_notify_channel_id',
         'registration_notify_also_dm',
+        'registration_notify_thread_id',
         'notify_new_events_in_city',
         'avatar_media_id',
         'profile_completed_at',

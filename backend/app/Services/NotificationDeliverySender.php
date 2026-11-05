@@ -110,7 +110,9 @@ final class NotificationDeliverySender
         }
 
         if ($channel->platform === 'telegram') {
-            $thread = \App\Support\TelegramTopic::normalize(($channel->meta ?? [])['message_thread_id'] ?? null);
+            // своя тема для уведомлений о записях (профиль); не задана — тема канала, как у анонсов; 1 = главная тема группы
+            $custom = $user->registration_notify_thread_id;
+            $thread = \App\Support\TelegramTopic::normalize($custom !== null ? $custom : (($channel->meta ?? [])['message_thread_id'] ?? null));
             $this->sendTelegram($user, $payload, (string) $channel->chat_id, $thread, $channel->resolveToken());
             return;
         }
@@ -233,7 +235,7 @@ final class NotificationDeliverySender
         }
 
         if ($rich['image_url'] !== '') {
-            $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendPhoto'),
+            $resp = $this->postTelegram($token, 'sendPhoto',
                 array_filter([
                     'chat_id'      => $chatId,
                     'message_thread_id' => $threadId,
@@ -256,7 +258,7 @@ final class NotificationDeliverySender
             return;
         }
 
-        $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendMessage'),
+        $resp = $this->postTelegram($token, 'sendMessage',
             array_filter([
                 'chat_id'                  => $chatId,
                 'message_thread_id'        => $threadId,
@@ -275,6 +277,29 @@ final class NotificationDeliverySender
         if (!is_array($json) || !($json['ok'] ?? false)) {
             throw new \RuntimeException('Telegram sendMessage API error: ' . $resp->body());
         }
+    }
+
+    /**
+     * POST в Bot API с запасным вариантом для неверной темы: «message thread not found» / TOPIC_ID_INVALID / тема закрыта —
+     * повторяем БЕЗ темы (в главную тему группы), чтобы уведомление не пропало.
+     */
+    private function postTelegram(string $token, string $method, array $params): \Illuminate\Http\Client\Response
+    {
+        $url  = \App\Services\TelegramApi::url($token, $method);
+        $resp = \App\Services\TelegramApi::http(20)->post($url, $params);
+
+        if ($resp->status() === 400 && !empty($params['message_thread_id'])) {
+            $desc = strtolower((string) data_get($resp->json(), 'description', ''));
+            if (str_contains($desc, 'thread not found') || str_contains($desc, 'topic_id_invalid') || str_contains($desc, 'topic_closed') || str_contains($desc, 'topic closed')) {
+                \Illuminate\Support\Facades\Log::warning('NotificationDeliverySender: тема Telegram недоступна, отправляем без темы', [
+                    'thread' => $params['message_thread_id'], 'error' => $desc,
+                ]);
+                unset($params['message_thread_id']);
+                $resp = \App\Services\TelegramApi::http(20)->post($url, $params);
+            }
+        }
+
+        return $resp;
     }
 
     private function sendVk(User $user, array $payload): void
