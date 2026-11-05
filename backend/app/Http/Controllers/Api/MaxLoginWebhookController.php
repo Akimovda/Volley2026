@@ -46,7 +46,7 @@ class MaxLoginWebhookController extends Controller
         if (!$attempt || $attempt->status !== 'pending' || $attempt->isExpired()) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Ссылка для входа устарела или уже использована. Вернитесь на сайт и нажмите «Войти через MAX» ещё раз.',
+                'message' => 'Ссылка для входа устарела или уже использована. 📲 Вернитесь в VolleyClub и нажмите «Войти через MAX» ещё раз.',
             ]);
         }
 
@@ -102,7 +102,7 @@ class MaxLoginWebhookController extends Controller
         if ($attempt->attempts >= MaxLoginAttempt::MAX_CODE_TRIES) {
             $attempt->update(['status' => 'denied']);
 
-            return response()->json(['ok' => false, 'message' => 'Слишком много неверных попыток. Вернитесь на сайт и начните вход заново.']);
+            return response()->json(['ok' => false, 'message' => 'Слишком много неверных попыток. 📲 Вернитесь в VolleyClub и начните вход заново.']);
         }
 
         return response()->json([
