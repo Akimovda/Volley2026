@@ -49,3 +49,9 @@ _Составлено 2026-11-04 по итогам переезда на нов�
 - Нет ключа Firebase в бэкапе → push Android молча не уходили.
 - `chmod 600` на `.env` ботов без смены группы → боты падали при перезапуске (`PermissionError`, сервис работает от www-data).
 - Деплой теперь только `git fetch && git merge origin/main` (нет dev-контура и ветки `production` на GitHub); код на сервере руками не править.
+
+## Воркеры очередей, чистка и метрики (с 2026-11-05)
+- Воркеры: `/etc/supervisor/conf.d/volleyplay-queue.conf` и `volleyplay-queue-telegram.conf` — **`numprocs=2`** у каждого (очереди `default,broadcasts` и `telegram`); после правки `supervisorctl reread && supervisorctl update`. Файлы лежат в еженедельном бэкапе конфигов. Нюанс: при двух воркерах Telegram дедупликация рассылок по общему чату (`NotificationDeliverySender::isDuplicateChatDelivery`) теоретически может пропустить дубль при одновременной отправке двум аккаунтам с одним чатом.
+- Плановая чистка (cron Laravel, 03:40): `php artisan maintenance:prune-old-records --days=45` — `channel_publish_logs`, `notification_deliveries`, `page_views` старше 45 дней; просмотры перед удалением сворачиваются в `page_view_totals` (счётчик «просмотры профиля за всё время» не падает). Не трогает `user_notifications`, `event_likes`, `event_channel_messages`.
+- Метрики в Uptime Kuma (cron Laravel, каждые 5 минут): `php artisan ops:report-metrics` — диск, память, нагрузка CPU, очередь задач. Адреса push-мониторов — в `.env`: `KUMA_PUSH_DISK`, `KUMA_PUSH_MEMORY`, `KUMA_PUSH_LOAD`, `KUMA_PUSH_QUEUE_BACKLOG` (на сервере мониторинга 185.225.232.210 мониторы «VolleyPlay server: …», id 6–9, Telegram-оповещение привязано). Пороги DOWN: диск ≥ 80%, доступной памяти < 15%, load5 на ядро > 1.0, очередь > 500 готовых задач или старейшая > 10 мин. При восстановлении сервера с нуля — создать push-мониторы в Kuma заново и вписать адреса в `.env` (копия базы Kuma — в `/root` на 185.225.232.210 и в ночном бэкапе конфигов).
+
