@@ -256,10 +256,10 @@ class AppleAuthController extends Controller
         }
 
         // ── LOGIN: пользователь не залогинен → войти или создать аккаунт ───────
-        $email     = (string) ($decoded->email ?? '');
-        if ($email === '') {
-            $email = trim((string) ($validated['email'] ?? ''));
-        }
+        // Email — ТОЛЬКО из проверенного токена Apple. Присланный приложением ($validated['email']) никому не доверяем:
+        // иначе можно войти со своим Apple-токеном и чужим email и «привязать» чужой аккаунт.
+        $email         = (string) ($decoded->email ?? '');
+        $emailVerified = $email !== '' && filter_var($decoded->email_verified ?? false, FILTER_VALIDATE_BOOLEAN);
         $firstName = trim((string) ($validated['first_name'] ?? ''));
         $lastName  = trim((string) ($validated['last_name'] ?? ''));
 
@@ -272,12 +272,14 @@ class AppleAuthController extends Controller
             $user = AccountLink::resolveUser('apple', $appleId);
         }
 
-        // Не найден по apple_id — поискать по email и привязать
-        if (!$user && $email !== '') {
-            $user = User::where('email', $email)->first();
-            if ($user) {
-                $user->apple_id = $appleId;
-                $user->save();
+        // Не найден по apple_id — поискать по email и привязать: только подтверждённый Apple email
+        // и только к аккаунту без другого Apple ID (чужой привязанный аккаунт не перехватываем)
+        if (!$user && $emailVerified) {
+            $candidate = User::where('email', $email)->first();
+            if ($candidate && empty($candidate->apple_id)) {
+                $candidate->apple_id = $appleId;
+                $candidate->save();
+                $user = $candidate;
             }
         }
 
