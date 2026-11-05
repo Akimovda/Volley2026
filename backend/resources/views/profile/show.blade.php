@@ -634,7 +634,7 @@
 							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
 								<div class="card">
 									<div class="provider-card__header">
-										<span class="provider-card__icon icon-max"><svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 2.6C6.7 2.6 2.6 6.4 2.6 11.2c0 2.4 1 4.5 2.8 6.1L4.9 21.4l4.3-1.9c.9.2 1.8.3 2.8.3 5.3 0 9.4-3.8 9.4-8.6S17.3 2.6 12 2.6z" fill="#fff"/><text x="12" y="14.6" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="9.5" font-weight="800" fill="#6a4cf5">M</text></svg></span>
+										<span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img"></span>
 										<span class="provider-card__title">MAX</span>
 									</div>
 
@@ -790,7 +790,7 @@
                         <div class="col-md-4">
                             <div class="card">
                                 <div class="provider-card__header">
-                                    <span class="provider-card__icon icon-max"></span>
+                                    <span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img"></span>
                                     <span class="provider-card__title">{{ __('profile.notif_max_title') }}</span>
 								</div>
 								

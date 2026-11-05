@@ -7983,3 +7983,17 @@ input[type="range"]::-moz-range-thumb {
 }
 input[type="range"]:active::-moz-range-thumb { transform: scale(1.1); }
 input[type="range"]:disabled:active::-moz-range-thumb { transform: none; }
+
+/* MAX: настоящий значок (квадрат со скруглением) вместо кружка с градиентом */
+.auth-btn-max .auth-icon-circle,
+body.dark .auth-btn-max .auth-icon-circle,
+.provider-card__icon.icon-max {
+	background: none;
+}
+.auth-btn-max .auth-icon-circle img.auth-icon-img,
+.provider-card__icon.icon-max img.auth-icon-img {
+	display: block;
+	width: 4rem;
+	height: 4rem;
+	border-radius: 22%;
+}
