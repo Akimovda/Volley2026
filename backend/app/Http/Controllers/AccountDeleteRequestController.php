@@ -76,6 +76,8 @@ class AccountDeleteRequestController extends Controller
             'password'          => bcrypt(Str::random(40)),
         ])->save();
 
+        \Illuminate\Support\Facades\DB::table('biometric_devices')->where('user_id', $userId)->delete();
+
         Log::warning('Account deleted and anonymized', [
             'user_id' => $userId,
             'name'    => $userName,

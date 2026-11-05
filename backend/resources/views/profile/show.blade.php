@@ -1808,13 +1808,17 @@
 			disableBtn.addEventListener('click', async function() {
 				disableBtn.disabled = true;
 				try {
+					var myToken = '';
+					try { var c = await NativeBiometric.getCredentials({ server: 'volleyplay.club' }); myToken = (c && c.password) || ''; } catch (e) { /* нет credentials */ }
 					await fetch('/api/biometric/revoke', {
 						method: 'DELETE',
 						headers: {
+							'Content-Type': 'application/json',
 							'Accept': 'application/json',
 							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
 						},
-						credentials: 'same-origin'
+						credentials: 'same-origin',
+						body: JSON.stringify({ biometric_token: myToken })
 					});
 					await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					await refreshStatus();

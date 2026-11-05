@@ -76,10 +76,10 @@ Route::middleware('auth:sanctum,web')->group(function () {
 });
 
 // Face ID / биометрическая авторизация
-Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login']);
+Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login'])->middleware('throttle:20,1');
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register']);
-    Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke']);
+    Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])->middleware('block.impersonation');
+    Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke'])->middleware('block.impersonation');
 });
 
 // Проверка версии нативного приложения (до логина, статический конфиг, без БД)

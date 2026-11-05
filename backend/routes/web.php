@@ -406,7 +406,7 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 	Route::post('/auth/apple/native-callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'nativeCallback'])->name('auth.apple.native_callback');
 	Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.google.redirect');
 	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
-	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
+	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->middleware('throttle:20,1')->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->middleware('throttle:5,1')->name('auth.review.login');
 

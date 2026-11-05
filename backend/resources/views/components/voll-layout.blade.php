@@ -1181,6 +1181,9 @@
 				if (!NativeBiometric) return;
 				
 				async function offerBiometricSetup() {
+					@if(session()->has('impersonator_id'))
+					return; // под чужим аккаунтом (impersonate) Face ID не предлагаем — иначе телефон админа входил бы в чужой аккаунт
+					@endif
 					try {
 						var avail = await NativeBiometric.isAvailable();
 						if (!avail.isAvailable && avail.biometryType === 0) return;

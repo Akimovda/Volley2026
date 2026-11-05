@@ -296,6 +296,9 @@ class UserMergeService
 
             DB::table('friendships')->where('user_id', $secondary->id)->delete();
 
+            // 13a. Face ID / Touch ID: устройства вторичного аккаунта продолжают входить в основной
+            DB::table('biometric_devices')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
+
             // 14. Статистика — таблицы с UNIQUE(user_id, ...): наивный UPDATE падает,
             // если у primary уже есть строка с тем же ключом (см. report/merge_users_bug_2026-08-15.md).
             // Для пересекающихся строк агрегатные поля складываются в строку primary, старая удаляется.
