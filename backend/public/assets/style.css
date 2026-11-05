@@ -4230,6 +4230,22 @@ body.dark .footer-menu a:hover {
 .app-link.apk-dl {
 	background-image: url(/img/apk-android.svg);
 }
+/* Google Play (тестирование): текстовая кнопка вместо картинки */
+.footer .app-link.google-test {
+	justify-content: center;
+	gap: 1rem;
+	height: auto;
+	min-height: 4.8rem;
+	padding: 0.8rem 1.4rem;
+	background-image: none;
+	color: #2967BA;
+	font-size: 1.5rem;
+	text-decoration: none;
+}
+.footer .app-link.google-test svg {
+	fill: #2967BA;
+	flex: none;
+}
 body.dark .footer .app-link {
 	filter: invert(94%);
 }

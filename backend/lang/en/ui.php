@@ -100,6 +100,7 @@ return [
     'footer_personal_data'  => 'Personal data consent',
     'footer_user_agreement' => 'Terms of service',
     'footer_apps_title'     => 'Apps',
+    'footer_gplay_test'     => 'Google Play — testing',
     'footer_apk_download'   => 'Download for Android',
     'footer_copyright'      => '© VolleyPlay :year. All rights reserved.',
 

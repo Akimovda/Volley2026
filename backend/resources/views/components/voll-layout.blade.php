@@ -841,6 +841,12 @@
 										<div style="flex:0 0 33.333%;max-width:33.333%;padding:0 0.4rem">
 											<a href="{{ config('app.android_apk_url') }}" class="app-link apk-dl" download></a>
 										</div>
+										<div style="flex:0 0 100%;max-width:100%;padding:0.8rem 0.4rem 0">
+											<a href="https://play.google.com/apps/testing/club.volleyplay.app" class="app-link google-test" target="_blank" rel="noopener">
+												<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.4.6-.4 1.1v17.2c0 .5.1.9.4 1.1l9.6-9.7L3.6 2.3zm10.3 8.6 2.6-2.6L5.1 1.9c-.4-.2-.8-.2-1.1 0l9.9 9zm0 2.2-9.9 9c.3.2.7.2 1.1 0l11.4-6.4-2.6-2.6zm3.6-2.9-3 3 3 3 3.1-1.7c.9-.5.9-1.3 0-1.8l-3.1-2.5z"/></svg>
+												<span>{{ __('ui.footer_gplay_test') }}</span>
+											</a>
+										</div>
 									</div>
 								</div>
 							</div>
