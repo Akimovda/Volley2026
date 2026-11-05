@@ -35,6 +35,14 @@ class UpcomingSpecialService
         $nowUtc  = Carbon::now('UTC');
         $after   = $afterUtc && $afterUtc->gt($nowUtc) ? $afterUtc : $nowUtc;
 
+        // пользователь скрыл блок целиком (на 30 дней или переключателем в профиле)
+        if ($user && $user->upcoming_hidden_until && Carbon::parse($user->upcoming_hidden_until)->isFuture()) {
+            return ['occurrences' => collect(), 'card' => []];
+        }
+        // скрытые крестиком мероприятия и те, на которые пользователь уже записан
+        $dismissed = $userId > 0 ? DB::table('upcoming_dismissals')->where('user_id', $userId)->pluck('event_id')->map(fn ($v) => (int) $v)->all() : [];
+        [$joinedOccIds, $joinedEventIds] = $userId > 0 ? $this->index->joinedForUpcoming() : [[], []];
+
         $q = $this->index->buildOccurrenceQuery($user, $userId, $isAdmin, '', '', null, '', false)
             ->where('starts_at', '>', $after)
             ->whereHas('event', function ($eq) {
@@ -66,6 +74,11 @@ class UpcomingSpecialService
         foreach ($occs as $occ) {
             $event = $occ->event;
             if (!$event || isset($seen[$event->id])) {
+                continue;
+            }
+            if (in_array((int) $event->id, $dismissed, true)
+                || in_array((int) $event->id, $joinedEventIds, true)
+                || in_array((int) $occ->id, $joinedOccIds, true)) {
                 continue;
             }
             $isTournament = !in_array($event->format, ['camp', 'master_class'], true);

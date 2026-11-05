@@ -149,6 +149,16 @@ Route::get('/logout', fn () => redirect('/'));
 	*/
 	
 	Route::get('/events', [EventsController::class, 'index'])->name('events.index');
+
+	// Блок «Скоро»: скрытие и счётчики
+	Route::post('/events/upcoming/track', [\App\Http\Controllers\UpcomingBlockController::class, 'track'])->middleware('throttle:60,1')->name('upcoming.track');
+	Route::middleware(['auth'])->group(function () {
+		Route::post('/events/upcoming/dismiss', [\App\Http\Controllers\UpcomingBlockController::class, 'dismiss'])->middleware('throttle:60,1')->name('upcoming.dismiss');
+		Route::delete('/events/upcoming/dismiss/{event}', [\App\Http\Controllers\UpcomingBlockController::class, 'undo'])->whereNumber('event')->name('upcoming.undo');
+		Route::post('/events/upcoming/hide-block', [\App\Http\Controllers\UpcomingBlockController::class, 'hideBlock'])->name('upcoming.hide');
+		Route::post('/events/upcoming/visible', [\App\Http\Controllers\UpcomingBlockController::class, 'setVisible'])->name('upcoming.visible');
+		Route::post('/events/upcoming/reset', [\App\Http\Controllers\UpcomingBlockController::class, 'reset'])->name('upcoming.reset');
+	});
 	
 	Route::get('/events/{event}', [EventsController::class, 'show'])
     ->middleware('track.view:event,event')

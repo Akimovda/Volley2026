@@ -176,6 +176,8 @@
 
         @if(($event->format ?? '') === 'tournament')
         {{-- ===== БЛОК 0: Привязка к лиге / сезону / дивизиону (отдельная форма, вне главной) ===== --}}
+        @include('events._upcoming_stats', ['event' => $event])
+
         <div class="ramka" style="z-index:12">
             <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
 

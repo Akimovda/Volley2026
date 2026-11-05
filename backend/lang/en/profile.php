@@ -130,6 +130,9 @@ return [
     // Face ID section
     'sec_quick_login'      => 'Quick sign-in',
     'quick_login_lead'     => 'Face ID / Touch ID for signing into the app.',
+    'upcoming_sec_title'   => '"Coming soon" block',
+    'upcoming_show_label'  => 'Show the "Coming soon: camps, master classes, tournaments" block on the events page',
+    'upcoming_reset_btn'   => 'Show hidden events',
     'face_devices_title'   => 'Devices with Face ID / Touch ID',
     'face_device_current'  => 'this device',
     'face_device_last'     => 'last used',

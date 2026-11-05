@@ -749,6 +749,12 @@ class EventIndexService
     |--------------------------------------------------------------------------
     */
 
+    /** Туры и события, на которые пользователь уже записан (для блока «Скоро»: рекламировать их не нужно). @return array{0: array, 1: array} */
+    public function joinedForUpcoming(): array
+    {
+        return [$this->joinedIds('occurrence_id')[0], $this->joinedIds('event_id')[0]];
+    }
+
     private function joinedIds(string $column): array
     {
         $user = auth()->user();

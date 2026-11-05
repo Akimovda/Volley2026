@@ -1365,6 +1365,37 @@
 					</div>
 				</div>
 				
+				@php
+					$__upHidden = auth()->user()->upcoming_hidden_until && \Illuminate\Support\Carbon::parse(auth()->user()->upcoming_hidden_until)->isFuture();
+					$__upDismissed = \Illuminate\Support\Facades\DB::table('upcoming_dismissals')->where('user_id', auth()->id())->count();
+				@endphp
+				<div class="ramka">
+					<h2 class="-mt-05">{{ __('profile.upcoming_sec_title') }}</h2>
+					<div class="form">
+					<label class="checkbox-item">
+						<input type="checkbox" id="upcoming-visible" @checked(!$__upHidden)>
+						<div class="custom-checkbox"></div>
+						<span>{{ __('profile.upcoming_show_label') }}</span>
+					</label>
+					</div>
+					<div class="mt-1">
+						<button type="button" id="upcoming-reset" class="btn btn-secondary btn-small" @disabled($__upDismissed === 0)>{{ __('profile.upcoming_reset_btn') }} (<span id="upcoming-reset-n">{{ $__upDismissed }}</span>)</button>
+					</div>
+				</div>
+				<script>
+				(function () {
+					var tok = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
+					var post = function (url, body) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': tok() }, body: JSON.stringify(body || {}) }); };
+					var vis = document.getElementById('upcoming-visible'), rst = document.getElementById('upcoming-reset');
+					if (vis) vis.addEventListener('change', function () { post(@json(route('upcoming.visible')), { enabled: vis.checked ? 1 : 0 }); });
+					if (rst) rst.addEventListener('click', function () {
+						rst.disabled = true;
+						post(@json(route('upcoming.reset'))).then(function () { document.getElementById('upcoming-reset-n').textContent = '0'; });
+					});
+					try { localStorage.removeItem('upcoming_dismissed'); } catch (e) {}
+				})();
+				</script>
+
 				<div class="ramka">  	
 					
 					{{-- ✅ Приватность --}}

@@ -329,7 +329,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$joinCode      = $join?->code ?? null;
 			@endphp
 			
-			<div class="col-12 col-xl-4 col-lg-4 col-md-6 col-sm-6">
+			<div class="col-12 col-xl-4 col-lg-4 col-md-6 col-sm-6" @if(!empty($upcomingDismiss)) data-upcoming-event="{{ (int) $event->id }}" @endif>
 				<div
 				class="event-card card-ramka"
 				data-direction="{{ e($dir) }}"
@@ -339,6 +339,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 				data-beach-min="{{ e($bMin) }}"
 				data-beach-max="{{ e($bMax) }}"
 				>
+					@if(!empty($upcomingDismiss))
+					<button type="button" class="upcoming-dismiss" data-upcoming-dismiss aria-label="{{ __('events.upcoming_dismiss') }}" title="{{ __('events.upcoming_dismiss') }}">&times;</button>
+					@endif
 					{{-- Фото --}}
 					
 					<div class="event-card-body">
