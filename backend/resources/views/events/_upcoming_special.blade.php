@@ -31,9 +31,6 @@
 	.upcoming-special-head { display:flex; align-items:center; justify-content:space-between; gap:1rem; }
 	.upcoming-special-head .day-section-title { margin-bottom:0; min-width:0; flex:1 1 auto; white-space:normal; }
 	.upcoming-special-arrows { margin-left:auto; }
-	.upcoming-special-titlebox { min-width:0; flex:1 1 auto; }
-	.upcoming-hide-link { display:inline-block; margin-top:.3rem; font-size:1.2rem; opacity:.55; text-decoration:underline; cursor:pointer; color:inherit; }
-	.upcoming-hide-link:hover { opacity:1; }
 	.upcoming-special-list .event-card { position:relative; }
 	.upcoming-dismiss { position:absolute; top:.6rem; right:.6rem; z-index:5; width:3.2rem; height:3.2rem; border-radius:50%; border:0; background:rgba(0,0,0,.45); color:#fff; font-size:2.2rem; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0 0 .2rem; }
 	.upcoming-dismiss:hover { background:rgba(0,0,0,.7); }
@@ -49,11 +46,9 @@
 @endonce
 <section class="day-section upcoming-special" data-upcoming-special>
 	<div class="upcoming-special-head">
-		<div class="upcoming-special-titlebox">
-			<h3 class="day-section-title">{{ __('events.upcoming_title') }}</h3>
-			<a href="#" class="upcoming-hide-link" data-upcoming-hide>{{ __('events.upcoming_hide_block') }}</a>
-		</div>
+		<h3 class="day-section-title">{{ __('events.upcoming_title') }}</h3>
 		<div class="upcoming-special-arrows">
+			<button type="button" data-upcoming-hide aria-label="{{ __('events.upcoming_hide_block') }}" title="{{ __('events.upcoming_hide_block') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"></line></svg></button>
 			<button type="button" data-dir="-1" aria-label="{{ __('events.upcoming_prev') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
 			<button type="button" data-dir="1" aria-label="{{ __('events.upcoming_next') }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
 		</div>
