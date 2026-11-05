@@ -1169,6 +1169,25 @@ body.dark .swal-text {
     border-color: #6db8ff;
 }
 
+/* поле ввода в окнах swal: цвет текста задан явно (иначе в тёмной теме белый текст на белом фоне) */
+.swal-content__input {
+    color: #222;
+}
+.swal-content__input::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+body.dark .swal-content__input {
+    background-color: #15161f;
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.22);
+}
+body.dark .swal-content__input::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+body.dark .swal-content__input:focus {
+    border-color: #E7612F;
+}
+
 /* =========================
 	ЛОАДЕР
 ========================= */
