@@ -175,26 +175,44 @@
                         </div>
 
                         @php
+                        $pn = ['apple' => 'Apple', 'google' => 'Google', 'max' => 'MAX', 'tg' => 'Telegram', 'vk' => 'VK', 'ya' => 'Яндекс'];
+                        // icons — какие провайдеры; only — «только этот»; any — «всего с этим провайдером» (выделенная строка)
                         $providerRows = [
-                            ['label' => __('admin.p_apple_any'), 'key' => 'apple_any',  'hint' => __('admin.p_hint_apple_any'), 'bold' => true],
-                            ['label' => __('admin.p_apple_only'), 'key' => 'apple_only', 'hint' => __('admin.p_hint_apple_only')],
-                            ['label' => __('admin.p_google_any'), 'key' => 'google_any', 'hint' => __('admin.p_hint_google_any'), 'bold' => true],
-                            ['label' => __('admin.p_max_any'), 'key' => 'max_any', 'hint' => __('admin.p_hint_max_any'), 'bold' => true],
-                            ['label' => __('admin.p_tg_only'), 'key' => 'tg_only', 'hint' => __('admin.p_hint_tg_only')],
-                            ['label' => __('admin.p_vk_only'), 'key' => 'vk_only', 'hint' => __('admin.p_hint_vk_only')],
-                            ['label' => __('admin.p_ya_only'), 'key' => 'ya_only', 'hint' => __('admin.p_hint_ya_only')],
-                            ['label' => 'TG + VK',        'key' => 'tg_vk',     'hint' => ''],
-                            ['label' => 'TG + Ya',        'key' => 'tg_ya',     'hint' => ''],
-                            ['label' => 'Ya + VK',        'key' => 'ya_vk',     'hint' => ''],
-                            ['label' => __('admin.p_ya_vk_tg'), 'key' => 'ya_vk_tg', 'hint' => __('admin.p_hint_ya_vk_tg')],
+                            ['icons' => ['apple'],            'key' => 'apple_any',  'hint' => __('admin.p_hint_apple_any'),  'any' => true],
+                            ['icons' => ['apple'],            'key' => 'apple_only', 'hint' => __('admin.p_hint_apple_only'), 'only' => true],
+                            ['icons' => ['google'],           'key' => 'google_any', 'hint' => __('admin.p_hint_google_any'), 'any' => true],
+                            ['icons' => ['max'],              'key' => 'max_any',    'hint' => __('admin.p_hint_max_any'),    'any' => true],
+                            ['icons' => ['tg'],               'key' => 'tg_only',    'hint' => __('admin.p_hint_tg_only'),    'only' => true],
+                            ['icons' => ['vk'],               'key' => 'vk_only',    'hint' => __('admin.p_hint_vk_only'),    'only' => true],
+                            ['icons' => ['ya'],               'key' => 'ya_only',    'hint' => __('admin.p_hint_ya_only'),    'only' => true],
+                            ['icons' => ['tg', 'vk'],         'key' => 'tg_vk',      'hint' => ''],
+                            ['icons' => ['tg', 'ya'],         'key' => 'tg_ya',      'hint' => ''],
+                            ['icons' => ['ya', 'vk'],         'key' => 'ya_vk',      'hint' => ''],
+                            ['icons' => ['ya', 'vk', 'tg'],   'key' => 'ya_vk_tg',   'hint' => __('admin.p_hint_ya_vk_tg')],
                         ];
                         @endphp
 
                         <table class="table f-16">
                             @foreach($providerRows as $row)
-                            <tr @if(!empty($row['bold'])) style="background:rgba(0,0,0,.03)" @endif>
-                                <td class="b-600">{{ $row['label'] }}</td>
-                                <td class="f-14" style="opacity:.6">{{ $row['hint'] }}</td>
+                            @php
+                                $names = collect($row['icons'])->map(fn ($i) => $pn[$i])->implode(' + ');
+                                $tip = $names . (!empty($row['only']) ? ' — ' . __('admin.p_only_badge') : '') . ($row['hint'] ? ': ' . $row['hint'] : '');
+                            @endphp
+                            <tr @if(!empty($row['any'])) style="background:rgba(0,0,0,.03)" @endif title="{{ $tip }}">
+                                <td>
+                                    <span style="display:inline-flex;align-items:center;gap:.8rem">
+                                        @foreach($row['icons'] as $ic)
+                                            @if(!$loop->first)<span style="opacity:.4">+</span>@endif
+                                            @include('admin.dashboard._provider_icon', ['p' => $ic, 's' => 24])
+                                        @endforeach
+                                        @if(count($row['icons']) === 1)
+                                            <span class="b-600">{{ $names }}</span>
+                                        @endif
+                                        @if(!empty($row['only']))
+                                            <span class="f-13" style="opacity:.55;border:1px solid rgba(128,128,128,.4);border-radius:1rem;padding:0 .8rem">{{ __('admin.p_only_badge') }}</span>
+                                        @endif
+                                    </span>
+                                </td>
                                 <td class="text-right b-600 cd">{{ $p[$row['key']] ?? 0 }}</td>
                             </tr>
                             @endforeach

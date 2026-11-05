@@ -63,6 +63,7 @@ return [
     'providers_total'     => 'С ≥1 провайдером:',
     'p_apple_any'         => '🍎 Apple',
     'p_apple_only'        => '🍎 Apple only',
+    'p_only_badge' => 'только',
     'p_max_any' => 'Вход через MAX (всего)',
     'p_hint_max_any' => 'Пользователи с привязанным входом через MAX (сколько бы других входов ни было).',
     'p_google_any'        => '🔵 Google',
