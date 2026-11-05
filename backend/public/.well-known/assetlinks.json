@@ -1,10 +1,18 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "club.volleyplay.app",
-    "sha256_cert_fingerprints": [
-      "BC:47:E5:01:F0:CB:03:9B:7A:67:17:A0:87:2B:35:36:B8:C6:64:E9:4F:30:C3:C8:B9:49:94:33:6D:39:99:D4"
-    ]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "club.volleyplay.app",
+      "sha256_cert_fingerprints": [
+        "BC:47:E5:01:F0:CB:03:9B:7A:67:17:A0:87:2B:35:36:B8:C6:64:E9:4F:30:C3:C8:B9:49:94:33:6D:39:99:D4",
+        "5E:71:1E:B6:0D:27:81:88:5C:B8:48:A0:8A:71:40:2C:91:62:12:01:9F:AE:C8:20:34:16:4E:98:E6:4A:5B:F2",
+        "DC:6F:4D:FD:54:96:ED:04:E5:3B:03:52:A2:7B:2C:2F:A6:77:94:98:6B:11:5A:57:73:CE:19:33:22:65:BF:FE",
+        "E1:CF:6A:47:A4:95:29:70:96:BF:D7:23:F2:45:5F:C4:75:E4:29:11:5B:8D:97:57:19:A6:9A:F4:0D:C6:BD:1D"
+      ]
+    }
   }
-}]
+]
