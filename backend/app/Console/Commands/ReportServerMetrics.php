@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Метрики сервера → Uptime Kuma (push-мониторы): диск, память, нагрузка CPU, очередь задач.
+ * Метрики сервера → Uptime Kuma (push-мониторы): диск, память, нагрузка CPU, очередь задач, архив WAL PostgreSQL.
  * Каждые 5 минут шлёт в Kuma статус up/down и значение (ping — число для графика). Превышение порога — status=down,
  * Kuma присылает оповещение в Telegram; если сервер умер и метрики перестали приходить — монитор тоже упадёт сам.
- * Адреса push — в .env: KUMA_PUSH_DISK, KUMA_PUSH_MEMORY, KUMA_PUSH_LOAD, KUMA_PUSH_QUEUE_BACKLOG (пусто — метрика не шлётся).
+ * Адреса push — в .env: KUMA_PUSH_DISK, KUMA_PUSH_MEMORY, KUMA_PUSH_LOAD, KUMA_PUSH_QUEUE_BACKLOG, KUMA_PUSH_WAL (пусто — метрика не шлётся).
  *
  * Пороги (down): диск занят ≥ 80%; доступной памяти < 15%; load average (5 мин) на ядро > 1.0;
- * в очереди > 500 готовых задач или старейшая ждёт > 10 минут.
+ * в очереди > 500 готовых задач или старейшая ждёт > 10 минут; архив WAL: последняя выгрузка > 30 минут назад или текущая ошибка.
  */
 class ReportServerMetrics extends Command
 {
@@ -101,6 +101,28 @@ class ReportServerMetrics extends Command
             ];
         } catch (\Throwable $e) {
             $out['queue_backlog'] = ['ok' => false, 'ping' => 0, 'msg' => 'Очередь: не удалось прочитать таблицу jobs'];
+        }
+
+        // ── Архив WAL PostgreSQL (резервное копирование «на момент времени») ──
+        try {
+            $mode = (string) (DB::selectOne('show archive_mode')->archive_mode ?? 'off');
+            if ($mode === 'off') {
+                $out['wal'] = ['ok' => true, 'ping' => 0, 'msg' => 'Архив WAL: ещё не включён'];
+            } else {
+                $a = DB::selectOne("select archived_count, failed_count,
+                        extract(epoch from (now() - last_archived_time))::int as since_arch,
+                        (last_failed_time is not null and (last_archived_time is null or last_failed_time > last_archived_time)) as failing
+                    from pg_stat_archiver");
+                $min = $a->since_arch === null ? 9999 : intdiv((int) $a->since_arch, 60);
+                $out['wal'] = [
+                    // сегмент выгружается минимум раз в 5 минут (archive_timeout): 30 минут тишины или текущая ошибка — тревога
+                    'ok'   => !$a->failing && $min <= 30,
+                    'ping' => min($min, 9999),
+                    'msg'  => sprintf('Архив WAL: последний сегмент %d мин назад, выгружено %d, ошибок %d%s', $min, $a->archived_count, $a->failed_count, $a->failing ? ' — СЕЙЧАС ОШИБКА' : ''),
+                ];
+            }
+        } catch (\Throwable $e) {
+            $out['wal'] = ['ok' => false, 'ping' => 0, 'msg' => 'Архив WAL: не удалось прочитать pg_stat_archiver'];
         }
 
         return $out;

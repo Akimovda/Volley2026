@@ -42,6 +42,7 @@ return [
         'memory' => env('KUMA_PUSH_MEMORY'),
         'load' => env('KUMA_PUSH_LOAD'),
         'queue_backlog' => env('KUMA_PUSH_QUEUE_BACKLOG'),
+        'wal' => env('KUMA_PUSH_WAL'),
     ],
 
     'vk' => [
