@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountLink;
 use App\Models\MaxLoginAttempt;
 use App\Models\User;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,8 @@ use Illuminate\Support\Str;
  */
 class MaxAuthController extends Controller
 {
+    use OAuthCallbackSupport;
+
     private const SESSION_KEY = 'max_login_attempt';
 
     public function page(Request $request)
