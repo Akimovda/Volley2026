@@ -6,6 +6,7 @@ $posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной','reserve'=>'Запасной'];
 $currentMembers = $isNew ? collect() : $team->members->sortBy(fn($m)=>$m->role_code==='captain'?0:1);
 $captainId = $isNew ? auth()->id() : (int)$team->user_id;
+$captainReserve = (bool) ($currentMembers->firstWhere('user_id', $captainId)?->is_reserve ?? false);
 $validationErrors = session('team_validation_errors', []);
 $teamSizeError = session('team_size_error', null);
 $event = null;
@@ -104,6 +105,7 @@ if (request()->has('event_id') || session('return_event_id')) {
     {{-- Members --}}
     <div class="ramka">
         <h2 class="-mt-05">Состав команды</h2>
+        <p class="f-14 mb-2" style="opacity:.7">Для каждого игрока, включая капитана, выберите: <b>Основной</b> или <b>Запасной</b>. Запасные приглашаются в турнир как резерв.</p>
 
         <div id="utm-members-list">
             {{-- Captain (always first, non-removable) --}}
@@ -114,7 +116,11 @@ if (request()->has('event_id') || session('return_event_id')) {
                     <span class="b-600">{{ trim(auth()->user()->last_name . ' ' . auth()->user()->first_name) ?: auth()->user()->name }}</span>
                     <span class="f-13 alert-info p-1 pt-05 pb-05">Капитан</span>
                 </div>
-                <div class="d-flex gap-1 utm-pos-wrap">
+                <div class="d-flex gap-1 fvc utm-pos-wrap">
+                    <select name="members[0][is_reserve]" class="utm-role-select" style="width:auto" title="Капитан может играть в основе или быть запасным">
+                        <option value="0" @selected(!$captainReserve)>Основной</option>
+                        <option value="1" @selected($captainReserve)>Запасной</option>
+                    </select>
                     <select name="members[0][position_code]" class="utm-pos-select" style="width:auto">
                         <option value="">Позиция</option>
                         @foreach($posLabels as $k => $v)

@@ -60,6 +60,7 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
+            'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
@@ -71,12 +72,14 @@ class UserTeamController extends Controller
                 'subtype'   => $data['subtype'] ?? null,
             ]);
 
-            // Captain = owner
+            // Captain = owner (может быть и запасным: статус хранится отдельно от роли)
+            $captainRow = collect($data['members'] ?? [])->first(fn ($m) => (int) $m['user_id'] === (int) $user->id);
             UserTeamMember::create([
                 'user_team_id'  => $team->id,
                 'user_id'       => $user->id,
                 'role_code'     => 'captain',
-                'position_code' => null,
+                'position_code' => $captainRow['position_code'] ?? null,
+                'is_reserve'    => (bool) ($captainRow['is_reserve'] ?? false),
             ]);
 
             foreach (($data['members'] ?? []) as $m) {
@@ -86,6 +89,7 @@ class UserTeamController extends Controller
                     [
                         'role_code'     => $m['role_code'] ?? 'player',
                         'position_code' => $m['position_code'] ?? null,
+                        'is_reserve'    => ($m['role_code'] ?? 'player') === 'reserve',
                     ]
                 );
             }
@@ -107,6 +111,7 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
+            'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
 
@@ -129,17 +134,22 @@ class UserTeamController extends Controller
                     [
                         'role_code'     => $m['role_code'] ?? 'player',
                         'position_code' => $m['position_code'] ?? null,
+                        'is_reserve'    => ($m['role_code'] ?? 'player') === 'reserve',
                     ]
                 );
             }
 
-            // Update captain position if provided
+            // Капитан: позиция (если указана) и статус «основной / запасной»
             if (!empty($data['members'])) {
                 foreach ($data['members'] as $m) {
-                    if ((int)$m['user_id'] === (int)$user->id && !empty($m['position_code'])) {
+                    if ((int)$m['user_id'] === (int)$user->id) {
+                        $upd = ['is_reserve' => (bool) ($m['is_reserve'] ?? false)];
+                        if (!empty($m['position_code'])) {
+                            $upd['position_code'] = $m['position_code'];
+                        }
                         UserTeamMember::where('user_team_id', $team->id)
                             ->where('user_id', $user->id)
-                            ->update(['position_code' => $m['position_code']]);
+                            ->update($upd);
                     }
                 }
             }
