@@ -568,7 +568,7 @@
 											<div class="custom-checkbox"></div>
 											<span>{{ __('events.notify_unrated_label') }}</span>
 										</label>
-										<div class="f-14" style="opacity:.65">{{ __('events.notify_unrated_hint') }}</div>
+										<div style="font-size:1.2rem;line-height:1.35;opacity:.6">{{ __('events.notify_unrated_hint') }}</div>
 										@php
 											$notifyReachT = [
 												'disabled' => __('events.notify_reach_disabled'),
