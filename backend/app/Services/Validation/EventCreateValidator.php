@@ -105,9 +105,9 @@
                 'nullable',
                 'integer',
                 'min:300',
-                'max:' . (10 * 24 * 3600)
+                'max:' . (30 * 24 * 3600)
             ],
-            'duration_days' => ['nullable', 'integer', 'min:0', 'max:10'],
+            'duration_days' => ['nullable', 'integer', 'min:0', 'max:30'],
             'duration_hours' => ['nullable', 'integer', 'min:0', 'max:23'],
             'duration_minutes' => ['nullable', 'integer', 'min:0', 'max:59'],
 			
@@ -616,7 +616,7 @@
                 $v->errors()->add('duration_sec', __('events.err_duration_min'));
             }
             
-            if (($durationSec ?? 0) === 0 && $durationPartsSec > (10 * 24 * 3600)) {
+            if (($durationSec ?? 0) === 0 && $durationPartsSec > (30 * 24 * 3600)) {
                 $v->errors()->add('duration_sec', __('events.err_duration_max'));
             }
             /*

@@ -1313,7 +1313,7 @@ return [
     'reg_by_roles_locked' => 'The sign-up mode cannot be changed: players are already registered for upcoming games (:n). Cancel their registrations first.',
     'err_duration_required' => 'Please set the event duration.',
     'err_duration_min' => 'The minimum event duration is 5 minutes.',
-    'err_duration_max' => 'The event duration cannot be longer than 10 days.',
+    'err_duration_max' => 'The event duration cannot be longer than 30 days.',
     'err_child_age_required' => 'Please set the allowed age of children.',
     'err_child_age_order' => 'The minimum age cannot be greater than the maximum age.',
     'err_gender_reg_earlier' => 'Registration for the restricted gender cannot start earlier than general registration: the number of days must not exceed the general one.',

@@ -33,7 +33,7 @@
 			$durationSec = (int)($data['duration_sec'] ?? 0);
 			
 			$minDuration = 300;
-			$maxDuration = 10 * 24 * 3600;
+			$maxDuration = 30 * 24 * 3600;
 			
 			if ($durationSec < $minDuration) {
 				$errors['duration_sec'][] = 'Длительность слишком мала';
