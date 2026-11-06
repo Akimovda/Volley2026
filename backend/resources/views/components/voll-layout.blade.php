@@ -80,12 +80,23 @@
 		<meta name="twitter:description" content="{{ $ogDescription }}">
 		<meta name="twitter:image" content="{{ $ogImage }}">
 		<script>
-			if (!document.documentElement.classList.contains('is-app')) {
+			// SDK Telegram Mini App нужен только внутри Telegram. Раньше грузился всегда: во внутренних браузерах других
+			// мессенджеров (MAX) и там, где telegram.org недоступен/медленный, зависший запрос держал индикатор загрузки.
+			(function () {
+				if (document.documentElement.classList.contains('is-app')) return;
+				var inTelegram = false;
+				try {
+					inTelegram = !!window.TelegramWebviewProxy || !!window.TelegramWebview ||
+						/tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search) ||
+						/Telegram/i.test(navigator.userAgent || '') ||
+						!!sessionStorage.getItem('__telegram__initParams');
+				} catch (e) {}
+				if (!inTelegram) return;
 				var s = document.createElement('script');
 				s.src = 'https://telegram.org/js/telegram-web-app.js';
 				s.async = true;
 				document.head.appendChild(s);
-			}
+			})();
 		</script>
 		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
