@@ -132,4 +132,7 @@ return [
     'cl_teams_draft' => 'Lineups set: :a and :b players — create the match',
     'auto_pair_title' => 'Match between the formed teams',
     'auto_pair_hint' => 'The teams are already set — no need to pick sides or players, just create the match.',
+    'auto_pair_first' => 'Team 1 (first)',
+    'auto_pair_n1' => 'Team 1',
+    'auto_pair_n2' => 'Team 2',
 ];

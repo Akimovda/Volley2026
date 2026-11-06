@@ -206,14 +206,40 @@
                 </div>
 
                 @if($autoPair)
-                @php $pairA = $eventTeams->values()[0]; $pairB = $eventTeams->values()[1]; @endphp
-                <div class="mb-2">
+                @php
+                    $pairA = $eventTeams->values()[0]; $pairB = $eventTeams->values()[1];
+                    // кто «Команда 1»: из черновика/old, иначе первая в списке
+                    $homeId = (int) old('auto_home_team', ($draft['team_side'][$pairB->id] ?? '') === 'home' ? $pairB->id : $pairA->id);
+                    if ($homeId !== (int) $pairB->id) { $homeId = (int) $pairA->id; }
+                @endphp
+                <div class="mb-2" id="gm-auto-pair">
                     <div class="b-600">{{ __('games.auto_pair_title') }}</div>
-                    <input type="hidden" name="team_side[{{ $pairA->id }}]" value="home">
-                    <input type="hidden" name="team_side[{{ $pairB->id }}]" value="away">
-                    <div class="f-15 mt-05">{{ $pairA->name }} — {{ $pairB->name }}</div>
+                    <input type="hidden" name="team_side[{{ $pairA->id }}]" id="gm-auto-side-{{ $pairA->id }}" value="{{ $homeId === (int) $pairA->id ? 'home' : 'away' }}">
+                    <input type="hidden" name="team_side[{{ $pairB->id }}]" id="gm-auto-side-{{ $pairB->id }}" value="{{ $homeId === (int) $pairB->id ? 'home' : 'away' }}">
+                    <div class="gm-color-field mt-05">{{ __('games.auto_pair_first') }}:
+                        <select name="auto_home_team" id="gm-auto-home">
+                            <option value="{{ $pairA->id }}" @selected($homeId === (int) $pairA->id)>{{ $pairA->name }}</option>
+                            <option value="{{ $pairB->id }}" @selected($homeId === (int) $pairB->id)>{{ $pairB->name }}</option>
+                        </select>
+                    </div>
+                    <div class="f-15 mt-05" id="gm-auto-line"></div>
                     <div class="f-13" style="opacity:.65">{{ __('games.auto_pair_hint') }}</div>
                 </div>
+                <script>
+                (function () {
+                    var sel = document.getElementById('gm-auto-home'); if (!sel) return;
+                    var ids = [{{ (int) $pairA->id }}, {{ (int) $pairB->id }}];
+                    var names = {!! json_encode([(int) $pairA->id => $pairA->name, (int) $pairB->id => $pairB->name], JSON_UNESCAPED_UNICODE) !!};
+                    var lbl = {!! json_encode([__('games.auto_pair_n1'), __('games.auto_pair_n2')], JSON_UNESCAPED_UNICODE) !!};
+                    function apply() {
+                        var home = parseInt(sel.value, 10), away = ids[0] === home ? ids[1] : ids[0];
+                        document.getElementById('gm-auto-side-' + home).value = 'home';
+                        document.getElementById('gm-auto-side-' + away).value = 'away';
+                        document.getElementById('gm-auto-line').textContent = lbl[0] + ': ' + names[home] + ' — ' + lbl[1] + ': ' + names[away];
+                    }
+                    sel.addEventListener('change', apply); apply();
+                })();
+                </script>
                 @elseif($eventTeams->isNotEmpty())
                 <div class="mb-2">
                     <div class="b-600">{{ __('games.event_teams_title') }}</div>
