@@ -216,11 +216,13 @@
                     <div class="b-600">{{ __('games.auto_pair_title') }}</div>
                     <input type="hidden" name="team_side[{{ $pairA->id }}]" id="gm-auto-side-{{ $pairA->id }}" value="{{ $homeId === (int) $pairA->id ? 'home' : 'away' }}">
                     <input type="hidden" name="team_side[{{ $pairB->id }}]" id="gm-auto-side-{{ $pairB->id }}" value="{{ $homeId === (int) $pairB->id ? 'home' : 'away' }}">
-                    <div class="gm-color-field mt-05">{{ __('games.auto_pair_first') }}:
-                        <select name="auto_home_team" id="gm-auto-home">
-                            <option value="{{ $pairA->id }}" @selected($homeId === (int) $pairA->id)>{{ $pairA->name }}</option>
-                            <option value="{{ $pairB->id }}" @selected($homeId === (int) $pairB->id)>{{ $pairB->name }}</option>
-                        </select>
+                    <div class="gm-color-row mt-05">
+                        <div class="gm-color-field">{{ __('games.auto_pair_first') }}:
+                            <select name="auto_home_team" id="gm-auto-home">
+                                <option value="{{ $pairA->id }}" @selected($homeId === (int) $pairA->id)>{{ $pairA->name }}</option>
+                                <option value="{{ $pairB->id }}" @selected($homeId === (int) $pairB->id)>{{ $pairB->name }}</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="f-15 mt-05" id="gm-auto-line"></div>
                     <div class="f-13" style="opacity:.65">{{ __('games.auto_pair_hint') }}</div>
