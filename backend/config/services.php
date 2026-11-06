@@ -76,6 +76,9 @@ return [
         'admin_chat_id'      => env('TELEGRAM_ADMIN_CHAT_ID'),
         'oidc_client_id'     => env('TELEGRAM_OIDC_CLIENT_ID'),
         'oidc_client_secret' => env('TELEGRAM_OIDC_CLIENT_SECRET'),
+        // Вход через Telegram (OIDC): обмен кода на токен и JWKS идут с сервера. Если сервер не достаёт до oauth.telegram.org —
+        // true: ходим через релей (TELEGRAM_API_BASE + /oauth/token и /oauth/.well-known/jwks.json, маршруты есть в воркере tg-relay)
+        'oidc_via_relay'     => (bool) env('TELEGRAM_OIDC_VIA_RELAY', false),
     ],
 
     'vk_wall' => [

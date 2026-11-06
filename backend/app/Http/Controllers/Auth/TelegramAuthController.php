@@ -25,6 +25,12 @@ class TelegramAuthController extends Controller
     private const TOKEN_URL = 'https://oauth.telegram.org/token';
     private const JWKS_URL  = 'https://oauth.telegram.org/.well-known/jwks.json';
 
+    /** Серверные запросы к oauth.telegram.org: напрямую или через релей (services.telegram.oidc_via_relay). */
+    private function oidcUrl(string $direct, string $relayPath): string
+    {
+        return config('services.telegram.oidc_via_relay') ? \App\Services\TelegramApi::base() . $relayPath : $direct;
+    }
+
     /* ── helpers: return URL ── */
 
     private function storeReturnTo(Request $request): void
@@ -236,7 +242,7 @@ class TelegramAuthController extends Controller
                 ->connectTimeout(5)
                 ->asForm()
                 ->withBasicAuth($clientId, $clientSecret)
-                ->post(self::TOKEN_URL, [
+                ->post($this->oidcUrl(self::TOKEN_URL, '/oauth/token'), [
                     'grant_type'    => 'authorization_code',
                     'code'          => $code,
                     'redirect_uri'  => route('auth.telegram.callback'),
@@ -296,7 +302,7 @@ class TelegramAuthController extends Controller
     private function validateIdToken(string $idToken, string $clientId): object
     {
         $jwks = Cache::remember('telegram_oidc_jwks', 3600, function () {
-            $response = Http::timeout(10)->connectTimeout(5)->get(self::JWKS_URL);
+            $response = Http::timeout(10)->connectTimeout(5)->get($this->oidcUrl(self::JWKS_URL, '/oauth/.well-known/jwks.json'));
             if (!$response->successful()) {
                 throw new \RuntimeException('Failed to fetch JWKS: HTTP ' . $response->status());
             }
