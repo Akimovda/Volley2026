@@ -1049,20 +1049,23 @@
 													<span>{{ __('events.notify_unrated_label') }}</span>
 												</label>
 												<div class="f-14" style="opacity:.65">{{ __('events.notify_unrated_hint') }}</div>
-												<div class="f-15 mt-1" id="notify-reach" style="display:none"></div>
-												<script>
-												(function () {
-													var form = document.getElementById('notify-reach') && document.getElementById('notify-reach').closest('form');
-													if (!form) return;
-													var box = document.getElementById('notify-reach');
-													var T = @json([
+												@php
+													$notifyReachT = [
 														'disabled' => __('events.notify_reach_disabled'),
 														'no_city'  => __('events.notify_reach_no_city'),
 														'all'      => __('events.notify_reach_all'),
 														'without'  => __('events.notify_reach_without'),
 														'with'     => __('events.notify_reach_with'),
 														'extra'    => __('events.notify_reach_extra'),
-													]);
+													];
+												@endphp
+												<div class="f-15 mt-1" id="notify-reach" style="display:none"></div>
+												<script>
+												(function () {
+													var form = document.getElementById('notify-reach') && document.getElementById('notify-reach').closest('form');
+													if (!form) return;
+													var box = document.getElementById('notify-reach');
+													var T = @json($notifyReachT);
 													var URL = @json(route('events.create.notify_reach'));
 													var timer = null, req = null;
 													function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
