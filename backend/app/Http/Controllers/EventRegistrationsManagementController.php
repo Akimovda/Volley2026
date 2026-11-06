@@ -246,10 +246,10 @@ class EventRegistrationsManagementController extends Controller
                 $users = User::query()
                     ->select(['id', 'name', 'email', 'is_bot'])
                     ->where(fn ($w) => $w
-                        ->where('name', 'ilike', $like)
+                        ->whereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)])
                         ->orWhere('email', 'ilike', $like)
-                        ->orWhere('first_name', 'ilike', $like)
-                        ->orWhere('last_name', 'ilike', $like))
+                        ->orWhereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text($like)])
+                        ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text($like)]))
                     ->orderBy('name')
                     ->limit(30)
                     ->get();
@@ -498,9 +498,9 @@ class EventRegistrationsManagementController extends Controller
             })
             ->leftJoin('users as cu', 'cu.id', '=', 'cm.user_id')
             ->where(function ($w) use ($like) {
-                $w->where('t.name', 'ILIKE', $like)
-                    ->orWhereRaw("(coalesce(cu.last_name,'') || ' ' || coalesce(cu.first_name,'')) ILIKE ?", [$like])
-                    ->orWhereRaw("(coalesce(cu.first_name,'') || ' ' || coalesce(cu.last_name,'')) ILIKE ?", [$like]);
+                $w->whereRaw(\App\Support\NameSearch::ilike('t.name'), [\App\Support\NameSearch::text($like)])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(cu.last_name,'') || ' ' || coalesce(cu.first_name,''))"), [\App\Support\NameSearch::text($like)])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(cu.first_name,'') || ' ' || coalesce(cu.last_name,''))"), [\App\Support\NameSearch::text($like)]);
             })
             ->select('t.id', 't.name', 't.direction', 't.subtype', 'cu.first_name', 'cu.last_name',
                 DB::raw('(select count(*) from user_team_members m where m.user_team_id = t.id) as members_count'))

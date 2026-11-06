@@ -92,11 +92,11 @@ class UserSearchController extends Controller
                 }
 
                 foreach ($likes as $like) {
-                    $w->orWhere('first_name', 'ILIKE', $like)
-                        ->orWhere('last_name', 'ILIKE', $like)
-                        ->orWhereRaw("(coalesce(last_name, '') || ' ' || coalesce(first_name, '')) ILIKE ?", [$like])
-                        ->orWhereRaw("(coalesce(first_name, '') || ' ' || coalesce(last_name, '')) ILIKE ?", [$like])
-                        ->orWhere('name', 'ILIKE', $like);
+                    $w->orWhereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text($like)])
+                        ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text($like)])
+                        ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(last_name, '') || ' ' || coalesce(first_name, ''))"), [\App\Support\NameSearch::text($like)])
+                        ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(first_name, '') || ' ' || coalesce(last_name, ''))"), [\App\Support\NameSearch::text($like)])
+                        ->orWhereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)]);
 
                     if ($isTrusted) {
                         $w->orWhere('telegram_username', 'ILIKE', $like);

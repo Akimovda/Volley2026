@@ -35,11 +35,11 @@ class ImpersonationController extends Controller
                 if (ctype_digit($q) && (int) $q > 0) {
                     $w->orWhere('id', (int) $q);
                 }
-                $w->orWhere('first_name', 'ILIKE', $like)
-                  ->orWhere('last_name', 'ILIKE', $like)
-                  ->orWhereRaw("(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) ILIKE ?", [$like])
-                  ->orWhereRaw("(coalesce(last_name,'') || ' ' || coalesce(first_name,'')) ILIKE ?", [$like])
-                  ->orWhere('name', 'ILIKE', $like)
+                $w->orWhereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(first_name,'') || ' ' || coalesce(last_name,''))"), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(last_name,'') || ' ' || coalesce(first_name,''))"), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)])
                   ->orWhere('email', 'ILIKE', $like);
             })
             ->orderBy('last_name')->orderBy('first_name')->orderBy('name')

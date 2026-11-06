@@ -44,11 +44,11 @@ class AdminUserController extends Controller
 
         if ($q !== '') {
             $query->where(function ($w) use ($q) {
-                $w->where('name', 'like', "%{$q}%")
-                    ->orWhere('first_name', 'like', "%{$q}%")
-                    ->orWhere('last_name', 'like', "%{$q}%")
-                    ->orWhereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])
-                    ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$q}%"])
+                $w->whereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text("%{$q}%")])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text("%{$q}%")])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text("%{$q}%")])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike("CONCAT(last_name, ' ', first_name)"), [\App\Support\NameSearch::text("%{$q}%")])
+                    ->orWhereRaw(\App\Support\NameSearch::ilike("CONCAT(first_name, ' ', last_name)"), [\App\Support\NameSearch::text("%{$q}%")])
                     ->orWhere('email', 'like', "%{$q}%")
                     ->orWhere('telegram_username', 'like', "%{$q}%")
                     ->orWhere('telegram_id', 'like', "%{$q}%")

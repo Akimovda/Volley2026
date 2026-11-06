@@ -381,7 +381,7 @@ class OrgPlayersController extends Controller
         if (mb_strlen($q) < 2) {
             return response()->json(['items' => []]);
         }
-        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], mb_strtolower($q)) . '%';
+        $like = '%' . str_replace(['%', '_'], ['\\%', '\\_'], \App\Support\NameSearch::text(mb_strtolower($q))) . '%';
 
         $rows = DB::table('users as u')
             ->where('u.is_bot', false)
@@ -393,8 +393,8 @@ class OrgPlayersController extends Controller
                     ->where('e.organizer_id', $orgId);
             })
             ->where(function ($w) use ($like) {
-                $w->whereRaw("LOWER(CONCAT_WS(' ', u.last_name, u.first_name, u.patronymic)) LIKE ?", [$like])
-                  ->orWhereRaw("LOWER(CONCAT_WS(' ', u.first_name, u.last_name)) LIKE ?", [$like]);
+                $w->whereRaw(\App\Support\NameSearch::col("LOWER(CONCAT_WS(' ', u.last_name, u.first_name, u.patronymic))") . " LIKE ?", [$like])
+                  ->orWhereRaw(\App\Support\NameSearch::col("LOWER(CONCAT_WS(' ', u.first_name, u.last_name))") . " LIKE ?", [$like]);
             })
             ->orderBy('u.last_name')->orderBy('u.first_name')
             ->limit(10)

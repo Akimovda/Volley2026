@@ -101,10 +101,10 @@ class PlayerRatingController extends Controller
 
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('u1.first_name', 'ILIKE', "%$search%")
-                  ->orWhere('u1.last_name',  'ILIKE', "%$search%")
-                  ->orWhere('u2.first_name', 'ILIKE', "%$search%")
-                  ->orWhere('u2.last_name',  'ILIKE', "%$search%");
+                $q->whereRaw(\App\Support\NameSearch::ilike('u1.first_name'), [\App\Support\NameSearch::text("%$search%")])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('u1.last_name'), [\App\Support\NameSearch::text("%$search%")])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('u2.first_name'), [\App\Support\NameSearch::text("%$search%")])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('u2.last_name'), [\App\Support\NameSearch::text("%$search%")]);
             });
         }
 
@@ -184,12 +184,12 @@ class PlayerRatingController extends Controller
             $query->where('x.game_scheme', $scheme);
         }
         if ($search) {
-            $like = '%' . $search . '%';
+            $like = \App\Support\NameSearch::text('%' . $search . '%');
             $query->where(function ($q) use ($like) {
-                $q->where('x.team_name', 'ILIKE', $like)
+                $q->whereRaw(\App\Support\NameSearch::ilike('x.team_name'), [$like])
                   ->orWhereRaw("EXISTS (SELECT 1 FROM users u
                         WHERE u.id = ANY(string_to_array(x.roster, ',')::bigint[])
-                          AND (u.first_name ILIKE ? OR u.last_name ILIKE ?))", [$like, $like]);
+                          AND (" . \App\Support\NameSearch::ilike('u.first_name') . " OR " . \App\Support\NameSearch::ilike('u.last_name') . "))", [$like, $like]);
             });
         }
 
@@ -265,8 +265,8 @@ class PlayerRatingController extends Controller
 
         if ($search) {
             $query->where(fn($q) => $q
-                ->where('users.first_name', 'ILIKE', "%$search%")
-                ->orWhere('users.last_name',  'ILIKE', "%$search%"));
+                ->whereRaw(\App\Support\NameSearch::ilike('users.first_name'), [\App\Support\NameSearch::text("%$search%")])
+                ->orWhereRaw(\App\Support\NameSearch::ilike('users.last_name'), [\App\Support\NameSearch::text("%$search%")]));
         }
 
         match ($sort) {
@@ -289,8 +289,8 @@ class PlayerRatingController extends Controller
 
         if ($search) {
             $query->whereHas('user', fn($q) => $q
-                ->where('first_name', 'ILIKE', "%$search%")
-                ->orWhere('last_name',  'ILIKE', "%$search%"));
+                ->whereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text("%$search%")])
+                ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text("%$search%")]));
         }
 
         match ($sort) {

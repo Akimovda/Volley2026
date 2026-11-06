@@ -63,17 +63,17 @@ class SubscriptionController extends Controller
                 $q->where(function ($w) use ($like, $digits, $f) {
                     $w->whereHas('user', function ($u) use ($like, $digits) {
                         $u->where(function ($x) use ($like, $digits) {
-                            $x->where('first_name', 'ilike', $like)
-                              ->orWhere('last_name', 'ilike', $like)
-                              ->orWhere('patronymic', 'ilike', $like)
+                            $x->whereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike('patronymic'), [\App\Support\NameSearch::text($like)])
                               ->orWhere('email', 'ilike', $like)
-                              ->orWhereRaw("(coalesce(last_name,'') || ' ' || coalesce(first_name,'')) ilike ?", [$like])
-                              ->orWhereRaw("(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) ilike ?", [$like]);
+                              ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(last_name,'') || ' ' || coalesce(first_name,''))"), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(first_name,'') || ' ' || coalesce(last_name,''))"), [\App\Support\NameSearch::text($like)]);
                             if (strlen($digits) >= 3) {
                                 $x->orWhereRaw("regexp_replace(coalesce(phone,''), '\\D', '', 'g') like ?", ['%' . $digits . '%']);
                             }
                         });
-                    })->orWhereHas('template', fn($t) => $t->where('name', 'ilike', $like));
+                    })->orWhereHas('template', fn($t) => $t->whereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)]));
                     if (ctype_digit(ltrim($f['q'], '#'))) {
                         $w->orWhere('id', (int) ltrim($f['q'], '#'));
                     }

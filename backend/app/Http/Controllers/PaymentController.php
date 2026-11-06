@@ -211,8 +211,8 @@ class PaymentController extends Controller
             if ($request->filled('player_q')) {
                 $playerQ = $request->input('player_q');
                 $q->whereHas('user', fn ($uq) => $uq->whereRaw(
-                    "(first_name || ' ' || last_name) ILIKE ?",
-                    ['%' . $playerQ . '%']
+                    \App\Support\NameSearch::ilike("(first_name || ' ' || last_name)"),
+                    [\App\Support\NameSearch::text('%' . $playerQ . '%')]
                 ));
             }
 
