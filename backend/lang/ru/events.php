@@ -1395,4 +1395,5 @@ return [
     'notify_reach_without' => 'Без галочки анонс получат: :n игроков',
     'notify_reach_with' => 'С галочкой анонс получат: :n игроков',
     'notify_reach_extra' => '+:n без указанного уровня',
+    'notify_section_title' => 'Рекламная рассылка:',
 ];

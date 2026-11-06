@@ -1331,4 +1331,5 @@ return [
     'notify_reach_without' => 'Unticked, the announcement reaches :n players',
     'notify_reach_with' => 'Ticked, the announcement reaches :n players',
     'notify_reach_extra' => '+:n without a level',
+    'notify_section_title' => 'Promotional mailing:',
 ];

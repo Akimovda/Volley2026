@@ -560,6 +560,83 @@
 								</div>
 								<div class="col-md-4">
 									<div class="card">
+										<label>{{ __('events.notify_section_title') }}</label>
+										<hr class="mb-1">
+										<input type="hidden" name="notify_unrated_players" value="0">
+										<label class="checkbox-item mt-1">
+											<input type="checkbox" name="notify_unrated_players" value="1" @checked(old('notify_unrated_players', $prefill['notify_unrated_players'] ?? false))>
+											<div class="custom-checkbox"></div>
+											<span>{{ __('events.notify_unrated_label') }}</span>
+										</label>
+										<div class="f-14" style="opacity:.65">{{ __('events.notify_unrated_hint') }}</div>
+										@php
+											$notifyReachT = [
+												'disabled' => __('events.notify_reach_disabled'),
+												'no_city'  => __('events.notify_reach_no_city'),
+												'all'      => __('events.notify_reach_all'),
+												'without'  => __('events.notify_reach_without'),
+												'with'     => __('events.notify_reach_with'),
+												'extra'    => __('events.notify_reach_extra'),
+											];
+										@endphp
+										<div class="f-15 mt-1" id="notify-reach" style="display:none"></div>
+										<script>
+										(function () {
+											var form = document.getElementById('notify-reach') && document.getElementById('notify-reach').closest('form');
+											if (!form) return;
+											var box = document.getElementById('notify-reach');
+											var T = @json($notifyReachT);
+											var URL = @json(route('events.create.notify_reach'));
+											var timer = null, req = null;
+											function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
+											function checkedVal(name) { var el = form.querySelector('[name="' + name + '"]:checked'); return el ? el.value : ''; }
+											function num(n) { return Number(n).toLocaleString('ru-RU'); }
+											function fill(tpl, n) { return tpl.replace(':n', num(n)); }
+											function render(r) {
+												var cb = form.querySelector('input[type="checkbox"][name="notify_unrated_players"]');
+												var on = cb && cb.checked, h = '';
+												if (r.state === 'disabled') h = T.disabled;
+												else if (r.state === 'no_city') h = T.no_city;
+												else if (r.state === 'all') h = fill(T.all, r.total);
+												else if (r.state === 'range') {
+													var a = '<span style="' + (on ? 'opacity:.6' : 'font-weight:700') + '">' + fill(T.without, r.base) + '</span>';
+													var b = '<span style="' + (on ? 'font-weight:700' : 'opacity:.6') + '">' + fill(T.with, r.with_unrated) + (r.unrated > 0 ? ' (' + fill(T.extra, r.unrated) + ')' : '') + '</span>';
+													h = a + '<br>' + b;
+												}
+												box.innerHTML = h; box.style.display = h ? '' : 'none';
+											}
+											var last = null;
+											function load() {
+												var dir = val('direction') === 'beach' ? 'beach' : 'classic';
+												var q = [
+													'format=' + encodeURIComponent(val('format')),
+													'direction=' + dir,
+													'location_id=' + encodeURIComponent(val('location_id')),
+													'is_private=' + (form.querySelector('[name="is_private"]:checked') || form.querySelector('input[type="checkbox"][name="is_private"]:checked') ? 1 : 0),
+													'allow_registration=' + (checkedVal('allow_registration') || '1'),
+													dir + '_level_min=' + encodeURIComponent(val(dir + '_level_min')),
+													dir + '_level_max=' + encodeURIComponent(val(dir + '_level_max'))
+												].join('&');
+												if (req) req.abort();
+												req = new XMLHttpRequest();
+												req.open('GET', URL + '?' + q);
+												req.setRequestHeader('Accept', 'application/json');
+												req.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+												req.onload = function () { try { last = JSON.parse(req.responseText); render(last); } catch (e) {} };
+												req.send();
+											}
+											function schedule() { clearTimeout(timer); timer = setTimeout(load, 350); }
+											form.addEventListener('change', function (e) {
+												var n = e.target && e.target.name;
+												if (n === 'notify_unrated_players') { if (last) render(last); return; }
+												if (['format','direction','location_id','is_private','allow_registration','classic_level_min','classic_level_max','beach_level_min','beach_level_max'].indexOf(n) !== -1) schedule();
+											});
+											document.addEventListener('DOMContentLoaded', schedule);
+											if (document.readyState !== 'loading') schedule();
+										})();
+										</script>
+
+										<hr class="mb-1 mt-1">
 										<label>{{ __('events.show_participants_label') }}</label>
 										<label class="radio-item">
 											<input type="radio" name="show_participants" value="1" @checked($showParts)>
