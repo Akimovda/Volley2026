@@ -79,8 +79,9 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
     .tm-h2{display:flex;align-items:center;gap:.7rem}
     .tm-card{margin-bottom:1rem;position:relative;overflow:visible}
     .tm-del-form{margin:0}
-    /* крестик «удалить» — как на карточках мероприятия: светлый кружок с контуром, в углу, чуть за краем */
-    .tm-del{position:absolute;top:-.9rem;left:-.9rem;z-index:5;width:3.2rem;height:3.2rem;border-radius:50%;border:.2rem solid rgba(41,103,186,.25);background:#fff;color:#2967BA;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+    .tm-card--del .tm-status{margin-top:.9rem}
+    /* крестик «удалить» — как на карточках мероприятия: светлый кружок с контуром, в правом углу, чуть за краем */
+    .tm-del{position:absolute;top:-1.2rem;right:-.9rem;z-index:5;width:3.2rem;height:3.2rem;border-radius:50%;border:.2rem solid rgba(41,103,186,.25);background:#fff;color:#2967BA;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
     .tm-del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
     body.dark .tm-del{background:#1f2430;color:#E7612F;border-color:rgba(231,97,45,.35)}
     body.dark .tm-del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
@@ -176,7 +177,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
             $canDelete   = ($isCaptain || $isOrganizer) && !$isTeamCaptain;
             $showActions = ($isCaptain && !$isTeamCaptain) || $showSub;
         @endphp
-        <div class="card tm-card">
+        <div class="card tm-card @if($canDelete) tm-card--del @endif">
             @if($canDelete)
             <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}" class="tm-del-form">
                 @csrf @method('DELETE')
