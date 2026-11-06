@@ -320,7 +320,7 @@ class MatchRallyService
             }
         }
 
-        $players = $this->playerStatsService->getMatchPlayers($match);
+        $players = $this->playerStatsService->getMatchPlayers($match, true);
 
         return [
             'set_number'      => $setNumber,
