@@ -492,6 +492,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Перевод игрока между основным составом и запасными в рамках команды
 		Route::patch('/events/{event}/teams/{team}/members/{member}/team-role', [TournamentTeamController::class, 'updateMemberTeamRole'])
         ->name('tournamentTeams.members.updateTeamRole');
+
+		// Замена: запасной выходит в основу вместо выбранного игрока основного состава
+		Route::patch('/events/{event}/teams/{team}/members/{member}/swap', [TournamentTeamController::class, 'swapMembers'])
+        ->name('tournamentTeams.members.swap');
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');

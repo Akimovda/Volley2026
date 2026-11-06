@@ -418,6 +418,42 @@ class TournamentTeamController extends Controller
     }
 
     /**
+     * Замена: запасной выходит в основу вместо выбранного игрока основного состава (тот уходит на скамейку).
+     */
+    public function swapMembers(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        EventTeamMember $member,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $member->event_team_id === (int) $team->id, 404);
+        $canManage = (int) $team->captain_user_id === (int) $request->user()->id
+            || (int) $event->organizer_id === (int) $request->user()->id
+            || $request->user()->isAdmin();
+        abort_unless($canManage, 403);
+
+        $data = $request->validate([
+            'out_member_id' => ['required', 'integer'],
+        ]);
+
+        $out = EventTeamMember::query()
+            ->where('event_team_id', $team->id)
+            ->find((int) $data['out_member_id']);
+        abort_unless($out, 404);
+
+        try {
+            $service->swapMembers($team, $member, $out, $request->user()->id);
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
+
+            return back()->with('success', 'Замена выполнена: ' . ($member->user->name ?? '') . ' вышел(ла) в основу вместо ' . ($out->user->name ?? '') . '.');
+        } catch (DomainException $e) {
+            return back()->withErrors(['member' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Организатор/админ добавляет игрока в команду напрямую (без invite).
      */
     public function addMemberByOrganizer(

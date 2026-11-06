@@ -201,6 +201,27 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         </form>
                         @endif
                     </div>
+                    @php
+                        $isBenchMember = $member->team_role === 'reserve' || $onBench;
+                        $swapOutCandidates = $activeMembers->filter(fn ($m) => $m->confirmation_status === 'confirmed'
+                            && (int) $m->id !== (int) $member->id
+                            && ($m->team_role === 'player' || ($m->team_role === 'captain' && empty(($m->meta ?? [])['on_bench']))));
+                    @endphp
+                    @if($canToggleTeamRole && $isBenchMember && $swapOutCandidates->isNotEmpty())
+                    <form method="POST" action="{{ route('tournamentTeams.members.swap',[$event,$team,$member]) }}" class="d-flex fvc mt-05" style="gap:.6rem;flex-wrap:wrap">
+                        @csrf @method('PATCH')
+                        <span class="f-14" style="opacity:.75">🔄 Выйти на замену вместо:</span>
+                        <div class="form" style="width:20rem">
+                            <select name="out_member_id" required>
+                                <option value="" disabled selected>— выберите игрока —</option>
+                                @foreach($swapOutCandidates as $cand)
+                                <option value="{{ $cand->id }}">{{ $cand->user->name ?? ('#'.$cand->user_id) }}@if($posTeam && $cand->position_code) · {{ $posLabels[$cand->position_code] ?? $cand->position_code }}@endif</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-small btn-secondary">Заменить</button>
+                    </form>
+                    @endif
                 </div>
             </div>
             <div class="d-flex fvc mt-1" style="flex-wrap:wrap;gap:.6rem;justify-content:space-between">

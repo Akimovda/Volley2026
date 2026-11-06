@@ -445,6 +445,78 @@ final class TournamentTeamService
         });
     }
 
+    /**
+     * Замена: запасной (или капитан на скамейке) выходит в основу вместо выбранного игрока основного состава,
+     * тот уходит на скамейку. Одна операция — лимит запасных не меняется, поэтому и не проверяется.
+     * Игроки меняются и позициями (амплуа), чтобы вышедший играл на месте ушедшего.
+     */
+    public function swapMembers(EventTeam $team, EventTeamMember $in, EventTeamMember $out, int $performedByUserId): void
+    {
+        foreach ([$in, $out] as $m) {
+            if ((int) $m->event_team_id !== (int) $team->id) {
+                throw new DomainException('Игрок не состоит в этой команде.');
+            }
+            if ($m->confirmation_status !== 'confirmed') {
+                throw new DomainException('Заменять можно только подтверждённых игроков.');
+            }
+        }
+        if ((int) $in->id === (int) $out->id) {
+            throw new DomainException('Выберите другого игрока для замены.');
+        }
+
+        $inOnBench  = $in->team_role === 'reserve' || $this->isCaptainOnBench($in);
+        $outOnField = ($out->team_role === 'player' || ($out->team_role === 'captain' && !$this->isCaptainOnBench($out)));
+        if (!$inOnBench) {
+            throw new DomainException('Выйти на замену может только запасной игрок.');
+        }
+        if (!$outOnField) {
+            throw new DomainException('Заменить можно только игрока основного состава.');
+        }
+
+        DB::transaction(function () use ($team, $in, $out, $performedByUserId) {
+            $inPos  = $in->position_code;
+            $outPos = $out->position_code;
+
+            foreach ([[$out, true], [$in, false]] as [$m, $toBench]) {
+                $old = $m->team_role === 'captain' ? ['on_bench' => $this->isCaptainOnBench($m)] : ['team_role' => $m->team_role];
+                if ($m->team_role === 'captain') {
+                    $meta = (array) ($m->meta ?? []);
+                    if ($toBench) {
+                        $meta['on_bench'] = true;
+                    } else {
+                        unset($meta['on_bench']);
+                    }
+                    $m->meta = $meta === [] ? null : $meta;
+                    $action = 'captain_bench_changed';
+                    $new = ['on_bench' => $toBench];
+                } else {
+                    $m->team_role = $toBench ? 'reserve' : 'player';
+                    $action = 'team_role_changed';
+                    $new = ['team_role' => $m->team_role];
+                }
+                $other = $m === $out ? $in : $out;
+                if ($inPos && $outPos && $inPos !== $outPos) {
+                    $m->position_code = $m === $in ? $outPos : $inPos;
+                    if ($m->team_role !== 'captain') {
+                        $m->role_code = $m->position_code;
+                    }
+                }
+                $m->save();
+                $this->audit(
+                    team: $team,
+                    action: $action,
+                    userId: $m->user_id,
+                    performedByUserId: $performedByUserId,
+                    oldValue: $old,
+                    newValue: $new,
+                    meta: ['swap_with_user_id' => $other->user_id],
+                );
+            }
+
+            $this->refreshTeamState($team->fresh());
+        });
+    }
+
     public function changeMemberTeamRole(EventTeam $team, EventTeamMember $member, string $newTeamRole, int $performedByUserId): EventTeamMember
     {
         if ((int) $member->event_team_id !== (int) $team->id) {
