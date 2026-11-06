@@ -949,6 +949,7 @@ class TournamentTeamController extends Controller
                 occurrenceId: !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                 teamKind: $event->direction === 'beach' ? 'beach_pair' : 'classic_team',
                 captainPositionCode: $captainPos,
+                captainOnBench: (bool) ($userTeam->members->firstWhere('user_id', $user->id)?->is_reserve ?? false),
             );
 
             // Приглашаем остальных участников

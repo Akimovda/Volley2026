@@ -127,8 +127,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                 <div>
                     <div class="d-flex fvc" style="gap:.6rem;flex-wrap:wrap;row-gap:.4rem">
                         <span class="b-600 f-16">{{ $member->user->name ?? ('#'.$member->user_id) }}</span>
+                        @php $onBench = $member->team_role === 'captain' && !empty(($member->meta ?? [])['on_bench']); @endphp
                         <span class="f-16">
-                            {{ $roleLabels[$member->team_role] ?? $member->team_role }}
+                            {{ $roleLabels[$member->team_role] ?? $member->team_role }}@if($onBench) · запасной (на скамейке)@endif
                             @if($posTeam && $member->position_code)
                                 · {{ $posLabels[$member->position_code] ?? $member->position_code }}
                             @endif
@@ -140,7 +141,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                 && $member->confirmation_status === 'confirmed'
                                 && !empty($positionCapacity);
                             $canToggleTeamRole = $canManage
-                                && in_array($member->team_role, ['player','reserve'], true)
+                                && in_array($member->team_role, ['player','reserve','captain'], true)
                                 && $member->confirmation_status === 'confirmed';
                         @endphp
                         @if($canEditPosition && $canToggleTeamRole)
@@ -165,7 +166,7 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                                         {{ $info['label'] }} ({{ $info['current'] }}/{{ $info['max'] }})
                                     </option>
                                 @endforeach
-                                @if($member->team_role === 'reserve')
+                                @if($member->team_role === 'reserve' || $onBench)
                                 <option value="role:player">↑ Перевести в основу</option>
                                 @else
                                 <option value="role:reserve">↓ Перевести в запасные</option>
@@ -193,9 +194,9 @@ $appStIcon   = ['pending'=>'⏳','approved'=>'✅','rejected'=>'❌','incomplete
                         @elseif($canToggleTeamRole)
                         <form method="POST" action="{{ route('tournamentTeams.members.updateTeamRole',[$event,$team,$member]) }}">
                             @csrf @method('PATCH')
-                            <input type="hidden" name="team_role" value="{{ $member->team_role === 'reserve' ? 'player' : 'reserve' }}">
+                            <input type="hidden" name="team_role" value="{{ ($member->team_role === 'reserve' || $onBench) ? 'player' : 'reserve' }}">
                             <button type="submit" class="btn btn-small btn-secondary">
-                                {{ $member->team_role === 'reserve' ? '↑ В основу' : '↓ В запасные' }}
+                                {{ ($member->team_role === 'reserve' || $onBench) ? '↑ В основу' : '↓ В запасные' }}
                             </button>
                         </form>
                         @endif

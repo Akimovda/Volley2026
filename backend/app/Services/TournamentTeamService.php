@@ -28,9 +28,10 @@ final class TournamentTeamService
         ?int $occurrenceId = null,
         ?string $teamKind = null,
         ?string $captainPositionCode = null,
-        bool $autoApprove = false
+        bool $autoApprove = false,
+        bool $captainOnBench = false
     ): EventTeam {
-        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove) {
+        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove, $captainOnBench) {
             $settings = $this->getSettings($event);
 
             $teamKind ??= $this->resolveTeamKindFromSettings($settings, (string) ($event->direction ?? 'classic'));
@@ -112,7 +113,8 @@ final class TournamentTeamService
                 'joined_at' => now(),
                 'responded_at' => now(),
                 'confirmed_at' => now(),
-                'meta' => null,
+                // капитан остаётся капитаном, но может начинать «на скамейке» (запасным) и выйти на замену позже
+                'meta' => $captainOnBench ? ['on_bench' => true] : null,
             ]);
 
             $this->audit(
@@ -392,6 +394,57 @@ final class TournamentTeamService
      * здесь речь только про team_role внутри ростера одной команды).
      * Капитана переводить нельзя — для этого есть отдельная передача капитанства.
      */
+    /** Капитан на скамейке (запасной на старте) — роль «капитан» при этом сохраняется. */
+    public function isCaptainOnBench(EventTeamMember $member): bool
+    {
+        return $member->team_role === 'captain' && !empty(($member->meta ?? [])['on_bench']);
+    }
+
+    /** Капитан уходит на скамейку / выходит на замену. Считается как запасной в проверке состава и лимитов. */
+    public function setCaptainBench(EventTeam $team, EventTeamMember $member, bool $onBench, int $performedByUserId): EventTeamMember
+    {
+        if ($member->team_role !== 'captain') {
+            throw new DomainException('Это действие только для капитана.');
+        }
+        if ($this->isCaptainOnBench($member) === $onBench) {
+            return $member;
+        }
+        if ($onBench) {
+            $limits = $this->getTeamLimits($team);
+            $currentReserves = $team->members
+                ->where('confirmation_status', 'confirmed')
+                ->where('team_role', 'reserve')
+                ->count();
+            if ($currentReserves >= (int) $limits['reserve_max']) {
+                throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']}).");
+            }
+        }
+
+        return DB::transaction(function () use ($team, $member, $onBench, $performedByUserId) {
+            $meta = (array) ($member->meta ?? []);
+            if ($onBench) {
+                $meta['on_bench'] = true;
+            } else {
+                unset($meta['on_bench']);
+            }
+            $member->meta = $meta === [] ? null : $meta;
+            $member->save();
+
+            $this->audit(
+                team: $team,
+                action: 'captain_bench_changed',
+                userId: $member->user_id,
+                performedByUserId: $performedByUserId,
+                oldValue: ['on_bench' => !$onBench],
+                newValue: ['on_bench' => $onBench],
+            );
+
+            $this->refreshTeamState($team->fresh());
+
+            return $member->fresh();
+        });
+    }
+
     public function changeMemberTeamRole(EventTeam $team, EventTeamMember $member, string $newTeamRole, int $performedByUserId): EventTeamMember
     {
         if ((int) $member->event_team_id !== (int) $team->id) {
@@ -402,12 +455,13 @@ final class TournamentTeamService
             throw new DomainException('Недопустимая роль участника.');
         }
 
-        if ($member->team_role === 'captain') {
-            throw new DomainException('Капитана нельзя перевести в запасные напрямую — сначала передайте капитанство.');
-        }
-
         if ($member->confirmation_status !== 'confirmed') {
             throw new DomainException('Роль можно менять только подтверждённым игрокам.');
+        }
+
+        // Капитан не теряет капитанство: «запасной» для него — это скамейка (флаг on_bench), с которой он может выйти на замену
+        if ($member->team_role === 'captain') {
+            return $this->setCaptainBench($team, $member, $newTeamRole === 'reserve', $performedByUserId);
         }
 
         $oldTeamRole = $member->team_role;
@@ -1143,6 +1197,7 @@ final class TournamentTeamService
         $reserves = $confirmed->where('team_role', 'reserve');
         $players = $confirmed->where('team_role', 'player');
         $captain = $confirmed->firstWhere('team_role', 'captain');
+        $captainOnBench = $captain && $this->isCaptainOnBench($captain);
     
         $issues = [];
     
@@ -1177,7 +1232,7 @@ final class TournamentTeamService
             }
         }
     
-        $reserveCount = $reserves->count();
+        $reserveCount = $reserves->count() + ($captainOnBench ? 1 : 0);
         if ($reserveCount > (int) $limits['reserve_max']) {
             $issues[] = "Слишком много запасных: {$reserveCount} из {$limits['reserve_max']}";
         }
@@ -1187,7 +1242,7 @@ final class TournamentTeamService
             $issues[] = "Слишком много игроков: {$totalConfirmed} из {$limits['total_max']}";
         }
     
-        $playersCount = $players->count() + ($captain ? 1 : 0);
+        $playersCount = $players->count() + ($captain && !$captainOnBench ? 1 : 0);
         if ($playersCount < (int) $limits['min_players']) {
             $issues[] = "Недостаточно основных игроков: {$playersCount} из {$limits['min_players']}";
         }
