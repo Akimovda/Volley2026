@@ -29,6 +29,8 @@
 		@endif
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+		{{-- Тему выбирает сам сайт (кнопка день/ночь). only light — запрет принудительного затемнения страницы встроенными браузерами (например MAX на Android), иначе дневная тема показывается тёмной --}}
+		<meta name="color-scheme" content="only light">
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
 			if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){
