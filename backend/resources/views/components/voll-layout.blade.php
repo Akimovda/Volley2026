@@ -224,6 +224,12 @@
 					if (tg.contentSafeAreaInset) {
 						top = Math.max(top, tg.contentSafeAreaInset.top || 0);
 					}
+					// Встроенный браузер Telegram на Android (ссылка, не Mini App): страница идёт под системной панелью,
+					// поверх неё плавают кнопки «Закрыть» / «⌄ ⋮», а SDK отступ не сообщает (0) — шапка сайта оказывалась под
+					// ними. Для Mini App (есть initData) значения от Telegram остаются как есть.
+					if (top === 0 && !tg.initData && /Telegram-Android/i.test(navigator.userAgent || '')) {
+						top = 76;
+					}
 					document.documentElement.style.setProperty('--tg-safe-area-inset-top', top + 'px');
 					document.documentElement.style.setProperty('--tg-safe-area-inset-bottom', bottom + 'px');
 					// safe area в Telegram WebApp приходит АСИНХРОННО через SDK (viewportChanged/
