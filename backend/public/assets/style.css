@@ -3043,6 +3043,11 @@ body.dark .theme-icon {
 	width: 100%;
 	margin: auto;
 }
+/* Вне России VK и Яндекс часто недоступны (зарубежные адреса, VPN) — показываем их ниже остальных способов */
+.social-auth--foreign .auth-btn-vk,
+.social-auth--foreign .auth-btn-yandex {
+	order: 10;
+}
 .social-auth .row {
 	margin: 0 -1rem -2rem; 
 }

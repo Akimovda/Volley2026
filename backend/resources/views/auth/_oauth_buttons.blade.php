@@ -10,7 +10,7 @@
     $isNativeApp = preg_match('/VolleyPlayApp|SVSVolleyApp/', $ua) === 1;
     $isAppleUa   = str_contains($ua, 'iPhone') || str_contains($ua, 'iPad') || str_contains($ua, 'Macintosh');
 @endphp
-<div class="social-auth">
+<div class="social-auth{{ !$isRussianIp ? ' social-auth--foreign' : '' }}">
     @if(!$isRussianIp)
     @unless($isAndroidUa)
     <!-- Кнопка Apple (обязательно первой по требованию Apple) -->
