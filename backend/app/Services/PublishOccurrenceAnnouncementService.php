@@ -655,8 +655,74 @@ class PublishOccurrenceAnnouncementService
         }
     }
 
+    /** Постоянные ошибки Telegram: повторять отправку бессмысленно, пока организатор не исправит чат. (Нехватку прав, лимиты и тему не считаем: это лечится.) */
+    private const PERMANENT_TELEGRAM_ERRORS = [
+        'chat not found',
+        'bot was kicked',
+        'bot is not a member',
+        'bot was blocked',
+        'group chat was deleted',
+        'chat was deleted',
+        'group chat was upgraded to a supergroup',
+    ];
+
+    /**
+     * Постоянная ошибка отправки: канал снимаем с подтверждения (публикация пропускает неподтверждённые — повторы прекращаются)
+     * и один раз сообщаем организатору. Раньше такая ошибка повторялась каждую минуту до начала мероприятия.
+     */
+    private function disableChannelOnPermanentError(int $channelId, int $eventId, string $platform, string $error): void
+    {
+        if ($platform !== 'telegram' || $error === '') {
+            return;
+        }
+        $matched = null;
+        foreach (self::PERMANENT_TELEGRAM_ERRORS as $needle) {
+            if (stripos($error, $needle) !== false) {
+                $matched = $needle;
+                break;
+            }
+        }
+        if ($matched === null) {
+            return;
+        }
+        try {
+            $channel = \App\Models\UserNotificationChannel::find($channelId);
+            if (!$channel || !$channel->is_verified) {
+                return;
+            }
+            $meta = (array) ($channel->meta ?? []);
+            $meta['disabled_reason'] = $matched;
+            $meta['disabled_at'] = now()->toIso8601String();
+            $channel->forceFill(['is_verified' => false, 'meta' => $meta])->save();
+
+            $ownerId = (int) ($channel->user_id ?? 0);
+            if ($ownerId > 0 && \Illuminate\Support\Facades\Cache::add("tg_channel_disabled_{$channelId}", 1, now()->addHours(24))) {
+                $title = (string) (DB::table('events')->where('id', $eventId)->value('title') ?? '');
+                $channelTitle = trim((string) ($channel->title ?? '')) ?: (string) $channel->chat_id;
+                app(\App\Services\UserNotificationService::class)->create(
+                    userId:  $ownerId,
+                    type:    'channel_unavailable',
+                    title:   __('channel_check.unavailable_title'),
+                    body:    __('channel_check.unavailable_body', ['title' => $title, 'channel' => $channelTitle]),
+                    payload: [
+                        'event_id'    => $eventId,
+                        'button_text' => __('channel_check.unavailable_button'),
+                        'button_url'  => route('profile.notification_channels'),
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            }
+            Log::warning('PublishOccurrenceAnnouncement: channel disabled after permanent error', ['channel_id' => $channelId, 'reason' => $matched]);
+        } catch (\Throwable $e) {
+            Log::warning('PublishOccurrenceAnnouncement: disabling channel failed', ['error' => $e->getMessage()]);
+        }
+    }
+
     private function log(int $eventId, int $occurrenceId, int $channelId, string $platform, string $action, array $meta = []): void
     {
+        if ($action === 'fail') {
+            $this->disableChannelOnPermanentError($channelId, $eventId, $platform, (string) ($meta['error'] ?? ''));
+        }
         try {
             DB::table('channel_publish_logs')->insert([
                 'event_id'          => $eventId,

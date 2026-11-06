@@ -20,4 +20,7 @@ return [
     'fallback_title'  => 'Telegram topic unavailable — announcement went to the main topic',
     'fallback_body'   => 'The announcement “:title” was posted in “:channel” without a topic: there is no topic #:n in this chat (deleted, closed or a wrong number). Check the topic number with the “Check settings” button and fix it in the event or channel settings — the announcement will then move to the right topic.',
     'fallback_button' => 'Check channels',
+    'unavailable_title'  => 'Telegram channel unavailable — announcements to it are turned off',
+    'unavailable_body'   => 'The bot cannot see the chat ":channel" (it was removed from the chat, or the chat was closed or moved), so the announcement ":title" was not sent there and further announcements to this channel will not be sent. Add the bot to the chat again and reconnect the channel in your profile settings.',
+    'unavailable_button' => 'Open channels',
 ];
