@@ -77,7 +77,13 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
 
 <style>
     .tm-h2{display:flex;align-items:center;gap:.7rem}
-    .tm-card{margin-bottom:1rem}
+    .tm-card{margin-bottom:1rem;position:relative;overflow:visible}
+    .tm-del-form{margin:0}
+    /* крестик «удалить» — как на карточках мероприятия: светлый кружок с контуром, в углу, чуть за краем */
+    .tm-del{position:absolute;top:-.9rem;left:-.9rem;z-index:5;width:3.2rem;height:3.2rem;border-radius:50%;border:.2rem solid rgba(41,103,186,.25);background:#fff;color:#2967BA;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+    .tm-del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
+    body.dark .tm-del{background:#1f2430;color:#E7612F;border-color:rgba(231,97,45,.35)}
+    body.dark .tm-del:hover{background:#dc2626;color:#fff;border-color:#dc2626}
     .tm-head{display:flex;align-items:center;gap:1.2rem}
     .tm-ava{width:4.6rem;height:4.6rem;border-radius:50%;object-fit:cover;flex-shrink:0;background:rgba(128,128,128,.15)}
     .tm-id{flex:1 1 auto;min-width:0}
@@ -167,11 +173,21 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                 && ($m->team_role === 'player' || ($m->team_role === 'captain' && empty(($m->meta ?? [])['on_bench']))));
             $showSwap = $canToggleTeamRole && $isBenchMember && $swapOutCandidates->isNotEmpty();
             $showSub  = $canManage && $leagueForSubs && !$tourStarted && $member->confirmation_status === 'confirmed' && !$isTeamCaptain;
-            $showActions = ($isCaptain && !$isTeamCaptain)
-                || $showSub
-                || (($isCaptain || $isOrganizer) && !$isTeamCaptain);
+            $canDelete   = ($isCaptain || $isOrganizer) && !$isTeamCaptain;
+            $showActions = ($isCaptain && !$isTeamCaptain) || $showSub;
         @endphp
         <div class="card tm-card">
+            @if($canDelete)
+            <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}" class="tm-del-form">
+                @csrf @method('DELETE')
+                <button type="submit" class="tm-del btn-alert"
+                        title="Удалить из команды" aria-label="Удалить из команды"
+                        data-title="Удалить из команды?"
+                        data-icon="warning"
+                        data-confirm-text="Да"
+                        data-cancel-text="Отмена"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>
+            </form>
+            @endif
             <div class="tm-head">
                 <img class="tm-ava" src="{{ $member->user->profile_photo_url ?? '' }}" alt="">
                 <div class="tm-id">
@@ -318,17 +334,6 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                                 data-member-name="{{ $member->user->last_name }} {{ $member->user->first_name }}"
                                 onclick="openSubModal(this)"><x-ico name="swap" size="1.9rem" /></button>
                         @endif
-                    @endif
-                    @if(($isCaptain || $isOrganizer) && !$isTeamCaptain)
-                        <form method="POST" action="{{ route('tournamentTeams.members.destroy',[$event,$team,$member]) }}">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-small btn-secondary btn-alert tm-ibtn"
-                                    title="Удалить из команды"
-                                    data-title="Удалить из команды?"
-                                    data-icon="warning"
-                                    data-confirm-text="Да"
-                                    data-cancel-text="Отмена"><x-ico name="trash" size="1.9rem" /></button>
-                        </form>
                     @endif
                 </div>
                 @endif
