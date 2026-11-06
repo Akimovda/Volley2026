@@ -384,7 +384,8 @@ class EventStoreService
             $event->classic_level_max = $data['classic_level_max'] ?? null;
             $event->beach_level_min = $data['beach_level_min'] ?? null;
             $event->beach_level_max = $data['beach_level_max'] ?? null;
-            $event->notify_unrated_players = !empty($data['notify_unrated_players']);
+            // приватное мероприятие не рассылается — флаг не сохраняем
+            $event->notify_unrated_players = !empty($data['notify_unrated_players']) && empty($data['is_private']);
             $event->age_policy = $data['age_policy'] ?? 'any';
             $event->child_age_min = ($data['age_policy'] ?? 'any') === 'child'
                 ? (isset($data['child_age_min']) ? (int)$data['child_age_min'] : null)

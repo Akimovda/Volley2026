@@ -560,6 +560,7 @@
 								</div>
 								<div class="col-md-4">
 									<div class="card">
+										<div id="notify-section">
 										<label>{{ __('events.notify_section_title') }}</label>
 										<hr class="mb-1">
 										<input type="hidden" name="notify_unrated_players" value="0">
@@ -637,6 +638,18 @@
 										</script>
 
 										<hr class="mb-1 mt-1">
+										</div>
+										<script>
+										// приватное мероприятие не рассылается — раздел «Рекламная рассылка» скрываем
+										(function () {
+											var cb = document.getElementById('is_private'), box = document.getElementById('notify-section');
+											if (!cb || !box) return;
+											function sync() { box.style.display = cb.checked ? 'none' : ''; }
+											cb.addEventListener('change', sync); cb.addEventListener('click', sync);
+											document.addEventListener('DOMContentLoaded', sync); window.addEventListener('load', sync);
+											sync();
+										})();
+										</script>
 										<label>{{ __('events.show_participants_label') }}</label>
 										<label class="radio-item">
 											<input type="radio" name="show_participants" value="1" @checked($showParts)>
