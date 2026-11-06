@@ -421,10 +421,8 @@ if ($initialStep < 1 || $initialStep > 3) {
 				<div class="alert alert-error">
 					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
-						@foreach (session('wizard_errors') as $field => $messages)
-						@foreach ((array) $messages as $msg)
-						<li><strong>{{ $field }}:</strong> {{ $msg }}</li>
-						@endforeach
+						@foreach (collect(session('wizard_errors'))->flatten()->unique() as $msg)
+						<li>{{ $msg }}</li>
 						@endforeach
 					</ul>
 				</div>

@@ -524,6 +524,12 @@
 			
 			]);
 			
+			$validator->setCustomMessages([
+				'duration_sec.max'  => __('events.err_duration_max'),
+				'duration_days.max' => __('events.err_duration_max'),
+				'duration_sec.min'  => __('events.err_duration_min'),
+			]);
+
 			/*
 				|--------------------------------------------------------------------------
 				| CUSTOM VALIDATION
@@ -575,7 +581,7 @@
                     (int) $restrDays > (int) $generalDays
                 ) {
                     $v->errors()->add('game_gender_limited_reg_starts_days_before',
-                        'Начало регистрации для ограничиваемого пола не может быть раньше общего (значение в днях должно быть меньше или равно общему).');
+                        __('events.err_gender_reg_earlier'));
                 }
             }
 
@@ -585,9 +591,9 @@
             
             if ($agePolicy === 'child') {
                 if (is_null($childAgeMin) || is_null($childAgeMax)) {
-                    $v->errors()->add('child_age_min', 'Укажи допустимый возраст детей.');
+                    $v->errors()->add('child_age_min', __('events.err_child_age_required'));
                 } elseif ((int)$childAgeMin > (int)$childAgeMax) {
-                    $v->errors()->add('child_age_min', 'Минимальный возраст не может быть больше максимального.');
+                    $v->errors()->add('child_age_min', __('events.err_child_age_order'));
                 }
             }
         
@@ -603,15 +609,15 @@
             $durationPartsSec = ($durationDays * 86400) + ($durationHours * 3600) + ($durationMinutes * 60);
             
             if (($durationSec ?? 0) <= 0 && $durationPartsSec <= 0) {
-                $v->errors()->add('duration_sec', 'Укажи длительность мероприятия.');
+                $v->errors()->add('duration_sec', __('events.err_duration_required'));
             }
             
             if (($durationSec ?? 0) === 0 && $durationPartsSec > 0 && $durationPartsSec < 300) {
-                $v->errors()->add('duration_sec', 'Минимальная длительность — 5 минут.');
+                $v->errors()->add('duration_sec', __('events.err_duration_min'));
             }
             
             if (($durationSec ?? 0) === 0 && $durationPartsSec > (10 * 24 * 3600)) {
-                $v->errors()->add('duration_sec', 'Слишком большая длительность мероприятия.');
+                $v->errors()->add('duration_sec', __('events.err_duration_max'));
             }
             /*
             |--------------------------------------------------------------------------
@@ -639,9 +645,9 @@
             // чтобы не дублировать/не расходиться с сообщением.
             if ($policy === 'mixed_5050' && $max > 0 && !$isKingBeach) {
                 if ($max < 2) {
-                    $v->errors()->add($maxField, 'Для 50/50 минимум 2 участника.');
+                    $v->errors()->add($maxField, __('events.err_5050_min'));
                 } elseif ($max % 2 !== 0) {
-                    $v->errors()->add($maxField, 'Для 50/50 макс. участников должен быть чётным.');
+                    $v->errors()->add($maxField, __('events.err_5050_even'));
                 }
             }
         
@@ -657,14 +663,14 @@
                 if ($direction === 'classic' && in_array($scheme, ['2x2', '3x3'], true)) {
                     $v->errors()->add(
                         'tournament_game_scheme',
-                        'Для классического турнира недоступна пляжная схема.'
+                        __('events.err_scheme_classic_beach')
                     );
                 }
 
                 if ($direction === 'beach' && in_array($scheme, ['4x2', '5x1', '5x1_libero'], true)) {
                     $v->errors()->add(
                         'tournament_game_scheme',
-                        'Для пляжного турнира недоступна классическая схема.'
+                        __('events.err_scheme_beach_classic')
                     );
                 }
 
@@ -719,14 +725,14 @@
                     if ($teamMin > 0 && $totalMax > 0 && $totalMax < $teamMin) {
                         $v->errors()->add(
                             'tournament_total_players_max',
-                            'Максимальный размер команды не может быть меньше минимума игроков.'
+                            __('events.err_team_max_lt_min')
                         );
                     }
 
                     if ($teamsCount < 3 || $teamsCount > 100) {
                         $v->errors()->add(
                             'tournament_teams_count',
-                            'Количество команд должно быть от 3 до 100.'
+                            __('events.err_teams_count_range')
                         );
                     }
                 }
