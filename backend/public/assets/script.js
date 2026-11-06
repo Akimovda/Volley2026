@@ -205,6 +205,13 @@ $(window).on('scroll', function() {
 
 
 $('[data-href]').on('click', function() {
+	// Ссылки <a href> переходят сами. Раньше тут срабатывал ещё и window.location.href — одна кнопка входа запускала ДВЕ навигации
+	// (у кнопок провайдеров — два запроса /auth/*/redirect: state перезаписывался, провайдер видел вдвое больше попыток входа)
+	if (this.tagName === 'A' && this.getAttribute('href') && this.getAttribute('href') !== '#') return;
+	// повторные нажатия, пока переход ещё идёт, игнорируем
+	if (this._navLock) return;
+	this._navLock = true;
+	setTimeout(() => { this._navLock = false; }, 3000);
 	const url = $(this).data('href');
 	if (url) {
 		window.location.href = url;
