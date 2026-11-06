@@ -409,7 +409,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 				<div class="alert alert-error">
 					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
-						@foreach ($errors->all() as $err)
+						@foreach (collect($errors->all())->unique() as $err)
 						<li>{{ $err }}</li>
 						@endforeach
 					</ul>
