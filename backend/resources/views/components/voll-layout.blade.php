@@ -31,6 +31,20 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 		{{-- Тему выбирает сам сайт (кнопка день/ночь). only light — запрет принудительного затемнения страницы встроенными браузерами (например MAX на Android), иначе дневная тема показывается тёмной --}}
 		<meta name="color-scheme" content="only light">
+		<script>
+			// Встроенный браузер Telegram (ссылка, НЕ Mini App): сверху плавают кнопки «Закрыть» / «⌄ ⋮», страница идёт под системной
+			// панелью, шапка оказывалась под ними. Определяем по User-Agent / TelegramWebviewProxy сразу (SDK Telegram грузится позже,
+			// на него полагаться нельзя). Mini App узнаём по tgWebApp в адресе или сохранённым параметрам запуска — для него отступ даёт сам Telegram.
+			(function () {
+				try {
+					var de = document.documentElement, ua = navigator.userAgent || '';
+					if (de.classList.contains('is-app')) return;
+					if (/tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search) || sessionStorage.getItem('__telegram__initParams')) return;
+					if (/Telegram-Android/i.test(ua)) { de.classList.add('tg-inapp-browser', 'tg-inapp-android'); }
+					else if (/iPhone|iPad|iPod/.test(ua) && (window.TelegramWebviewProxy || window.TelegramWebview)) { de.classList.add('tg-inapp-browser', 'tg-inapp-ios'); }
+				} catch (e) {}
+			})();
+		</script>
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
 			if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){
@@ -116,6 +130,21 @@
 			@media (max-width: 767px) {
 			.top-section {
 				padding-top: calc(12rem + env(safe-area-inset-top, 0px));
+			}
+			}
+			/* Встроенный браузер Telegram (не Mini App): шапка и содержимое сдвигаются вместе, чтобы не быть под плавающими кнопками.
+			   iOS сообщает безопасную зону сам (env ≈ 59px) — добавка небольшая; Android не сообщает — добавка больше. Итог сверху ≈ 80px. */
+			.tg-inapp-android { --tg-inapp-extra: 7rem; }
+			.tg-inapp-ios { --tg-inapp-extra: 1.1rem; }
+			.tg-inapp-browser .fix-header {
+			top: calc(env(safe-area-inset-top, 0px) + 1rem + var(--tg-inapp-extra, 0px));
+			}
+			.tg-inapp-browser .top-section {
+			padding-top: calc(11rem + env(safe-area-inset-top, 0px) + var(--tg-inapp-extra, 0px));
+			}
+			@media (max-width: 767px) {
+			.tg-inapp-browser .top-section {
+				padding-top: calc(12rem + env(safe-area-inset-top, 0px) + var(--tg-inapp-extra, 0px));
 			}
 			}
 			/* Telegram Mini App — safe area (fullscreen mode, overrides global above) */
@@ -225,12 +254,6 @@
 					}
 					if (tg.contentSafeAreaInset) {
 						top = Math.max(top, tg.contentSafeAreaInset.top || 0);
-					}
-					// Встроенный браузер Telegram на Android (ссылка, не Mini App): страница идёт под системной панелью,
-					// поверх неё плавают кнопки «Закрыть» / «⌄ ⋮», а SDK отступ не сообщает (0) — шапка сайта оказывалась под
-					// ними. Для Mini App (есть initData) значения от Telegram остаются как есть.
-					if (top === 0 && !tg.initData && /Telegram-Android/i.test(navigator.userAgent || '')) {
-						top = 76;
 					}
 					document.documentElement.style.setProperty('--tg-safe-area-inset-top', top + 'px');
 					document.documentElement.style.setProperty('--tg-safe-area-inset-bottom', bottom + 'px');
