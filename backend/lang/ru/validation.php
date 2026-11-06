@@ -101,6 +101,7 @@ return [
     'uuid' => 'Поле «:attribute» заполнено неверно.',
 
     'attributes' => [
+        'notify_unrated_players' => 'Рассылка игрокам без уровня',
         'title' => 'Название',
         'direction' => 'Направление',
         'format' => 'Тип мероприятия',

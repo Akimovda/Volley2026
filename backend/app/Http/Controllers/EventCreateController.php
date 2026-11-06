@@ -612,6 +612,51 @@ use App\Services\StaffLogService;
 			return null;
 		}
 		
+		/**
+		 * Охват рассылки «новое мероприятие» для формы создания: сколько игроков получат анонс без галочки
+		 * «и игрокам без уровня» и с ней. Считается тем же запросом, что и сама рассылка.
+		 */
+		public function notifyReach(Request $request): \Illuminate\Http\JsonResponse
+		{
+			$format    = (string) $request->query('format', '');
+			$direction = $request->query('direction') === 'beach' ? 'beach' : 'classic';
+			$isBroadcast = in_array($format, \App\Jobs\NotifyCityAboutNewEventJob::BROADCAST_FORMATS, true);
+
+			$enabled = config('notifications.new_event_city_notify_enabled', true)
+				&& (string) $request->query('allow_registration', '1') === '1'
+				&& !(bool) $request->query('is_private', false);
+			if (!$enabled) {
+				return response()->json(['state' => 'disabled']);
+			}
+
+			$cityId = null;
+			if (!$isBroadcast) {
+				$cityId = \App\Models\Location::query()->whereKey((int) $request->query('location_id'))->value('city_id');
+				if (!$cityId) {
+					return response()->json(['state' => 'no_city']);
+				}
+			}
+
+			$minKey = $direction . '_level_min';
+			$maxKey = $direction . '_level_max';
+			$min = $request->filled($minKey) ? (int) $request->query($minKey) : null;
+			$max = $request->filled($maxKey) ? (int) $request->query($maxKey) : null;
+
+			$count = function (bool $includeUnrated) use ($isBroadcast, $cityId, $direction, $min, $max) {
+				$q = \App\Jobs\NotifyCityAboutNewEventJob::recipientsQuery($isBroadcast, $cityId ? (int) $cityId : null, (int) auth()->id());
+				\App\Jobs\NotifyCityAboutNewEventJob::applyLevelRange($q, $direction, $min, $max, $includeUnrated);
+				return $q->count();
+			};
+
+			if ($min === null && $max === null) {
+				return response()->json(['state' => 'all', 'total' => $count(false)]);
+			}
+
+			$base = $count(false);
+			$with = $count(true);
+			return response()->json(['state' => 'range', 'base' => $base, 'with_unrated' => $with, 'unrated' => $with - $base]);
+		}
+
 		private function getEventPrefillData(Event $src): array
 		{
 			$prefill = Arr::only($src->toArray(), [
@@ -625,6 +670,7 @@ use App\Services\StaffLogService;
             'classic_level_max',
             'beach_level_min',
             'beach_level_max',
+            'notify_unrated_players',
             'is_paid',
             'price_amount',
             'price_currency',

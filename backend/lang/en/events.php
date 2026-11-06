@@ -1323,4 +1323,12 @@ return [
     'err_scheme_beach_classic' => 'A classic game scheme cannot be used for a beach tournament.',
     'err_team_max_lt_min' => 'The maximum team size cannot be smaller than the minimum.',
     'err_teams_count_range' => 'The number of teams must be between 3 and 100.',
+    'notify_unrated_label' => 'Also announce to players without a level',
+    'notify_unrated_hint' => 'The announcement of a new event goes to players whose level fits. Players who have not set a level in their profile do not get it by default — tick to include them.',
+    'notify_reach_disabled' => 'No announcement is sent: the event is private or registration through the service is off.',
+    'notify_reach_no_city' => 'Pick a location — the reach of the announcement will appear here.',
+    'notify_reach_all' => 'The announcement will reach :n players (no level limit).',
+    'notify_reach_without' => 'Unticked, the announcement reaches :n players',
+    'notify_reach_with' => 'Ticked, the announcement reaches :n players',
+    'notify_reach_extra' => '+:n without a level',
 ];

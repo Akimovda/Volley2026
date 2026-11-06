@@ -74,11 +74,7 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
 
         // Точечная рассылка: если у мероприятия задан диапазон уровней — только игрокам, чей уровень (по направлению
         // мероприятия: классика/пляжка) указан и попадает в диапазон. Без ограничения по уровню — всем, как и раньше.
-        $recipients = User::query()
-            ->when(!$isBroadcast, fn ($q) => $q->where('city_id', $this->cityId))
-            ->where('is_bot', false)
-            ->where('notify_new_events_in_city', true)
-            ->where('id', '!=', $this->organizerId);
+        $recipients = self::recipientsQuery($isBroadcast, $this->cityId, $this->organizerId);
         self::applyLevelFilter($recipients, $event, $occurrence);
 
         $chunkUsers = $recipients
@@ -142,14 +138,44 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
         $min = $isBeach ? $occurrence->effectiveBeachLevelMin() : $occurrence->effectiveClassicLevelMin();
         $max = $isBeach ? $occurrence->effectiveBeachLevelMax() : $occurrence->effectiveClassicLevelMax();
 
+        self::applyLevelRange($users, (string) ($event->direction ?? 'classic'), $min, $max, !empty($event->notify_unrated_players));
+    }
+
+    /**
+     * Получатели рассылки до фильтра по уровню. Единая точка для самой рассылки и для счётчика охвата в форме создания.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public static function recipientsQuery(bool $isBroadcast, ?int $cityId, int $organizerId)
+    {
+        return User::query()
+            ->when(!$isBroadcast, fn ($q) => $q->where('city_id', $cityId))
+            ->where('is_bot', false)
+            ->where('notify_new_events_in_city', true)
+            ->where('id', '!=', $organizerId);
+    }
+
+    /** Диапазон уровней (по направлению); $includeUnrated — добавить игроков, у которых уровень не указан. */
+    public static function applyLevelRange($users, string $direction, ?int $min, ?int $max, bool $includeUnrated): void
+    {
         if ($min === null && $max === null) {
             return;
         }
 
-        $column = $isBeach ? 'beach_level' : 'classic_level';
-        $users->whereNotNull($column)
-            ->when($min !== null, fn ($q) => $q->where($column, '>=', (int) $min))
-            ->when($max !== null, fn ($q) => $q->where($column, '<=', (int) $max));
+        $column = $direction === 'beach' ? 'beach_level' : 'classic_level';
+        $inRange = function ($q) use ($column, $min, $max) {
+            $q->whereNotNull($column)
+                ->when($min !== null, fn ($q2) => $q2->where($column, '>=', (int) $min))
+                ->when($max !== null, fn ($q2) => $q2->where($column, '<=', (int) $max));
+        };
+
+        if ($includeUnrated) {
+            // организатор разрешил рассылку и игрокам без указанного уровня
+            $users->where(fn ($q) => $q->whereNull($column)->orWhere($inRange));
+            return;
+        }
+
+        $users->where($inRange);
     }
 
     /**

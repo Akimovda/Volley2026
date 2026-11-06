@@ -196,6 +196,7 @@ return [
     */
 
     'attributes' => [
+        'notify_unrated_players' => 'Announce to players without a level',
         'title' => 'Title',
         'direction' => 'Direction',
         'format' => 'Event type',

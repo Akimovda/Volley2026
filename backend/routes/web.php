@@ -694,6 +694,10 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::get('/events/create', [EventCreateController::class, 'choose'])
         ->middleware('no-store-html')
         ->name('events.create');
+
+		// охват рассылки о новом мероприятии (счётчик в форме создания)
+		Route::get('/events/create/notify-reach', [EventCreateController::class, 'notifyReach'])
+        ->name('events.create.notify_reach');
 		
 		// черновики мастера создания (несколько на пользователя)
 		Route::post('/events/create/draft', [EventDraftController::class, 'save'])

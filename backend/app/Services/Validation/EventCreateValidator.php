@@ -107,6 +107,7 @@
                 'min:300',
                 'max:' . (30 * 24 * 3600)
             ],
+            'notify_unrated_players' => ['nullable', 'boolean'],
             'duration_days' => ['nullable', 'integer', 'min:0', 'max:30'],
             'duration_hours' => ['nullable', 'integer', 'min:0', 'max:23'],
             'duration_minutes' => ['nullable', 'integer', 'min:0', 'max:59'],
