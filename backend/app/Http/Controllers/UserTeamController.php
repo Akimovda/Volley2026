@@ -48,6 +48,28 @@ class UserTeamController extends Controller
         return view('user.teams.edit', compact('team', 'event', 'validationErrors', 'teamSizeError'));
     }
 
+    /**
+     * Основному игроку (в т.ч. капитану, если он не запасной) в классике обязательно амплуа; запасным — по желанию.
+     * Для пляжа амплуа в форме не выбирается. Возвращает текст ошибки или null.
+     */
+    private function missingPositionsError(array $data, int $ownerId): ?string
+    {
+        if (($data['direction'] ?? '') !== 'classic') {
+            return null;
+        }
+        $missing = [];
+        foreach (($data['members'] ?? []) as $m) {
+            $isOwner = (int) $m['user_id'] === $ownerId;
+            $reserve = $isOwner ? !empty($m['is_reserve']) : (($m['role_code'] ?? 'player') === 'reserve');
+            if (!$reserve && empty($m['position_code'])) {
+                $u = \App\Models\User::find((int) $m['user_id']);
+                $missing[] = trim(($u?->last_name ?? '') . ' ' . ($u?->first_name ?? '')) ?: ($u?->name ?? ('#' . $m['user_id']));
+            }
+        }
+
+        return $missing ? 'Основным игрокам нужно выбрать амплуа: ' . implode(', ', $missing) . '. (Запасным амплуа указывать не обязательно.)' : null;
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
@@ -63,6 +85,10 @@ class UserTeamController extends Controller
             'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
+
+        if ($err = $this->missingPositionsError($data, (int) $user->id)) {
+            return back()->withInput()->withErrors(['positions' => $err]);
+        }
 
         DB::transaction(function () use ($user, $data) {
             $team = UserTeam::create([
@@ -114,6 +140,10 @@ class UserTeamController extends Controller
             'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
+
+        if ($err = $this->missingPositionsError($data, (int) $user->id)) {
+            return back()->withInput()->withErrors(['positions' => $err]);
+        }
 
         DB::transaction(function () use ($user, $team, $data) {
             $team->update([
