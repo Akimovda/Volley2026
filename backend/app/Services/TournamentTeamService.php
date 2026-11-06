@@ -474,7 +474,7 @@ final class TournamentTeamService
             $currentReserves = $team->members
                 ->where('confirmation_status', 'confirmed')
                 ->where('team_role', 'reserve')
-                ->count();
+                ->count() + ($team->members->contains(fn ($m) => $m->confirmation_status === 'confirmed' && $this->isCaptainOnBench($m)) ? 1 : 0);
 
             if ($currentReserves >= (int) $limits['reserve_max']) {
                 throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']}).");
@@ -679,6 +679,10 @@ final class TournamentTeamService
                     ->where('team_role', 'reserve')
                     ->whereIn('confirmation_status', ['invited', 'joined', 'confirmed'])
                     ->count();
+                // капитан на скамейке занимает запасное место
+                $currentReserves += EventTeamMember::query()
+                    ->where('event_team_id', $team->id)->where('team_role', 'captain')->where('confirmation_status', 'confirmed')->get()
+                    ->filter(fn ($m) => $this->isCaptainOnBench($m))->count();
     
                 if ($currentReserves >= (int) $limits['reserve_max']) {
                     throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']})");
