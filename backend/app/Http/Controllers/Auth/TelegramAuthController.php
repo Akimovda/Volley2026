@@ -238,8 +238,10 @@ class TelegramAuthController extends Controller
         $clientSecret = config('services.telegram.oidc_client_secret');
 
         try {
+            // код авторизации одноразовый: повторяем ТОЛЬКО при сбое установки соединения (запрос не ушёл)
             $tokenResponse = Http::timeout(15)
                 ->connectTimeout(5)
+                ->retry(3, 400, fn ($e) => \App\Services\TelegramApi::isConnectFailure($e), throw: false)
                 ->asForm()
                 ->withBasicAuth($clientId, $clientSecret)
                 ->post($this->oidcUrl(self::TOKEN_URL, '/oauth/token'), [
@@ -302,7 +304,10 @@ class TelegramAuthController extends Controller
     private function validateIdToken(string $idToken, string $clientId): object
     {
         $jwks = Cache::remember('telegram_oidc_jwks', 3600, function () {
-            $response = Http::timeout(10)->connectTimeout(5)->get($this->oidcUrl(self::JWKS_URL, '/oauth/.well-known/jwks.json'));
+            // GET без побочных эффектов — повторяем при любом сетевом сбое
+            $response = Http::timeout(10)->connectTimeout(5)
+                ->retry(3, 400, fn ($e) => $e instanceof \Illuminate\Http\Client\ConnectionException, throw: false)
+                ->get($this->oidcUrl(self::JWKS_URL, '/oauth/.well-known/jwks.json'));
             if (!$response->successful()) {
                 throw new \RuntimeException('Failed to fetch JWKS: HTTP ' . $response->status());
             }

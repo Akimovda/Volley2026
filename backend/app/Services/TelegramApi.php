@@ -25,11 +25,20 @@ class TelegramApi
         return self::base() . "/bot{$token}/{$method}";
     }
 
+    /**
+     * Сбой на этапе установки соединения (DNS, TCP, TLS-рукопожатие): запрос на сервер гарантированно не ушёл,
+     * поэтому повторять его безопасно даже для POST (не задвоим сообщение и не сожжём одноразовый код).
+     * Таймаут после отправки («Operation timed out … bytes received») сюда НЕ входит.
+     */
+    public static function isConnectFailure(\Throwable $e): bool
+    {
+        return $e instanceof ConnectionException
+            && preg_match('/Failed to connect|SSL connection timeout|Could not resolve host|Resolving timed out|Connection refused|Connection timed out after \d+ milliseconds/i', $e->getMessage()) === 1;
+    }
+
     public static function http(int $timeout = 8): PendingRequest
     {
-        return Http::connectTimeout(3)->timeout($timeout)->retry(3, 300, function ($e) {
-            return $e instanceof ConnectionException
-                && preg_match('/Failed to connect|SSL connection timeout|Could not resolve host|Connection refused|Connection timed out after \d+ milliseconds/i', $e->getMessage()) === 1;
-        }, throw: false);
+        // connectTimeout 5 с: при потерях пакетов на маршруте SYN повторяется через 1 и 3 с, 3 с не хватало
+        return Http::connectTimeout(5)->timeout($timeout)->retry(3, 300, fn ($e) => self::isConnectFailure($e), throw: false);
     }
 }
