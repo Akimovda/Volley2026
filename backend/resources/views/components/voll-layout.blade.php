@@ -45,6 +45,7 @@
 				} catch (e) {}
 			})();
 		</script>
+		<script>if(/VPOverlay/.test(navigator.userAgent)){document.documentElement.classList.add('is-overlay');}</script>
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
 			// В приложении ссылки target="_blank" на наш сайт открываются внутри приложения (иначе WKWebView/Capacitor
