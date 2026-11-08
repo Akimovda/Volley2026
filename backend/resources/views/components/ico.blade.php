@@ -37,6 +37,21 @@ $icons = [
     'image'     => $stroke('<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/>', $blue),
     'file-text' => $stroke('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h8M8 9h2"/>', '#475569'),
     'repeat'    => $stroke('<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>', $violet),
+    'globe'     => $stroke('<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>', $blue),
+    'download'  => $stroke('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>', $blue),
+    'archive'   => $stroke('<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>', '#64748b'),
+    'lock'      => $stroke('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', $red),
+    'layers'    => $stroke('<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/>', $violet),
+    'eye'       => $stroke('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>', $blue),
+    'building'  => $stroke('<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/><path d="M9 10h.01M15 10h.01"/>', '#0d9488'),
+    'sun'       => $stroke('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>', $amber),
+    'pencil'    => $stroke('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>', $blue),
+    'trend'     => $stroke('<path d="m22 7-8.5 8.5-5-5L2 17"/><path d="M16 7h6v6"/>', $green),
+    'ticket'    => $stroke('<path d="M3 9a2 2 0 0 0 0 6v3a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1v-3a2 2 0 0 1 0-6V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1z"/><path d="M13 5v14" stroke-dasharray="2 2"/>', $violet),
+    'tag'       => $stroke('<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1.2"/>', '#ea580c'),
+    'dot-green' => $stroke('<circle cx="12" cy="12" r="7"/>', '#16a34a', '#4ade80'),
+    'dot-red'   => $stroke('<circle cx="12" cy="12" r="7"/>', '#dc2626', '#f87171'),
+    'dot-gray'  => $stroke('<circle cx="12" cy="12" r="7"/>', '#6b7280', '#d1d5db'),
 ];
 @endphp
 @if(isset($icons[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]) !!}</span>@endif

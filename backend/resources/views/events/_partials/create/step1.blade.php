@@ -2,7 +2,7 @@
 						{{-- Admin organizer --}}
 						@if(!empty($canChooseOrganizer))
 						<div class="ramka" style="z-index:10">	
-							<h2 class="-mt-05">{{ __('events.organizer_assign') }}</h2>	
+							<h2 class="-mt-05 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('events.organizer_assign') }}</h2>	
 							<div class="row">	
 								<div class="col-md-6">
 									<div class="card">
@@ -59,7 +59,7 @@
 						<div class="row row2">	
 							<div class="col-md-12">
 								<div class="ramka" style="z-index: 9">
-									<h2 class="-mt-05">{{ __('events.event_setup') }}</h2>	
+									<h2 class="-mt-05 h2-ico"><x-ico name="sliders" size="1.2em" /> {{ __('events.event_setup') }}</h2>	
 									<div class="row">
 										
 										<div class="col-md-6">
@@ -444,7 +444,7 @@
 								</div>
 								
 								<div class="ramka no-highlight" id="tournament_settings_block" data-show-if="format=tournament">
-									<h2 class="-mt-05">{{ __('events.tournament_settings') }}</h2>
+									<h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> {{ __('events.tournament_settings') }}</h2>
 
 									{{-- Тип регистрации команд — единая radio-группа: обычная командная / King-Queen
 									     of Beach / индивидуальная. Управляет двумя скрытыми чекбоксами
@@ -773,7 +773,7 @@
 							</div>
 							<div class="col-md-12">
 								<div class="ramka" style="z-index: 8">
-									<h2 class="-mt-05">{{ __('events.restrictions_title') }}</h2>
+									<h2 class="-mt-05 h2-ico"><x-ico name="lock" size="1.2em" /> {{ __('events.restrictions_title') }}</h2>
 									<div class="row">
 										
 										<div class="col-md-6" id="age_policy_block">
@@ -1084,7 +1084,7 @@
 @endphp
 @if($adPrice > 0)
 <div class="alert alert-info mt-1">
-    {{ __('events.ad_price_label') }} <strong>{{ $adPrice }} ₽</strong><br>
+    <x-ico name="wallet" /> {{ __('events.ad_price_label') }} <strong>{{ $adPrice }} ₽</strong><br>
     <span class="f-13" style="opacity:.7">{{ __('events.ad_pay_after') }}</span>
 </div>
 @else

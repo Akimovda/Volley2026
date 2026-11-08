@@ -558,9 +558,9 @@ return [
     // Occurrences page
     'occ_title'             => 'Event occurrences',
     'occ_no_upcoming'       => 'No upcoming occurrences.',
-    'occ_archive_btn'       => '🗄 Archived (:n)',
-    'occ_archive_hide'      => '▲ Hide archive',
-    'occ_archive_section'   => '🗄 Archived events',
+    'occ_archive_btn'       => 'Archived (:n)',
+    'occ_archive_hide'      => 'Hide archive',
+    'occ_archive_section'   => 'Archived events',
     'occ_status_cancelled'  => 'Cancelled',
     'occ_status_done'       => 'Finished',
     'occ_status_active'     => 'Active',
@@ -589,8 +589,8 @@ return [
     'draft_autosave_note' => 'Draft is saved automatically',
     'create_pill_3'         => 'Visibility, description, etc.',
 
-    'create_inapp_warn'     => '⚠️ <b>You\'re using an in-app browser</b> — some features may not work.<br>To create an event, open the page in a <b>regular browser</b> (Safari, Chrome).',
-    'create_open_browser'   => '🌐 Open in browser',
+    'create_inapp_warn'     => '<b>You\'re using an in-app browser</b> — some features may not work.<br>To create an event, open the page in a <b>regular browser</b> (Safari, Chrome).',
+    'create_open_browser'   => 'Open in browser',
     'create_private_link_label' => 'Private event link:',
     'create_check_fields'   => 'Please review the fields',
 
@@ -759,7 +759,7 @@ return [
     'event_kind_title'    => 'Event type',
     'event_kind_with_reg' => 'Yes — with player registration (recurrence available)',
     'event_kind_ad'       => 'No — sponsored event (no registration)',
-    'ad_price_label'      => '💰 Sponsored listing price:',
+    'ad_price_label'      => 'Sponsored listing price:',
     'ad_pay_after'        => 'Payment will be required after the event is created.',
     'ad_contact_admin'    => '📣 Sponsored event — contact the administrator about listing pricing.',
 
@@ -920,7 +920,7 @@ return [
     'personal_data_label'    => 'Require personal data',
     'personal_data_hint'     => 'When enabled — additional data will be requested at sign-up.',
 
-    'bot_title'              => 'Sign-up assistant 🤖',
+    'bot_title'              => 'Sign-up assistant',
     'bot_title_short'        => 'Sign-up assistant',
     'bot_enable'             => 'Enable sign-up assistant',
     'bot_hint_1'             => 'If during the first day after sign-up opens fewer than the <strong>threshold</strong> players have signed up — bots will gradually start taking spots.',
@@ -1098,7 +1098,7 @@ return [
     // ===== Registrations =====
     'regs_title'             => 'Registration management — :title',
     'regs_h1'                => 'Registration management',
-    'regs_beach'             => '🏖 Beach volleyball',
+    'regs_beach'             => 'Beach volleyball',
     'regs_classic'           => '🏐 Classic',
     'regs_breadcrumb_my'     => 'My events',
     'regs_breadcrumb_reg'    => 'Registration',
@@ -1187,8 +1187,8 @@ return [
     'regs_export_field_name' => 'Last name, First name, Patronymic',
     'regs_export_field_phone'=> 'Phone',
     'regs_export_field_pos'  => 'Position',
-    'regs_export_pdf'        => '⬇ Download PDF',
-    'regs_export_txt'        => '⬇ Download TXT',
+    'regs_export_pdf'        => 'Download PDF',
+    'regs_export_txt'        => 'Download TXT',
 
     'trainer_self_label'     => 'I am the trainer',
     'regs_team_label'        => 'Team',

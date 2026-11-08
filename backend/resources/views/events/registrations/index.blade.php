@@ -106,7 +106,7 @@ $logPositionDetail = function ($log) {
 	<x-slot name="h2">{{ $eventTitle }}</x-slot>
     <x-slot name="t_description">
 		@if($isBeach)
-		{{ __('events.regs_beach') }}
+		<x-ico name="sun" size="1.1em" /> {{ __('events.regs_beach') }}
 		@else
 		{{ __('events.regs_classic') }} @if(!empty($gameSubtype)) · {{ $gameSubtype }} @endif
 		@endif	
@@ -195,7 +195,7 @@ $logPositionDetail = function ($log) {
 		
 		{{-- Добавить игрока --}}
 		<div class="ramka" style="z-index:6">
-			<h2 class="-mt-05">{{ __('events.regs_add_player_title') }}</h2>
+			<h2 class="-mt-05 h2-ico"><x-ico name="user-plus" size="1.2em" /> {{ __('events.regs_add_player_title') }}</h2>
 			<p>
 				{!! __('events.regs_add_player_hint') !!}
 			</p>
@@ -252,7 +252,7 @@ $logPositionDetail = function ($log) {
 		
 		{{-- Таблица игроков --}}
 		<div class="ramka" style="z-index:7">
-			<h2 class="-mt-05">{{ __('events.regs_section_list') }}</h2>
+			<h2 class="-mt-05 h2-ico"><x-ico name="users" size="1.2em" /> {{ __('events.regs_section_list') }}</h2>
 			
 			@if($registrations->isEmpty())
 			<div class="alert alert-info">
@@ -295,7 +295,7 @@ $logPositionDetail = function ($log) {
 									<a href="{{ route('users.show', $r->user_id) }}" class="b-600 blink">
 										{{ $name }}
 									</a>
-									@if($isBot)<span title="{{ __('events.bot_label') }}">🤖</span>@endif
+									@if($isBot)<span title="{{ __('events.bot_label') }}"><x-ico name="robot" /></span>@endif
 								</div>
 								<p class="pt-1 f-16">#{{ $r->user_id }} · reg #{{ $r->id }}</p>
 							</td>
@@ -335,7 +335,7 @@ $logPositionDetail = function ($log) {
 										<option value="{{ $k }}" @selected($posKey === $k) @disabled($isFull)>{{ $lbl }}@if($isFull) {{ __('events.regs_pos_full') }}@endif</option>
 										@endforeach
 									</select>
-									<button class="btn btn-secondary btn-small" type="submit">✓</button>
+									<button class="btn btn-secondary btn-small" type="submit"><x-ico name="check" /></button>
 								</form>
 								@endif
 							</td>
@@ -468,7 +468,8 @@ $logPositionDetail = function ($log) {
 			{{-- Лист ожидания --}}
 			@if($occurrenceId && isset($waitlistEntries))
 			<div class="ramka">
-				<h2 class="-mt-05">
+				<h2 class="-mt-05 h2-ico">
+					<x-ico name="clock" size="1.2em" />
 					{{ __('events.waitlist_title') }}
 					@if($waitlistEntries->isNotEmpty())
 					<span style="font-size:1.4rem;font-weight:400;opacity:.6;margin-left:.5rem;">({{ $waitlistEntries->count() }})</span>
@@ -577,7 +578,7 @@ $logPositionDetail = function ($log) {
 										class="btn btn-small btn-secondary"
 										style="margin-left:.5rem;padding:.2rem .6rem;font-size:1.2rem;"
 										onclick="wlToggleEdit({{ $wl->id }})">
-											✏️
+											<x-ico name="pencil" />
 										</button>
 									</div>
 									{{-- Режим редактирования позиций --}}
@@ -608,9 +609,9 @@ $logPositionDetail = function ($log) {
 											@else
 											<span class="f-13" style="opacity:.6">{{ __('events.waitlist_beach_pos') }}</span>
 											@endif
-											<button type="submit" class="btn btn-small" style="padding:.25rem .7rem;">✓</button>
+											<button type="submit" class="btn btn-small" style="padding:.25rem .7rem;"><x-ico name="check" /></button>
 											<button type="button" class="btn btn-small btn-secondary"
-											onclick="wlToggleEdit({{ $wl->id }})">✕</button>
+											onclick="wlToggleEdit({{ $wl->id }})"><x-ico name="x" /></button>
 										</form>
 									</div>
 								</td>
@@ -674,7 +675,7 @@ $logPositionDetail = function ($log) {
 			{{-- Группы (только пляжка) --}}
 			@if($isBeach)
 			<div class="ramka" style="z-index:6">
-				<h2 class="-mt-05">{{ __('events.regs_group_pair') }}</h2>
+				<h2 class="-mt-05 h2-ico"><x-ico name="link" size="1.2em" /> {{ __('events.regs_group_pair') }}</h2>
 				<form method="POST"
 				action="{{ route('events.registrations.group.invite', ['event' => $event->id]) }}"
 				class="form">
@@ -771,7 +772,7 @@ $logPositionDetail = function ($log) {
 			$exportBaseTxt = route('events.registrations.txt', ['event' => $event->id]) . '?' . $exportOccurrenceParam;
 			@endphp
 			<div class="ramka">
-				<h2 class="-mt-05">{{ __('events.regs_export_title') }}</h2>
+				<h2 class="-mt-05 h2-ico"><x-ico name="download" size="1.2em" /> {{ __('events.regs_export_title') }}</h2>
 				<p class="mb-2">{{ __('events.regs_export_hint') }}</p>
 				<div class="form d-flex gap-2 flex-wrap mb-3">
 					<label class="checkbox-item">
@@ -794,12 +795,12 @@ $logPositionDetail = function ($log) {
 					<a id="exp-pdf-link"
 					href="{{ $exportBasePdf }}fields=name,phone,position"
 					class="btn btn-secondary">
-						{{ __('events.regs_export_pdf') }}
+						<x-ico name="download" /> {{ __('events.regs_export_pdf') }}
 					</a>
 					<a id="exp-txt-link"
 					href="{{ $exportBaseTxt }}fields=name,phone,position"
 					class="btn btn-secondary">
-						{{ __('events.regs_export_txt') }}
+						<x-ico name="download" /> {{ __('events.regs_export_txt') }}
 					</a>
 				</div>
 			</div>
@@ -849,10 +850,10 @@ $logPositionDetail = function ($log) {
 						teamHidden.value = teamId ? id : '';
 						updateBtn();
 						sel.style.display = 'block';
-						sel.textContent = '✅ ' + label;
+						sel.textContent = label;
 						dd.innerHTML = '';
 						hideDd();
-						input.value = label.replace(/^🤖\s*/, '');
+						input.value = label;
 					}
 					
 					function render(items, teams) {
@@ -868,10 +869,10 @@ $logPositionDetail = function ($log) {
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
 							div.innerHTML =
-							'<span class="b-500">👥 ' + esc(t.label) + '</span>' +
+							'<span class="b-500">' + esc(t.label) + '</span>' +
 							(t.meta ? '<span class="f-13" style="opacity:.5;">' + esc(t.meta) + '</span>' : '');
 							div.addEventListener('click', function() {
-								setSel(t.id, '👥 ' + t.label + ' (' + t.meta + ')', true);
+								setSel(t.id, t.label + ' (' + t.meta + ')', true);
 							});
 							dd.appendChild(div);
 						});
@@ -879,10 +880,10 @@ $logPositionDetail = function ($log) {
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
 							div.innerHTML =
-							'<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
+							'<span class="b-500">' + (item.is_bot ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/><path d="M2 14h2M20 14h2"/></svg> ' : '') + esc(item.label || item.name) + '</span>' +
 							(item.meta ? '<span class="f-13" style="opacity:.5;">' + esc(item.meta) + '</span>' : '');
 							div.addEventListener('click', function() {
-								setSel(item.id, (item.is_bot ? '🤖 ' : '') + (item.label || item.name));
+								setSel(item.id, (item.label || item.name));
 							});
 							dd.appendChild(div);
 						});
@@ -987,7 +988,7 @@ $logPositionDetail = function ($log) {
 						formWrap.style.display = visible ? 'none' : 'block';
 						toggleBtn.textContent  = visible
 						? '+ {{ __('events.waitlist_add_btn') }}'
-						: '✕ {{ __('events.waitlist_add_cancel') }}';
+						: '{{ __('events.waitlist_add_cancel') }}';
 					});
 					
 					if (!input) return;
@@ -1001,10 +1002,10 @@ $logPositionDetail = function ($log) {
 					function setSel(id, label) {
 						hidden.value       = id;
 						sel.style.display  = 'block';
-						sel.textContent    = '✅ ' + label;
+						sel.textContent    = label;
 						dd.innerHTML       = '';
 						hideDd();
-						input.value = label.replace(/^🤖\s*/, '');
+						input.value = label;
 						updateBtn();
 					}
 					
@@ -1017,10 +1018,10 @@ $logPositionDetail = function ($log) {
 						items.forEach(function (item) {
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
-							div.innerHTML = '<span class="b-500">' + (item.is_bot ? '🤖 ' : '') + esc(item.label || item.name) + '</span>' +
+							div.innerHTML = '<span class="b-500">' + (item.is_bot ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/><path d="M2 14h2M20 14h2"/></svg> ' : '') + esc(item.label || item.name) + '</span>' +
 							(item.meta ? '<span class="f-13" style="opacity:.5;">' + esc(item.meta) + '</span>' : '');
 							div.addEventListener('click', function () {
-								setSel(item.id, (item.is_bot ? '🤖 ' : '') + (item.label || item.name));
+								setSel(item.id, (item.label || item.name));
 							});
 							dd.appendChild(div);
 						});

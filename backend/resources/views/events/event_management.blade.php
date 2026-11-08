@@ -256,7 +256,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
 								<td class="align-top">
 									<div class="d-flex">
 										@if($isRecurring)
-										<span class="emo" title="{{ __('events.recurring_title') }}">🔁</span>
+										<span class="emo" title="{{ __('events.recurring_title') }}"><x-ico name="repeat" size="1.8rem" /></span>
 										@endif    
 										<div>
 											<a class="blink" href="{{ url('/events/' . (int)$event->id) . ($isRecurring && $event->next_occurrence_id ? '?occurrence=' . (int)$event->next_occurrence_id : '') }}">{{ $event->title }}</a>
@@ -323,7 +323,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
                                             title="{{ $botOn ? __('events.bot_on_series') : __('events.bot_off_series') }}"
-                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
+                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/><path d="M2 14h2M20 14h2"/></svg></button>
                                         @endif
 	                                        {{-- Для recurring: изменить серию, открыть даты, отменить всю серию --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"
@@ -382,7 +382,7 @@ return ['label' => __('events.seats_dash'), 'free' => null, 'max' => null, 'regi
                                             data-url="{{ route('events.event_management.toggle-bot', ['event' => (int)$event->id]) }}"
                                             data-enabled="{{ $botOn ? '1' : '0' }}"
                                             title="{{ $botOn ? __('events.bot_on') : __('events.bot_off') }}"
-                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif>🤖</button>
+                                            @if($botOn) style="background:#10b981;border-color:#10b981;color:#fff" @endif><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/><path d="M2 14h2M20 14h2"/></svg></button>
                                         @endif
 	                                        {{-- Для single: изменить, копировать, отменить --}}
                                         <a href="{{ route('events.event_management.edit', ['event' => (int)$event->id]) }}"

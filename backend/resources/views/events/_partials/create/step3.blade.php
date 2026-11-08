@@ -1,5 +1,5 @@
 						<div class="ramka" style="z-index: 5" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">{{ __('events.access_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="eye" size="1.2em" /> {{ __('events.access_title') }}</h2>		
 							<div class="row">
 								<div class="col-md-4">
 									<div class="card">
@@ -200,7 +200,7 @@
 						{{-- ===== Помощник записи 🤖 =====--}}
 						
                         <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_mode=team,team_classic,team_beach|format=tournament" id="bot_assistant_block">
-                            <h2 class="-mt-05">{{ __('events.bot_title') }}</h2>
+                            <h2 class="-mt-05 h2-ico"><x-ico name="robot" size="1.2em" /> {{ __('events.bot_title') }}</h2>
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="card">
@@ -281,7 +281,7 @@
 							</div>
 						</div>
 						<div class="ramka" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">{{ __('events.notify_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="bell" size="1.2em" /> {{ __('events.notify_title') }}</h2>		
 							<div class="row">
 								
 								{{-- ✅ Notifications + participants visibility --}}
@@ -671,7 +671,7 @@
 							</div>
 						</div>
 						<div class="ramka" style="z-index:6">
-							<h2 class="-mt-05">{{ __('events.photo_desc_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> {{ __('events.photo_desc_title') }}</h2>		
 							
 							<div class="row">
 								

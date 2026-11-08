@@ -354,9 +354,9 @@ if ($initialStep < 1 || $initialStep > 3) {
 		<div class="container">
     {{-- Детект встроенного браузера MAX/Telegram/VK --}}
     <div id="inapp-browser-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1rem;">
-        {!! __('events.create_inapp_warn') !!}
+        <x-ico name="warn" size="1.3em" /> {!! __('events.create_inapp_warn') !!}
         <br><br>
-        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small">{{ __('events.create_open_browser') }}</a>
+        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small"><x-ico name="globe" /> {{ __('events.create_open_browser') }}</a>
     </div>
     <script>
     (function(){

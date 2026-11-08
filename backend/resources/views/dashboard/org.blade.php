@@ -26,13 +26,13 @@
 
     <x-slot name="d_description">
         <div class="org-nav-grid">
-            <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_my_events') }}</a>
-            <a href="{{ route('org.players') }}" class="btn btn-secondary">{{ $proAnalytics ? '' : '🔒 ' }}👥 Аналитика игроков</a>
-            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_pay_settings') }}</a>
-            <a href="{{ route('profile.transactions') }}" class="btn btn-secondary">{{ __('profile.dash_org_btn_transactions') }}</a>
+            <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary"><x-ico name="clipboard" /> {{ __('profile.dash_org_btn_my_events') }}</a>
+            <a href="{{ route('org.players') }}" class="btn btn-secondary">@unless($proAnalytics)<x-ico name="lock" /> @endunless<x-ico name="users" /> Аналитика игроков</a>
+            <a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary"><x-ico name="card" /> {{ __('profile.dash_org_btn_pay_settings') }}</a>
+            <a href="{{ route('profile.transactions') }}" class="btn btn-secondary"><x-ico name="wallet" /> {{ __('profile.dash_org_btn_transactions') }}</a>
             @if(auth()->user()?->is_club_manager && auth()->user()->ownedLocations()->exists())
-            <a href="{{ route('club.bookings.index') }}" class="btn btn-secondary">🏟️ {{ __('club.court_bookings') }}</a>
-            <a href="{{ route('club.analytics.index') }}" class="btn btn-secondary">📊 {{ __('club.analytics') }}</a>
+            <a href="{{ route('club.bookings.index') }}" class="btn btn-secondary"><x-ico name="building" /> {{ __('club.court_bookings') }}</a>
+            <a href="{{ route('club.analytics.index') }}" class="btn btn-secondary"><x-ico name="chart" /> {{ __('club.analytics') }}</a>
             @endif
         </div>
     </x-slot>
@@ -41,7 +41,7 @@
 
         {{-- СВОДКА --}}
         <div class="ramka">
-            <h2 class="-mt-05">{{ __('profile.dash_org_h2_summary') }}</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="chart" size="1.2em" /> {{ __('profile.dash_org_h2_summary') }}</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -72,7 +72,7 @@
 
         {{-- ИГРОКИ --}}
         <div class="ramka">
-            <h2 class="-mt-05">{{ __('profile.dash_org_h2_players') }}</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="users" size="1.2em" /> {{ __('profile.dash_org_h2_players') }}</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -105,7 +105,7 @@
         {{-- ДИНАМИКА ЗАПИСЕЙ --}}
         <div class="ramka">
             <div class="section-title-row">
-                <h2 class="-mt-05">{{ __('profile.dash_org_h2_dynamics') }}</h2>
+                <h2 class="-mt-05 h2-ico"><x-ico name="trend" size="1.2em" /> {{ __('profile.dash_org_h2_dynamics') }}</h2>
                 <div class="filter-tabs" id="dynamics-period-tabs">
                     <button class="filter-tab dynamics-period-btn" data-period="30d">30 дней</button>
                     <button class="filter-tab dynamics-period-btn" data-period="90d">3 месяца</button>
@@ -123,7 +123,7 @@
         @if($occurrenceLoad->count() > 0)
         <div class="ramka">
             <div class="section-title-row">
-                <h2 class="-mt-05">{{ __('profile.dash_org_h2_load') }}</h2>
+                <h2 class="-mt-05 h2-ico"><x-ico name="ball" size="1.2em" /> {{ __('profile.dash_org_h2_load') }}</h2>
                 <div class="filter-tabs" id="load-period-tabs">
                     <button class="filter-tab load-period-btn" data-period="30d">30 дней</button>
                     <button class="filter-tab load-period-btn active" data-period="90d">3 месяца</button>
@@ -171,8 +171,8 @@
         @if($orgTournaments->isNotEmpty())
         <div class="ramka">
             <div class="section-title-row">
-                <h2 class="-mt-05">🏆 Турниры</h2>
-                <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">{{ $proAnalytics ? '' : '🔒 ' }}📊 Аналитика турниров</a>
+                <h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> Турниры</h2>
+                <a href="{{ route('org.tournament-analytics') }}" class="btn btn-outline-primary btn-sm">@unless($proAnalytics)<x-ico name="lock" /> @endunless<x-ico name="chart" /> Аналитика турниров</a>
             </div>
             <div class="row mb-2">
                 <div class="col-md-4">
@@ -222,7 +222,7 @@
         @endif
 
 <div class="ramka">
-            <h2 class="-mt-05">🤖 Эффективность ботов</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="robot" size="1.2em" /> Эффективность ботов</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -256,11 +256,11 @@
             @endphp
             <div class="alert alert-info mt-2">
                 @if($diff > 0)
-                    🟢 Боты привлекают в среднем <strong>+{{ round($diff, 1) }}</strong> дополнительных записей на мероприятие
+                    <x-ico name="dot-green" /> Боты привлекают в среднем <strong>+{{ round($diff, 1) }}</strong> дополнительных записей на мероприятие
                 @elseif($diff < 0)
-                    🔴 Мероприятия без ботов набирают больше участников (+{{ round(abs($diff), 1) }})
+                    <x-ico name="dot-red" /> Мероприятия без ботов набирают больше участников (+{{ round(abs($diff), 1) }})
                 @else
-                    ⚪ Боты не влияют на количество записей
+                    <x-ico name="dot-gray" /> Боты не влияют на количество записей
                 @endif
             </div>
         </div>
@@ -272,8 +272,8 @@
                 <div class="col-md-6">
 				<div class="ramka">
                     <div class="section-title-row">
-                        <h2 class="-mt-05">🏆 Самые активные игроки</h2>
-                        <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">{{ $proAnalytics ? '' : '🔒 ' }}👥 Подробнее</a>
+                        <h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> Самые активные игроки</h2>
+                        <a href="{{ route('org.players') }}" class="btn btn-outline-primary btn-sm">@unless($proAnalytics)<x-ico name="lock" /> @endunless<x-ico name="users" /> Подробнее</a>
                     </div>
                     
                         @forelse($topPlayers as $i => $player)
@@ -299,7 +299,7 @@
                 </div>
                 <div class="col-md-6">
 				  <div class="ramka">
-                    <h2 class="-mt-05">❌ Часто отменяют</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="x" size="1.2em" /> Часто отменяют</h2>
                   
                         @forelse($topCancellers as $i => $player)
                         <div class="d-flex between fvc py-1 {{ $i > 0 ? 'border-top' : '' }}">
@@ -325,7 +325,7 @@
         @if($topLatePayers->count() > 0)
         <div class="ramka">
             <div class="section-title-row">
-                <h2 class="-mt-05">{{ __('profile.dash_org_h2_late_payers') }}</h2>
+                <h2 class="-mt-05 h2-ico"><x-ico name="warn" size="1.2em" /> {{ __('profile.dash_org_h2_late_payers') }}</h2>
                 <div class="filter-tabs" id="late-payers-period-tabs">
                     <button class="filter-tab late-payers-period-btn active" data-period="30d">30 дней</button>
                     <button class="filter-tab late-payers-period-btn" data-period="60d">60 дней</button>
@@ -342,7 +342,7 @@
         {{-- АБОНЕМЕНТЫ И КУПОНЫ --}}
         @if(isset($subStats) && $subStats->total > 0)
         <div class="ramka">
-            <h2 class="-mt-05">🎫 Абонементы</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="ticket" size="1.2em" /> Абонементы</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -391,15 +391,15 @@
             @endif
 
             <div class="d-flex gap-2 mt-2">
-                <a href="{{ route('subscriptions.index') }}" class="btn btn-secondary btn-small">📋 Все абонементы</a>
-                <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary btn-small">📝 Шаблоны</a>
+                <a href="{{ route('subscriptions.index') }}" class="btn btn-secondary btn-small"><x-ico name="clipboard" /> Все абонементы</a>
+                <a href="{{ route('subscription_templates.index') }}" class="btn btn-secondary btn-small"><x-ico name="file-text" /> Шаблоны</a>
             </div>
         </div>
         @endif
 
         @if(isset($couponStats) && $couponStats->total > 0)
         <div class="ramka">
-            <h2 class="-mt-05">🎟 Купоны</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="tag" size="1.2em" /> Купоны</h2>
             <div class="row">
                 <div class="col-6 col-md-3">
                     <div class="card text-center">
@@ -427,15 +427,15 @@
                 </div>
             </div>
             <div class="d-flex gap-2 mt-2">
-                <a href="{{ route('coupons.org_index') }}" class="btn btn-secondary btn-small">📋 Все купоны</a>
-                <a href="{{ route('coupon_templates.index') }}" class="btn btn-secondary btn-small">🏷 Шаблоны купонов</a>
+                <a href="{{ route('coupons.org_index') }}" class="btn btn-secondary btn-small"><x-ico name="clipboard" /> Все купоны</a>
+                <a href="{{ route('coupon_templates.index') }}" class="btn btn-secondary btn-small"><x-ico name="tag" /> Шаблоны купонов</a>
             </div>
         </div>
         @endif
 
     <div class="ramka text-center">
-        <a href="{{ route('staff.index') }}" class="btn btn-secondary mr-2">🧑‍💻 Мои помощники</a>
-        <a href="{{ route('staff.logs') }}" class="btn btn-secondary">📋 Логи действий Staff</a>
+        <a href="{{ route('staff.index') }}" class="btn btn-secondary mr-2"><x-ico name="user-check" /> Мои помощники</a>
+        <a href="{{ route('staff.logs') }}" class="btn btn-secondary"><x-ico name="clipboard" /> Логи действий Staff</a>
     </div>
 
     </div>

@@ -1,5 +1,5 @@
 						<div class="ramka" style="z-index:5">
-							<h2 class="-mt-05">{{ __('events.step2_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="pin" size="1.2em" /> {{ __('events.step2_title') }}</h2>		
 							<div class="row">
 								
 								<div class="col-lg-4">
@@ -145,7 +145,7 @@
 						data-free-label="{{ __('club.price_free') }}"
 						data-selected-label="{{ __('club.selected_slot_label') }}"
 						>
-											<div class="b-600 mb-1">🏟 {{ __('club.managed_by_club') }}</div>
+											<div class="b-600 mb-1"><x-ico name="building" size="1.2em" /> {{ __('club.managed_by_club') }}</div>
 											<div class="f-16 mb-2">{{ __('club.courts_already_booked_q') }}</div>
 											<label class="d-flex fvc gap-1 mb-1">
 												<input type="radio" name="club_booking_choice" value="direct" checked>
@@ -511,7 +511,7 @@ if (hiddenH) hiddenH.value = h;
 							</div>
 						</div>
 						<div class="ramka" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">{{ __('events.recurrence_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="repeat" size="1.2em" /> {{ __('events.recurrence_title') }}</h2>		
 							
 							{{-- ✅ Повторение перенесено сюда (Step 2) --}}
 							<div id="recurrence_box">
@@ -822,7 +822,7 @@ if (hiddenH) hiddenH.value = h;
 						{{-- СЕРИЯ ТУРНИРОВ (Season / League) --}}
 						{{-- ══════════════════════════════════════════════════ --}}
 						<div class="ramka" id="season_league_box" style="display:none; position:relative; z-index:9; overflow:visible;">
-							<h2 class="-mt-05">{{ __('events.season_title') }}</h2>
+							<h2 class="-mt-05 h2-ico"><x-ico name="layers" size="1.2em" /> {{ __('events.season_title') }}</h2>
 
 							<label class="checkbox-item">
 								<input type="hidden" name="create_season" value="0">
