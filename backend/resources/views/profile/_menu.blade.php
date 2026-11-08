@@ -175,7 +175,7 @@
                 </a>
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
                     @csrf
-                    <button type="submit" class="menu-item">{{ __('profile.menu_logout') }}</button>
+                    <button type="submit" class="menu-item"><x-ico name="door" /> {{ __('profile.menu_logout') }}</button>
                 </form>
             </div>
 
@@ -392,7 +392,7 @@
                 @endif
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
                     @csrf
-                    <button type="submit" class="menu-item">{{ __('profile.menu_logout') }}</button>
+                    <button type="submit" class="menu-item"><x-ico name="door" /> {{ __('profile.menu_logout') }}</button>
                 </form>
             </div>
 
@@ -538,7 +538,7 @@
     </a>
     <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
         @csrf
-        <button type="submit" class="menu-item">{{ __('profile.menu_logout') }}</button>
+        <button type="submit" class="menu-item"><x-ico name="door" /> {{ __('profile.menu_logout') }}</button>
     </form>
 </nav>
 @endif
