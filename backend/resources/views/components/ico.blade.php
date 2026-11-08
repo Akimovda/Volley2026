@@ -66,7 +66,6 @@ $icons = [
     'dot-red'   => $stroke('<circle cx="12" cy="12" r="7"/>', '#dc2626', '#f87171'),
     'dot-gray'  => $stroke('<circle cx="12" cy="12" r="7"/>', '#6b7280', '#d1d5db'),
 ];
-@php
 if ($color && isset($icons[$name])) {
     $icons[$name] = preg_replace('/stroke="#[0-9a-fA-F]{3,8}"/', 'stroke="' . e($color) . '"', $icons[$name], 1);
 }
