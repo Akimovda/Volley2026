@@ -1061,7 +1061,6 @@
 										<div class="col-md-6">
 											<div class="card">
 																								<label>{{ __('events.event_kind_title') }}
-													<button type="button" class="btn btn-small btn-secondary" style="font-size:.8rem;padding:.1rem .5rem;margin-left:.5rem;" id="hint-location-btn">❓</button>
 												</label>
 												@php
 												$allowRegVal = old('allow_registration', $prefill['allow_registration'] ?? 1);
@@ -1107,32 +1106,7 @@
 							</button>
 						</div>
 
-{{-- Модальная подсказка про локации --}}
-<div id="hint-location-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-    <div class="ramka" style="max-width:480px;margin:2rem auto;position:relative;">
-        <button type="button" id="hint-location-close" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.5rem;cursor:pointer;line-height:1;">×</button>
-        <h2 class="-mt-05">{{ __('events.hint_loc_title') }}</h2>
-        <p>{{ __('events.hint_loc_p1_pre') }} <a href="{{ route('locations.index') }}" target="_blank" class="blink">{{ __('events.hint_loc_p1_link') }}</a> {{ __('events.hint_loc_p1_post') }}</p>
-        <p>{{ __('events.hint_loc_p2') }}</p>
-        <div class="text-center mt-2">
-            <button type="button" id="hint-location-close2" class="btn">{{ __('events.hint_loc_ok') }}</button>
-        </div>
-    </div>
-</div>
 <script>
-(function(){
-    var btn = document.getElementById('hint-location-btn');
-    var modal = document.getElementById('hint-location-modal');
-    var close1 = document.getElementById('hint-location-close');
-    var close2 = document.getElementById('hint-location-close2');
-    if (!btn || !modal) return;
-    function show(){ modal.style.display = 'flex'; }
-    function hide(){ modal.style.display = 'none'; }
-    btn.addEventListener('click', show);
-    close1.addEventListener('click', hide);
-    close2.addEventListener('click', hide);
-    modal.addEventListener('click', function(e){ if(e.target === modal) hide(); });
-})();
 (function(){
     var cb = document.getElementById('tournament_individual_reg');
     if (!cb) return;

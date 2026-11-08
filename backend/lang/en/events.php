@@ -763,13 +763,6 @@ return [
     'ad_pay_after'        => 'Payment will be required after the event is created.',
     'ad_contact_admin'    => '📣 Sponsored event — contact the administrator about listing pricing.',
 
-    'hint_loc_title'      => '📍 About locations',
-    'hint_loc_p1_pre'     => 'Make sure the address you need exists in',
-    'hint_loc_p1_link'    => 'Locations',
-    'hint_loc_p1_post'    => '— without it the event cannot be created.',
-    'hint_loc_p2'         => 'If the location is missing — contact the administrator, they\'ll set it up on the platform!',
-    'hint_loc_ok'         => 'Got it',
-
     // Step 2
     'step2_title'         => 'Location, time and registration limits',
     'starts_local'        => 'Start (local)',

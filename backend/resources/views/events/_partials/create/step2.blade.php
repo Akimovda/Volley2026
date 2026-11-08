@@ -681,8 +681,6 @@ if (hiddenH) hiddenH.value = h;
 <script>
 (function(){
     var allowRegRadios = document.querySelectorAll('input[name="allow_registration"]');
-    var adModal = document.getElementById('hint-location-modal');
-    var adModalShown = false;
 
     function applyAllowRegShowIf() {
         var isReg = Array.from(allowRegRadios).some(function(r){ return r.checked && r.value === '1'; });
@@ -743,12 +741,6 @@ if (hiddenH) hiddenH.value = h;
         // Показать/скрыть блок стоимости
         var stub = document.getElementById('no_registration_stub');
         if (stub) stub.style.display = isReg ? 'none' : '';
-        // Показать модальное окно при выборе "Нет"
-        if (!isReg && !adModalShown && adModal) {
-            adModal.style.display = 'flex';
-            adModalShown = true;
-        }
-        if (isReg) adModalShown = false;
     }
     allowRegRadios.forEach(function(r){ r.addEventListener('change', applyAllowRegShowIf); });
     window.applyAllowRegShowIf = applyAllowRegShowIf;
