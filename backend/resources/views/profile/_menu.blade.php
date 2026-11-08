@@ -137,9 +137,9 @@
                 <a href="{{ route('activity.index') }}"
                    class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
                     @if($activeMenu === 'activity')
-                        <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }} <x-beta-badge /></strong>
                     @else
-                        <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</span>
+                        <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }} <x-beta-badge /></span>
                     @endif
                 </a>
                 @endif
@@ -495,9 +495,9 @@
     <a href="{{ route('activity.index') }}"
        class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
         @if($activeMenu === 'activity')
-            <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</strong>
+            <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }} <x-beta-badge /></strong>
         @else
-            <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</span>
+            <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }} <x-beta-badge /></span>
         @endif
     </a>
     @endif

@@ -78,8 +78,8 @@ return [
     'admin_notification_templates' => 'Шаблоны уведомлений',
     'admin_new_broadcast'        => 'Новая рассылка',
     'admin_broadcasts'           => 'Рассылки',
-    'admin_impersonate'          => '👁 Войти как...',
-    'admin_apps'                 => '📱 Настройка App',
+    'admin_impersonate'          => 'Войти как...',
+    'admin_apps'                 => 'Настройка App',
 
     // OAuth кнопки
     'auth_apple'    => 'Войти через Apple',
