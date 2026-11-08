@@ -47,6 +47,26 @@
 		</script>
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
+			// В приложении ссылки target="_blank" на наш сайт открываются в том же окне приложения (иначе WKWebView/Capacitor
+			// отдаёт их внешнему Safari/Chrome). Внешние сайты и файлы (PDF, картинки…) по-прежнему открываются снаружи.
+			// Отказаться для конкретной ссылки: data-external="1".
+			if (/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)) {
+				document.addEventListener('click', function (e) {
+					if (e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+					var a = e.target.closest && e.target.closest('a[target="_blank"][href]');
+					if (!a || a.hasAttribute('download') || a.getAttribute('data-external') === '1') return;
+					var u;
+					try { u = new URL(a.href); } catch (err) { return; }
+					if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+					var h = u.hostname;
+					if (h !== location.hostname && h !== 'volleyplay.club' && !/\.volleyplay\.club$/.test(h)) return;
+					if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar|png|jpe?g|gif|webp|svg|mp4|mov)$/i.test(u.pathname)) return;
+					e.preventDefault();
+					location.href = u.href;
+				}, true);
+			}
+		</script>
+		<script>
 			if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){
 				document.addEventListener('click',function(e){
 					var bell=e.target.closest('.fix-header-btn-mail');
