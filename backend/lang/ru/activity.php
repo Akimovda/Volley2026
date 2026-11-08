@@ -36,7 +36,7 @@ return [
 
     // Запись тренировки
     'record_page_title'      => 'Запись тренировки',
-    'record_btn'             => '🫀 Записать тренировку',
+    'record_btn'             => 'Записать тренировку',
     'available_in_app_only'  => 'Запись пульса доступна только в приложении VolleyPlay.',
     'connect_sensor'         => 'Подключить датчик',
     'disconnect'             => 'Отключить',
@@ -52,11 +52,11 @@ return [
     'zone_label'             => 'Зона',
     'timer_label'            => 'Время',
     'session_summary'        => 'Итоги тренировки',
-    'avg_hr'                 => '🫀 Средний пульс',
+    'avg_hr'                 => 'Средний пульс',
     'max_hr'                 => 'Максимальный пульс',
     'min_hr'                 => 'Минимальный пульс',
     'duration'               => '⏳ Продолжительность',
-    'load_score'             => '💪 Нагрузка',
+    'load_score'             => 'Нагрузка',
     'samples_count'          => 'Измерений',
     'done_btn'               => 'Готово',
     'error_ble_init'         => 'Не удалось инициализировать Bluetooth. Проверьте разрешения.',
@@ -110,7 +110,7 @@ return [
     'devices_jumps_note'         => '* Прыжки и высота — Apple Watch и профессиональные BLE-датчики движения (Movesense, Polar H10)',
 
     // Калории
-    'calories'               => '🔥 Калории',
+    'calories'               => 'Калории',
     'calories_measured'      => ':n ккал (Apple Watch)',
     'calories_estimated'     => '≈:n ккал',
     'calories_no_data'       => '— укажите вес',
@@ -119,7 +119,7 @@ return [
     'set_weight_hint'        => 'Настроить профиль',
 
     // Прыжки
-    'jumps_count'            => '🏐 Прыжков',
+    'jumps_count'            => 'Прыжков',
     'jumps_not_tracked'      => 'Этот датчик не отслеживает прыжки',
     'jump_trend_higher'      => 'выше среднего на :delta см',
     'jump_trend_lower'       => 'ниже среднего на :delta см',
@@ -137,7 +137,7 @@ return [
 
     // Дашборд активности
     'menu_history'           => '❤️ Моя активность',
-    'dashboard_title'        => '❤️ Моя активность',
+    'dashboard_title'        => 'Моя активность',
     'no_sessions'            => 'Пока нет записанных тренировок.',
     'total_sessions'         => 'Всего тренировок',
     'last_load'              => 'Нагрузка (посл.)',

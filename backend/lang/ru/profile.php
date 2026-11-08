@@ -20,7 +20,7 @@ return [
     'menu_my_stats'       => 'Моя статистика',
     'menu_my_friends'     => 'Мои друзья',
     'menu_my_visitors'    => 'Мои гости',
-    'menu_my_visitors_premium' => 'Мои гости 👑',
+    'menu_my_visitors_premium' => 'Мои гости',
     'menu_logout'         => 'Выйти',
 
     'menu_org_dashboard'    => 'Панель организатора',
@@ -226,7 +226,7 @@ return [
 
     // Каналы уведомлений (sec)
     'sec_channels'        => 'Каналы уведомлений',
-    'channels_list_label' => 'Список подключенных 📣:',
+    'channels_list_label' => 'Список подключенных:',
     'channels_default_n'  => 'Канал #:id',
     'channels_unverified' => '— не подтверждён',
     'channels_lead'       => 'Подключайте Telegram / VK / MAX каналы для анонсов мероприятий, открытия регистрации и обновления списков участников.',

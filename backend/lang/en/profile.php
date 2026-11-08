@@ -20,7 +20,7 @@ return [
     'menu_my_stats'       => 'My stats',
     'menu_my_friends'     => 'My friends',
     'menu_my_visitors'    => 'My visitors',
-    'menu_my_visitors_premium' => 'My visitors 👑',
+    'menu_my_visitors_premium' => 'My visitors',
     'menu_logout'         => 'Log out',
 
     'menu_org_dashboard'    => 'Organizer dashboard',
@@ -226,7 +226,7 @@ return [
 
     // Notification channels (sec)
     'sec_channels'        => 'Notification channels',
-    'channels_list_label' => 'Connected list 📣:',
+    'channels_list_label' => 'Connected list:',
     'channels_default_n'  => 'Channel #:id',
     'channels_unverified' => '— not verified',
     'channels_lead'       => 'Connect Telegram / VK / MAX channels for event announcements, registration opening, and participant list updates.',

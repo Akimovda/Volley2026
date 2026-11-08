@@ -36,7 +36,7 @@ return [
 
     // Workout recording
     'record_page_title'      => 'Record Workout',
-    'record_btn'             => '🫀 Record Workout',
+    'record_btn'             => 'Record Workout',
     'available_in_app_only'  => 'Heart rate recording is only available in the VolleyPlay app.',
     'connect_sensor'         => 'Connect Sensor',
     'disconnect'             => 'Disconnect',
@@ -52,11 +52,11 @@ return [
     'zone_label'             => 'Zone',
     'timer_label'            => 'Time',
     'session_summary'        => 'Workout Summary',
-    'avg_hr'                 => '🫀 Average HR',
+    'avg_hr'                 => 'Average HR',
     'max_hr'                 => 'Maximum HR',
     'min_hr'                 => 'Minimum HR',
     'duration'               => '⏳ Duration',
-    'load_score'             => '💪 Load score',
+    'load_score'             => 'Load score',
     'samples_count'          => 'Samples',
     'done_btn'               => 'Done',
     'error_ble_init'         => 'Failed to initialize Bluetooth. Check permissions.',
@@ -110,7 +110,7 @@ return [
     'devices_jumps_note'         => '* Jumps and height — Apple Watch and professional BLE motion sensors (Movesense, Polar H10)',
 
     // Calories
-    'calories'               => '🔥 Calories',
+    'calories'               => 'Calories',
     'calories_measured'      => ':n kcal (Apple Watch)',
     'calories_estimated'     => '≈:n kcal',
     'calories_no_data'       => '— add your weight',
@@ -119,7 +119,7 @@ return [
     'set_weight_hint'        => 'Configure profile',
 
     // Jumps
-    'jumps_count'            => '🏐 Jumps',
+    'jumps_count'            => 'Jumps',
     'jumps_not_tracked'      => 'This sensor does not track jumps',
     'jump_trend_higher'      => ':delta cm above personal average',
     'jump_trend_lower'       => ':delta cm below personal average',
@@ -137,7 +137,7 @@ return [
 
     // Activity dashboard
     'menu_history'           => '❤️ My Activity',
-    'dashboard_title'        => '❤️ My Activity',
+    'dashboard_title'        => 'My Activity',
     'no_sessions'            => 'No recorded workouts yet.',
     'total_sessions'         => 'Total workouts',
     'last_load'              => 'Load (last)',

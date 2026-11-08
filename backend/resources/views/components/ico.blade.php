@@ -1,6 +1,6 @@
 {{-- Цветные SVG-иконки вместо эмодзи (одинаково выглядят на всех платформах).
      <x-ico name="check" /> · size — любое CSS-значение (по умолчанию 1.15em, под размер текста). --}}
-@props(['name', 'size' => '1.15em'])
+@props(['name', 'size' => '1.15em', 'color' => null])
 @php
 $stroke = fn (string $inner, string $color, string $fill = 'none') =>
     '<svg viewBox="0 0 24 24" fill="'.$fill.'" stroke="'.$color.'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$inner.'</svg>';
@@ -60,9 +60,15 @@ $icons = [
     'zap'       => $stroke('<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>', $amber, '#fde68a'),
     'heart'     => $stroke('<path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z"/>', $red, '#fecaca'),
     'ghost'     => $stroke('<path d="M9 10h.01M15 10h.01"/><path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z"/>', $violet),
+    'flame'     => $stroke('<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>', '#ea580c', '#fed7aa'),
+    'bluetooth' => $stroke('<path d="m7 7 10 10-5 5V2l5 5L7 17"/>', $blue),
     'dot-green' => $stroke('<circle cx="12" cy="12" r="7"/>', '#16a34a', '#4ade80'),
     'dot-red'   => $stroke('<circle cx="12" cy="12" r="7"/>', '#dc2626', '#f87171'),
     'dot-gray'  => $stroke('<circle cx="12" cy="12" r="7"/>', '#6b7280', '#d1d5db'),
 ];
+@php
+if ($color && isset($icons[$name])) {
+    $icons[$name] = preg_replace('/stroke="#[0-9a-fA-F]{3,8}"/', 'stroke="' . e($color) . '"', $icons[$name], 1);
+}
 @endphp
 @if(isset($icons[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]) !!}</span>@endif

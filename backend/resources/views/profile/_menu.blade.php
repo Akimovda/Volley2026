@@ -162,7 +162,7 @@
                 </a>
                 @else
                 <a href="{{ route('premium.index') }}" class="menu-item" style="opacity:.6;">
-                    <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
+                    <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }} <x-ico name="crown" /></span>
                 </a>
                 @endif
                 <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
@@ -520,7 +520,7 @@
     </a>
     @else
     <a href="{{ route('premium.index') }}" class="menu-item" style="opacity:.6;">
-        <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }}</span>
+        <span class="menu-text">{{ __('profile.menu_my_visitors_premium') }} <x-ico name="crown" /></span>
     </a>
     @endif
     <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
