@@ -29,7 +29,7 @@ $icons = [
     'sliders'   => $stroke('<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>', $blue),
     'user-check'=> $stroke('<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m16 11 2 2 4-4"/>', $green),
     'pin'       => $stroke('<path d="M12 22s7-7.58 7-13a7 7 0 0 0-14 0c0 5.42 7 13 7 13z"/><circle cx="12" cy="9" r="2.5"/>', $red),
-    'ball'      => $stroke('<circle cx="12" cy="12" r="10"/><path d="M12 2c3 3 4.5 6.5 4.5 10S15 19 12 22"/><path d="M4 6.5c4 1 7.5 4 9 8"/><path d="M20 6.5c-4 1-7.5 4-9 8"/>', '#ea580c'),
+    'ball'      => $stroke('<circle cx="12" cy="12" r="10"/><path d="M3.34 7Q10.25 15.74 21.4 15.42"/><path d="M20.66 7Q9.63 8.62 4.34 18.43"/><path d="M12 22Q16.11 11.65 10.26 2.15"/>', '#ea580c'),
     'clipboard-check' => $stroke('<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>', $violet),
     'wallet'    => $stroke('<rect x="2" y="6" width="20" height="14" rx="2"/><path d="M2 10h20"/><circle cx="17" cy="15" r="1"/>', $green),
     'bell'      => $stroke('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>', $amber),
