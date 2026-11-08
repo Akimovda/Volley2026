@@ -69,6 +69,7 @@ $icons = [
     'send'      => $stroke('<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>', $blue),
     'help'      => $stroke('<circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>', $blue),
     'info'      => $stroke('<circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/>', $blue),
+    'search'    => $stroke('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', $blue),
     'bluetooth' => $stroke('<path d="m7 7 10 10-5 5V2l5 5L7 17"/>', $blue),
     'dot-green' => $stroke('<circle cx="12" cy="12" r="7"/>', '#16a34a', '#4ade80'),
     'dot-red'   => $stroke('<circle cx="12" cy="12" r="7"/>', '#dc2626', '#f87171'),

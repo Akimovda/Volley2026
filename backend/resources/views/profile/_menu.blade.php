@@ -23,17 +23,17 @@
 @if($isEditingOther)
 <nav class="menu-nav sidebar-menu">
     <a href="{{ route('users.show', ['user' => $menuUser->id]) }}" class="menu-item">
-        <span class="menu-text">{{ __('profile.menu_public_profile_other') }}</span>
+        <span class="menu-text"><x-ico name="eye" /> {{ __('profile.menu_public_profile_other') }}</span>
     </a>
     <a href="{{ url('/profile/complete?user_id=' . $menuUser->id) }}" class="menu-item">
-        <span class="menu-text">{{ __('profile.menu_edit_user') }}</span>
+        <span class="menu-text"><x-ico name="pencil" /> {{ __('profile.menu_edit_user') }}</span>
     </a>
     <a href="{{ url('/user/photos?user_id=' . $menuUser->id) }}"
        class="menu-item {{ $activeMenu === 'photos' ? 'active' : '' }}">
         @if($activeMenu === 'photos')
-            <strong class="cd menu-text">{{ __('profile.menu_edit_user_photos') }}</strong>
+            <strong class="cd menu-text"><x-ico name="image" /> {{ __('profile.menu_edit_user_photos') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_edit_user_photos') }}</span>
+            <span class="menu-text"><x-ico name="image" /> {{ __('profile.menu_edit_user_photos') }}</span>
         @endif
     </a>
 </nav>
@@ -54,83 +54,83 @@
                 <a href="{{ route('users.show', ['user' => $menuUser->id]) }}"
                    class="menu-item {{ $activeMenu === 'public_profile' ? 'active' : '' }}">
                     @if($activeMenu === 'public_profile')
-                        <strong class="cd menu-text">{{ __('profile.menu_public_profile') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="eye" /> {{ __('profile.menu_public_profile') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_public_profile') }}</span>
+                        <span class="menu-text"><x-ico name="eye" /> {{ __('profile.menu_public_profile') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('profile.show') }}"
                    class="menu-item {{ $activeMenu === 'profile' ? 'active' : '' }}">
                     @if($activeMenu === 'profile')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_profile') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="user" /> {{ __('profile.menu_my_profile') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_profile') }}</span>
+                        <span class="menu-text"><x-ico name="user" /> {{ __('profile.menu_my_profile') }}</span>
                     @endif
                 </a>
                 <a href="{{ url('/profile/complete') }}"
                    class="menu-item {{ $activeMenu === 'profile_edit' ? 'active' : '' }}">
                     @if($activeMenu === 'profile_edit')
-                        <strong class="cd menu-text">{{ __('profile.menu_edit_profile') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="pencil" /> {{ __('profile.menu_edit_profile') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_edit_profile') }}</span>
+                        <span class="menu-text"><x-ico name="pencil" /> {{ __('profile.menu_edit_profile') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('user.photos') }}"
                    class="menu-item {{ $activeMenu === 'photos' ? 'active' : '' }}">
                     @if($activeMenu === 'photos')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_photos') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="image" /> {{ __('profile.menu_my_photos') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_photos') }}</span>
+                        <span class="menu-text"><x-ico name="image" /> {{ __('profile.menu_my_photos') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('notifications.index') }}"
                    class="menu-item {{ $activeMenu === 'notifications' ? 'active' : '' }}">
                     @if($activeMenu === 'notifications')
-                        <strong class="cd menu-text">{{ __('profile.menu_notifications') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="bell" /> {{ __('profile.menu_notifications') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_notifications') }}</span>
+                        <span class="menu-text"><x-ico name="bell" /> {{ __('profile.menu_notifications') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('subscriptions.my') }}"
                    class="menu-item {{ $activeMenu === 'subscriptions' ? 'active' : '' }}">
                     @if($activeMenu === 'subscriptions')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_subs') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="id-card" /> {{ __('profile.menu_my_subs') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_subs') }}</span>
+                        <span class="menu-text"><x-ico name="id-card" /> {{ __('profile.menu_my_subs') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('coupons.my') }}"
                    class="menu-item {{ $activeMenu === 'coupons' ? 'active' : '' }}">
                     @if($activeMenu === 'coupons')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_coupons') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="ticket" /> {{ __('profile.menu_my_coupons') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
+                        <span class="menu-text"><x-ico name="ticket" /> {{ __('profile.menu_my_coupons') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('player.my-bookings') }}"
                    class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'my_bookings')
-                        <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="calendar" /> {{ __('club.my_bookings') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('club.my_bookings') }}</span>
+                        <span class="menu-text"><x-ico name="calendar" /> {{ __('club.my_bookings') }}</span>
                     @endif
                 </a>
                 @if($menuUser->courtBookings()->exists())
                 <a href="{{ route('player.my-court-bookings') }}"
                    class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'my_court_bookings')
-                        <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="calendar-check" /> {{ __('club.my_court_bookings') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+                        <span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.my_court_bookings') }}</span>
                     @endif
                 </a>
                 @endif
                 <a href="{{ route('player.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'player_dashboard')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_stats') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="chart" /> {{ __('profile.menu_my_stats') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_stats') }}</span>
+                        <span class="menu-text"><x-ico name="chart" /> {{ __('profile.menu_my_stats') }}</span>
                     @endif
                 </a>
                 @if(config('activity.recording_open') || $menuUser->isAdmin())
@@ -146,9 +146,9 @@
                 <a href="{{ route('friends.index') }}"
                    class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
                     @if($activeMenu === 'friends')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_friends') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="users" /> {{ __('profile.menu_my_friends') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_friends') }}</span>
+                        <span class="menu-text"><x-ico name="users" /> {{ __('profile.menu_my_friends') }}</span>
                     @endif
                 </a>
                 @if($menuUser->isPremium())
@@ -168,9 +168,9 @@
                 <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
                    class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
                     @if($activeMenu === 'trainer_profile')
-                        <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="user-check" /> {{ __('trainers.menu_profile') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('trainers.menu_profile') }}</span>
+                        <span class="menu-text"><x-ico name="user-check" /> {{ __('trainers.menu_profile') }}</span>
                     @endif
                 </a>
                 <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
@@ -185,9 +185,9 @@
                 <a href="{{ route('org.dashboard') }}"
                    class="menu-item {{ $activeMenu === 'org_dashboard' ? 'active' : '' }}">
                     @if($activeMenu === 'org_dashboard')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_dashboard') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="chart" /> {{ __('profile.menu_org_dashboard') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_dashboard') }}</span>
+                        <span class="menu-text"><x-ico name="chart" /> {{ __('profile.menu_org_dashboard') }}</span>
                     @endif
                 </a>
                 @endif
@@ -196,9 +196,9 @@
                 <a href="{{ route('club.analytics.index') }}"
                    class="menu-item {{ $activeMenu === 'club_analytics' ? 'active' : '' }}">
                     @if($activeMenu === 'club_analytics')
-                        <strong class="cd menu-text">{{ __('club.analytics') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="trend" /> {{ __('club.analytics') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('club.analytics') }}</span>
+                        <span class="menu-text"><x-ico name="trend" /> {{ __('club.analytics') }}</span>
                     @endif
                 </a>
                 @endif
@@ -206,36 +206,36 @@
                 <a href="{{ route('events.create.event_management') }}"
                    class="menu-item {{ $activeMenu === 'event_management' ? 'active' : '' }}">
                     @if($activeMenu === 'event_management')
-                        <strong class="cd menu-text">{{ __('ui.org_events_management') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="sliders" /> {{ __('ui.org_events_management') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_events_management') }}</span>
+                        <span class="menu-text"><x-ico name="sliders" /> {{ __('ui.org_events_management') }}</span>
                     @endif
                 </a>
                 {{-- 4. Управление регистрациями --}}
                 <a href="{{ route('events.registrations.manage') }}"
                    class="menu-item {{ $activeMenu === 'regs_manage' ? 'active' : '' }}">
                     @if($activeMenu === 'regs_manage')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_regs_manage') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="clipboard-check" /> {{ __('profile.menu_org_regs_manage') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_regs_manage') }}</span>
+                        <span class="menu-text"><x-ico name="clipboard-check" /> {{ __('profile.menu_org_regs_manage') }}</span>
                     @endif
                 </a>
                 {{-- 5. Мои мероприятия --}}
                 <a href="{{ route('organizer.my-events') }}"
                    class="menu-item {{ $activeMenu === 'organizer_my_events' ? 'active' : '' }}">
                     @if($activeMenu === 'organizer_my_events')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_events') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="calendar" /> {{ __('profile.menu_my_events') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_events') }}</span>
+                        <span class="menu-text"><x-ico name="calendar" /> {{ __('profile.menu_my_events') }}</span>
                     @endif
                 </a>
                 {{-- Трансляция (камера в приложении) --}}
                 <a href="{{ route('broadcast.camera') }}"
                    class="menu-item {{ $activeMenu === 'broadcast_camera' ? 'active' : '' }}">
                     @if($activeMenu === 'broadcast_camera')
-                        <strong class="cd menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></strong>
+                        <strong class="cd menu-text"><x-ico name="video" /> {{ __('ui.org_broadcast') }} <x-beta-badge /></strong>
                     @else
-                        <span class="menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></span>
+                        <span class="menu-text"><x-ico name="video" /> {{ __('ui.org_broadcast') }} <x-beta-badge /></span>
                     @endif
                 </a>
                 {{-- Аккаунты-пустышки (не для помощника) --}}
@@ -250,9 +250,9 @@
                 <a href="{{ route('club.bookings.index') }}"
                    class="menu-item {{ $activeMenu === 'club_bookings' ? 'active' : '' }}">
                     @if($activeMenu === 'club_bookings')
-                        <strong class="cd menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</span>
+                        <span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</span>
                     @endif
                 </a>
                 @endif
@@ -260,9 +260,9 @@
                 <a href="{{ route('events.create') }}"
                    class="menu-item {{ $activeMenu === 'event_create' ? 'active' : '' }}">
                     @if($activeMenu === 'event_create')
-                        <strong class="cd menu-text"><x-menu-icon name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</span>
+                        <span class="menu-text"><x-ico name="calendar-plus" /> {{ __('profile.menu_org_create_event') }}</span>
                     @endif
                 </a>
                 @if(!$isStaffHelper || $isStaffMaster) {{-- абонементы и купоны: организатору и помощнику-мастеру --}}
@@ -270,18 +270,18 @@
                 <a href="{{ route('subscription_templates.index') }}"
                    class="menu-item {{ $activeMenu === 'sub_templates' ? 'active' : '' }}">
                     @if($activeMenu === 'sub_templates')
-                        <strong class="cd menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="id-card" /> {{ __('ui.org_subscriptions') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
+                        <span class="menu-text"><x-ico name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
                     @endif
                 </a>
                 {{-- 9. Купоны --}}
                 <a href="{{ route('coupon_templates.index') }}"
                    class="menu-item {{ $activeMenu === 'coupon_templates' ? 'active' : '' }}">
                     @if($activeMenu === 'coupon_templates')
-                        <strong class="cd menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="ticket" /> {{ __('ui.org_coupons') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
+                        <span class="menu-text"><x-ico name="ticket" /> {{ __('ui.org_coupons') }}</span>
                     @endif
                 </a>
                 @endif
@@ -290,18 +290,18 @@
                 <a href="{{ route('leagues.index') }}"
                    class="menu-item {{ $activeMenu === 'org_leagues' ? 'active' : '' }}">
                     @if($activeMenu === 'org_leagues')
-                        <strong class="cd menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="trophy" /> {{ __('ui.org_my_leagues') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
+                        <span class="menu-text"><x-ico name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
                     @endif
                 </a>
                 {{-- 11. Каналы уведомлений --}}
                 <a href="{{ route('profile.notification_channels') }}"
                    class="menu-item {{ $activeMenu === 'org_notif_channels' ? 'active' : '' }}">
                     @if($activeMenu === 'org_notif_channels')
-                        <strong class="cd menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="megaphone" /> {{ __('ui.org_notif_channels') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
+                        <span class="menu-text"><x-ico name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
                     @endif
                 </a>
                 @endif
@@ -310,18 +310,18 @@
                 <a href="{{ route('profile.widget') }}"
                    class="menu-item {{ $activeMenu === 'org_widget' ? 'active' : '' }}">
                     @if($activeMenu === 'org_widget')
-                        <strong class="cd menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="globe" /> {{ __('ui.org_widget') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</span>
+                        <span class="menu-text"><x-ico name="globe" /> {{ __('ui.org_widget') }}</span>
                     @endif
                 </a>
                 {{-- 13. Организатор Pro --}}
                 <a href="{{ route('organizer_pro.index') }}"
                    class="menu-item {{ $activeMenu === 'org_pro' ? 'active' : '' }}">
                     @if($activeMenu === 'org_pro')
-                        <strong class="cd menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="star" /> {{ __('ui.org_pro') }}</strong>
                     @else
-                        <span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
+                        <span class="menu-text"><x-ico name="star" /> {{ __('ui.org_pro') }}</span>
                     @endif
                 </a>
                 @endif
@@ -331,9 +331,9 @@
                 <a href="{{ route('subscriptions.index') }}"
                    class="menu-item {{ $activeMenu === 'org_subscriptions' ? 'active' : '' }}">
                     @if($activeMenu === 'org_subscriptions')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_subs') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="id-card" /> {{ __('profile.menu_org_subs') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_subs') }}</span>
+                        <span class="menu-text"><x-ico name="id-card" /> {{ __('profile.menu_org_subs') }}</span>
                     @endif
                 </a>
                 @endif
@@ -341,9 +341,9 @@
                 <a href="{{ route('staff.index') }}"
                    class="menu-item {{ $activeMenu === 'staff' ? 'active' : '' }}">
                     @if($activeMenu === 'staff')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_staff') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="user-check" /> {{ __('profile.menu_org_staff') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_staff') }}</span>
+                        <span class="menu-text"><x-ico name="user-check" /> {{ __('profile.menu_org_staff') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('staff.logs') }}"
@@ -362,30 +362,30 @@
                 <a href="{{ route('volleyball_school.edit') }}"
                    class="menu-item {{ $activeMenu === 'school' ? 'active' : '' }}">
                     @if($activeMenu === 'school')
-                        <strong class="cd menu-text">{{ __('profile.menu_school_edit') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="building" /> {{ __('profile.menu_school_edit') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_school_edit') }}</span>
+                        <span class="menu-text"><x-ico name="building" /> {{ __('profile.menu_school_edit') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('volleyball_school.trainers.index', $mySchool) }}"
                    class="menu-item {{ $activeMenu === 'school_trainers' ? 'active' : '' }}">
                     @if($activeMenu === 'school_trainers')
-                        <strong class="cd menu-text">{{ __('trainers.school_roster_title') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="users" /> {{ __('trainers.school_roster_title') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('trainers.school_roster_title') }}</span>
+                        <span class="menu-text"><x-ico name="users" /> {{ __('trainers.school_roster_title') }}</span>
                     @endif
                 </a>
                 <a href="{{ route('volleyball_school.show', $mySchool->slug) }}"
                    class="menu-item">
-                    <span class="menu-text">{{ __('profile.menu_school_show') }}</span>
+                    <span class="menu-text"><x-ico name="building" /> {{ __('profile.menu_school_show') }}</span>
                 </a>
                 @else
                 <a href="{{ route('volleyball_school.create') }}"
                    class="menu-item {{ $activeMenu === 'school' ? 'active' : '' }}">
                     @if($activeMenu === 'school')
-                        <strong class="cd menu-text">{{ __('profile.menu_school_create') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="plus" /> {{ __('profile.menu_school_create') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_school_create') }}</span>
+                        <span class="menu-text"><x-ico name="plus" /> {{ __('profile.menu_school_create') }}</span>
                     @endif
                 </a>
                 @endif
@@ -406,89 +406,89 @@
     @if(($menuUser->role ?? 'user') === 'user')
     {{-- /events/create отправит обычного пользователя на заявку организатора в профиле --}}
     <a href="/events/create" class="menu-item">
-        <span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+        <span class="menu-text"><x-ico name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
     </a>
     @endif
     <a href="{{ route('users.show', ['user' => $menuUser->id]) }}"
        class="menu-item {{ $activeMenu === 'public_profile' ? 'active' : '' }}">
         @if($activeMenu === 'public_profile')
-            <strong class="cd menu-text">{{ __('profile.menu_public_profile') }}</strong>
+            <strong class="cd menu-text"><x-ico name="eye" /> {{ __('profile.menu_public_profile') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_public_profile') }}</span>
+            <span class="menu-text"><x-ico name="eye" /> {{ __('profile.menu_public_profile') }}</span>
         @endif
     </a>
     <a href="{{ route('profile.show') }}"
        class="menu-item {{ $activeMenu === 'profile' ? 'active' : '' }}">
         @if($activeMenu === 'profile')
-            <strong class="cd menu-text">{{ __('profile.menu_my_profile') }}</strong>
+            <strong class="cd menu-text"><x-ico name="user" /> {{ __('profile.menu_my_profile') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_profile') }}</span>
+            <span class="menu-text"><x-ico name="user" /> {{ __('profile.menu_my_profile') }}</span>
         @endif
     </a>
     <a href="{{ url('/profile/complete') }}"
        class="menu-item {{ $activeMenu === 'profile_edit' ? 'active' : '' }}">
         @if($activeMenu === 'profile_edit')
-            <strong class="cd menu-text">{{ __('profile.menu_edit_profile') }}</strong>
+            <strong class="cd menu-text"><x-ico name="pencil" /> {{ __('profile.menu_edit_profile') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_edit_profile') }}</span>
+            <span class="menu-text"><x-ico name="pencil" /> {{ __('profile.menu_edit_profile') }}</span>
         @endif
     </a>
     <a href="{{ route('user.photos') }}"
        class="menu-item {{ $activeMenu === 'photos' ? 'active' : '' }}">
         @if($activeMenu === 'photos')
-            <strong class="cd menu-text">{{ __('profile.menu_my_photos') }}</strong>
+            <strong class="cd menu-text"><x-ico name="image" /> {{ __('profile.menu_my_photos') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_photos') }}</span>
+            <span class="menu-text"><x-ico name="image" /> {{ __('profile.menu_my_photos') }}</span>
         @endif
     </a>
     <a href="{{ route('notifications.index') }}"
        class="menu-item {{ $activeMenu === 'notifications' ? 'active' : '' }}">
         @if($activeMenu === 'notifications')
-            <strong class="cd menu-text">{{ __('profile.menu_notifications') }}</strong>
+            <strong class="cd menu-text"><x-ico name="bell" /> {{ __('profile.menu_notifications') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_notifications') }}</span>
+            <span class="menu-text"><x-ico name="bell" /> {{ __('profile.menu_notifications') }}</span>
         @endif
     </a>
     <a href="{{ route('subscriptions.my') }}"
        class="menu-item {{ $activeMenu === 'subscriptions' ? 'active' : '' }}">
         @if($activeMenu === 'subscriptions')
-            <strong class="cd menu-text">{{ __('profile.menu_my_subs') }}</strong>
+            <strong class="cd menu-text"><x-ico name="id-card" /> {{ __('profile.menu_my_subs') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_subs') }}</span>
+            <span class="menu-text"><x-ico name="id-card" /> {{ __('profile.menu_my_subs') }}</span>
         @endif
     </a>
     <a href="{{ route('coupons.my') }}"
        class="menu-item {{ $activeMenu === 'coupons' ? 'active' : '' }}">
         @if($activeMenu === 'coupons')
-            <strong class="cd menu-text">{{ __('profile.menu_my_coupons') }}</strong>
+            <strong class="cd menu-text"><x-ico name="ticket" /> {{ __('profile.menu_my_coupons') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_coupons') }}</span>
+            <span class="menu-text"><x-ico name="ticket" /> {{ __('profile.menu_my_coupons') }}</span>
         @endif
     </a>
     <a href="{{ route('player.my-bookings') }}"
        class="menu-item {{ $activeMenu === 'my_bookings' ? 'active' : '' }}">
         @if($activeMenu === 'my_bookings')
-            <strong class="cd menu-text">{{ __('club.my_bookings') }}</strong>
+            <strong class="cd menu-text"><x-ico name="calendar" /> {{ __('club.my_bookings') }}</strong>
         @else
-            <span class="menu-text">{{ __('club.my_bookings') }}</span>
+            <span class="menu-text"><x-ico name="calendar" /> {{ __('club.my_bookings') }}</span>
         @endif
     </a>
     @if($menuUser->courtBookings()->exists())
     <a href="{{ route('player.my-court-bookings') }}"
        class="menu-item {{ $activeMenu === 'my_court_bookings' ? 'active' : '' }}">
         @if($activeMenu === 'my_court_bookings')
-            <strong class="cd menu-text">{{ __('club.my_court_bookings') }}</strong>
+            <strong class="cd menu-text"><x-ico name="calendar-check" /> {{ __('club.my_court_bookings') }}</strong>
         @else
-            <span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+            <span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.my_court_bookings') }}</span>
         @endif
     </a>
     @endif
     <a href="{{ route('player.dashboard') }}"
        class="menu-item {{ $activeMenu === 'player_dashboard' ? 'active' : '' }}">
         @if($activeMenu === 'player_dashboard')
-            <strong class="cd menu-text">{{ __('profile.menu_my_stats') }}</strong>
+            <strong class="cd menu-text"><x-ico name="chart" /> {{ __('profile.menu_my_stats') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_stats') }}</span>
+            <span class="menu-text"><x-ico name="chart" /> {{ __('profile.menu_my_stats') }}</span>
         @endif
     </a>
     @if(config('activity.recording_open') || $menuUser->isAdmin())
@@ -504,9 +504,9 @@
     <a href="{{ route('friends.index') }}"
        class="menu-item {{ $activeMenu === 'friends' ? 'active' : '' }}">
         @if($activeMenu === 'friends')
-            <strong class="cd menu-text">{{ __('profile.menu_my_friends') }}</strong>
+            <strong class="cd menu-text"><x-ico name="users" /> {{ __('profile.menu_my_friends') }}</strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_friends') }}</span>
+            <span class="menu-text"><x-ico name="users" /> {{ __('profile.menu_my_friends') }}</span>
         @endif
     </a>
     @if($menuUser->isPremium())
@@ -526,15 +526,15 @@
     <a href="{{ url('/profile/complete?section=trainer#trainer') }}"
        class="menu-item {{ $activeMenu === 'trainer_profile' ? 'active' : '' }}">
         @if($activeMenu === 'trainer_profile')
-            <strong class="cd menu-text">{{ __('trainers.menu_profile') }}</strong>
+            <strong class="cd menu-text"><x-ico name="user-check" /> {{ __('trainers.menu_profile') }}</strong>
         @else
-            <span class="menu-text">{{ __('trainers.menu_profile') }}</span>
+            <span class="menu-text"><x-ico name="user-check" /> {{ __('trainers.menu_profile') }}</span>
         @endif
     </a>
     <a href="{{ route('profile.show') }}#delete-account"
        class="menu-item {{ $activeMenu === 'delete_account' ? 'active' : '' }}"
        style="color:#e53e3e">
-        <span class="menu-text">{{ __('profile.menu_delete_account') }}</span>
+        <span class="menu-text"><x-ico name="trash" /> {{ __('profile.menu_delete_account') }}</span>
     </a>
     <form method="POST" action="{{ route('logout') }}" class="logout-form" x-data>
         @csrf

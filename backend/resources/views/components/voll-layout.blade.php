@@ -682,7 +682,7 @@
 					
 					<nav class="menu-nav mt-1">
 						<a href="{{ route('notifications.index') }}" class="menu-item">
-							<span class="menu-text">{{ __('ui.all_notifications') }}</span>
+							<span class="menu-text"><x-ico name="bell" /> {{ __('ui.all_notifications') }}</span>
 						</a>
 					</nav>				
 					
@@ -848,43 +848,43 @@
 						<div class="col-3">
 							<nav class="footer-menu">                 
 								<a href="/events">
-									<span class="footer-menu-text">{{ __('ui.nav_games_trainings') }}</span>
+									<span class="footer-menu-text"><x-ico name="ball" /> {{ __('ui.nav_games_trainings') }}</span>
 								</a>
 								<a href="{{ route('events.index') }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_find_game') }}</span>
+									<span class="footer-menu-text"><x-ico name="search" /> {{ __('welcome.cta_find_game') }}</span>
 								</a>
 								<a href="{{ route('events.index', ['format' => 'tournament']) }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_tournaments') }}</span>
+									<span class="footer-menu-text"><x-ico name="trophy" /> {{ __('welcome.cta_tournaments') }}</span>
 								</a>
 								<a href="{{ route('events.index', ['direction' => 'beach']) }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_beach') }}</span>
+									<span class="footer-menu-text"><x-ico name="sun" /> {{ __('welcome.cta_beach') }}</span>
 								</a>
 								<a href="{{ route('volleyball_school.index') }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_sections') }}</span>
+									<span class="footer-menu-text"><x-ico name="building" /> {{ __('welcome.cta_sections') }}</span>
 								</a>
 								<a href="/locations">
-									<span class="footer-menu-text">{{ __('ui.nav_locations') }}</span>
+									<span class="footer-menu-text"><x-ico name="pin" /> {{ __('ui.nav_locations') }}</span>
 								</a>
 								<a href="/volleyball_school">
-									<span class="footer-menu-text">{{ __('ui.nav_schools') }}</span>
+									<span class="footer-menu-text"><x-ico name="building" /> {{ __('ui.nav_schools') }}</span>
 								</a>              
 								<a href="/leagues/all">
-									<span class="footer-menu-text">{{ __('ui.nav_leagues') }}</span>
+									<span class="footer-menu-text"><x-ico name="trophy" /> {{ __('ui.nav_leagues') }}</span>
 								</a>
 								<a href="/users">
-									<span class="footer-menu-text">{{ __('ui.nav_players') }}</span>
+									<span class="footer-menu-text"><x-ico name="users" /> {{ __('ui.nav_players') }}</span>
 								</a>  
 								<a href="/help">
-									<span class="footer-menu-text">{{ __('ui.nav_help') }}</span>
+									<span class="footer-menu-text"><x-ico name="help" /> {{ __('ui.nav_help') }}</span>
 								</a>                 
 								<a href="/rules">
-									<span class="footer-menu-text">{{ __('ui.nav_rules') }}</span>
+									<span class="footer-menu-text"><x-ico name="file-text" /> {{ __('ui.nav_rules') }}</span>
 								</a>
 								<a href="/level_players">
-									<span class="footer-menu-text">{{ __('ui.nav_levels') }}</span>
+									<span class="footer-menu-text"><x-ico name="medal" /> {{ __('ui.nav_levels') }}</span>
 								</a>
 								<a href="/about">
-									<span class="footer-menu-text">{{ __('ui.nav_about') }}</span>
+									<span class="footer-menu-text"><x-ico name="info" /> {{ __('ui.nav_about') }}</span>
 								</a>  								
 							</nav>
 						</div>
