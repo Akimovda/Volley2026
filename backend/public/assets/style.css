@@ -4404,6 +4404,14 @@ body.dark .card-image svg {
 	will-change: transform;
 	}
 */
+/* Карточки, лежащие в колонке по несколько штук (турнир: состав команды, «минимум команд/игроков», King of the Beach),
+   не должны тянуться на 100% высоты колонки — иначе каждая занимает всю колонку и они налезают друг на друга */
+#king_beach_players_wrap,
+#tournament_squad_setup_card,
+#tournament_min_teams_card,
+#tournament_min_players_card {
+	height: auto;
+}
 .card:hover {
 	box-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.08);
 	/*transform: translateY(-0.2rem);*/
