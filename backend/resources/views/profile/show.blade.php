@@ -210,7 +210,7 @@
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:linear-gradient(135deg,#007aff,#8a2be2);"></span><span class="'.$txt.'">MAX</span></span>';
 	}
 	if ($p === 'password') {
-	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход 🤝</span></span>';
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход</span></span>';
 	}
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">'.e(__('profile.providers_unknown')).'</span></span>';
     };
@@ -268,7 +268,7 @@
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_personal') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="user" size="1.2em" /> {{ __('profile.sec_personal') }}</h2>
 					<div class="row mb-0">
 						<div class="col-sm-6 pb-0">
 							<ul class="list mb-0">	
@@ -314,7 +314,7 @@
 				
 				
 				<div class="ramka">  	
-					<h2 class="-mt-05">{{ __('profile.sec_skills') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="ball" size="1.2em" /> {{ __('profile.sec_skills') }}</h2>
 					<div class="row">
 						<div class="col-md-6 col-lg-12 col-xl-6">
 							<div class="card">
@@ -391,7 +391,7 @@
 @if(session('show_providers_hint') || $providerCount < 4)
 <div class="ramka" id="providers-hint">
     <div class="d-flex fvc gap-2">
-        <span style="font-size:2.4rem">🔐</span>
+        <x-ico name="shield-check" size="2.6rem" />
         <div>
             <div class="b-600 mb-05">
                 @if($providerCount === 1)
@@ -413,7 +413,7 @@
 					
                     {{-- Привязка провайдеров --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_providers') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="link" size="1.2em" /> {{ __('profile.sec_providers') }}</h2>
 					<p>{{ __('profile.providers_lead') }}</p>
 					
 					<p>
@@ -676,7 +676,7 @@
 				</div>	
 				
 				<div class="ramka is-app-only" style="display:none">
-					<h2 class="-mt-05">{{ __('profile.sec_quick_login') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="shield-check" size="1.2em" /> {{ __('profile.sec_quick_login') }}</h2>
 					<p>{{ __('profile.quick_login_lead') }}</p>
 					<div id="biometric-status" class="mb-2"></div>
 					<div id="biometric-devices" class="mb-2"></div>
@@ -689,7 +689,7 @@
 				</div>
 
 				<div class="ramka is-app-only" style="display:none">
-					<h2 class="-mt-05">{{ __('profile.sec_app_icon') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="smartphone" size="1.2em" /> {{ __('profile.sec_app_icon') }}</h2>
 					<p class="mb-15">{{ __('profile.app_icon_lead') }}</p>
 					<div id="app-icon-gallery" class="app-icon-gallery">
 						<button type="button" class="app-icon-option" data-icon="default">
@@ -709,7 +709,7 @@
 				</div>
 
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('activity.activity_sensors_settings') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="activity" size="1.2em" /> {{ __('activity.activity_sensors_settings') }}</h2>
 					<p class="f-15 mb-2">{{ __('activity.connect_in_settings_hint') }}</p>
 					<a href="{{ route('profile.athlete') }}" class="btn">
 						{{ __('activity.activity_sensors_settings') }} →
@@ -717,7 +717,7 @@
 				</div>
 
 				<div class="ramka" id="notifications">
-                    <h2 class="-mt-05">{{ __('profile.sec_notifications') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="bell" size="1.2em" /> {{ __('profile.sec_notifications') }}</h2>
 
                     <p class="mb-15">
                         {{ __('profile.notif_lead') }}
@@ -934,7 +934,7 @@
 							</label>
 							<p class="f-14 text-muted mt-05">
 								{{ $u->city_id ? __('profile.notif_new_events_city_hint') : __('profile.notif_new_events_city_no_city') }}
-								<span id="notif-setting-saved-new_event_in_city" style="color:#28a745; display:none;">✓ {{ __('profile.notif_setting_saved') }}</span>
+								<span id="notif-setting-saved-new_event_in_city" style="color:#28a745; display:none;"><x-ico name="check" /> {{ __('profile.notif_setting_saved') }}</span>
 							</p>
 						</div>
 					</div>
@@ -1079,10 +1079,10 @@
                 @endphp
 				@if($canManageNotificationChannels)
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('profile.sec_channels') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="megaphone" size="1.2em" /> {{ __('profile.sec_channels') }}</h2>
 					
                     @if($notificationChannels->isNotEmpty())
-					<p><b>{{ __('profile.channels_list_label') }}</b></p>
+					<p><b><x-ico name="megaphone" /> {{ __('profile.channels_list_label') }}</b></p>
 					<ol class="list">
 						@foreach($notificationChannels as $channel)
 						<li>
@@ -1115,7 +1115,7 @@
 				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 				@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('profile.sec_payment') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="card" size="1.2em" /> {{ __('profile.sec_payment') }}</h2>
 					
 					{{-- Выбор назначения --}}
 					<div class="card mb-2">
@@ -1145,10 +1145,10 @@
 										<div class="f-15 mt-05 pay-link-value" style="opacity:.6" title="{{ $paymentSettings->sber_link }}">{{ __('profile.pay_sber_label') }} {{ $paymentSettings->sber_link }}</div>
 										@endif
 										@else
-										<div class="f-15" style="opacity:.5">{{ __('profile.pay_not_setup') }}</div>
+										<div class="f-15" style="opacity:.5"><x-ico name="warn" /> {{ __('profile.pay_not_setup') }}</div>
 										@endif
 										<div class="mt-2 pay-setup-btn-row">
-											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_setup_btn') }}</a>
+											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary"><x-ico name="sliders" /> {{ __('profile.pay_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
@@ -1190,7 +1190,7 @@
 				@php $myUserTeams = \App\Models\UserTeam::where('user_id', auth()->id())->withCount('members')->orderByDesc('created_at')->limit(10)->get(); @endphp
 				<div class="ramka">
 					<div class="section-title-row section-title-row--inline">
-						<h2>Мои команды</h2>
+						<h2 class="h2-ico"><x-ico name="users" size="1.2em" /> Мои команды</h2>
 						<a href="{{ route('user.teams.create') }}" class="btn btn-small">{{ __('profile.my_teams_create') }}</a>
 					</div>
 					@if($myUserTeams->isNotEmpty())
@@ -1209,7 +1209,7 @@
 							<form method="POST" action="{{ route('user.teams.destroy', $ut->id) }}"
 								onsubmit="return confirm('Удалить команду «{{ addslashes($ut->name) }}»?')">
 								@csrf @method('DELETE')
-								<button class="btn btn-small btn-danger">✕</button>
+								<button class="btn btn-small btn-danger"><x-ico name="x" /></button>
 							</form>
 						</div>
 					</div>
@@ -1227,7 +1227,7 @@
 				: collect();
 				@endphp
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('profile.sec_schools') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="building" size="1.2em" /> {{ __('profile.sec_schools') }}</h2>
 					
 					@if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
 					<div class="b-600 mb-1 f-16">{{ __('profile.schools_admin_all') }}</div>
@@ -1238,12 +1238,12 @@
 							@if($sLogo)<img src="{{ $sLogo }}" alt="" style="width:3.2rem;height:3.2rem;border-radius:50%;object-fit:cover">@endif
 							<div>
 								<div class="b-600">{{ $s->name }}</div>
-								<div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · {{ $s->is_published ? '✅' : '⏸' }}</div>
+								<div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · <x-ico :name="$s->is_published ? 'check' : 'clock'" /></div>
 							</div>
 						</div>
 						<div class="d-flex gap-1">
-							<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary">👁</a>
-							<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary">✏️</a>
+							<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary"><x-ico name="eye" /></a>
+							<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary"><x-ico name="pencil" /></a>
 						</div>
 					</div>
 					@endforeach
@@ -1257,7 +1257,7 @@
 						@if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
 						<div>
 							<div class="b-600">{{ $s->name }}</div>
-							<div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? __('profile.schools_published') : __('profile.schools_hidden') }}</div>
+							<div class="f-14 mt-05" style="opacity:.6"><x-ico :name="$s->is_published ? 'check' : 'clock'" /> {{ $s->is_published ? __('profile.schools_published') : __('profile.schools_hidden') }}</div>
 						</div>
 					</div>
 					<div class="d-flex gap-1">
@@ -1273,7 +1273,7 @@
 				@endif
 				
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('trainers.profile_section_title') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('trainers.profile_section_title') }}</h2>
 					@php $myTrainerProfile = auth()->user()->trainerProfile; @endphp
 					@php
 						$trMemberships = auth()->user()->schoolMemberships()->with('school:id,name,slug')->get();
@@ -1322,7 +1322,7 @@
 				
 				<div class="ramka">
 					@php $activePremium = auth()->user()->activePremium(); @endphp
-					<h2 class="-mt-05">{{ __('profile.sec_premium') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="crown" size="1.2em" /> {{ __('profile.sec_premium') }}</h2>
 					<div class="card">
 						@if($activePremium)
 						<div class="d-flex between gap-1 fvc card-actions-row">
@@ -1348,16 +1348,16 @@
 							<div class="col-md-8">
 								<div class="f-17 b-600 mb-1">{{ __('profile.premium_offer_title') }}</div>
 								<ul class="list f-15">
-									<li>{{ __('profile.premium_offer_li_1') }}</li>
-									<li>{{ __('profile.premium_offer_li_2') }}</li>
-									<li>{{ __('profile.premium_offer_li_3') }}</li>
-									<li>{{ __('profile.premium_offer_li_4') }}</li>
-									<li>{{ __('profile.premium_offer_li_5') }}</li>
-									<li>{{ __('profile.premium_offer_li_6') }}</li>
+									<li><x-ico name="crown" /> {{ __('profile.premium_offer_li_1') }}</li>
+									<li><x-ico name="medal" /> {{ __('profile.premium_offer_li_2') }}</li>
+									<li><x-ico name="users" /> {{ __('profile.premium_offer_li_3') }}</li>
+									<li><x-ico name="chart" /> {{ __('profile.premium_offer_li_4') }}</li>
+									<li><x-ico name="bell" /> {{ __('profile.premium_offer_li_5') }}</li>
+									<li><x-ico name="zap" /> {{ __('profile.premium_offer_li_6') }}</li>
 								</ul>
 							</div>
 							<div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
-								<a href="{{ route('premium.index') }}" class="btn">{{ __('profile.premium_subscribe_btn') }}</a>
+								<a href="{{ route('premium.index') }}" class="btn"><x-ico name="crown" /> {{ __('profile.premium_subscribe_btn') }}</a>
 								<div class="f-14" style="opacity:.5;">{{ __('profile.premium_price_from') }}</div>
 							</div>
 						</div>
@@ -1370,7 +1370,7 @@
 					$__upDismissed = \Illuminate\Support\Facades\DB::table('upcoming_dismissals')->where('user_id', auth()->id())->count();
 				@endphp
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('profile.upcoming_sec_title') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="megaphone" size="1.2em" /> {{ __('profile.upcoming_sec_title') }}</h2>
 					<div class="form">
 					<label class="checkbox-item">
 						<input type="checkbox" id="upcoming-visible" @checked(!$__upHidden)>
@@ -1400,7 +1400,7 @@
 					
 					{{-- ✅ Приватность --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_privacy') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="eye-off" size="1.2em" /> {{ __('profile.sec_privacy') }}</h2>
 					
 					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}">
 						@csrf
@@ -1440,7 +1440,7 @@
 				@auth
 				@if (($user->role ?? 'user') === 'user')
 				<div class="ramka form" id="organizer-request">
-					<h2 class="-mt-05">{{ __('profile.sec_organizer_request') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="clipboard-check" size="1.2em" /> {{ __('profile.sec_organizer_request') }}</h2>
 					
 					<p>{{ __('profile.org_request_lead') }}</p>
 					
@@ -1464,7 +1464,7 @@
 				
 				<div class="ramka" id="delete-account">
 
-					<h2 class="mt-0">{{ __('profile.sec_delete') }}</h2>
+					<h2 class="mt-0 h2-ico"><x-ico name="trash" size="1.2em" /> {{ __('profile.sec_delete') }}</h2>
 
 					<p class="f-15" style="opacity:.8">{!! __('profile.delete_lead_html', ['n' => $deletionDelay]) !!}</p>
 

@@ -2,7 +2,7 @@
 
 return [
     'menu_item'            => '❤️ Heart Rate & Activity',
-    'my_activity'          => '❤️ My Activity',
+    'my_activity'          => 'My Activity',
     'activity_sensors_settings' => 'Activity sensor settings',
     'page_title'           => 'Activity sensor settings',
     'page_subtitle'        => 'HR zones using the Karvonen method',

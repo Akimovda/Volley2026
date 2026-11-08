@@ -94,15 +94,15 @@
                                                 if (!in_array($pm, $availableMethods)) $pm = 'cash';
                                             @endphp
                                             <select name="payment_method" id="payment_method">
-                                                <option value="cash" @selected($pm === 'cash')>{{ __('events.pay_method_cash') }}</option>
+                                                <option value="cash" @selected($pm === 'cash')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_cash')) }}</option>
                                                 @if(in_array('tbank_link', $availableMethods))
-                                                <option value="tbank_link" @selected($pm === 'tbank_link')>{{ __('events.pay_method_tbank') }}</option>
+                                                <option value="tbank_link" @selected($pm === 'tbank_link')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_tbank')) }}</option>
                                                 @endif
                                                 @if(in_array('sber_link', $availableMethods))
-                                                <option value="sber_link" @selected($pm === 'sber_link')>{{ __('events.pay_method_sber') }}</option>
+                                                <option value="sber_link" @selected($pm === 'sber_link')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_sber')) }}</option>
                                                 @endif
                                                 @if(in_array('yoomoney', $availableMethods))
-                                                <option value="yoomoney" @selected($pm === 'yoomoney')>{{ __('events.pay_method_yoomoney') }}</option>
+                                                <option value="yoomoney" @selected($pm === 'yoomoney')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_yoomoney')) }}</option>
                                                 @endif
                                             </select>
 
@@ -144,8 +144,8 @@
                                                 $tpm = old('tournament_payment_mode', $prefill['tournament_payment_mode'] ?? 'team');
                                             @endphp
                                             <select name="tournament_payment_mode" id="tournament_payment_mode">
-                                                <option value="team" @selected($tpm === 'team')>{{ __('events.tournament_pay_team') }}</option>
-                                                <option value="per_player" @selected($tpm === 'per_player')>{{ __('events.tournament_pay_per') }}</option>
+                                                <option value="team" @selected($tpm === 'team')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_team')) }}</option>
+                                                <option value="per_player" @selected($tpm === 'per_player')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_per')) }}</option>
                                             </select>
 
                                             <ul class="list f-14 mt-1" id="tournament_payment_mode_hints">

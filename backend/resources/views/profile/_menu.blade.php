@@ -137,9 +137,9 @@
                 <a href="{{ route('activity.index') }}"
                    class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
                     @if($activeMenu === 'activity')
-                        <strong class="cd menu-text">{{ __('activity.my_activity') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('activity.my_activity') }}</span>
+                        <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</span>
                     @endif
                 </a>
                 @endif
@@ -155,9 +155,9 @@
                 <a href="{{ route('profile.visitors') }}"
                    class="menu-item {{ $activeMenu === 'visitors' ? 'active' : '' }}">
                     @if($activeMenu === 'visitors')
-                        <strong class="cd menu-text">{{ __('profile.menu_my_visitors') }}</strong>
+                        <strong class="cd menu-text">{{ __('profile.menu_my_visitors') }} <x-ico name="crown" /></strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_my_visitors') }}</span>
+                        <span class="menu-text">{{ __('profile.menu_my_visitors') }} <x-ico name="crown" /></span>
                     @endif
                 </a>
                 @else
@@ -242,7 +242,7 @@
                 @if(!$isStaffHelper)
                 <a href="{{ route('placeholders.index') }}"
                    class="menu-item {{ $activeMenu === 'placeholders' ? 'active' : '' }}">
-                    <span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
+                    <span class="menu-text"><x-ico name="ghost" /> {{ __('placeholders.menu') }}</span>
                 </a>
                 @endif
                 {{-- 6. Брони кортов — только для арендодателей кортов --}}
@@ -349,9 +349,9 @@
                 <a href="{{ route('staff.logs') }}"
                    class="menu-item {{ $activeMenu === 'staff_logs' ? 'active' : '' }}">
                     @if($activeMenu === 'staff_logs')
-                        <strong class="cd menu-text">{{ __('profile.menu_org_staff_logs') }}</strong>
+                        <strong class="cd menu-text"><x-ico name="clipboard" /> {{ __('profile.menu_org_staff_logs') }}</strong>
                     @else
-                        <span class="menu-text">{{ __('profile.menu_org_staff_logs') }}</span>
+                        <span class="menu-text"><x-ico name="clipboard" /> {{ __('profile.menu_org_staff_logs') }}</span>
                     @endif
                 </a>
 
@@ -495,9 +495,9 @@
     <a href="{{ route('activity.index') }}"
        class="menu-item {{ $activeMenu === 'activity' ? 'active' : '' }}">
         @if($activeMenu === 'activity')
-            <strong class="cd menu-text">{{ __('activity.my_activity') }}</strong>
+            <strong class="cd menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</strong>
         @else
-            <span class="menu-text">{{ __('activity.my_activity') }}</span>
+            <span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</span>
         @endif
     </a>
     @endif
@@ -513,9 +513,9 @@
     <a href="{{ route('profile.visitors') }}"
        class="menu-item {{ $activeMenu === 'visitors' ? 'active' : '' }}">
         @if($activeMenu === 'visitors')
-            <strong class="cd menu-text">{{ __('profile.menu_my_visitors') }}</strong>
+            <strong class="cd menu-text">{{ __('profile.menu_my_visitors') }} <x-ico name="crown" /></strong>
         @else
-            <span class="menu-text">{{ __('profile.menu_my_visitors') }}</span>
+            <span class="menu-text">{{ __('profile.menu_my_visitors') }} <x-ico name="crown" /></span>
         @endif
     </a>
     @else

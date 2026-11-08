@@ -475,7 +475,7 @@
 								@endif
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('activity.my_activity') }}</span>
+									<span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }}</span>
 								</a>
 								@endif
 								@if((auth()->user()->role ?? 'user') === 'user')
@@ -546,7 +546,7 @@
 								</a>
 								@if(!$isStaffHelper)
 								<a href="{{ route('placeholders.index') }}" class="menu-item">
-									<span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
+									<span class="menu-text"><x-ico name="ghost" /> {{ __('placeholders.menu') }}</span>
 								</a>
 								@endif
 								{{-- 6. Брони кортов — только для арендодателей кортов --}}
