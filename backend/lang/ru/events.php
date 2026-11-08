@@ -1391,4 +1391,6 @@ return [
     'notify_section_title' => 'Рекламная рассылка:',
     'show_pl_more' => 'ещё :n…',
     'show_pl_less' => 'свернуть',
+    'edit_btn_save' => 'Сохранить',
+    'edit_btn_cancel' => 'Отмена',
 ];

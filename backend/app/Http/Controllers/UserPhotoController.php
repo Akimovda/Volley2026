@@ -48,6 +48,19 @@ class UserPhotoController extends Controller
         ]);
     }
 
+    /**
+     * Фото мероприятий текущего пользователя (новые сверху) — для обновления списка выбора на формах создания/редактирования
+     * без перезагрузки страницы (например, после загрузки фото в шторке приложения).
+     */
+    public function eventList(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $photos = $request->user()->getMedia('event_photos')->sortByDesc('created_at')->values();
+
+        return response()->json([
+            'photos' => $photos->map(fn ($p) => ['id' => (int) $p->id, 'thumb' => $p->getUrl('event_thumb')])->all(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         try {

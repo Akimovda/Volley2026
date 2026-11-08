@@ -648,6 +648,7 @@ Route::post('/events/{event}/invite', [EventRegistrationInviteController::class,
     'verified',
 	])->group(function () {
 Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
+Route::get('/user/event-photos', [UserPhotoController::class, 'eventList'])->name('user.photos.eventList');
 Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
 Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
     Route::post('/user/photos/{media}/set-main-cover', [UserPhotoController::class, 'setMainCover'])->name('user.photos.setMainCover');

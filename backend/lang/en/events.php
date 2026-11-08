@@ -1327,4 +1327,6 @@ return [
     'notify_section_title' => 'Promotional mailing:',
     'show_pl_more' => ':n more…',
     'show_pl_less' => 'collapse',
+    'edit_btn_save' => 'Save',
+    'edit_btn_cancel' => 'Cancel',
 ];

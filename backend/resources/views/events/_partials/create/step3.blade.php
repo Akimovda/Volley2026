@@ -956,6 +956,20 @@
 											document.getElementById('event-photo-upload').value = '';
 										}
 
+										// Приложение: фото, загруженные в шторке «Ваши фотографии», добавляем в список без перезагрузки формы
+										window.addEventListener('vp-overlay-closed', function () {
+											fetch(@json(route('user.photos.eventList')), { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+												.then(function (r) { return r.json(); })
+												.then(function (d) {
+													var have = {};
+													document.querySelectorAll('.photo-select').forEach(function (c) { have[String(c.value)] = true; });
+													(d.photos || []).slice().reverse().forEach(function (p) {
+														if (!have[String(p.id)]) onEventPhotoUploaded(p.id, p.thumb);
+													});
+												})
+												.catch(function () {});
+										});
+
 										document.getElementById('event-upload-photo-btn').addEventListener('click', () => {
 											document.getElementById('event-photo-upload').click();
 										});

@@ -6519,6 +6519,30 @@ body.dark .progress .progress-bar.bg-full { background: #6b7280 !important; }
 	padding-top: 1.6rem;
 }
 
+/* Заголовки блоков форм с цветной SVG-иконкой (<x-ico>) */
+.h2-ico {
+	display: flex;
+	align-items: center;
+	gap: .7rem;
+}
+/* Нижние кнопки форм («Отмена» / «Сохранить») — в один ряд, с промежутком */
+.form-actions-row {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 1.2rem;
+	justify-content: center;
+	align-items: stretch;
+}
+.form-actions-row .btn {
+	flex: 1 1 0;
+	max-width: 26rem;
+	margin: 0 !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
+
 /* Хлебные крошки не нужны в приложении — экран маленький, навигация своя (2026-09-26) */
 .is-app .breadcrumbs {
 	display: none;

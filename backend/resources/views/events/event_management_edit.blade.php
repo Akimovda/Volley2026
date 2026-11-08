@@ -179,7 +179,7 @@
         @include('events._upcoming_stats', ['event' => $event])
 
         <div class="ramka" style="z-index:12">
-            <h2 class="-mt-05">{{ __('events.season_title') }}</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> {{ __('events.season_title') }}</h2>
 
             @if($detectedSeason)
             <div class="row mb-2">
@@ -243,7 +243,7 @@
 
                 {{-- ===== БЛОК 1: Основные настройки ===== --}}
                 <div class="ramka"  style="z-index: 6">
-                    <h2 class="-mt-05">{{ __('events.main_settings') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="sliders" size="1.2em" /> {{ __('events.main_settings') }}</h2>
                     <div class="row">
 
                         <div class="col-md-6">
@@ -368,7 +368,7 @@
                     }
                 @endphp
                 <div class="ramka" id="mgmt_trainers_block" @if(!$mgmtShowTrainers) style="display:none" @endif>
-                    <h2 class="-mt-05">{{ __('events.mgmt_trainers_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('events.mgmt_trainers_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card" style="overflow:visible">
@@ -486,7 +486,7 @@
                                 var dis=ex[u.id]?';opacity:.4;pointer-events:none':'';
                                 var lbl=String(u.label).replace(/</g,'&lt;').replace(/"/g,'&quot;');
                                 var meta=u.meta?'<div style="font-size:1.3rem;color:#888">'+String(u.meta).replace(/</g,'&lt;')+'</div>':'';
-                                var botBadge=u.is_bot?'<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>':'';
+                                var botBadge=u.is_bot?'<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#0d9488" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/></svg> бот</span>':'';
                                 return '<div class="trainer-item" data-id="'+u.id+'" data-label="'+lbl+'" style="padding:.6rem 1rem;cursor:pointer;border-bottom:1px solid #eee;color:#222'+dis+'">'+lbl+botBadge+meta+'</div>';
                             }).join('');
                             pos();
@@ -544,7 +544,7 @@
 
                 {{-- ===== БЛОК 2: Локация ===== --}}
                 <div class="ramka" style="z-index: 5">
-                    <h2 class="-mt-05">{{ __('events.location_section') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="pin" size="1.2em" /> {{ __('events.location_section') }}</h2>
                     <div class="row">
 
                         {{-- Город --}}
@@ -664,7 +664,7 @@
 
                 {{-- ===== БЛОК 3: Игровые настройки ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.game_settings_section') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="ball" size="1.2em" /> {{ __('events.game_settings_section') }}</h2>
                     <div class="row">
 
                     @if(($event->format ?? 'game') === 'tournament')
@@ -1133,7 +1133,7 @@
 
                 {{-- ===== БЛОК 4: Регистрация ===== --}}
                 <div class="ramka"  style="z-index: 4">
-                    <h2 class="-mt-05">{{ __('events.reg_section') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="clipboard-check" size="1.2em" /> {{ __('events.reg_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-4">
@@ -1319,7 +1319,7 @@
 
                 {{-- ===== БЛОК 5: Доступность ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.access_pay_section') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="wallet" size="1.2em" /> {{ __('events.access_pay_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-4">
@@ -1379,10 +1379,10 @@
                                         }
                                         $pmEdit = old('payment_method', $savedMethodEdit);
                                         $allMethodLabelsEdit = [
-                                            'cash'       => __('events.pay_method_cash'),
-                                            'tbank_link' => __('events.pay_method_tbank'),
-                                            'sber_link'  => __('events.pay_method_sber'),
-                                            'yoomoney'   => __('events.pay_method_yookassa'),
+                                            'cash'       => preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_cash')),
+                                            'tbank_link' => preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_tbank')),
+                                            'sber_link'  => preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_sber')),
+                                            'yoomoney'   => preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_yookassa')),
                                         ];
                                     @endphp
                                     <select name="payment_method">
@@ -1423,8 +1423,8 @@
                                         $tpmEdit = old('tournament_payment_mode', $event->tournament_settings->payment_mode ?? 'team');
                                     @endphp
                                     <select name="tournament_payment_mode" id="tournament_payment_mode_edit">
-                                        <option value="team" @selected($tpmEdit === 'team')>{{ __('events.tournament_pay_team') }}</option>
-                                        <option value="per_player" @selected($tpmEdit === 'per_player')>{{ __('events.tournament_pay_per') }}</option>
+                                        <option value="team" @selected($tpmEdit === 'team')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_team')) }}</option>
+                                        <option value="per_player" @selected($tpmEdit === 'per_player')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_per')) }}</option>
                                     </select>
                                     <ul class="list f-14 mt-1">
                                         <li id="hint_team_edit" style="{{ $tpmEdit === 'team' ? '' : 'display:none' }}">{{ __('events.tournament_pay_team_short') }}</li>
@@ -1535,7 +1535,7 @@
 
                 {{-- ===== БЛОК 6: Уведомления ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.notify_section') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="bell" size="1.2em" /> {{ __('events.notify_section') }}</h2>
                     <div class="row">
 
                         <div class="col-md-6">
@@ -1717,9 +1717,9 @@
                 </div>
 
                 @if(!in_array($event->registration_mode ?? 'single', ['team', 'team_classic', 'team_beach'], true) && ($event->format ?? 'game') !== 'tournament')
-                {{-- ===== БЛОК 7: Помощник записи 🤖 ===== --}}
+                {{-- ===== БЛОК 7: Помощник записи ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.bot_title_short') }} <span id="bot_icon_edit" style="color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}">🤖</span></h2>
+                    <h2 class="-mt-05 h2-ico"><span id="bot_icon_edit" style="display:inline-flex;width:1.2em;height:1.2em;color:{{ ($event->bot_assistant_enabled ?? false) ? '#10b981' : '#9ca3af' }}"><svg viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 8V4M9 14h.01M15 14h.01"/><path d="M2 14h2M20 14h2"/></svg></span> {{ __('events.bot_title_short') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card" style="overflow:visible">
@@ -1776,15 +1776,18 @@
 
                 {{-- ===== БЛОК 8: Описание ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.photo_only_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> {{ __('events.photo_only_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             @php
                                 $userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
                                 $currentEventPhotos = $event->event_photos ?? [];
                             @endphp
-                            @if($userEventPhotos->count() > 0)
-                            <div class="card" style="overflow:visible">
+                            <div class="alert alert-info" id="no-event-photos-msg-edit" @if($userEventPhotos->count() > 0) style="display:none" @endif>
+                                <p>{{ __('events.photo_empty_p1') }}</p>
+                                <p>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></p>
+                            </div>
+                            <div class="card" id="event-photos-card-edit" style="overflow:visible{{ $userEventPhotos->count() === 0 ? ';display:none' : '' }}">
                                 <label>{{ __('events.photos_label') }}</label>
                                 <div class="event-photos-selector-edit"
                                      data-selected='{{ json_encode(old('event_photos_edit') ? json_decode(old('event_photos_edit'), true) : $currentEventPhotos) }}'>
@@ -1815,9 +1818,10 @@
                                     <input type="hidden" name="event_photos" id="event_photos_input_edit" value="">
                                 </div>
                             </div>
+                            @php $photoMainTextEdit = preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.photo_main')); @endphp
                             <script>
                             document.addEventListener('DOMContentLoaded', function() {
-                                new Swiper('.eventPhotosSwiperEdit', {
+                                var eventSwiper = new Swiper('.eventPhotosSwiperEdit', {
                                     slidesPerView: 1,
                                     spaceBetween: 15,
                                     pagination: { el: '.swiper-pagination', clickable: true },
@@ -1829,6 +1833,9 @@
                                 var selectedPhotos = savedPhotos.slice();
                                 var MAX_EVENT_PHOTOS = 10;
                                 var photoMaxText = @json(__('events.photo_max_reached', ['max' => 10]));
+                                var photoSelectLabel = @json(__('events.photo_select'));
+                                var photoMainText = @json($photoMainTextEdit);
+                                var photoPosPrefix = @json(__('events.photo_pos_n', ['n' => '']));
 
                                 function updateUI() {
                                     document.querySelectorAll('.photo-select-edit').forEach(function(checkbox) {
@@ -1838,7 +1845,7 @@
                                         var badge = checkbox.closest('.swiper-slide').querySelector('.photo-order-badge-edit');
                                         if (isSelected) {
                                             var order = selectedPhotos.indexOf(id) + 1;
-                                            badge.textContent = order === 1 ? @json(__('events.photo_main')) : @json(__('events.photo_pos_n', ['n' => ''])) + order;
+                                            badge.textContent = order === 1 ? photoMainText : photoPosPrefix + order;
                                         } else {
                                             badge.textContent = '';
                                         }
@@ -1846,7 +1853,7 @@
                                     document.getElementById('event_photos_input_edit').value = JSON.stringify(selectedPhotos);
                                 }
 
-                                document.querySelectorAll('.photo-select-edit').forEach(function(checkbox) {
+                                function bindCheckbox(checkbox) {
                                     checkbox.addEventListener('change', function() {
                                         var id = parseInt(this.value);
                                         if (this.checked) {
@@ -1862,23 +1869,47 @@
                                         }
                                         updateUI();
                                     });
-                                });
+                                }
 
+                                document.querySelectorAll('.photo-select-edit').forEach(bindCheckbox);
                                 updateUI();
+
+                                // Добавить в список фото, которого ещё нет (загружено в шторке «Ваши фотографии» в приложении)
+                                function addPhoto(p) {
+                                    if (document.querySelector('.photo-select-edit[value="' + p.id + '"]')) return;
+                                    document.getElementById('no-event-photos-msg-edit').style.display = 'none';
+                                    document.getElementById('event-photos-card-edit').style.display = '';
+                                    var tmp = document.createElement('div');
+                                    tmp.innerHTML = '<div class="swiper-slide"><div class="hover-image mb-1"><img alt="event photo" loading="lazy"/></div>'
+                                        + '<div class="mt-1 d-flex between fvc"><label class="checkbox-item mb-0"><input type="checkbox" class="photo-select-edit">'
+                                        + '<div class="custom-checkbox"></div><span></span></label><div class="photo-order-badge-edit f-16 b-600 cd"></div></div></div>';
+                                    var slide = tmp.firstElementChild;
+                                    slide.querySelector('img').src = p.thumb;
+                                    slide.querySelector('input').value = p.id;
+                                    slide.querySelector('span').textContent = photoSelectLabel;
+                                    eventSwiper.prependSlide(slide);
+                                    eventSwiper.update();
+                                    eventSwiper.slideTo(0);
+                                    var cb = slide.querySelector('input');
+                                    bindCheckbox(cb);
+                                    if (selectedPhotos.length < MAX_EVENT_PHOTOS) selectedPhotos.push(parseInt(p.id));
+                                    updateUI();
+                                }
+
+                                window.addEventListener('vp-overlay-closed', function () {
+                                    fetch(@json(route('user.photos.eventList')), { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+                                        .then(function (r) { return r.json(); })
+                                        .then(function (d) { (d.photos || []).slice().reverse().forEach(addPhoto); })
+                                        .catch(function () {});
+                                });
                             });
                             </script>
-                            @else
-                            <div class="alert alert-info">
-                                <p>{{ __('events.photo_empty_p1') }}</p>
-                                <p>{{ __('events.photo_select_hint_2_pre') }} <a target="_blank" href="{{ route('user.photos') }}">{{ __('events.photo_select_hint_2_link') }}</a></p>
-                            </div>
-                            @endif
                         </div>
                     </div>
                 </div>
 
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.desc_only_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="file-text" size="1.2em" /> {{ __('events.desc_only_title') }}</h2>
                     <div class="row">
                         <div class="col-md-12">
                             <div class="card" style="overflow:visible">
@@ -1895,7 +1926,7 @@
 
                 {{-- ===== БЛОК: Повторение мероприятия ===== --}}
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('events.recurrence_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="repeat" size="1.2em" /> {{ __('events.recurrence_title') }}</h2>
                     <div id="recurrence_box">
                         <div class="mb-1">
                             <label class="checkbox-item">
@@ -2008,10 +2039,12 @@
                 </div>
 
                 {{-- КНОПКИ --}}
-                <div class="ramka text-center">
+                <div class="ramka">
                     <input type="hidden" name="future_occurrences_action" id="future_occurrences_action" value="keep">
-                    <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary mr-2">{{ __('events.btn_cancel_back') }}</a>
-                    <button type="submit" class="btn" id="edit_save_btn">{{ __('events.btn_save_changes') }}</button>
+                    <div class="form-actions-row">
+                        <a href="{{ route('events.create.event_management') }}" class="btn btn-secondary">{{ __('events.edit_btn_cancel') }}</a>
+                        <button type="submit" class="btn" id="edit_save_btn">{{ __('events.edit_btn_save') }}</button>
+                    </div>
                 </div>
 
             </form>
