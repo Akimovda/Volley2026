@@ -2628,7 +2628,8 @@ body.dark .fix-header {
 }
 .fix-header-logo,
 .fix-header-logo {
-	margin-left: 2rem;
+	/* слева = справа: у кнопок margin-right 1.2rem + внутренний отступ 0.4rem = 1.6rem (было 2rem — левый зазор был больше правого) */
+	margin-left: 1.6rem;
 	line-height: 1;
 	display: inline;
 }
