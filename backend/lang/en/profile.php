@@ -641,9 +641,9 @@ return [
     'nch_t_description'    => 'Telegram, VK and MAX channels for event announcements.',
     'nch_breadcrumb'       => 'Profile',
     'nch_breadcrumb_self'  => 'Notification channels',
-    'nch_help_title'       => '❓ What are notification channels?',
+    'nch_help_title'       => 'What are notification channels?',
     'nch_help_lead'        => 'This is your chat or channel in <strong>Telegram</strong> / <strong>MAX</strong>, where our bot automatically posts your event announcements. For <strong>VKontakte</strong>, announcements are published directly to your community wall — via an access token (see below).',
-    'nch_howto_h3'         => '📋 Telegram and MAX — how to connect',
+    'nch_howto_h3'         => 'Telegram and MAX — how to connect',
     'nch_step1_title'      => 'Create a binding link',
     'nch_step1_text'       => 'In the <strong>"Connect channel"</strong> block pick a platform (Telegram or MAX), name it, and click the button. The service will generate a unique invite link.',
     'nch_step2_title'      => 'Add the bot to the chat',
@@ -651,7 +651,7 @@ return [
     'nch_step3_title'      => 'Channel verified',
     'nch_step3_text'       => 'The bot will automatically mark the channel as verified. Refresh the page — you\'ll see it in the list with a <span class="badge badge-green">verified</span> badge.',
 
-    'nch_platforms_h3'     => '🧭 Platform instructions',
+    'nch_platforms_h3'     => 'Platform instructions',
     'nch_advice'           => '<strong>💡 Tip:</strong> you can connect <strong>multiple channels</strong> on different platforms — announcements are duplicated to all verified channels at once. The binding link is valid for <strong>30 minutes</strong>.',
 
     'nch_link_created'     => '✅ Binding link for :platform is ready',

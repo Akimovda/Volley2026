@@ -22,7 +22,7 @@
         {{-- ======= ИНСТРУКЦИЯ ======= --}}
         <div class="ramka">
             <div class="alert alert-info mb-2">
-                <div class="alert-title b-700 f-17">{{ __('profile.nch_help_title') }}</div>
+                <div class="alert-title b-700 f-17 h2-ico"><x-ico name="help" size="1.2em" /> {{ __('profile.nch_help_title') }}</div>
                 <p class="mt-1 mb-0">
                     Это ваш чат или канал в <strong>Telegram</strong> / <strong>MAX</strong>,
                     куда наш бот автоматически отправляет анонсы ваших мероприятий.
@@ -31,12 +31,12 @@
                 </p>
             </div>
 
-            <h3 class="mt-0">{{ __('profile.nch_howto_h3') }}</h3>
+            <h3 class="mt-0 h2-ico"><x-ico name="clipboard" size="1.2em" /> {{ __('profile.nch_howto_h3') }}</h3>
 
             <div class="row">
                 <div class="col-md-4">
                     <div class="card h-100">
-                        <div class="f-30 text-center mb-05">1️⃣</div>
+                        <div class="text-center mb-05"><span style="display:inline-flex;align-items:center;justify-content:center;width:3.8rem;height:3.8rem;border-radius:50%;background:#2563eb;color:#fff;font-weight:700;font-size:2rem">1</span></div>
                         <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step1_title') }}</div>
                         <p class="f-14 mb-0">
                             В блоке <strong>«Подключить канал»</strong> выберите платформу
@@ -47,7 +47,7 @@
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100">
-                        <div class="f-30 text-center mb-05">2️⃣</div>
+                        <div class="text-center mb-05"><span style="display:inline-flex;align-items:center;justify-content:center;width:3.8rem;height:3.8rem;border-radius:50%;background:#7c3aed;color:#fff;font-weight:700;font-size:2rem">2</span></div>
                         <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step2_title') }}</div>
                         <p class="f-14 mb-0">
                             Нажмите кнопку «Открыть» — откроется мессенджер.
@@ -58,7 +58,7 @@
                 </div>
                 <div class="col-md-4">
                     <div class="card h-100">
-                        <div class="f-30 text-center mb-05">3️⃣</div>
+                        <div class="text-center mb-05"><span style="display:inline-flex;align-items:center;justify-content:center;width:3.8rem;height:3.8rem;border-radius:50%;background:#16a34a;color:#fff;font-weight:700;font-size:2rem">3</span></div>
                         <div class="b-700 f-16 text-center mb-05">{{ __('profile.nch_step3_title') }}</div>
                         <p class="f-14 mb-0">
                             Бот автоматически отметит канал как подтверждённый.
@@ -70,12 +70,12 @@
             </div>
 
             {{-- Пошаговки для Telegram и MAX --}}
-            <h3>{{ __('profile.nch_platforms_h3') }}</h3>
+            <h3 class="h2-ico"><x-ico name="globe" size="1.2em" /> {{ __('profile.nch_platforms_h3') }}</h3>
 
             <div class="tabs-content">
                 <div class="tabs">
-                    <div class="tab active" data-tab="howto-tg">✈️ Telegram</div>
-                    <div class="tab" data-tab="howto-max">💬 MAX</div>
+                    <div class="tab active" data-tab="howto-tg"><x-ico name="send" /> Telegram</div>
+                    <div class="tab" data-tab="howto-max"><x-ico name="message" /> MAX</div>
                     <div class="tab-highlight"></div>
                 </div>
                 <div class="tab-panes">
@@ -93,7 +93,7 @@
                             <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
                             <li>Нажмите кнопку <strong>«Подключить Telegram»</strong> — откроется список ваших чатов.</li>
                             <li>Выберите нужную группу — бот добавится автоматически.</li>
-                            <li>⚠️ Дайте боту права <strong>администратора</strong> — иначе он не сможет публиковать сообщения.</li>
+                            <li><x-ico name="warn" /> Дайте боту права <strong>администратора</strong> — иначе он не сможет публиковать сообщения.</li>
                             <li>Бот пришлёт подтверждение в чат. Обновите эту страницу.</li>
                         </ol>
 
@@ -103,12 +103,12 @@
                             это особенность Telegram. Используйте этот способ:
                         </p>
                         <ol class="list">
-                            <li>Откройте свой <strong>канал</strong> → ⚙️ Управление каналом → <strong>Администраторы</strong> → «Добавить администратора».</li>
+                            <li>Откройте свой <strong>канал</strong> → <x-ico name="sliders" /> Управление каналом → <strong>Администраторы</strong> → «Добавить администратора».</li>
                             <li>Найдите бота по имени <strong>{{ $tgBot }}</strong> и добавьте его. Обязательно включите право <strong>«Публикация сообщений»</strong>.</li>
                             <li>В блоке ниже выберите <strong>Telegram</strong>, укажите название и нажмите <strong>«Создать ссылку привязки»</strong>.</li>
                             <li>Скопируйте из созданной ссылки часть <code>bind_…</code> (после <code>=</code>) — это ваш токен привязки.</li>
                             <li>В <strong>самом канале</strong> опубликуйте сообщение: <code>/start bind_ВАШ_ТОКЕН</code>.</li>
-                            <li>Бот ответит «✅ Telegram-чат подключён». Обновите эту страницу.</li>
+                            <li>Бот ответит «<x-ico name="check" /> Telegram-чат подключён». Обновите эту страницу.</li>
                         </ol>
                     </div>
 
@@ -137,7 +137,7 @@
             </div>
 
             <div class="alert alert-warning mt-2 mb-0">
-                <strong>💡 Совет:</strong> можно подключить <strong>несколько каналов</strong> на разных платформах —
+                <strong><x-ico name="bulb" /> Совет:</strong> можно подключить <strong>несколько каналов</strong> на разных платформах —
                 анонсы дублируются во все подтверждённые каналы одновременно.
                 Ссылка привязки действительна <strong>30 минут</strong>.
             </div>
@@ -157,11 +157,11 @@
         <div class="ramka" id="bind-result">
             <div class="alert alert-success">
                 <div class="alert-title b-700 f-17">
-                    ✅ Ссылка для привязки {{ strtoupper($bindInstruction['platform'] ?? '') }} создана
+                    <x-ico name="check" /> Ссылка для привязки {{ strtoupper($bindInstruction['platform'] ?? '') }} создана
                 </div>
                 <p class="mt-1">{{ $bindInstruction['message'] ?? '' }}</p>
 
-                <div class="b-700 f-16 mt-2 mb-05">📋 Что делать дальше:</div>
+                <div class="b-700 f-16 mt-2 mb-05"><x-ico name="clipboard" /> Что делать дальше:</div>
                 @if(!empty($bindInstruction['instruction']))
                     <div class="f-15 pre-line">{{ $bindInstruction['instruction'] }}</div>
                 @endif
@@ -170,7 +170,7 @@
                     <div class="mt-2">
                         <a href="{{ $bindInstruction['link'] }}" target="_blank" rel="noopener"
                            class="btn btn-primary">
-                            👉 {{ $bindInstruction['button_text'] ?? 'Открыть' }}
+                            <x-ico name="arrow-right" /> {{ $bindInstruction['button_text'] ?? 'Открыть' }}
                         </a>
                     </div>
                 @endif
@@ -194,12 +194,12 @@
             {{-- Левая колонка: подключить системный канал (Telegram / MAX) --}}
             <div class="col-lg-6">
                 <div class="ramka">
-                    <h3 class="mt-0">📡 Подключить канал</h3>
+                    <h3 class="mt-0 h2-ico"><x-ico name="megaphone" size="1.2em" /> Подключить канал</h3>
                     <p class="f-15 text-muted">Системный бот отправляет анонсы в ваш чат или канал.</p>
 
                     @if(($isPro ?? false) && ($personalBots ?? collect())->isNotEmpty())
                         <div class="alert alert-warning mb-1 f-14">
-                            ⚠️ У вас подключён свой бот
+                            <x-ico name="warn" /> У вас подключён свой бот
                             @foreach($personalBots as $pf => $pu)
                                 {{ strtoupper($pf) }}: <strong>&#64;{{ $pu }}</strong>@if(!$loop->last),@endif
                             @endforeach.
@@ -214,8 +214,8 @@
                         <div class="card">
                             <label class="f-15 b-600 mb-05">Платформа</label>
                             <select name="platform" class="w-100">
-                                <option value="telegram" {{ old('platform','telegram')==='telegram'?'selected':'' }}>✈️ Telegram</option>
-                                <option value="max"      {{ old('platform')==='max'?'selected':'' }}>💬 MAX</option>
+                                <option value="telegram" {{ old('platform','telegram')==='telegram'?'selected':'' }}>Telegram</option>
+                                <option value="max"      {{ old('platform')==='max'?'selected':'' }}>MAX</option>
                             </select>
                             @error('platform')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                         </div>
@@ -230,7 +230,7 @@
             {{-- Правая колонка: подключённые каналы --}}
             <div class="col-lg-6">
                 <div class="ramka">
-                    <h3 class="mt-0">✅ Подключённые каналы</h3>
+                    <h3 class="mt-0 h2-ico"><x-ico name="check" size="1.2em" /> Подключённые каналы</h3>
                     <p class="f-15 text-muted">Только подтверждённые каналы доступны для анонсов.</p>
 
                     @if(($channels ?? collect())->isEmpty())
@@ -247,9 +247,9 @@
                             <div class="nch-channel-head">
                                 <div class="nch-badges">
                                     @if($isCommunity)
-                                        <span class="b-700 f-16">🔵 VK сообщество</span>
+                                        <span class="b-700 f-16"><x-ico name="users" /> VK сообщество</span>
                                     @elseif($isWall)
-                                        <span class="b-700 f-16">🔵 VK стена</span>
+                                        <span class="b-700 f-16"><x-ico name="file-text" /> VK стена</span>
                                     @else
                                         <span class="b-700 f-16">{{ strtoupper($channel->platform) }}</span>
                                     @endif
@@ -259,7 +259,7 @@
                                         <span class="badge badge-sm badge-yellow">ожидает</span>
                                     @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
-                                        <span class="badge badge-sm badge-orange">🤖 свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
+                                        <span class="badge badge-sm badge-orange"><x-ico name="robot" /> свой бот{{ $channel->user_bot_username ? ' @'.$channel->user_bot_username : '' }}</span>
                                     @elseif(!$isVkOwned)
                                         <span class="badge badge-sm">системный</span>
                                     @endif
@@ -268,18 +268,18 @@
                                     @if(($channel->bot_type ?? 'system') === 'user' && !$channel->is_verified)
                                         <form method="POST" action="{{ route('profile.personal_bot.recheck', $channel) }}">
                                             @csrf
-                                            <button type="submit" class="btn btn-small btn-primary">🔄 Перепроверить</button>
+                                            <button type="submit" class="btn btn-small btn-primary"><x-ico name="refresh" /> Перепроверить</button>
                                         </form>
                                     @endif
                                     @if(($channel->bot_type ?? 'system') === 'user')
                                         <button onclick="document.getElementById('upd-{{ $channel->id }}').classList.toggle('d-none')"
-                                                class="btn btn-small btn-secondary">🔑</button>
+                                                class="btn btn-small btn-secondary"><x-ico name="key" /></button>
                                     @endif
                                     <form method="POST"
                                           action="{{ route('profile.notification_channels.destroy', $channel) }}"
                                           onsubmit="return confirm('Удалить канал?')">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn btn-small btn-danger">✕</button>
+                                        <button type="submit" class="btn btn-small btn-danger"><x-ico name="x" /></button>
                                     </form>
                                 </div>
                             </div>
@@ -297,7 +297,7 @@
                                     <div class="f-13 text-muted">Сообщество: {{ $channel->meta['group_name'] }}</div>
                                 @endif
                                 @if(!$channel->is_verified)
-                                    <div class="f-13 red mt-05">⚠️ Ключ недействителен — привяжите сообщество заново</div>
+                                    <div class="f-13 red mt-05"><x-ico name="warn" /> Ключ недействителен — привяжите сообщество заново</div>
                                 @endif
                             @elseif($isWall && !empty($channel->meta['group_name']))
                                 <div class="f-13 text-muted">Сообщество: {{ $channel->meta['group_name'] }}</div>
@@ -336,7 +336,7 @@
 
         {{-- VK Community (прямой токен) --}}
         <div class="ramka">
-            <h3 class="mt-0">🔵 Привязать VK-сообщество</h3>
+            <h3 class="mt-0 h2-ico"><x-ico name="users" size="1.2em" /> Привязать VK-сообщество</h3>
             <p class="f-15 mb-2">
                 Анонсы будут публиковаться на стене вашего VK-сообщества.
                 Бот не нужен — используется ключ доступа, который вы создаёте в настройках своего сообщества.
@@ -357,7 +357,7 @@
                     <li>Вставьте адрес сообщества и ключ в поля ниже, нажмите <strong>«Привязать»</strong></li>
                 </ol>
                 <div class="f-13 text-muted mt-1">
-                    ⚠️ Ключ хранится в зашифрованном виде и используется только для публикации анонсов.
+                    <x-ico name="warn" /> Ключ хранится в зашифрованном виде и используется только для публикации анонсов.
                 </div>
             </div>
 
@@ -379,22 +379,22 @@
                     @error('token')<div class="red f-14 mt-05">{{ $message }}</div>@enderror
                 </div>
                 <button type="submit" class="btn btn-primary">
-                    🔵 Привязать VK-сообщество
+                    <x-ico name="users" /> Привязать VK-сообщество
                 </button>
             </form>
         </div>
 
         {{-- Персональный бот --}}
         <div class="ramka">
-            <h3 class="mt-0">🤖 Организатор Pro — Свой бот</h3>
+            <h3 class="mt-0 h2-ico"><x-ico name="robot" size="1.2em" /> Организатор Pro — Свой бот</h3>
             <p class="f-15 text-muted">Анонсы от вашего персонального бота — брендинг и независимость от системного бота.</p>
 
             @if(!($isPro ?? false))
             <div class="card text-center" style="padding:2.5rem 2rem">
-                <div style="font-size:4rem;margin-bottom:1rem">🔒</div>
+                <div style="margin-bottom:1rem"><x-ico name="lock" size="4rem" /></div>
                 <div class="b-600 f-16 mb-1">Доступно в Организатор Pro</div>
                 <div class="f-15 mb-2" style="opacity:.7">Подключите подписку чтобы использовать персонального бота для анонсов.</div>
-                <a href="{{ route('organizer_pro.index') }}" class="btn">⭐ Подключить Организатор Pro</a>
+                <a href="{{ route('organizer_pro.index') }}" class="btn"><x-ico name="star" /> Подключить Организатор Pro</a>
             </div>
             @else
             <div class="row" id="personal-bot-tabs-wrap">
@@ -402,9 +402,9 @@
                 <div class="col-12 mb-1">
                     <div class="d-flex gap-05">
                         <button onclick="personalBotTab('telegram')" id="tab-btn-telegram"
-                                class="btn btn-primary btn-small">✈️ Telegram</button>
+                                class="btn btn-primary btn-small"><x-ico name="send" /> Telegram</button>
                         <button onclick="personalBotTab('max')" id="tab-btn-max"
-                                class="btn btn-secondary btn-small">💬 MAX</button>
+                                class="btn btn-secondary btn-small"><x-ico name="message" /> MAX</button>
                     </div>
                 </div>
 
@@ -484,7 +484,7 @@
 
         {{-- Последние запросы привязки --}}
         <div class="ramka">
-            <h3 class="mt-0">🔗 Последние запросы привязки</h3>
+            <h3 class="mt-0 h2-ico"><x-ico name="link" size="1.2em" /> Последние запросы привязки</h3>
             <div class="table-scrollable">
                 <div class="table-drag-indicator"></div>
                 <table class="table">
