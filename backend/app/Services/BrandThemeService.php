@@ -475,7 +475,13 @@ class BrandThemeService
                     . $this->rgba($c, $a1) . ' 0%,' . $this->rgba($c2, $a2) . ' 100%)}';
             }
             if ($this->validHex($v['menu_text'] ?? '')) {
-                $out .= $pfx . '.menu-item,' . $pfx . '.fix-header-user{color:' . $v['menu_text'] . '}';
+                $t = $v['menu_text'];
+                $out .= $pfx . '.menu-item,' . $pfx . '.fix-header-user{color:' . $t . '}';
+                // У имени пользователя в меню своё правило с тёмным цветом, а общее a:hover{color:#000} специфичнее .menu-item:
+                // на тёмном меню нажатый/наведённый пункт чернел. Оба случая берут цвет текста меню (день — через `body `, чтобы перебить a:hover).
+                $d = $pfx !== '' ? $pfx : 'body ';
+                $out .= $d . '.menu-user-login .user-name{color:' . $t . '}'
+                    . $d . '.menu-item:hover,' . $d . '.menu-item:active,' . $d . '.menu-item:focus{color:' . $t . '}';
             }
             if ($this->validHex($v['menu_title'] ?? '')) {
                 $out .= $pfx . '.menu-item-title:not(.admin){color:' . $v['menu_title'] . '}';
