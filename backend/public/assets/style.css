@@ -6505,6 +6505,20 @@ body.dark .progress .progress-bar.bg-full { background: #6b7280 !important; }
 /* Скрыть на стартовом экране /events (history.length в WKWebView ненадёжен) */
 .is-app .events-page #app-back-btn { display: none; }
 
+/* Шторка поверх страницы в приложении (нативный OverlayWebViewController добавляет html.is-overlay):
+   шапку, подвал, название страницы и кнопку «назад» показывает нативная панель — на странице остаётся только содержимое */
+.is-overlay header,
+.is-overlay footer,
+.is-overlay .top-section,
+.is-overlay .top-section-img,
+.is-overlay #app-back-btn,
+.is-overlay .fix-header {
+	display: none !important;
+}
+.is-overlay body {
+	padding-top: 1.6rem;
+}
+
 /* Хлебные крошки не нужны в приложении — экран маленький, навигация своя (2026-09-26) */
 .is-app .breadcrumbs {
 	display: none;

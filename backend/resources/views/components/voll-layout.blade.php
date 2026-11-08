@@ -47,7 +47,7 @@
 		</script>
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
 		<script>
-			// В приложении ссылки target="_blank" на наш сайт открываются в том же окне приложения (иначе WKWebView/Capacitor
+			// В приложении ссылки target="_blank" на наш сайт открываются внутри приложения (иначе WKWebView/Capacitor
 			// отдаёт их внешнему Safari/Chrome). Внешние сайты и файлы (PDF, картинки…) по-прежнему открываются снаружи.
 			// Отказаться для конкретной ссылки: data-external="1".
 			if (/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)) {
@@ -62,6 +62,16 @@
 					if (h !== location.hostname && h !== 'volleyplay.club' && !/\.volleyplay\.club$/.test(h)) return;
 					if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar|png|jpe?g|gif|webp|svg|mp4|mov)$/i.test(u.pathname)) return;
 					e.preventDefault();
+					// Новая версия приложения: нативная шторка поверх текущей страницы (форма под ней не теряется).
+					// Внутри самой шторки и в старых версиях приложения — переход в том же окне.
+					if (!document.documentElement.classList.contains('is-overlay')) {
+						if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openOverlay) {
+							window.webkit.messageHandlers.openOverlay.postMessage({ url: u.href }); return;
+						}
+						if (window.VolleyPlay && typeof window.VolleyPlay.openOverlay === 'function') {
+							window.VolleyPlay.openOverlay(u.href); return;
+						}
+					}
 					location.href = u.href;
 				}, true);
 			}
