@@ -29,7 +29,8 @@ class QueueHeartbeatJob implements ShouldQueue
         }
 
         try {
-            Http::timeout(5)->get($url);
+            // 3 попытки с паузой: единичная потеря пакета до сервера мониторинга не должна давать ложный Down
+            Http::timeout(5)->retry(3, 1500, throw: false)->get($url);
         } catch (\Throwable $e) {
             // Мониторинг не должен ронять очередь — любые сетевые ошибки глотаем.
         }

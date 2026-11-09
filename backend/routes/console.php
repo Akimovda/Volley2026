@@ -21,7 +21,7 @@ Schedule::call(function () {
     }
 
     try {
-        Http::timeout(5)->get($url);
+        Http::timeout(5)->retry(2, 1000, throw: false)->get($url);
     } catch (\Throwable $e) {
         // Мониторинг не должен ронять scheduler — любые сетевые ошибки глотаем.
     }
