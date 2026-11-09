@@ -176,9 +176,18 @@ body.dark .gradient-marker-line,
                 }).catch(function () {
                     sw.classList.toggle('is-on');         // откат и обычная отправка формы
                     sw.disabled = false;
+                    try { sessionStorage.setItem('upScroll', '1'); } catch (err) {}
                     form.submit();
                 });
             });
+            // если всё же была перезагрузка — возвращаемся к этому блоку
+            try {
+                if (sessionStorage.getItem('upScroll')) {
+                    sessionStorage.removeItem('upScroll');
+                    var blk = document.getElementById('up-social');
+                    if (blk) blk.scrollIntoView({ block: 'center' });
+                }
+            } catch (err) {}
         </script>
         <script>
             // === Карусель отзывов о тренере ===
