@@ -151,6 +151,36 @@ body.dark .gradient-marker-line,
     <x-slot name="script">
         <script src="/assets/fas.js"></script>   	
         <script>
+            // === Переключатели «нравится / друг / слежка» без перезагрузки страницы ===
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!form.classList || !form.classList.contains('up-row')) return;
+                e.preventDefault();
+                var sw = form.querySelector('.up-switch');
+                if (sw.disabled) return;
+                sw.disabled = true;
+                sw.classList.toggle('is-on');            // мгновенный отклик
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function (r) {
+                    if (!r.ok) throw new Error('http ' + r.status);
+                    return r.text();
+                }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('up-social');
+                    var cur = document.getElementById('up-social');
+                    if (!fresh || !cur) throw new Error('no block');
+                    cur.innerHTML = fresh.innerHTML;     // обновляем блок целиком (счётчик, аватары, соседние переключатели)
+                }).catch(function () {
+                    sw.classList.toggle('is-on');         // откат и обычная отправка формы
+                    sw.disabled = false;
+                    form.submit();
+                });
+            });
+        </script>
+        <script>
             // === Карусель отзывов о тренере ===
             if (document.querySelector('.trainer-comments-swiper')) {
                 new Swiper('.trainer-comments-swiper', {
@@ -1028,7 +1058,7 @@ body.dark .gradient-marker-line,
                 @endif
 
                 {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
-                <div class="ramka">
+                <div class="ramka" id="up-social">
                     <div class="d-flex between">
                         <h2 class="-mt-05 h2-ico"><x-ico name="heart" size="1.2em" /> С 
 							@if($user->gender === 'm') ним
