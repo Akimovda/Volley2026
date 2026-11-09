@@ -375,9 +375,9 @@ class TournamentTeamController extends Controller
             $service->changeMemberPosition($team, $member, $data['position_code'], $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Позиция игрока изменена.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Позиция игрока изменена.');
         } catch (DomainException $e) {
-            return back()->withErrors([
+            return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors([
                 'member' => $e->getMessage(),
             ]);
         }
@@ -409,9 +409,9 @@ class TournamentTeamController extends Controller
             $service->changeMemberTeamRole($team, $member, $data['team_role'], $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Роль игрока в команде изменена.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Роль игрока в команде изменена.');
         } catch (DomainException $e) {
-            return back()->withErrors([
+            return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors([
                 'member' => $e->getMessage(),
             ]);
         }
@@ -447,9 +447,9 @@ class TournamentTeamController extends Controller
             $service->swapMembers($team, $member, $out, $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Замена выполнена: ' . ($member->user->name ?? '') . ' вышел(ла) в основу вместо ' . ($out->user->name ?? '') . '.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Замена выполнена: ' . ($member->user->name ?? '') . ' вышел(ла) в основу вместо ' . ($out->user->name ?? '') . '.');
         } catch (DomainException $e) {
-            return back()->withErrors(['member' => $e->getMessage()]);
+            return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors(['member' => $e->getMessage()]);
         }
     }
 

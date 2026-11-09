@@ -495,8 +495,9 @@ final class TournamentTeamService
                     $new = ['team_role' => $m->team_role];
                 }
                 $other = $m === $out ? $in : $out;
-                if ($inPos && $outPos && $inPos !== $outPos) {
-                    $m->position_code = $m === $in ? $outPos : $inPos;
+                if ($outPos && $inPos !== $outPos) {
+                    // вышедший занимает амплуа заменяемого; тот уходит на скамейку с амплуа вышедшего (или прежним, если у запасного его не было)
+                    $m->position_code = $m === $in ? $outPos : ($inPos ?: $outPos);
                     if ($m->team_role !== 'captain') {
                         $m->role_code = $m->position_code;
                     }

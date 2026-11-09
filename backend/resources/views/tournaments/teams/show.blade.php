@@ -207,7 +207,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
 
             @if($canEditPosition || $canToggleTeamRole || $showSwap || $showActions)
             <div class="tm-body">
-                @if($canEditPosition && $canToggleTeamRole)
+                @if($canEditPosition && $canToggleTeamRole && !$showSwap)
                 {{-- Один select: смена амплуа + перевод основа↔запасной --}}
                 <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="member-position-form" data-member-form="{{ $member->id }}" style="display:none">
                     @csrf @method('PATCH')
@@ -239,7 +239,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                         </select>
                     </div>
                 </div>
-                @elseif($canEditPosition)
+                @elseif($canEditPosition && !$showSwap)
                 <div class="tm-field">
                     <span class="tm-lbl">Амплуа</span>
                     <form method="POST" action="{{ route('tournamentTeams.members.updatePosition',[$event,$team,$member]) }}" class="form">
@@ -258,7 +258,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                         </select>
                     </form>
                 </div>
-                @elseif($canToggleTeamRole)
+                @elseif($canToggleTeamRole && !$showSwap)
                 <div class="tm-field">
                     <span class="tm-lbl">Состав</span>
                     <form method="POST" action="{{ route('tournamentTeams.members.updateTeamRole',[$event,$team,$member]) }}">
