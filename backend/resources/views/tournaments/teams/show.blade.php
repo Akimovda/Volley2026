@@ -674,7 +674,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
             {{-- Команда принята/подана автоматически (autoApprove или подтверждение резерва) без явной заявки --}}
             @php $autoSt = $team->status === 'approved' ? 'approved' : 'pending'; @endphp
             <div class="d-flex fvc" style="gap:.6rem;margin-bottom:.75rem;padding:.6rem .9rem;border-radius:8px;background:{{ $appStBg[$autoSt] }}">
-                <span style="font-size:1.1rem">{{ $appStIcon[$autoSt] }}</span>
+                <span style="font-size:1.1rem"><x-ico :name="$appStIcon[$autoSt] ?? 'clipboard'" /></span>
                 <div>
                     <span class="f-16">Статус заявки</span>
                     <div class="b-600 f-16" style="color:{{ $appStColor[$autoSt] }}">{{ $appStLabels[$autoSt] }}</div>
@@ -781,9 +781,9 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
     <div class="ramka">
         <h2 class="-mt-05 tm-h2"><x-ico name="chart" size="1.2em" /> Состав</h2>
         <div class="card">
-            <div class="f-16 mb-05">Подтверждено: <strong>{{ $confirmedCount }}</strong></div>
-            <div class="f-16 mb-05">Ожидают: <strong>{{ $pendingCount }}</strong></div>
-            <div class="f-16 mb-1">Всего: <strong>{{ $team->members->count() }}</strong></div>
+            <div class="f-16 mb-05"><x-ico name="check" /> Подтверждено: <strong>{{ $confirmedCount }}</strong></div>
+            <div class="f-16 mb-05"><x-ico name="clock" /> Ожидают: <strong>{{ $pendingCount }}</strong></div>
+            <div class="f-16 mb-1"><x-ico name="users" /> Всего: <strong>{{ $team->members->count() }}</strong></div>
             @if($settings)
             @php
             $schemeLabels = [
