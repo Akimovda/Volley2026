@@ -152,7 +152,14 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
         </div>
 
         @php
-            $activeMembers = $team->members->where('confirmation_status', '!=', 'requested');
+            $activeMembers = $team->members->where('confirmation_status', '!=', 'requested')
+                ->values()
+                ->sortBy(function ($m) {
+                    $bench = $m->team_role === 'reserve' || ($m->team_role === 'captain' && !empty(($m->meta ?? [])['on_bench']));
+                    // основной состав (капитан первым) → скамейка запасных → неподтверждённые
+                    return ($m->confirmation_status !== 'confirmed' ? 4 : ($bench ? 2 : 0)) + ($m->team_role === 'captain' ? 0 : 1);
+                })
+                ->values();
             $joinRequests  = $team->members->where('confirmation_status', 'requested');
         @endphp
         @forelse($activeMembers as $member)
