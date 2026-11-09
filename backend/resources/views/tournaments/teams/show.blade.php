@@ -599,7 +599,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                             data-icon="warning"
                             data-confirm-text="Да, перейти в резерв"
                             data-cancel-text="Отмена">
-                        ↩ Отказаться от тура / перейти в резерв
+                        <x-ico name="door" /> Отказаться от тура / перейти в резерв
                     </button>
                 </form>
             @endif
@@ -689,7 +689,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
                             data-icon="warning"
                             data-confirm-text="Да, перейти в резерв"
                             data-cancel-text="Отмена">
-                        ↩ Отказаться от тура / перейти в резерв
+                        <x-ico name="door" /> Отказаться от тура / перейти в резерв
                     </button>
                 </form>
             @endif
@@ -770,7 +770,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
         </form>
         @endif
         @else
-        <h2 class="-mt-05">⏳ Лист ожидания</h2>
+        <h2 class="-mt-05 tm-h2"><x-ico name="clock" size="1.2em" /> Лист ожидания</h2>
         <div class="alert alert-warning">Позиция в очереди: <strong>#{{ $team->reserve_position }}</strong></div>
         <div class="f-18">Когда освободится место, вы получите уведомление и будете иметь 2 часа для подтверждения.</div>
         @endif

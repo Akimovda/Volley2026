@@ -346,12 +346,12 @@ return [
     'cp_lock_hint' => 'The field is already filled. Only an administrator can change it.',
 
     // Welcome banners
-    'cp_welcome_first_title' => 'Welcome to VolleyPlay.Club! 🏐',
+    'cp_welcome_first_title' => 'Welcome to VolleyPlay.Club!',
     'cp_welcome_first_lead'  => 'Fill in the form — it will take less than a minute.<br>After saving, personal data cannot be changed by yourself.',
     'cp_welcome_first_hint'  => 'First and last name were imported from your account — please verify and correct if needed.',
     'cp_welcome_session_title' => 'Welcome to VolleyPlay.Club!',
     'cp_welcome_session_lead'  => 'We hope you enjoy our service.<br>For your convenience, please fill in your profile — it will take less than a minute.',
-    'cp_welcome_session_motto' => 'Have great games and training sessions! 💪',
+    'cp_welcome_session_motto' => 'Have great games and training sessions!',
 
     // Errors block
     'cp_errors_title'        => 'Please check the fields',
@@ -438,7 +438,7 @@ return [
     'cp_btn_save' => 'Save',
 
     // Profile prompt swal
-    'cp_swal_prompt_title' => 'Hello! 👋',
+    'cp_swal_prompt_title' => 'Hello!',
     'cp_swal_prompt_text'  => 'Please fill in the required fields: your full name, mobile number, and city of residence!',
     'cp_swal_prompt_btn'   => 'OK',
 

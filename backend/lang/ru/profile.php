@@ -346,12 +346,12 @@ return [
     'cp_lock_hint' => 'Поле уже заполнено. Изменить может только администратор.',
 
     // Welcome баннеры
-    'cp_welcome_first_title' => 'Добро пожаловать на VolleyPlay.Club! 🏐',
+    'cp_welcome_first_title' => 'Добро пожаловать на VolleyPlay.Club!',
     'cp_welcome_first_lead'  => 'Заполните анкету — это займёт меньше минуты.<br>После сохранения персональные данные нельзя будет изменить самостоятельно.',
     'cp_welcome_first_hint'  => 'Имя и фамилия подтянулись из вашего аккаунта — проверьте и при необходимости исправьте.',
     'cp_welcome_session_title' => 'Добро пожаловать на VolleyPlay.Club!',
     'cp_welcome_session_lead'  => 'Надеемся, Вам понравится наш сервис.<br>Для Вашего удобства заполните данные профиля — это займёт меньше минуты.',
-    'cp_welcome_session_motto' => 'Удачных игр и тренировок! 💪',
+    'cp_welcome_session_motto' => 'Удачных игр и тренировок!',
 
     // Errors блок
     'cp_errors_title'        => 'Проверьте поля',
@@ -438,7 +438,7 @@ return [
     'cp_btn_save' => 'Сохранить',
 
     // Profile prompt swal
-    'cp_swal_prompt_title' => 'Приветствую! 👋',
+    'cp_swal_prompt_title' => 'Приветствую!',
     'cp_swal_prompt_text'  => 'Заполните обязательные поля: Ваше ФИО, номер сотового и город проживания!',
     'cp_swal_prompt_btn'   => 'Хорошо',
 

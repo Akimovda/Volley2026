@@ -319,7 +319,8 @@
 					background: rgba(0,0,0,0.3);
 					}
 					.levelmark--age-restricted .level-number::after {
-					content: "🔒";
+					content: "";
+					width: 1.6rem; height: 1.6rem; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fde68a' stroke='%23b45309' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3C/svg%3E") center/contain no-repeat;
 					position: absolute;
 					top: 0.4rem;
 					right: 0.4rem;
@@ -369,7 +370,7 @@
 				@if ($isFirstCompletion)
 				<div class="ramka" style="border-left: 4px solid var(--c-primary, #2563eb);">
 					<div class="text-center">
-						<h3 class="mt-0">{{ __('profile.cp_welcome_first_title') }}</h3>
+						<h3 class="mt-0 h2-ico"><x-ico name="ball" size="1.2em" /> {{ __('profile.cp_welcome_first_title') }}</h3>
 						<p>{!! __('profile.cp_welcome_first_lead') !!}</p>
 						@if($user?->first_name || $user?->last_name)
 						<p class="f-14" style="color: var(--c-muted, #6b7280);">{{ __('profile.cp_welcome_first_hint') }}</p>
@@ -379,9 +380,9 @@
 				@elseif (session('welcome'))
 				<div class="ramka">
 					<div class="text-center">
-						<h3 class="mt-0">{{ __('profile.cp_welcome_session_title') }}</h3>
+						<h3 class="mt-0 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('profile.cp_welcome_session_title') }}</h3>
 						<p>{!! __('profile.cp_welcome_session_lead') !!}</p>
-						<p class="cd b-600 f-20">{{ __('profile.cp_welcome_session_motto') }}</p>
+						<p class="cd b-600 f-20"><x-ico name="zap" /> {{ __('profile.cp_welcome_session_motto') }}</p>
 					</div>
 				</div>
 				@endif
@@ -495,7 +496,7 @@
 									
 									
 									
-									<h2 class="-mt-05">{{ __('profile.cp_sec_personal') }}</h2>
+									<h2 class="-mt-05 h2-ico"><x-ico name="user" size="1.2em" /> {{ __('profile.cp_sec_personal') }}</h2>
 									<div class="row">
 										{{-- -------- Страна -------- --}}
 										@php $lockedCountry = !$canEditProtected && !is_null($user?->profile_completed_at); @endphp
@@ -832,7 +833,7 @@
 										
 										{{-- -------- Classic -------- --}}
 										
-										<h2 class="-mt-05" id="levels-classic">{{ __('profile.cp_sec_classic') }}</h2>
+										<h2 class="-mt-05 h2-ico" id="levels-classic"><x-ico name="ball" size="1.2em" /> {{ __('profile.cp_sec_classic') }}</h2>
 										<div class="row">		
 											<div class="col-12">		
 												<div class="hideselect">									
@@ -858,7 +859,7 @@
 													</ul>
 													{{-- Кнопки уровней --}}
 													<div class="level-hint f-15 mt-1 mb-1">
-														<span class="level-hint-ico" aria-hidden="true">👆</span>
+														<span class="level-hint-ico" aria-hidden="true"><x-ico name="pointer" size="1.8rem" /></span>
 														<span>{!! __('profile.cp_lvl_hint') !!}</span>
 													</div>
 													<div class="swiper levelmark-row" id="levelmark-wrap-classic" data-type="classic">
@@ -959,7 +960,7 @@
 									</div>
 									<div class="ramka">		
 										
-										<h2 class="-mt-05" id="levels-beach">{{ __('profile.cp_sec_beach') }}</h2>
+										<h2 class="-mt-05 h2-ico" id="levels-beach"><x-ico name="sun" size="1.2em" /> {{ __('profile.cp_sec_beach') }}</h2>
 										
 										<label>
 											<div>{{ __('profile.cp_lvl_label') }}</div>
@@ -989,7 +990,7 @@
 													
 													{{-- Кнопки уровней --}}
 													<div class="level-hint f-15 mt-1 mb-1">
-														<span class="level-hint-ico" aria-hidden="true">👆</span>
+														<span class="level-hint-ico" aria-hidden="true"><x-ico name="pointer" size="1.8rem" /></span>
 														<span>{!! __('profile.cp_lvl_hint') !!}</span>
 													</div>
 													<div class="swiper levelmark-row" id="levelmark-wrap-beach" data-type="beach">
