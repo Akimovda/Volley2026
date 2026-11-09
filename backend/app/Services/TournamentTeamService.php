@@ -295,7 +295,9 @@ final class TournamentTeamService
             }
         }
 
-        $confirmed = $team->members->where('confirmation_status', 'confirmed');
+        // Слоты амплуа занимает только основной состав; у запасных амплуа — лишь пометка
+        $confirmed = $team->members->where('confirmation_status', 'confirmed')
+            ->filter(fn ($m) => $this->isOnField($m));
 
         $result = [];
         foreach ($positions as $code => $max) {
@@ -362,7 +364,8 @@ final class TournamentTeamService
         }
 
         $slot = $capacity[$newPositionCode];
-        if ($slot['current'] >= $slot['max']) {
+        // запасной слот не занимает — лимит проверяем только для игрока основного состава
+        if ($this->isOnField($member) && $slot['current'] >= $slot['max']) {
             throw new DomainException("Позиция «{$slot['label']}» уже занята ({$slot['current']} из {$slot['max']}).");
         }
 
@@ -395,6 +398,13 @@ final class TournamentTeamService
      * Капитана переводить нельзя — для этого есть отдельная передача капитанства.
      */
     /** Капитан на скамейке (запасной на старте) — роль «капитан» при этом сохраняется. */
+    /** Игрок в основном составе (капитан на скамейке — не в основе). */
+    public function isOnField(EventTeamMember $member): bool
+    {
+        return $member->team_role === 'player'
+            || ($member->team_role === 'captain' && !$this->isCaptainOnBench($member));
+    }
+
     public function isCaptainOnBench(EventTeamMember $member): bool
     {
         return $member->team_role === 'captain' && !empty(($member->meta ?? [])['on_bench']);
@@ -556,6 +566,21 @@ final class TournamentTeamService
 
         return DB::transaction(function () use ($team, $member, $newTeamRole, $oldTeamRole, $performedByUserId) {
             $member->team_role = $newTeamRole;
+            if ($newTeamRole === 'player' && $this->teamUsesPositions($team)) {
+                // выход в основу без замены: если его амплуа не задано или слот занят — берём первое свободное
+                $capacity = $this->getPositionCapacity($team);
+                $cur = $member->position_code;
+                $ok = $cur && isset($capacity[$cur]) && $capacity[$cur]['current'] < $capacity[$cur]['max'];
+                if (!$ok) {
+                    foreach ($capacity as $code => $info) {
+                        if ($info['current'] < $info['max']) {
+                            $member->position_code = $code;
+                            $member->role_code = $code;
+                            break;
+                        }
+                    }
+                }
+            }
             $member->save();
 
             $this->audit(
@@ -1275,13 +1300,14 @@ final class TournamentTeamService
         $players = $confirmed->where('team_role', 'player');
         $captain = $confirmed->firstWhere('team_role', 'captain');
         $captainOnBench = $captain && $this->isCaptainOnBench($captain);
+        $fieldConfirmed = $confirmed->filter(fn ($m) => $this->isOnField($m));
     
         $issues = [];
     
         if ($this->isRolesPair($team)) {
             // Пара «По амплуа»: ровно Блокирующий + Защитник
             foreach ($this->getPositionCapacity($team) as $position => $info) {
-                $currentCount = $confirmed->where('position_code', $position)->count();
+                $currentCount = $fieldConfirmed->where('position_code', $position)->count();
 
                 if ($currentCount < (int) $info['max']) {
                     $issues[] = "В паре нужен игрок на амплуа «{$info['label']}»";
@@ -1294,7 +1320,7 @@ final class TournamentTeamService
             $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
     
             foreach ($requiredPositions as $position => $requiredCount) {
-                $currentCount = $confirmed->where('position_code', $position)->count();
+                $currentCount = $fieldConfirmed->where('position_code', $position)->count();
     
                 if ($currentCount < (int) $requiredCount) {
                     $issues[] = "Недостаточно {$this->positionLabel($position)}: {$currentCount} из {$requiredCount}";
@@ -1302,7 +1328,7 @@ final class TournamentTeamService
             }
     
             if ($this->requiresLibero($settings, $scheme)) {
-                $hasLibero = $confirmed->contains('position_code', 'libero');
+                $hasLibero = $fieldConfirmed->contains('position_code', 'libero');
                 if (!$hasLibero) {
                     $issues[] = 'В составе отсутствует либеро';
                 }
