@@ -90,6 +90,10 @@
 	
     <x-slot name="style">
         <style>
+        .up-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(24rem,1fr));gap:.8rem;margin-top:1.4rem}
+        .up-actions form{margin:0}
+        .up-actions .btn{width:100%;min-height:4.8rem;display:inline-flex;align-items:center;justify-content:center;gap:.8rem;padding:.8rem 1.2rem;line-height:1.2;text-align:center}
+
 /* Базовые классы для индикатора */
 .gradient-indicator {
 	position: relative;
@@ -1058,46 +1062,46 @@ body.dark .gradient-marker-line,
                     @else
                     <div class="alert alert-info">Пока никто не отметил</div>
                     @endif
-					 <div class="d-flex flex-wrap gap-1 text-center">
+					 <div class="up-actions">
                     {{-- Кнопка лайка --}}
                     @if(auth()->check() && !$isSelf)
-                    <form class="d-inline-block mt-1" method="POST" action="{{ route('user.like', $user->id) }}">
+                    <form method="POST" action="{{ route('user.like', $user->id) }}">
                         @csrf
                         <button type="submit" class="btn {{ $iLiked ? '' : 'btn-secondary' }}">
-                            @if($iLiked)<x-ico name="check" /> @endif Нравится играть вместе
+                            <x-ico :name="$iLiked ? 'check' : 'heart'" /> <span>Нравится играть вместе</span>
 						</button>
 					</form>
                     @elseif(!auth()->check())
-                    <a href="{{ route('login') }}" class="btn btn-secondary">Войдите чтобы отметить</a>
+                    <a href="{{ route('login') }}" class="btn btn-secondary"><x-ico name="heart" /> <span>Войдите, чтобы отметить</span></a>
                     @endif
 					
                     {{-- Кнопка друга --}}
                     @if(auth()->check() && !$isSelf)
                         @if(auth()->user()->isFriendWith($user->id))
-                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.destroy', $user->id) }}">
+                        <form method="POST" action="{{ route('friends.destroy', $user->id) }}">
                             @csrf
                             @method('DELETE')
-                            <button class="btn"><x-ico name="check" /> В друзьях</button>
+                            <button class="btn"><x-ico name="user-check" /> <span>В друзьях</span></button>
 						</form>
                         @else
-                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.store', $user->id) }}">
+                        <form method="POST" action="{{ route('friends.store', $user->id) }}">
                             @csrf
-                            <button class="btn btn-secondary">Добавить в друзья</button>
+                            <button class="btn btn-secondary"><x-ico name="user-plus" /> <span>Добавить в друзья</span></button>
 						</form>
                         @endif
 
                         {{-- Кнопка слежки за записями (только Premium + друг) --}}
                         @if($canFollow)
                             @if($isFollowing)
-                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.destroy', $user->id) }}">
+                            <form method="POST" action="{{ route('premium.follows.destroy', $user->id) }}">
                                 @csrf
                                 @method('DELETE')
-                                <button class="btn btn-small" style="font-size:13px" title="Вы следите за записями этого игрока"><x-ico name="star" /> Слежу за записями</button>
+                                <button class="btn" title="Вы следите за записями этого игрока"><x-ico name="star" /> <span>Слежу за записями</span></button>
                             </form>
                             @else
-                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.store', $user->id) }}">
+                            <form method="POST" action="{{ route('premium.follows.store', $user->id) }}">
                                 @csrf
-                                <button class="btn btn-secondary btn-small" style="font-size:13px"><x-ico name="star" /> Следить за записями</button>
+                                <button class="btn btn-secondary"><x-ico name="star" /> <span>Следить за записями</span></button>
                             </form>
                             @endif
                         @endif
