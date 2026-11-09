@@ -692,7 +692,7 @@ body.dark .gradient-marker-line,
                     @if($hasBeach && $hasClassic)
                     <div class="d-flex mb-3 gap-1" id="ts-tabs">
                         <button class="btn ts-tab-btn" data-tab="beach">🏖 Пляжка</button>
-                        <button class="btn btn-secondary ts-tab-btn" data-tab="classic">🏐 Классика</button>
+                        <button class="btn btn-secondary ts-tab-btn" data-tab="classic"><x-ico name="ball" /> Классика</button>
                     </div>
                     @endif
 
@@ -795,7 +795,7 @@ body.dark .gradient-marker-line,
                     <div class="ts-tab-pane" id="ts-pane-classic"@if($hasBeach) style="display:none"@endif>
                         @if($careerClassic && $careerClassic->total_matches > 0)
                         <div class="card p-3 mb-3">
-                            <div class="f-13 b-600 mb-2" style="opacity:.6">🏐 Итого</div>
+                            <div class="f-13 b-600 mb-2" style="opacity:.6"><x-ico name="ball" /> Итого</div>
                             <div class="stat-grid">
                                 @php $crClassic = max(0, ($careerClassic->mu ?? 25) - 3 * ($careerClassic->sigma ?? 8.333)); @endphp
                                 @if($careerClassic->total_matches >= 3)

@@ -121,10 +121,10 @@
                     @if($canBookCourt)
                     <div class="mb-2">
                         @auth
-                        <button type="button" class="btn btn-primary" onclick="window.__openPlayerBookingModal && window.__openPlayerBookingModal()">🏐 {{ __('club.book_court') }}</button>
+                        <button type="button" class="btn btn-primary" onclick="window.__openPlayerBookingModal && window.__openPlayerBookingModal()"><x-ico name="ball" color="currentColor" /> {{ __('club.book_court') }}</button>
                         @include('club._partials.player_booking_modal', ['location' => $location])
                         @else
-                        <a href="{{ route('login', ['return' => $location->public_url]) }}" class="btn btn-primary">🏐 {{ __('club.book_court') }}</a>
+                        <a href="{{ route('login', ['return' => $location->public_url]) }}" class="btn btn-primary"><x-ico name="ball" color="currentColor" /> {{ __('club.book_court') }}</a>
                         @endauth
                     </div>
                     @endif

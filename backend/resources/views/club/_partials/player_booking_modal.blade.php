@@ -12,7 +12,7 @@
 
 <div id="playerBookingModalContent" class="booking-modal-content" style="display:none" data-single-direction="{{ $pbDirections->count() === 1 ? $pbDirections->first()->direction : '' }}">
     <div class="card" style="height:auto">
-        <h3 class="-mt-05">🏐 {{ __('club.book_court') }}</h3>
+        <h3 class="-mt-05"><x-ico name="ball" /> {{ __('club.book_court') }}</h3>
 
         <form method="POST" action="{{ route('court_bookings.store') }}" id="pbForm">
             @csrf

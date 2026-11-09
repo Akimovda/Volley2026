@@ -590,7 +590,7 @@ border:1rem solid #fff;
 						<div>
 							<div class="audience-top">
 								<div class="audience-icon">
-									🏐										
+									<x-ico name="ball" size="1.6em" />										
 								</div>												
 								<div class="audience-title">
 									<div class="f-20 b-600 cd">{{ __('welcome.players_card_title') }}</div>
