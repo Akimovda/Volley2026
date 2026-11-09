@@ -4239,4 +4239,32 @@ $tourNumber = $seasonData
 		.ct-view-btn { opacity: .55; }
 		.ct-view-btn--active { opacity: 1; }
 	</style>
+	<script>
+		// Страница настройки: после любого действия (в т.ч. с подтверждением) возвращаемся к тому же месту и раскрытым блокам
+		(function () {
+			var KEY = 'tsSetupState', BODIES = ['league-teams-body', 'teams-body'];
+			function save() {
+				try {
+					var open = BODIES.filter(function (id) { var el = document.getElementById(id); return el && el.style.display !== 'none'; });
+					sessionStorage.setItem(KEY, JSON.stringify({ p: location.pathname, y: window.scrollY, o: open, t: Date.now() }));
+				} catch (e) {}
+			}
+			document.addEventListener('submit', save, true);
+			document.addEventListener('click', function (e) {
+				if (e.target.closest && e.target.closest('form button, form input[type=submit], .btn-alert')) save();
+			}, true);
+			var st = null;
+			try { st = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (e) {}
+			if (!st || st.p !== location.pathname || Date.now() - st.t > 30000) return;
+			BODIES.forEach(function (id) {
+				var el = document.getElementById(id), open = st.o.indexOf(id) !== -1;
+				if (!el) return;
+				el.style.display = open ? '' : 'none';
+				var ic = el.previousElementSibling && el.previousElementSibling.querySelector('.toggle-icon');
+				if (ic) ic.textContent = open ? '▼' : '▶';
+			});
+			function go() { window.scrollTo(0, st.y); }
+			go(); window.addEventListener('load', function () { go(); setTimeout(go, 300); });
+		})();
+	</script>
 </x-voll-layout>
