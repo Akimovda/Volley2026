@@ -8084,3 +8084,14 @@ body.dark .ramka .btn-secondary:not(.btn-alert) {
 body.dark .ramka .btn-secondary:not(.btn-alert):hover {
 	border-color: #E7612F;
 }
+
+/* Профиль игрока: строки-переключатели (лайк, друг, слежка) */
+.up-rows{display:flex;flex-direction:column;gap:.4rem;margin-top:1.2rem;max-width:52rem}
+.up-row{display:flex;align-items:center;justify-content:space-between;gap:1.2rem;margin:0;padding:.9rem 0;border-top:.1rem solid rgba(128,128,128,.2)}
+.up-row:first-child{border-top:0}
+.up-row-l{display:inline-flex;align-items:center;gap:.8rem;font-size:1.6rem;font-weight:600}
+.up-switch{position:relative;flex:0 0 auto;width:5.2rem;height:3rem;padding:0;border:0;border-radius:1.5rem;background:#cbd5e1;cursor:pointer;transition:background .2s}
+.up-switch i{position:absolute;top:.3rem;left:.3rem;width:2.4rem;height:2.4rem;border-radius:50%;background:#fff;box-shadow:0 .1rem .3rem rgba(0,0,0,.3);transition:transform .2s}
+.up-switch.is-on{background:#2967BA}
+.up-switch.is-on i{transform:translateX(2.2rem)}
+body.dark .up-switch{background:#475569}
