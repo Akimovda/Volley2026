@@ -145,7 +145,7 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
     <div class="ramka" style="z-index:10">
         <h2 class="-mt-05 tm-h2"><x-ico name="users" size="1.2em" /> Состав команды</h2>
         <div class="f-16 mb-2">
-            Капитан: <strong>{{ $team->captain->name ?? ('#'.$team->captain_user_id) }}</strong>
+            <x-ico name="crown" size="1.2em" /> <span style="opacity:.7">Капитан:</span> <strong>{{ $team->captain->name ?? ('#'.$team->captain_user_id) }}</strong>
             @if($team->occurrence)
                 · {{ \Carbon\Carbon::parse($team->occurrence->starts_at)->format('d.m H:i') }}
             @endif
