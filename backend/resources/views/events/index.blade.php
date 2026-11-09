@@ -260,7 +260,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 
 							<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-1">
 								<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
-								<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
+								<a href="{{ route('events.index', ['reset' => 1]) }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
 							</div>
 						</div>
 					</form>
@@ -293,6 +293,33 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 			ВАРИАНТ 1: OCCURRENCES
 			========================= --}}
 			@if ($isOccurrenceMode)
+			<script>
+			// Запоминаем выбранные фильтры в браузере: при следующем заходе на /events без параметров применяем их, пока пользователь не нажмёт «Сбросить»
+			(function () {
+				var KEY = 'eventsFilters', FIELDS = ['direction', 'format', 'level', 'location', 'city'];
+				try {
+					var q = new URLSearchParams(location.search);
+					if (q.has('reset')) {
+						localStorage.removeItem(KEY);
+						q.delete('reset');
+						history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+						return;
+					}
+					var explicit = FIELDS.some(function (f) { return q.has(f); });
+					if (explicit) {
+						var saved = {};
+						FIELDS.forEach(function (f) { if (q.get(f)) saved[f] = q.get(f); });
+						if (Object.keys(saved).length) localStorage.setItem(KEY, JSON.stringify(saved));
+						else localStorage.removeItem(KEY);
+						return;
+					}
+					var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+					if (!st || !Object.keys(st).length) return;
+					FIELDS.forEach(function (f) { if (st[f]) q.set(f, st[f]); });
+					location.replace(location.pathname + '?' + q.toString());
+				} catch (e) {}
+			})();
+			</script>
 			{{-- Верхняя лента дней --}}
 			<div class="tabs-content">
 				<div id="days"></div>	
