@@ -1113,7 +1113,6 @@ body.dark .gradient-marker-line,
 						@if((auth()->user()->isAdmin() || auth()->user()->isOrganizer() || auth()->user()->isStaff()) && $user->phone)
 						<div class="mb-1 d-flex fvc" style="gap:.6rem">
 							<x-ico name="phone" size="1.6em" />
-							<span style="opacity:.7">Телефон:</span>
 							<a class="b-600" href="tel:{{ $user->phone }}">{{ $user->formatted_phone }}</a>
 						</div>
 						@endif
