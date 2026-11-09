@@ -110,6 +110,7 @@
             'registration_notify_also_dm' => 'boolean',
             'notify_new_events_in_city'   => 'boolean',
             'is_hidden'                   => 'boolean',
+            'events_filters'              => 'array',
             'is_test'                     => 'boolean',
             'is_placeholder'              => 'boolean',
             'max_notifications_enabled'      => 'boolean',

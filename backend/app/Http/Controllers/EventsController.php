@@ -22,8 +22,59 @@
 	{
 		public function index(EventIndexService $service, Request $request)
         {
+            if ($redirect = $this->rememberedFilters($request)) {
+                return $redirect;
+            }
+
             return $service->handle($request);
         }
+
+		/**
+		 * Запомненный фильтр залогиненного пользователя: явный выбор сохраняем, заход без параметров —
+		 * подставляем сохранённый, «Сбросить» (?reset=1) — очищаем. Гостям запоминает браузер (localStorage на странице).
+		 */
+		private function rememberedFilters(Request $request): ?\Illuminate\Http\RedirectResponse
+		{
+			$user = $request->user();
+			if (!$user || !$request->isMethod('get') || $request->ajax() || $request->expectsJson()) {
+				return null;
+			}
+
+			$fields = ['direction', 'format', 'level', 'location', 'city'];
+
+			try {
+				if ($request->query->has('reset')) {
+					DB::table('users')->where('id', $user->id)->update(['events_filters' => null]);
+
+					return redirect()->route('events.index', $request->except('reset'));
+				}
+
+				$saved = (array) ($user->events_filters ?? []);
+
+				if (collect($fields)->contains(fn ($f) => $request->query->has($f))) {
+					$new = [];
+					foreach ($fields as $f) {
+						$v = $request->query($f);
+						if (is_string($v) && $v !== '') {
+							$new[$f] = mb_substr($v, 0, 32);
+						}
+					}
+					if ($new !== $saved) {
+						DB::table('users')->where('id', $user->id)->update(['events_filters' => $new ? json_encode($new) : null]);
+					}
+
+					return null;
+				}
+
+				if ($saved) {
+					return redirect()->route('events.index', array_merge($request->query(), array_intersect_key($saved, array_flip($fields))));
+				}
+			} catch (\Throwable $e) {
+				report($e);
+			}
+
+			return null;
+		}
 		
        public function show(Request $request, Event $event)
         {
