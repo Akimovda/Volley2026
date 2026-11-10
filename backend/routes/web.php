@@ -150,6 +150,9 @@ Route::get('/logout', fn () => redirect('/'));
 	
 	Route::get('/events', [EventsController::class, 'index'])->name('events.index');
 
+	// Текущее состояние входа для страниц, отрисованных гостем (после VK ID / «назад» страница могла остаться «гостевой»)
+	Route::get('/auth/state', fn () => response()->json(['auth' => auth()->check()])->header('Cache-Control', 'no-store'))->name('auth.state');
+
 	// Блок «Скоро»: скрытие и счётчики
 	Route::post('/events/upcoming/track', [\App\Http\Controllers\UpcomingBlockController::class, 'track'])->middleware('throttle:60,1')->name('upcoming.track');
 	Route::middleware(['auth'])->group(function () {
