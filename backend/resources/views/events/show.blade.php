@@ -376,6 +376,11 @@ $hasCoords =
 		</div>
 		<x-slot name="script">
 			@include('events.show.scripts')
+			@guest
+			{{-- Гость нажимает «Записаться» → окно входа (как в ленте), после входа возврат на эту страницу --}}
+			@include('auth._login_popup')
+			<script>window.__vpGuestPage = true;</script>
+			@endguest
 			@php
 				// VolleyCalendarPlugin.swift ожидает строгий ISO8601 в UTC с "Z" на конце
 				// (ISO8601DateFormatter().withInternetDateTime / базовый формат без опций) —
