@@ -8247,3 +8247,10 @@ body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7
 .sub-card__feat .ico{flex:0 0 auto}
 .sub-card__bar span{transition:width .4s ease}
 @media (max-width:360px){.sub-card__feat > span:not(.ico){display:none}.sub-card__feat{padding:.4rem .7rem}}
+
+/* История посещений абонемента: действия цветными пилюлями со значками */
+.usage-pill{display:inline-flex;align-items:center;gap:.6rem;padding:.4rem 1.2rem .4rem 1rem;border-radius:2rem;font-size:1.3rem;font-weight:600;line-height:1.2;white-space:nowrap}
+.usage-pill--used{background:rgba(34,197,94,.14);color:#15803d;box-shadow:inset 0 0 0 .1rem rgba(34,197,94,.4)}
+.usage-pill--returned{background:rgba(37,99,235,.12);color:#1d4ed8;box-shadow:inset 0 0 0 .1rem rgba(37,99,235,.38)}
+.usage-pill--burned{background:rgba(234,88,12,.13);color:#c2410c;box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.4)}
+body.dark .usage-pill--used{color:#86efac}body.dark .usage-pill--returned{color:#93c5fd}body.dark .usage-pill--burned{color:#fdba74}

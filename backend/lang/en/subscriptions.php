@@ -65,9 +65,9 @@ return [
     'usages_col_date'  => 'Date',
     'usages_col_event' => 'Event',
     'usages_col_action' => 'Action',
-    'usages_action_used'     => '✅ Used',
-    'usages_action_returned' => '↩️ Returned',
-    'usages_action_burned'   => '🔥 Burned',
+    'usages_action_used'     => 'Used',
+    'usages_action_returned' => 'Returned',
+    'usages_action_burned'   => 'Burned',
 
     'tpl_title'        => 'Subscription templates',
     'tpl_h1'           => 'Subscription templates',

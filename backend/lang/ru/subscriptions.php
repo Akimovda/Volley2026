@@ -68,9 +68,9 @@ return [
     'usages_col_date'  => 'Дата',
     'usages_col_event' => 'Мероприятие',
     'usages_col_action' => 'Действие',
-    'usages_action_used'     => '✅ Использовано',
-    'usages_action_returned' => '↩️ Возвращено',
-    'usages_action_burned'   => '🔥 Сгорело',
+    'usages_action_used'     => 'Использовано',
+    'usages_action_returned' => 'Возвращено',
+    'usages_action_burned'   => 'Сгорело',
 
     // === subscription_templates ===
     'tpl_title'        => 'Шаблоны абонементов',
