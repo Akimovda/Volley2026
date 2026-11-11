@@ -311,6 +311,10 @@ public function update(Request $request, Location $location)
             }
         });
 
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
+
         return back()->with('status', __('club.save_directions') . ' ✅');
     }
 
@@ -337,9 +341,15 @@ public function update(Request $request, Location $location)
                 $hasStart = !empty($rule['starts_at']);
                 $hasEnd = !empty($rule['ends_at']);
                 if ($hasStart !== $hasEnd) {
+                    if ($request->expectsJson()) {
+                        return response()->json(['ok' => false, 'message' => __('club.price_rule_time_both_required')], 422);
+                    }
                     return back()->with('error', __('club.price_rule_time_both_required'));
                 }
                 if ($hasStart && $hasEnd && $rule['ends_at'] <= $rule['starts_at']) {
+                    if ($request->expectsJson()) {
+                        return response()->json(['ok' => false, 'message' => __('club.price_rule_time_order')], 422);
+                    }
                     return back()->with('error', __('club.price_rule_time_order'));
                 }
             }
@@ -408,6 +418,10 @@ public function update(Request $request, Location $location)
                 }
             }
         });
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true]);
+        }
 
         return back()->with('status', __('club.price_rules_saved') . ' ✅');
     }

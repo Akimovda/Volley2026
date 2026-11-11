@@ -473,7 +473,7 @@
 		
         <div class="ramka">
 		<h2 class="-mt-05">{{ __('admin.loc_form_title') }}</h2>
-            <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form">
+            <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form" id="locationMainForm">
                 @csrf
                 @method('PUT')
 				
@@ -710,9 +710,6 @@
                     </div>
 				</div>
 				
-				<div class="mt-2 text-center">
-					<button type="submit" class="btn btn-primary">{{ __('admin.btn_save_changes') }}</button>
-				</div>
 			</form>
 			{{-- 
 			<div class="row">
@@ -850,9 +847,6 @@
                 </div>
                 @endforeach
 
-                <div class="mt-2 text-center">
-                    <button type="submit" class="btn btn-primary">{{ __('club.save_directions') }}</button>
-                </div>
             </form>
         </div>
 
@@ -916,9 +910,6 @@
                 </div>
                 @endforeach
 
-                <div class="mt-2 text-center">
-                    <button type="submit" class="btn btn-primary">{{ __('club.save_price_rules') }}</button>
-                </div>
             </form>
         </div>
 
@@ -964,5 +955,39 @@
             </div>
         </div>
 
+
+        {{-- ЕДИНАЯ кнопка «Сохранить»: форма локации + направления и корты + прайс аренды (блок доверенных организаторов — отдельные действия) --}}
+        <div class="loc-savebar">
+            <button type="button" class="btn btn-primary" id="saveAllBtn"><x-ico name="check" /> {{ __('admin.btn_save_changes') }}</button>
+        </div>
+        <script>
+        (function () {
+            var btn = document.getElementById('saveAllBtn'), main = document.getElementById('locationMainForm');
+            if (!btn || !main) return;
+            var label = btn.innerHTML;
+            async function saveAll() {
+                if (!main.reportValidity()) return;                         // сначала проверка основной формы — чтобы не сохранить часть
+                btn.disabled = true; btn.textContent = @json(__('admin.loc_photos_save_progress'));
+                var subs = ['directionsForm', 'priceRulesForm'].map(function (id) { return document.getElementById(id); }).filter(Boolean);
+                for (var k = 0; k < subs.length; k++) {
+                    var f = subs[k];
+                    f.dispatchEvent(new Event('submit', { cancelable: true })); // собрать скрытые поля (например, правила цен)
+                    try {
+                        var res = await fetch(f.action, { method: 'POST', body: new FormData(f), credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        if (!res.ok) {
+                            var msg = 'Ошибка сохранения', j = null;
+                            try { j = await res.json(); } catch (e) {}
+                            if (j && j.message) msg = j.message;
+                            if (j && j.errors) msg += '\n' + Object.keys(j.errors).map(function (key) { return j.errors[key].join(' '); }).join('\n');
+                            alert(msg); btn.disabled = false; btn.innerHTML = label; return;
+                        }
+                    } catch (e) { alert('Ошибка соединения'); btn.disabled = false; btn.innerHTML = label; return; }
+                }
+                main.requestSubmit();                                        // основная форма (фото, порядок, поля) — обычной отправкой с перезагрузкой
+            }
+            btn.addEventListener('click', saveAll);
+        })();
+        </script>
 	</div>
 </x-voll-layout>
