@@ -436,7 +436,7 @@
             return response()->json([
                 'ok' => $result->allowed,
                 'allowed' => $result->allowed,
-                'message' => !empty($errors) ? implode(' ', $errors) : null,
+                'message' => !empty($errors) ? $this->primaryAvailabilityMessage($errors) : null,
                 'free_positions' => $freePositions,
                 'meta' => $meta,
         
@@ -446,4 +446,22 @@
             ]);
         }
 		
+        /**
+         * Из нескольких причин отказа показываем ОДНУ, самую важную: «началось/завершено» → «регистрация закрыта» → «нет мест» → первая.
+         * Раньше все причины склеивались в одну строку («Мероприятие уже началось. Регистрация уже завершена. Свободных мест…»).
+         */
+        private function primaryAvailabilityMessage(array $errors): string
+        {
+            $errors = array_values(array_filter(array_map('strval', $errors)));
+            foreach (['началось', 'завершен', 'Регистрац', 'регистрац', 'Свободных мест', 'мест'] as $needle) {
+                foreach ($errors as $e) {
+                    if (mb_stripos($e, $needle) !== false) {
+                        return $e;
+                    }
+                }
+            }
+
+            return $errors[0] ?? '';
+        }
+
 	}

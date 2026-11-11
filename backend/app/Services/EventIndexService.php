@@ -293,15 +293,9 @@ class EventIndexService
             if ($offset > 0) {
                 $windowStart = (clone $today)->addDays($offset * 10);
             } else {
-                $nearestQ = clone $occQ;
-                $this->applyDateFilter($nearestQ);
-                $nearestStartsAtUtc = $nearestQ->orderBy('starts_at')->value('starts_at');
-                if ($nearestStartsAtUtc) {
-                    $nearestLocalDay = Carbon::parse($nearestStartsAtUtc, 'UTC')->setTimezone($windowTz)->startOfDay();
-                    $windowStart = $nearestLocalDay->lt($today) ? $today : $nearestLocalDay;
-                } else {
-                    $windowStart = $today;
-                }
+                // Без явной даты лента ВСЕГДА открывается с сегодняшнего дня (даже если сегодня событий нет —
+                // тогда у дня будет плашка «нет мероприятий»); раньше окно прыгало на ближайший день с событиями.
+                $windowStart = clone $today;
             }
         }
 

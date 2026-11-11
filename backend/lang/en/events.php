@@ -224,6 +224,8 @@ return [
 
     // Registration buttons / states
     'btn_details'        => 'Details',
+    'btn_join_reserve'    => 'Join the waitlist',
+    'btn_live_now'        => 'In progress',
     'btn_join'           => 'Sign up',
     'btn_cancel_join'    => 'Cancel sign-up',
     'msg_event_started'  => 'The event has already started',

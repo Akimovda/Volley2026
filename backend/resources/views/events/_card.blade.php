@@ -606,7 +606,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					</div>
 					
 					{{-- Кнопки записи --}}
-					<div class="mt-1">
+					<div class="mt-1" @if($regEnabled && empty($cardLinkOnly)) data-join-area data-event-url="{{ $eventPageUrl }}" data-group-mode="{{ $isGroupMode ? 1 : 0 }}" data-starts-ts="{{ $startsAtUtc?->timestamp }}" data-ends-ts="{{ $endsAtUtc?->timestamp }}" @endif>
 						
 						@if (!empty($cardLinkOnly))
 						{{-- вне ленты (главная): без окна выбора позиции — ссылка на страницу события --}}
@@ -615,7 +615,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
 						@else
 						@if ($eventStarted2)
-                        <div class="alert alert-info">{{ !empty($eventFinished) ? __('events.msg_event_finished') : __('events.msg_event_started') }}</div>
+                        @if (!empty($eventFinished))
+                        <div class="alert alert-info">{{ __('events.msg_event_finished') }}</div>
+                        @else
+                        <a href="{{ $eventPageUrl }}" class="btn btn-secondary btn-live w-100">{{ __('events.btn_live_now') }}</a>
+                        @endif
 						
 						@elseif (!auth()->check())
                         <button type="button" class="btn w-100 js-open-login-popup" data-return-url="{{ $eventPageUrl }}">{{ __('events.btn_join') }}</button>

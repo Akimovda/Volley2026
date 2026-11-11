@@ -525,7 +525,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				<div id="jmError" class="alert alert-danger" style="display:none"></div>
 				<div id="jmLoading" class="mb-1" style="display:none;">{{ __('events.join_loading') }}</div>
 				<div id="jmPositions"></div>
-				<div class="f-16 mt-2">{{ __('events.join_after_choice') }}</div>
+				<div class="f-16 mt-2" id="jmHint">{{ __('events.join_after_choice') }}</div>
 			</div>
 			
 			<form id="joinForm" method="POST" action="" style="display:none">
@@ -557,11 +557,13 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					if (!errBox) return;
 					errBox.textContent = message;
 					errBox.style.display = '';
+					var h = document.getElementById('jmHint'); if (h) h.style.display = 'none';   // при ошибке подсказка про выбор позиции не нужна
 				}
 				function clearError() {
 					if (!errBox) return;
 					errBox.textContent = '';
 					errBox.style.display = 'none';
+					var h = document.getElementById('jmHint'); if (h) h.style.display = '';
 				}
 				function setLoading(isLoading) {
 					if (!loadingEl) return;
