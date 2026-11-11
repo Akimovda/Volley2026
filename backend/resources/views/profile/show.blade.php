@@ -1196,12 +1196,12 @@
 				@endphp
 				<div class="ramka">
 					<h2 class="-mt-05 h2-ico"><x-ico name="megaphone" size="1.2em" /> {{ __('profile.upcoming_sec_title') }}</h2>
-					<div class="form">
-					<label class="checkbox-item">
-						<input type="checkbox" id="upcoming-visible" @checked(!$__upHidden)>
-						<div class="custom-checkbox"></div>
-						<span>{{ __('profile.upcoming_show_label') }}</span>
-					</label>
+					<div class="up-rows">
+						<div class="up-row">
+							<span class="up-row-l"><x-ico name="megaphone" /> <span>{{ __('profile.upcoming_show_label') }}</span></span>
+							<button type="button" class="up-switch {{ !$__upHidden ? 'is-on' : '' }}" id="upcoming-visible" role="switch"
+								aria-checked="{{ !$__upHidden ? 'true' : 'false' }}" aria-label="{{ __('profile.upcoming_show_label') }}"><i></i></button>
+						</div>
 					</div>
 					<div class="mt-1">
 						<button type="button" id="upcoming-reset" class="btn btn-secondary btn-small" @disabled($__upDismissed === 0)>{{ __('profile.upcoming_reset_btn') }} (<span id="upcoming-reset-n">{{ $__upDismissed }}</span>)</button>
@@ -1212,7 +1212,14 @@
 					var tok = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
 					var post = function (url, body) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': tok() }, body: JSON.stringify(body || {}) }); };
 					var vis = document.getElementById('upcoming-visible'), rst = document.getElementById('upcoming-reset');
-					if (vis) vis.addEventListener('change', function () { post(@json(route('upcoming.visible')), { enabled: vis.checked ? 1 : 0 }); });
+					if (vis) vis.addEventListener('click', function () {
+						var want = !vis.classList.contains('is-on'), set = function (on) { vis.classList.toggle('is-on', on); vis.setAttribute('aria-checked', on ? 'true' : 'false'); };
+						set(want); vis.disabled = true;
+						post(@json(route('upcoming.visible')), { enabled: want ? 1 : 0 })
+							.then(function (res) { if (!res.ok) set(!want); })
+							.catch(function () { set(!want); })
+							.then(function () { vis.disabled = false; });
+					});
 					if (rst) rst.addEventListener('click', function () {
 						rst.disabled = true;
 						post(@json(route('upcoming.reset'))).then(function () { document.getElementById('upcoming-reset-n').textContent = '0'; });
@@ -1227,36 +1234,34 @@
 					
 					<h2 class="-mt-05 h2-ico"><x-ico name="eye-off" size="1.2em" /> {{ __('profile.sec_privacy') }}</h2>
 					
-					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}">
+					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}" id="privacyForm">
 						@csrf
-						
-						
-						
-						<label for="allow_user_contact" class="checkbox-item">
-							<input type="hidden" name="allow_user_contact" value="0">
-							<input type="checkbox" 
-							class="form-check-input" 
-							name="allow_user_contact" 
-							value="1"
-							id="allow_user_contact"
-							@checked((bool)($u->allow_user_contact ?? true))>
-							
-							<div class="custom-checkbox"></div>
-							<span>{{ __('profile.privacy_allow_text') }}</span>
-						</label>
-						
-						
-						
-						<p>{{ __('profile.privacy_lead') }}</p>									
-						
-						
-						<div class="mt-2 m-center">
-							<button type="submit" class="btn">
-								{{ __('profile.btn_save') }}
-							</button>
+						<input type="hidden" name="allow_user_contact" id="privacy-value" value="{{ (bool)($u->allow_user_contact ?? true) ? 1 : 0 }}">
+						<div class="up-rows">
+							<div class="up-row">
+								<span class="up-row-l"><x-ico name="message" /> <span>{{ __('profile.privacy_allow_text') }}</span></span>
+								<button type="button" class="up-switch {{ (bool)($u->allow_user_contact ?? true) ? 'is-on' : '' }}" id="privacy-switch" role="switch"
+									aria-checked="{{ (bool)($u->allow_user_contact ?? true) ? 'true' : 'false' }}" aria-label="{{ __('profile.privacy_allow_text') }}"><i></i></button>
+							</div>
 						</div>
-						
+						<p class="mt-1">{{ __('profile.privacy_lead') }}</p>
 					</form>
+					<script>
+					// Приватность: переключатель сохраняется сразу, без перезагрузки страницы
+					(function () {
+						var sw = document.getElementById('privacy-switch'), val = document.getElementById('privacy-value'), form = document.getElementById('privacyForm');
+						if (!sw || !val || !form) return;
+						sw.addEventListener('click', async function () {
+							var want = !sw.classList.contains('is-on'), set = function (on) { sw.classList.toggle('is-on', on); sw.setAttribute('aria-checked', on ? 'true' : 'false'); val.value = on ? 1 : 0; };
+							set(want); sw.disabled = true;
+							try {
+								var res = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+								if (!res.ok) set(!want);
+							} catch (e) { set(!want); }
+							sw.disabled = false;
+						});
+					})();
+					</script>
 				</div>	
 				
 				
