@@ -8107,3 +8107,19 @@ body.dark .up-switch{background:#475569}
 .bio-dev-cur{display:inline-block;margin-left:.8rem;padding:.1rem .9rem;border-radius:1rem;font-size:1.2rem;font-weight:600;background:rgba(22,163,74,.16);color:#16a34a;vertical-align:.1rem}
 .bio-dev-del{flex:0 0 auto;width:4.4rem;height:4.4rem;border-radius:50%;border:.1rem solid rgba(220,38,38,.45);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .bio-dev-del:disabled{opacity:.4}
+
+/* Привязка входов: инструкция сворачивается, на узких экранах провайдеры — квадратные плитки по 2 в ряд */
+.providers-how{margin:0 0 1rem}
+.providers-how summary{cursor:pointer;font-weight:600;list-style:none;display:inline-flex;align-items:center;gap:.6rem}
+.providers-how summary::-webkit-details-marker{display:none}
+.providers-how summary::after{content:'▾';opacity:.6}
+.providers-how[open] summary::after{content:'▴'}
+@media (max-width: 600px) {
+	.provider-cards.fc > .col-6 { width: 50%; }
+	.provider-cards .card { padding: 1.2rem 0.8rem; text-align: center; height: 100%; }
+	.provider-card__header { flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; }
+	.provider-card__title { padding-left: 0; font-size: 1.4rem; text-align: center; flex: 0 0 auto; }
+	.provider-card__icon { width: 4.6rem; height: 4.6rem; }
+	.provider-card__icon svg { width: 2.4rem; height: 2.4rem; }
+	.provider-cards .btn { padding: 0.7rem 0.4rem; font-size: 1.2rem; }
+}

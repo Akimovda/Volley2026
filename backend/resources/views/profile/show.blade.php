@@ -424,12 +424,14 @@
 					@if($allLinked)
 					<p>{{ __('profile.providers_all_linked') }}</p>
 					@else
-					<p>{{ __('profile.providers_how') }}</p>
-					<ul class="list">
-						<li>{{ __('profile.providers_step_1') }}</li>
-						<li>{{ __('profile.providers_step_2') }}</li>
-						<li>{{ __('profile.providers_step_3') }}</li>
-					</ul>
+					<details class="providers-how">
+						<summary>{{ __('profile.providers_how') }}</summary>
+						<ul class="list">
+							<li>{{ __('profile.providers_step_1') }}</li>
+							<li>{{ __('profile.providers_step_2') }}</li>
+							<li>{{ __('profile.providers_step_3') }}</li>
+						</ul>
+					</details>
 					@endif					
 					
 					
