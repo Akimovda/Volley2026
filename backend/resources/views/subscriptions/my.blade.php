@@ -16,10 +16,10 @@
         </div>
         <div class="col-lg-8 col-xl-9 order-1">
         @if(session('status'))
-            <div class="ramka"><div class="alert alert-success">{{ session('status') }}</div></div>
+            <div class="ramka"><div class="alert alert-success"><x-ico name="check" /> {{ session('status') }}</div></div>
         @endif
         @if(session('error'))
-            <div class="ramka"><div class="alert alert-danger">{{ session('error') }}</div></div>
+            <div class="ramka"><div class="alert alert-danger"><x-ico name="warn" /> {{ session('error') }}</div></div>
         @endif
 
         @if($subs->isEmpty())
@@ -88,7 +88,7 @@
                     @if($sub->status === 'frozen')
                     <form method="POST" action="{{ route('subscriptions.unfreeze', $sub) }}" class="d-inline-block">
                         @csrf
-                        <button class="btn btn-small">{{ __('subscriptions.my_btn_unfreeze') }}</button>
+                        <button class="btn btn-small"><x-ico name="sun" /> {{ __('subscriptions.my_btn_unfreeze') }}</button>
                     </form>
                     @endif
 
@@ -128,7 +128,7 @@
                             <input type="date" name="until" min="{{ now()->addDay()->toDateString() }}"
                                 max="{{ now()->addMonths($sub->template->freeze_max_months ?: 3)->toDateString() }}"
                                 style="max-width:200px">
-                            <button type="submit" class="btn btn-small">{{ __('subscriptions.my_btn_freeze_until') }}</button>
+                            <button type="submit" class="btn btn-small"><x-ico name="clock" /> {{ __('subscriptions.my_btn_freeze_until') }}</button>
                         </div>
                     </form>
                 </div>
@@ -148,7 +148,7 @@
                         <div id="transfer_selected_{{ $sub->id }}" class="f-14 mb-1" style="opacity:.7"></div>
                         <button type="submit" id="transfer_btn_{{ $sub->id }}" class="btn btn-small" disabled
                             data-title="{{ __('subscriptions.my_transfer_title') }}" data-text="{{ __('subscriptions.my_transfer_text') }}" data-confirm-text="{{ __('subscriptions.my_transfer_yes') }}" data-cancel-text="{{ __('subscriptions.cancel') }}" class="btn btn-small btn-alert">
-                            {{ __('subscriptions.my_btn_transfer') }}
+                            <x-ico name="swap" /> {{ __('subscriptions.my_btn_transfer') }}
                         </button>
                     </form>
                 </div>
@@ -279,7 +279,7 @@
                         items.forEach(function(item) {
                             var div = document.createElement('div');
                             div.className = 'trainer-item form-select-option';
-                            var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+                            var botBadge = item.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">бот</span>' : '';
                             div.innerHTML = '<div class="f-14">' + esc(item.label || item.name) + botBadge + '</div>';
                             div.addEventListener('click', function() { pick(item.id, item.label || item.name); });
                             dd.appendChild(div);
