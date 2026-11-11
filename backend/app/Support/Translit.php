@@ -4,7 +4,7 @@ namespace App\Support;
 
 /**
  * Транслитерация имени для карточки абонемента «как на банковской карте» (как у российских банков, Visa/Mastercard):
- * «Акимов Дмитрий» → «DMITRIY AKIMOV». Уже латинские имена просто приводятся к верхнему регистру.
+ * «Акимов Дмитрий» → «AKIMOV DMITRIY». Уже латинские имена просто приводятся к верхнему регистру.
  */
 class Translit
 {
@@ -25,7 +25,7 @@ class Translit
         return trim(preg_replace('/\s+/', ' ', $out));
     }
 
-    /** «ИМЯ ФАМИЛИЯ» латиницей для карточки (порядок как на банковских картах). */
+    /** «ФАМИЛИЯ ИМЯ» латиницей для карточки: «Щербаков Юрий» → «SHCHERBAKOV YURIY». */
     public static function cardName(?object $user): string
     {
         if (!$user) {
@@ -33,7 +33,7 @@ class Translit
         }
         $first = trim((string) ($user->first_name ?? ''));
         $last  = trim((string) ($user->last_name ?? ''));
-        $full  = trim($first . ' ' . $last);
+        $full  = trim($last . ' ' . $first);
         if ($full === '') {
             $full = trim((string) ($user->name ?? ''));
         }
