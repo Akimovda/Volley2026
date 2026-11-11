@@ -8233,3 +8233,10 @@ body.dark .up-switch.is-on { background: #2967BA; }
 .sub-feat--auto{background:rgba(124,58,237,.14);color:#6d28d9;box-shadow:inset 0 0 0 .1rem rgba(124,58,237,.4)}
 body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7dd3fc}body.dark .sub-feat--auto{color:#c4b5fd}
 @media (max-width:480px){.sub-card__holder{font-size:1.3rem}}
+
+/* Имя держателя на карточке абонемента: шрифт «как на банковских картах» (Share Tech Mono, OFL) и серебристое выпуклое тиснение */
+@font-face{font-family:'Share Tech Mono';src:url('/assets/fonts/ShareTechMono-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+.sub-card__holder{font-family:'Share Tech Mono',ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:1.8rem;font-weight:400;letter-spacing:.12em;
+	background:linear-gradient(180deg,#ffffff 0%,#e6e9ee 38%,#9aa3ae 52%,#d9dde3 70%,#f7f8fa 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none;
+	filter:drop-shadow(0 .1rem 0 rgba(255,255,255,.55)) drop-shadow(0 -.1rem 0 rgba(0,0,0,.55)) drop-shadow(0 .2rem .2rem rgba(0,0,0,.35))}
+@media (max-width:480px){.sub-card__holder{font-size:1.5rem}}
