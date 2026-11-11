@@ -8240,3 +8240,10 @@ body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7
 	background:linear-gradient(180deg,#ffffff 0%,#e6e9ee 38%,#9aa3ae 52%,#d9dde3 70%,#f7f8fa 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none;
 	filter:drop-shadow(0 .1rem 0 rgba(255,255,255,.55)) drop-shadow(0 -.1rem 0 rgba(0,0,0,.55)) drop-shadow(0 .2rem .2rem rgba(0,0,0,.35))}
 @media (max-width:480px){.sub-card__holder{font-size:1.5rem}}
+
+/* Карточка абонемента: пилюли возможностей на самой карточке (после количества занятий), полоса убывает справа налево */
+.sub-card__feats{position:relative;display:flex;flex-wrap:nowrap;gap:.6rem;margin-top:-.2rem}
+.sub-card__feat{display:inline-flex;align-items:center;gap:.5rem;padding:.3rem .9rem .3rem .7rem;border-radius:2rem;font-size:1.1rem;font-weight:600;line-height:1.2;white-space:nowrap;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 .1rem rgba(255,255,255,.26)}
+.sub-card__feat .ico{flex:0 0 auto}
+.sub-card__bar span{transition:width .4s ease}
+@media (max-width:360px){.sub-card__feat > span:not(.ico){display:none}.sub-card__feat{padding:.4rem .7rem}}

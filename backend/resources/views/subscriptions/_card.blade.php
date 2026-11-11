@@ -17,7 +17,7 @@
     // цвет полосы по остатку: от 50% — зелёная, 49–30% — жёлтая, ниже 30% или 1–2 занятия — красная
     $barTone   = ($left <= \App\Models\Subscription::ENDING_VISITS || $leftPct < 30) ? 'red' : ($leftPct < 50 ? 'yellow' : 'green');
     $holder    = \App\Support\Translit::cardName($sub->user);
-    $usedPct   = $total > 0 ? (int) max(0, min(100, round($used / $total * 100))) : 0;   // доля использованных занятий
+    $leftBar   = $total > 0 ? (int) max(0, min(100, round($left / $total * 100))) : 0;   // ширина полосы = остаток занятий (полная в начале, убывает справа налево)
 @endphp
 <div class="sub-card sub-card--{{ $stateKey }} {{ $dim ? 'is-dim' : '' }}"
      style="--sc-from: {{ $card['from'] }}; --sc-to: {{ $card['to'] }}; --sc-accent: {{ $card['accent'] }}">
@@ -30,7 +30,16 @@
     </div>
     <div class="sub-card__big">{{ trans_choice('subscriptions.my_card_visits', $total, ['n' => $total]) }}</div>
 
-    <div class="sub-card__bar sub-card__bar--{{ $barTone }}" role="img" aria-label="{{ __('subscriptions.my_card_used', ['pct' => $usedPct]) }}"><span style="width: {{ $usedPct }}%"></span></div>
+    @php $tpl = $sub->template; @endphp
+    @if($tpl->transfer_enabled || $tpl->freeze_enabled || $tpl->auto_booking_enabled)
+    <div class="sub-card__feats">
+        @if($tpl->transfer_enabled)<span class="sub-card__feat" title="{{ __('subscriptions.feat_transfer') }}"><x-ico name="swap" size="1.4rem" color="#5eead4" /><span>{{ __('subscriptions.feat_transfer') }}</span></span>@endif
+        @if($tpl->freeze_enabled)<span class="sub-card__feat" title="{{ __('subscriptions.feat_freeze') }}"><x-ico name="clock" size="1.4rem" color="#7dd3fc" /><span>{{ __('subscriptions.feat_freeze') }}</span></span>@endif
+        @if($tpl->auto_booking_enabled)<span class="sub-card__feat" title="{{ __('subscriptions.feat_auto') }}"><x-ico name="robot" size="1.4rem" color="#c4b5fd" /><span>{{ __('subscriptions.feat_auto') }}</span></span>@endif
+    </div>
+    @endif
+
+    <div class="sub-card__bar sub-card__bar--{{ $barTone }}" role="img" aria-label="{{ __('subscriptions.my_card_left', ['left' => $left, 'total' => $total]) }}"><span style="width: {{ $leftBar }}%"></span></div>
 
     @if($holder !== '')
     <div class="sub-card__holder">{{ $holder }}</div>
