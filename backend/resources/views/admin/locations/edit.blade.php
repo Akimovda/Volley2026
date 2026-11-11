@@ -638,6 +638,41 @@
                     <div class="col-12">
 						@include('admin.locations._photo_picker', ['label' => __('admin.loc_label_photos_new_5'), 'max' => 5])
 					</div>
+
+                    {{-- PHOTOS (загруженные, D&D порядок): сразу под «Добавить новые фото» --}}
+                    <div class="col-12" id="location-photos">
+                        <div class="card">
+                            <label class="h2-ico"><x-ico name="image" size="1.2em" /> {{ __('admin.loc_uploaded_section') }} ({{ $photos->count() }})</label>
+                            @if($photos->isEmpty())
+                            <div class="f-16 b-500">Фотографий пока нет. Добавьте их кнопкой «+» выше и нажмите «Сохранить».</div>
+                            @else
+                            <div class="f-16 b-500">{{ __('admin.loc_drag_hint') }}</div>
+                            <div id="photos_grid" class="row mt-2">
+                                @foreach($photos as $m)
+                                <div class="col-md-3 col-6">
+                                    <div class="card loc-photo-card cursor-move" data-photo-id="{{ $m->id }}">
+                                        @php
+                                        $u = $m->getUrl('thumb');
+                                        if (empty($u)) $u = $m->getUrl();
+                                        @endphp
+                                        <img src="{{ $u }}" class="loc-photo-img" alt="">
+                                        <div class="mt-1 d-flex between fvc">
+                                            <span class="b-600 cd">#{{ $m->id }}</span>
+                                            <button type="button" class="btn btn-small btn-danger"
+                                                onclick="if (confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})) document.getElementById('loc-photo-del-{{ $m->id }}').submit()">
+                                                {{ __('admin.btn_delete') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="mt-2 text-center">
+                                <button type="button" id="photos_save_btn" class="btn">{{ __('admin.loc_photos_save_order') }}</button>
+                            </div>
+                            @endif
+                        </div>
+                    </div>
 					
                     {{-- NOTE --}}
                     <div class="col-12">
@@ -726,62 +761,13 @@
 			--}}
 		</div>
 
-        {{-- PHOTOS (D&D SORT) --}}
-        <div class="ramka" id="location-photos">
-			<h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> {{ __('admin.loc_uploaded_section') }} ({{ $photos->count() }})</h2>
-			@if($photos->isEmpty())
-			<div class="alert alert-info">Фотографий пока нет. Добавьте их в форме выше (поле «Фото») и нажмите «Сохранить».</div>
-			@endif
-			@if(!$photos->isEmpty())
-			<div class="f-16 b-500"> {{ __('admin.loc_drag_hint') }}</div>
-			
-			
-			
-			
-			
-			
-            <div id="photos_grid" class="row mt-2">
-                @foreach($photos as $m)
-				<div class="col-md-3 col-6">
-					<div class="card loc-photo-card"
-					data-photo-id="{{ $m->id }}">
-						@php
-						$u = $m->getUrl('thumb');
-						if (empty($u)) $u = $m->getUrl();
-						@endphp
-						<img src="{{ $u }}"
-						class="loc-photo-img"
-						alt="">
-						<div class="mt-1 d-flex between fvc">
-							<span class="b-600 cd">#{{ $m->id }}</span>
-							<form method="POST"
-							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
-							onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})">
-								@csrf
-								@method('DELETE')
-								<button type="submit" 
-								class="btn btn-small btn-danger btn-alert"
-								data-title="{{ __('admin.loc_confirm_delete_photo') }}"
-								data-icon="warning"
-								data-confirm-text="{{ __('admin.btn_delete') }}"
-								data-cancel-text="{{ __('admin.btn_cancel') }}">
-									{{ __('admin.btn_delete') }}
-								</button>								
-								
-							</form>
-						</div>
-					</div>
-				</div>
-                @endforeach
-			</div>
-			<div class="mt-2 text-center">
-				<button type="button" id="photos_save_btn" class="btn">
-					{{ __('admin.loc_photos_save_order') }}
-				</button>
-			</div>
-			
-			@endif
-		</div>
+        {{-- Формы удаления фото: вне основной формы (вложенные формы недопустимы); кнопки в блоке «Загруженные фотографии» вызывают их по id --}}
+        @foreach($photos as $m)
+        <form id="loc-photo-del-{{ $m->id }}" method="POST" action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}" style="display:none">
+            @csrf
+            @method('DELETE')
+        </form>
+        @endforeach
 
         {{-- НАПРАВЛЕНИЯ И КОРТЫ --}}
         <div class="ramka">
