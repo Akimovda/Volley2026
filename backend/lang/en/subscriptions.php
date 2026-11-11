@@ -299,4 +299,5 @@ return [
     'my_btn_history_short' => 'History',
     'my_last_visits'      => 'Recent sessions',
     'my_minus_one'        => '−1 session',
+    'my_card_used'        => ':pct% used',
 ];

@@ -306,4 +306,5 @@ return [
     'my_btn_history_short' => 'История',
     'my_last_visits'      => 'Последние занятия',
     'my_minus_one'        => '−1 занятие',
+    'my_card_used'        => 'Использовано :pct%',
 ];

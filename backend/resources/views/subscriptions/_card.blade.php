@@ -3,7 +3,6 @@
     $total     = (int) $sub->visits_total;
     $left      = max(0, (int) $sub->visits_remaining);
     $used      = max(0, $total - $left);
-    $segCount  = ($total > 0 && $total <= 24) ? $total : 0;
     $ending    = $sub->status === 'active' && $left > 0 && $left <= \App\Models\Subscription::ENDING_VISITS;
     $stateKey  = match (true) {
         $sub->status === 'frozen'    => 'frozen',
@@ -14,7 +13,7 @@
         default                      => 'active',
     };
     $dim       = in_array($stateKey, ['expired', 'exhausted', 'cancelled'], true);
-    $pct       = $total > 0 ? round($left / $total * 100) : 0;
+    $usedPct   = $total > 0 ? (int) max(0, min(100, round($used / $total * 100))) : 0;   // доля использованных занятий
 @endphp
 <div class="sub-card sub-card--{{ $stateKey }} {{ $dim ? 'is-dim' : '' }}"
      style="--sc-from: {{ $card['from'] }}; --sc-to: {{ $card['to'] }}; --sc-accent: {{ $card['accent'] }}">
@@ -27,15 +26,7 @@
     </div>
     <div class="sub-card__big">{{ trans_choice('subscriptions.my_card_visits', $total, ['n' => $total]) }}</div>
 
-    @if($segCount > 0)
-    <div class="sub-card__segs" role="img" aria-label="{{ __('subscriptions.my_card_left', ['left' => $left, 'total' => $total]) }}">
-        @for($i = 1; $i <= $segCount; $i++)
-            <span class="sub-card__seg {{ $i > $used ? 'is-left' : '' }}"></span>
-        @endfor
-    </div>
-    @else
-    <div class="sub-card__bar"><span style="width: {{ $pct }}%"></span></div>
-    @endif
+    <div class="sub-card__bar" role="img" aria-label="{{ __('subscriptions.my_card_used', ['pct' => $usedPct]) }}"><span style="width: {{ $usedPct }}%"></span></div>
 
     <div class="sub-card__foot">
         <span>{!! __('subscriptions.my_card_left', ['left' => '<b>' . $left . '</b>', 'total' => $total]) !!}</span>

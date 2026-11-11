@@ -70,18 +70,18 @@
                 {{-- Действия --}}
                 <div class="sub-actions mt-2">
                     @if($needRenew && $org)
-                    <a href="{{ route('users.show', $org->id) }}" class="btn btn-small"><x-ico name="refresh" /> {{ __('subscriptions.my_btn_renew') }}</a>
+                    <a href="{{ route('users.show', $org->id) }}" class="btn btn-small"><x-ico name="refresh" size="1.8rem" color="#16a34a" /> {{ __('subscriptions.my_btn_renew') }}</a>
                     @endif
 
                     @if($canAuto)
                     <button type="button" class="btn btn-secondary btn-small js-open-sab" data-sub="{{ $sub->id }}">
-                        <x-ico name="robot" /> {{ __('subscriptions.my_btn_auto') }}@if($sub->autoBookings->count()) ({{ $sub->autoBookings->count() }})@endif
+                        <x-ico name="robot" size="1.8rem" color="#7c3aed" /> {{ __('subscriptions.my_btn_auto') }}@if($sub->autoBookings->count()) ({{ $sub->autoBookings->count() }})@endif
                     </button>
                     @endif
 
                     @if($sub->status === 'active' && $sub->template->freeze_enabled)
                     <button type="button" class="btn btn-secondary btn-small" onclick="toggleFreeze({{ $sub->id }})">
-                        <x-ico name="clock" /> {{ __('subscriptions.my_btn_freeze_short') }}
+                        <x-ico name="clock" size="1.8rem" color="#0ea5e9" /> {{ __('subscriptions.my_btn_freeze_short') }}
                     </button>
                     @endif
 
@@ -94,11 +94,11 @@
 
                     @if($sub->status === 'active' && $sub->template->transfer_enabled)
                     <button type="button" class="btn btn-secondary btn-small" onclick="toggleTransfer({{ $sub->id }})">
-                        <x-ico name="swap" /> {{ __('subscriptions.my_btn_transfer_short') }}
+                        <x-ico name="swap" size="1.8rem" color="#14b8a6" /> {{ __('subscriptions.my_btn_transfer_short') }}
                     </button>
                     @endif
 
-                    <a href="{{ route('subscriptions.usages', $sub) }}" class="btn btn-secondary btn-small"><x-ico name="clipboard" /> {{ __('subscriptions.my_btn_history_short') }}</a>
+                    <a href="{{ route('subscriptions.usages', $sub) }}" class="btn btn-secondary btn-small"><x-ico name="clipboard" size="1.8rem" color="#64748b" /> {{ __('subscriptions.my_btn_history_short') }}</a>
                 </div>
 
                 @if($lastUses->isNotEmpty())
