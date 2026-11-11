@@ -8255,7 +8255,5 @@ body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7
 .usage-pill--burned{background:rgba(234,88,12,.13);color:#c2410c;box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.4)}
 body.dark .usage-pill--used{color:#86efac}body.dark .usage-pill--returned{color:#93c5fd}body.dark .usage-pill--burned{color:#fdba74}
 
-/* Значки x-ico внутри кнопок: отступ от текста (inline-flex схлопывает пробел); у кнопок с собственным gap — без добавки */
-.btn > .ico:first-child:not(:last-child){margin-right:.6rem}
-.btn > .ico:last-child:not(:first-child){margin-left:.6rem}
-.sub-actions .btn > .ico,.sub-card__feats .ico{margin-left:0;margin-right:0}
+/* Значки x-ico внутри кнопок: отступ от текста (inline-flex схлопывает пробел); у кнопок только со значком gap ни на что не влияет */
+.btn:has(> .ico){gap:.6rem}
