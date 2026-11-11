@@ -29,7 +29,7 @@ class AdminLocationPhotoController extends Controller
                 ->update(['order_column' => $order + 1]);
         }
 
-        return back()->with('status', 'Порядок фото сохранён ✅');
+        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', 'Порядок фото сохранён ✅');
     }
 
     /**
@@ -45,6 +45,6 @@ class AdminLocationPhotoController extends Controller
 
         $media->delete();
 
-        return back()->with('status', 'Фото удалено ✅');
+        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', 'Фото удалено ✅');
     }
 }

@@ -184,9 +184,17 @@ public function update(Request $request, Location $location)
 
     $location->save();
 
+    $uploaded = 0;
     foreach ($request->file('photos', []) as $file) {
         if (!$file) continue;
         $location->addMedia($file)->toMediaCollection('photos');
+        $uploaded++;
+    }
+
+    // Загрузили фото — возвращаем к блоку «Фотографии», чтобы сразу увидеть их и при необходимости удалить
+    if ($uploaded > 0) {
+        return redirect(route('admin.locations.edit', $location) . '#location-photos')
+            ->with('status', 'Локация сохранена, фото загружено: ' . $uploaded . ' ✅');
     }
 
     return back()->with('status', 'Локация сохранена ✅');

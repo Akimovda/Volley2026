@@ -726,6 +726,63 @@
 			--}}
 		</div>
 
+        {{-- PHOTOS (D&D SORT) --}}
+        <div class="ramka" id="location-photos">
+			<h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> {{ __('admin.loc_uploaded_section') }} ({{ $photos->count() }})</h2>
+			@if($photos->isEmpty())
+			<div class="alert alert-info">Фотографий пока нет. Добавьте их в форме выше (поле «Фото») и нажмите «Сохранить».</div>
+			@endif
+			@if(!$photos->isEmpty())
+			<div class="f-16 b-500"> {{ __('admin.loc_drag_hint') }}</div>
+			
+			
+			
+			
+			
+			
+            <div id="photos_grid" class="row mt-2">
+                @foreach($photos as $m)
+				<div class="col-md-3 col-6">
+					<div class="card loc-photo-card"
+					data-photo-id="{{ $m->id }}">
+						@php
+						$u = $m->getUrl('thumb');
+						if (empty($u)) $u = $m->getUrl();
+						@endphp
+						<img src="{{ $u }}"
+						class="loc-photo-img"
+						alt="">
+						<div class="mt-1 d-flex between fvc">
+							<span class="b-600 cd">#{{ $m->id }}</span>
+							<form method="POST"
+							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
+							onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})">
+								@csrf
+								@method('DELETE')
+								<button type="submit" 
+								class="btn btn-small btn-danger btn-alert"
+								data-title="{{ __('admin.loc_confirm_delete_photo') }}"
+								data-icon="warning"
+								data-confirm-text="{{ __('admin.btn_delete') }}"
+								data-cancel-text="{{ __('admin.btn_cancel') }}">
+									{{ __('admin.btn_delete') }}
+								</button>								
+								
+							</form>
+						</div>
+					</div>
+				</div>
+                @endforeach
+			</div>
+			<div class="mt-2 text-center">
+				<button type="button" id="photos_save_btn" class="btn">
+					{{ __('admin.loc_photos_save_order') }}
+				</button>
+			</div>
+			
+			@endif
+		</div>
+
         {{-- НАПРАВЛЕНИЯ И КОРТЫ --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('club.directions_title') }}</h2>
@@ -950,58 +1007,5 @@
             </div>
         </div>
 
-        {{-- PHOTOS (D&D SORT) --}}
-        @if(!$photos->isEmpty())
-        <div class="ramka">
-			<h2 class="-mt-05">{{ __('admin.loc_uploaded_section') }}</h2>
-			<div class="f-16 b-500"> {{ __('admin.loc_drag_hint') }}</div>
-			
-			
-			
-			
-			
-			
-            <div id="photos_grid" class="row mt-2">
-                @foreach($photos as $m)
-				<div class="col-md-3 col-6">
-					<div class="card cursor-move"
-					data-photo-id="{{ $m->id }}">
-						@php
-						$u = $m->getUrl('thumb');
-						if (empty($u)) $u = $m->getUrl();
-						@endphp
-						<img src="{{ $u }}"
-						class="w-full h-32 object-cover rounded-lg"
-						alt="">
-						<div class="mt-1 d-flex between fvc">
-							<span class="b-600 cd">#{{ $m->id }}</span>
-							<form method="POST"
-							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
-							onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})">
-								@csrf
-								@method('DELETE')
-								<button type="submit" 
-								class="btn btn-small btn-danger btn-alert"
-								data-title="{{ __('admin.loc_confirm_delete_photo') }}"
-								data-icon="warning"
-								data-confirm-text="{{ __('admin.btn_delete') }}"
-								data-cancel-text="{{ __('admin.btn_cancel') }}">
-									{{ __('admin.btn_delete') }}
-								</button>								
-								
-							</form>
-						</div>
-					</div>
-				</div>
-                @endforeach
-			</div>
-			<div class="mt-2 text-center">
-				<button type="button" id="photos_save_btn" class="btn">
-					{{ __('admin.loc_photos_save_order') }}
-				</button>
-			</div>
-			
-		</div>
-        @endif
 	</div>
 </x-voll-layout>
