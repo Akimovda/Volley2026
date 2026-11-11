@@ -8142,3 +8142,8 @@ body.dark .up-switch{background:#475569}
 .notif-tile__name{font-weight:600;font-size:1.4rem}
 .notif-connect{margin-top:1.2rem;padding:1.2rem 1.4rem;border-radius:1rem;background:rgba(128,128,128,.1)}
 .up-switch:disabled{opacity:.45;cursor:default}
+
+/* Профиль, «Уведомления»: логотип MAX — без градиентной подложки, того же размера, что круглые иконки соседних каналов */
+.notif-tile .provider-card__icon.icon-max { background: none !important; width: 4.6rem; height: 4.6rem; }
+.notif-tile .provider-card__icon.icon-max img.auth-icon-img { width: 4.6rem !important; height: 4.6rem !important; min-width: 4.6rem; border-radius: 22%; }
+body.dark .up-switch.is-on { background: #2967BA; }
