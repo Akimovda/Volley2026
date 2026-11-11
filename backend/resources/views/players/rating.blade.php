@@ -134,7 +134,7 @@
                 <tr>
                     <td>
                         @if($rank <= 3)
-                            <x-ico name="medal" size="2rem" :color="['#f59e0b','#9ca3af','#b45309'][$rank - 1]" />
+                            <x-rank-medal :rank="$rank" size="3.2rem" />
                         @else
                             <span style="opacity:.5">{{ $rank }}</span>
                         @endif
