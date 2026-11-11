@@ -20,7 +20,7 @@
         @php
             $x = $ev['extra'] ?? [];
             $isBeach  = ($ev['direction'] ?? '') === 'beach';
-            $dirText  = ($style['show_icons'] ? ($isBeach ? '🏖 ' : '🏐 ') : '') . ($isBeach ? __('events.card_dir_beach') : __('events.card_dir_classic'));
+            $dirText  = ($style['show_icons'] ? ($isBeach ? '🏖 ' : '🏐 ') : '') . ($isBeach ? __('events.card_dir_beach') : __('events.card_dir_classic'));   // эмодзи превращаются в SVG при выводе (ico_text)
             $withPhoto = $style['photo_show'] && $style['layout'] !== 'list';
             $headFirst = $titleFirst && $withPhoto;
             $ic = fn (string $e) => $style['show_icons'] ? '<span class="vw-ic">' . $e . '</span>' : '';
@@ -60,7 +60,7 @@
                     <span class="vw-badge vw-badge-weather" part="badge">{{ $weather['icon'] }} {{ $weather['temp'] }}@if($weather['pop'] >= 10) 💧{{ $weather['pop'] }}%@endif</span>
                 @endif
                 @if($style['show_direction'])
-                    <span class="vw-badge vw-badge-dir {{ $isBeach ? 'beach' : 'classic' }}" part="badge">{{ $dirText }}</span>
+                    <span class="vw-badge vw-badge-dir {{ $isBeach ? 'beach' : 'classic' }}" part="badge">{!! ico_text($dirText) !!}</span>
                 @endif
             </a>
             @endif
@@ -68,7 +68,7 @@
             <div class="vw-main">
                 <div class="vw-body">
                     @if(!$withPhoto && $style['show_direction'])
-                        <span class="vw-badge vw-badge-dir vw-dir-inline {{ $isBeach ? 'beach' : 'classic' }}" part="badge">{{ $dirText }}</span>
+                        <span class="vw-badge vw-badge-dir vw-dir-inline {{ $isBeach ? 'beach' : 'classic' }}" part="badge">{!! ico_text($dirText) !!}</span>
                     @endif
 
                     <div class="{{ $headFirst ? 'vw-body-head' : '' }}">

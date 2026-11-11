@@ -50,7 +50,7 @@
 	
     <x-slot name="t_description">
 		<div class="d-flex">
-			{!! $season->direction === 'beach' ? '<span class="emo" style="flex: 0 0 4rem">🏖</span> ' . __('seasons.leagues_dir_beach_short') : '🏐 ' . __('seasons.leagues_dir_classic_short') !!}
+			<span class="emo" style="flex: 0 0 4rem"><x-ico :name="$season->direction === 'beach' ? 'beach' : 'ball'" size="1.6em" /></span> {{ $season->direction === 'beach' ? __('seasons.leagues_dir_beach_short') : __('seasons.leagues_dir_classic_short') }}
 		</div>			
 		<div class="d-flex">				
 			@if($season->starts_at)	

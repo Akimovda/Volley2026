@@ -497,3 +497,21 @@ if (! function_exists('volley_scheme_label')) {
         return ($isLibero && $withLiberoWord) ? $base . ' ' . __('events.libero_word') : $base;
     }
 }
+
+// =========================
+// Иконки вместо эмодзи в готовых строках (lang/БД): 🏖 → пляжный зонт, 🏐 → мяч (остальной текст экранируется)
+// =========================
+if (! function_exists('ico_text')) {
+    function ico_text(?string $text): \Illuminate\Support\HtmlString
+    {
+        static $cache = [];
+        $icon = function (string $name, string $size) use (&$cache): string {
+            return $cache[$name] ??= \Illuminate\Support\Facades\Blade::render('<x-ico name="' . $name . '" size="' . $size . '" />');
+        };
+        $safe = e((string) $text);
+        $safe = preg_replace('/\x{1F3D6}\x{FE0F}?/u', $icon('beach', '1.35em'), $safe);
+        $safe = preg_replace('/\x{1F3D0}\x{FE0F}?/u', $icon('ball', '1.15em'), $safe);
+
+        return new \Illuminate\Support\HtmlString((string) $safe);
+    }
+}

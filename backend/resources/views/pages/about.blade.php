@@ -131,13 +131,13 @@
         <div class="col-md-6">
             @if(!empty($block['left_title']))<h3 style="margin:.25rem 0 .75rem">{{ $block['left_title'] }}</h3>@endif
             <ul class="list f-15">
-                @foreach($block['left'] as $item)<li>{{ $item }}</li>@endforeach
+                @foreach($block['left'] as $item)<li>{!! ico_text($item) !!}</li>@endforeach
             </ul>
         </div>
         <div class="col-md-6">
             @if(!empty($block['right_title']))<h3 style="margin:.25rem 0 .75rem">{{ $block['right_title'] }}</h3>@endif
             <ul class="list f-15">
-                @foreach($block['right'] as $item)<li>{{ $item }}</li>@endforeach
+                @foreach($block['right'] as $item)<li>{!! ico_text($item) !!}</li>@endforeach
             </ul>
         </div>
     </div>

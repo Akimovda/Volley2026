@@ -301,7 +301,7 @@
                 <span class="f-12 b-600" style="color:#10b981"><span class="live-dot"></span>LIVE</span>
             @endif
             <span class="f-12">
-                {{ $tourn->direction === 'beach' ? '🏖' : '🏐' }} {{ $matchesCount }} матчей
+                <x-ico :name="$tourn->direction === 'beach' ? 'beach' : 'ball'" size="1.3em" /> {{ $matchesCount }} матчей
             </span>
         </div>
     @endforeach

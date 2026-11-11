@@ -32,9 +32,9 @@
     {{-- Вкладки направления --}}
     <div class="filter-tabs mb-1">
         <a href="{{ route('players.rating', array_merge(request()->query(), ['direction'=>'beach'])) }}"
-           class="filter-tab {{ $direction === 'beach' ? 'active' : '' }}">{{ __('players.beach') }}</a>
+           class="filter-tab {{ $direction === 'beach' ? 'active' : '' }}">{!! ico_text(__('players.beach')) !!}</a>
         <a href="{{ route('players.rating', array_merge(request()->query(), ['direction'=>'classic'])) }}"
-           class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{{ __('players.classic') }}</a>
+           class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{!! ico_text(__('players.classic')) !!}</a>
     </div>
     @if(!$isSeasonMode)
     <div class="f-13 mb-3" style="opacity:.5">{{ $direction === 'beach' ? '2×2 · 3×3 · 4×4' : '4×4 · 4-2 · 5-1 · 5-1 ' . __('events.libero_word') }}</div>

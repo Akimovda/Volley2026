@@ -165,7 +165,7 @@
             </div>
             <div class="col-md-6">
                 <div class="card">
-                    <div class="f-13 b-600 mb-1">🏐 Командные игры</div>
+                    <div class="f-13 b-600 mb-1"><x-ico name="ball" /> Командные игры</div>
                     <p class="f-14" style="opacity:.8">В пляжной паре (2x2) каждый игрок получает одинаковый прирост.
                     В классике (6 игроков) вклад пропорционален σ каждого.</p>
                 </div>
@@ -180,7 +180,7 @@
         <div class="row row2">
             <div class="col-md-6">
                 <div class="card">
-                    <div class="f-14 b-600 mb-2">🏖 Пляжный волейбол</div>
+                    <div class="f-14 b-600 mb-2"><x-ico name="beach" size="1.4em" /> Пляжный волейбол</div>
                     <div class="d-flex gap-1 flex-wrap">
                         @foreach(['2x2 — пары','3x3 — тройки','4x4 — четвёрки'] as $s)
                         <span class="f-13 b-600 px-2 py-1" style="background:rgba(59,130,246,.1);border-radius:4px">{{ $s }}</span>
@@ -190,7 +190,7 @@
             </div>
             <div class="col-md-6">
                 <div class="card">
-                    <div class="f-14 b-600 mb-2">🏐 Классический волейбол</div>
+                    <div class="f-14 b-600 mb-2"><x-ico name="ball" /> Классический волейбол</div>
                     <div class="d-flex gap-1 flex-wrap">
                         @foreach(['4×4 — мини','4-2 — 6 игр.','5-1 — 6 игр.','5-1 с либеро — 7 игр.'] as $s)
                         <span class="f-13 b-600 px-2 py-1" style="background:rgba(16,185,129,.1);border-radius:4px">{{ $s }}</span>
