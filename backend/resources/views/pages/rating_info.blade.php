@@ -32,9 +32,9 @@
     </div>
 
     {{-- Три компонента --}}
-    <div class="row row2 mb-3">
-        <div class="col-md-4">
-            <div class="ramka h-100 ri-card">
+    <div class="ri-grid ri-grid--3 mb-3">
+        <div class="ri-cell">
+            <div class="ramka ri-card">
                 <div class="ri-badge ri-badge--mu">μ</div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_mu_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_mu_desc') }}</p>
@@ -45,8 +45,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="ramka h-100 ri-card">
+        <div class="ri-cell">
+            <div class="ramka ri-card">
                 <div class="ri-badge ri-badge--sigma">σ</div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_sigma_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_sigma_desc') }}</p>
@@ -57,8 +57,8 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="ramka h-100 ri-card">
+        <div class="ri-cell">
+            <div class="ramka ri-card">
                 <div class="ri-badge ri-badge--cr"><x-ico name="trend" size="2.4rem" color="#ffffff" /></div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_cr_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_cr_desc') }}</p>
@@ -114,25 +114,25 @@
     {{-- Почему лучше WinRate --}}
     <div class="ramka">
         <h2 class="-mt-05 h2-ico"><x-ico name="activity" size="1.2em" /> Почему OpenSkill лучше WinRate?</h2>
-        <div class="row row2">
-            <div class="col-md-6">
-                <div class="ri-compare ri-compare--bad h-100">
+        <div class="ri-grid ri-grid--2">
+            <div class="ri-cell">
+                <div class="ri-compare ri-compare--bad">
                     <div class="ri-compare__head"><x-ico name="x" size="2rem" color="#dc2626" /> Проблема WinRate</div>
                     <p class="f-14">Игрок с <strong>3 победами из 3</strong> и игрок с <strong>300 победами из 300</strong>
                     оба имеют WinRate = 100%. В таблице они стоят рядом.</p>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="ri-compare ri-compare--good h-100">
+            <div class="ri-cell">
+                <div class="ri-compare ri-compare--good">
                     <div class="ri-compare__head"><x-ico name="check" size="2rem" color="#16a34a" /> Решение OpenSkill</div>
                     <p class="f-14">3/3 → Рейтинг ≈ 6.0 (σ ещё высокая, система не уверена)<br>
                     300/300 → Рейтинг ≈ 22+ (σ низкая, система уверена в уровне)</p>
                 </div>
             </div>
         </div>
-        <div class="row row2 mt-2">
-            <div class="col-md-6">
-                <div class="ri-feature h-100">
+        <div class="ri-grid ri-grid--2 mt-2">
+            <div class="ri-cell">
+                <div class="ri-feature">
                     <span class="ri-feature__ico" style="background:rgba(37,99,235,.12)"><x-ico name="trend" size="2.4rem" /></span>
                     <div>
                         <div class="b-600 mb-05">Учёт силы соперника</div>
@@ -141,8 +141,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="ri-feature h-100">
+            <div class="ri-cell">
+                <div class="ri-feature">
                     <span class="ri-feature__ico" style="background:rgba(124,58,237,.12)"><x-ico name="users" size="2.4rem" color="#7c3aed" /></span>
                     <div>
                         <div class="b-600 mb-05">Командные игры</div>
@@ -158,17 +158,17 @@
     <div class="ramka">
         <h2 class="-mt-05 h2-ico"><x-ico name="layers" size="1.2em" /> {{ __('players.rating_info_formats') }}</h2>
         <p class="f-15" style="opacity:.8">{{ __('players.rating_info_formats_desc') }}</p>
-        <div class="row row2">
-            <div class="col-md-6">
-                <div class="ri-format ri-format--beach h-100">
+        <div class="ri-grid ri-grid--2">
+            <div class="ri-cell">
+                <div class="ri-format ri-format--beach">
                     <div class="ri-format__head"><x-ico name="beach" size="2.8rem" /> Пляжный волейбол</div>
                     <div class="scheme-pills">
                         @foreach(['2x2 — пары','3x3 — тройки','4x4 — четвёрки'] as $s)<span class="scheme-pill scheme-pill--beach">{{ $s }}</span>@endforeach
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
-                <div class="ri-format ri-format--classic h-100">
+            <div class="ri-cell">
+                <div class="ri-format ri-format--classic">
                     <div class="ri-format__head"><x-ico name="ball" size="2.6rem" /> Классический волейбол</div>
                     <div class="scheme-pills">
                         @foreach(['4×4 — мини','4-2 — 6 игр.','5-1 — 6 игр.','5-1 с либеро — 7 игр.'] as $s)<span class="scheme-pill scheme-pill--classic">{{ $s }}</span>@endforeach

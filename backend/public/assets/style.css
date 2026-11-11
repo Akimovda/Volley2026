@@ -8304,3 +8304,11 @@ body.dark .ri-chip--mu{color:#fdba74}body.dark .ri-chip--sigma{color:#a5b4fc}
 .ri-format--beach{background:rgba(234,88,12,.07);box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.25)}
 .ri-format--classic{background:rgba(41,103,186,.07);box-shadow:inset 0 0 0 .1rem rgba(41,103,186,.25)}
 @media (max-width:600px){.ri-chip{min-width:0;padding:.9rem 1.2rem}.ri-chip b{font-size:2.2rem}.ri-op{font-size:2.2rem}}
+
+/* «Как работает рейтинг»: блоки в ряд одной высоты (сетка вместо колонок) */
+.ri-grid{display:grid;gap:2rem}
+.ri-grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ri-grid--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ri-cell{display:flex;min-width:0}
+.ri-cell > *{flex:1 1 auto;min-width:0;margin-bottom:0}
+@media (max-width:768px){.ri-grid--3,.ri-grid--2{grid-template-columns:minmax(0,1fr)}}
