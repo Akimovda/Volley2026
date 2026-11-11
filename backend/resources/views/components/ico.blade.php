@@ -80,6 +80,7 @@ $icons = [
     'refresh'   => $stroke('<path d="M21 12a9 9 0 0 0-15.5-6.2L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15.5 6.2L21 16"/><path d="M21 21v-5h-5"/>', $blue),
     'arrow-up'    => $stroke('<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>', $blue),
     'arrow-down'  => $stroke('<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>', $blue),
+    'arrow-left'  => $stroke('<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>', $blue),
     'arrow-right' => $stroke('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', $blue),
     'bluetooth' => $stroke('<path d="m7 7 10 10-5 5V2l5 5L7 17"/>', $blue),
     'dot-green' => $stroke('<circle cx="12" cy="12" r="7"/>', '#16a34a', '#4ade80'),

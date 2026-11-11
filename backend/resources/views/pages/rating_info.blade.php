@@ -14,71 +14,62 @@
 </x-slot>
 <x-slot name="d_description">
     <div class="d-flex gap-1 mt-2">
-        <a href="{{ route('players.rating') }}" class="btn btn-secondary">← {{ __('players.rating_title') }}</a>
+        <a href="{{ route('players.rating') }}" class="btn btn-secondary"><x-ico name="arrow-left" /> {{ __('players.rating_title') }}</a>
     </div>
 </x-slot>
 
 <div class="container">
 
+    {{-- Формула рейтинга --}}
+    <div class="ramka ri-hero">
+        <div class="ri-formula" role="img" aria-label="Рейтинг = μ − 3 × σ">
+            <span class="ri-chip ri-chip--mu"><b>Рейтинг</b><small>консервативная оценка</small></span>
+            <span class="ri-op">=</span>
+            <span class="ri-chip ri-chip--mu"><b>μ</b><small>уровень мастерства</small></span>
+            <span class="ri-op">−&nbsp;3&nbsp;×</span>
+            <span class="ri-chip ri-chip--sigma"><b>σ</b><small>точность оценки</small></span>
+        </div>
+    </div>
+
     {{-- Три компонента --}}
     <div class="row row2 mb-3">
         <div class="col-md-4">
-            <div class="ramka h-100">
-                <div class="f-32 b-800" style="color:#E7612F">μ</div>
+            <div class="ramka h-100 ri-card">
+                <div class="ri-badge ri-badge--mu">μ</div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_mu_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_mu_desc') }}</p>
-                <div class="d-flex gap-2 mt-2 f-13">
-                    <div class="card text-center p-2">
-                        <div class="b-700">25.0</div>
-                        <div style="opacity:.5">Старт</div>
-                    </div>
-                    <div class="card text-center p-2">
-                        <div class="b-700 cs">30–35</div>
-                        <div style="opacity:.5">Хороший игрок</div>
-                    </div>
-                    <div class="card text-center p-2">
-                        <div class="b-700" style="color:#E7612F">40+</div>
-                        <div style="opacity:.5">Элита</div>
-                    </div>
+                <div class="ri-stats">
+                    <div class="ri-stat"><b>25.0</b><span>Старт</span></div>
+                    <div class="ri-stat"><b class="cs">30–35</b><span>Хороший игрок</span></div>
+                    <div class="ri-stat"><b style="color:#E7612F">40+</b><span>Элита</span></div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="ramka h-100">
-                <div class="f-32 b-800" style="color:#6366f1">σ</div>
+            <div class="ramka h-100 ri-card">
+                <div class="ri-badge ri-badge--sigma">σ</div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_sigma_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_sigma_desc') }}</p>
-                <div class="d-flex gap-2 mt-2 f-13">
-                    <div class="card text-center p-2">
-                        <div class="b-700">8.33</div>
-                        <div style="opacity:.5">0 игр</div>
-                    </div>
-                    <div class="card text-center p-2">
-                        <div class="b-700">~6.0</div>
-                        <div style="opacity:.5">20 игр</div>
-                    </div>
-                    <div class="card text-center p-2">
-                        <div class="b-700 cs">~4.0</div>
-                        <div style="opacity:.5">50+ игр</div>
-                    </div>
+                <div class="ri-stats">
+                    <div class="ri-stat"><b>8.33</b><span>0 игр</span></div>
+                    <div class="ri-stat"><b>~6.0</b><span>20 игр</span></div>
+                    <div class="ri-stat"><b class="cs">~4.0</b><span>50+ игр</span></div>
                 </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="ramka h-100">
-                <div class="f-32 b-800 cs">CR</div>
+            <div class="ramka h-100 ri-card">
+                <div class="ri-badge ri-badge--cr"><x-ico name="trend" size="2.4rem" color="#ffffff" /></div>
                 <h3 class="f-18 b-700">{{ __('players.rating_info_cr_title') }}</h3>
                 <p class="f-15" style="opacity:.8">{{ __('players.rating_info_cr_desc') }}</p>
-                <div class="card p-2 mt-2 f-13 text-center b-600" style="background:rgba(231,97,47,.08)">
-                    Рейтинг = μ − 3 × σ
-                </div>
+                <div class="ri-formula-mini">Рейтинг = μ − 3 × σ</div>
             </div>
         </div>
     </div>
 
     {{-- Таблица примеров --}}
     <div class="ramka">
-        <h2 class="-mt-05">Примеры расчёта</h2>
+        <h2 class="-mt-05 h2-ico"><x-ico name="chart" size="1.2em" /> Примеры расчёта</h2>
         <div class="table-scrollable">
             <table class="table f-15">
                 <thead>
@@ -91,65 +82,49 @@
                     </tr>
                 </thead>
                 <tbody>
+                    @foreach([
+                        ['Новичок (0 игр)', '25.0', '8.33', 0.01, '≈ 0.01', 'Система не знает уровень'],
+                        ['Начинающий (10 игр)', '26.0', '7.0', 5.0, '5.0', 'Первые данные собраны'],
+                        ['Средний (20 игр)', '27.5', '6.0', 9.5, '9.5', 'Рейтинг набирает вес'],
+                        ['Опытный (50+ игр)', '30.2', '4.0', 18.2, '18.2', 'Рейтинг стабилен'],
+                        ['Топ-игрок (100+ игр)', '34.5', '4.0', 22.5, '22.5', 'Элитный уровень'],
+                    ] as [$who, $mu, $sg, $val, $label, $note])
                     <tr>
-                        <td>Новичок (0 игр)</td>
-                        <td>25.0</td>
-                        <td>8.33</td>
-                        <td class="b-700" style="color:#E7612F">≈ 0.01</td>
-                        <td style="opacity:.7">Система не знает уровень</td>
+                        <td class="b-600">{{ $who }}</td>
+                        <td>{{ $mu }}</td>
+                        <td>{{ $sg }}</td>
+                        <td>
+                            <div class="b-700" style="color:#E7612F">{{ $label }}</div>
+                            <div class="ri-bar"><span style="width: {{ min(100, max(2, round($val / 25 * 100))) }}%"></span></div>
+                        </td>
+                        <td style="opacity:.7">{{ $note }}</td>
                     </tr>
-                    <tr>
-                        <td>Начинающий (10 игр)</td>
-                        <td>26.0</td>
-                        <td>7.0</td>
-                        <td class="b-700" style="color:#E7612F">5.0</td>
-                        <td style="opacity:.7">Первые данные собраны</td>
-                    </tr>
-                    <tr>
-                        <td>Средний (20 игр)</td>
-                        <td>27.5</td>
-                        <td>6.0</td>
-                        <td class="b-700" style="color:#E7612F">9.5</td>
-                        <td style="opacity:.7">Рейтинг набирает вес</td>
-                    </tr>
-                    <tr>
-                        <td>Опытный (50+ игр)</td>
-                        <td>30.2</td>
-                        <td>4.0</td>
-                        <td class="b-700" style="color:#E7612F">18.2</td>
-                        <td style="opacity:.7">Рейтинг стабилен</td>
-                    </tr>
-                    <tr>
-                        <td>Топ-игрок (100+ игр)</td>
-                        <td>34.5</td>
-                        <td>4.0</td>
-                        <td class="b-700" style="color:#E7612F">22.5</td>
-                        <td style="opacity:.7">Элитный уровень</td>
-                    </tr>
+                    @endforeach
                 </tbody>
             </table>
         </div>
-        <div class="alert alert-info mt-2">
-            💡 <strong>{{ __('players.rating_info_tip') }}</strong> —
+        <div class="ri-tip mt-2">
+            <span class="ri-tip__ico"><x-ico name="bulb" size="2.2rem" color="#b45309" /></span>
+            <div><strong>{{ __('players.rating_info_tip') }}</strong> —
             в первых играх σ уменьшается быстро, и рейтинг значительно меняется.
-            После 30 игр система хорошо знает ваш уровень.
+            После 30 игр система хорошо знает ваш уровень.</div>
         </div>
     </div>
 
     {{-- Почему лучше WinRate --}}
     <div class="ramka">
-        <h2 class="-mt-05">Почему OpenSkill лучше WinRate?</h2>
+        <h2 class="-mt-05 h2-ico"><x-ico name="activity" size="1.2em" /> Почему OpenSkill лучше WinRate?</h2>
         <div class="row row2">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-13 b-600 mb-2" style="color:#dc3545">❌ Проблема WinRate</div>
+                <div class="ri-compare ri-compare--bad h-100">
+                    <div class="ri-compare__head"><x-ico name="x" size="2rem" color="#dc2626" /> Проблема WinRate</div>
                     <p class="f-14">Игрок с <strong>3 победами из 3</strong> и игрок с <strong>300 победами из 300</strong>
                     оба имеют WinRate = 100%. В таблице они стоят рядом.</p>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-13 b-600 mb-2 cs">✅ Решение OpenSkill</div>
+                <div class="ri-compare ri-compare--good h-100">
+                    <div class="ri-compare__head"><x-ico name="check" size="2rem" color="#16a34a" /> Решение OpenSkill</div>
                     <p class="f-14">3/3 → Рейтинг ≈ 6.0 (σ ещё высокая, система не уверена)<br>
                     300/300 → Рейтинг ≈ 22+ (σ низкая, система уверена в уровне)</p>
                 </div>
@@ -157,17 +132,23 @@
         </div>
         <div class="row row2 mt-2">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-13 b-600 mb-1">🎯 Учёт силы соперника</div>
-                    <p class="f-14" style="opacity:.8">Победа над сильным соперником (высокий μ) даёт больший прирост рейтинга,
-                    чем победа над слабым.</p>
+                <div class="ri-feature h-100">
+                    <span class="ri-feature__ico" style="background:rgba(37,99,235,.12)"><x-ico name="trend" size="2.4rem" /></span>
+                    <div>
+                        <div class="b-600 mb-05">Учёт силы соперника</div>
+                        <p class="f-14" style="opacity:.8">Победа над сильным соперником (высокий μ) даёт больший прирост рейтинга,
+                        чем победа над слабым.</p>
+                    </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-13 b-600 mb-1"><x-ico name="ball" /> Командные игры</div>
-                    <p class="f-14" style="opacity:.8">В пляжной паре (2x2) каждый игрок получает одинаковый прирост.
-                    В классике (6 игроков) вклад пропорционален σ каждого.</p>
+                <div class="ri-feature h-100">
+                    <span class="ri-feature__ico" style="background:rgba(124,58,237,.12)"><x-ico name="users" size="2.4rem" color="#7c3aed" /></span>
+                    <div>
+                        <div class="b-600 mb-05">Командные игры</div>
+                        <p class="f-14" style="opacity:.8">В пляжной паре (2x2) каждый игрок получает одинаковый прирост.
+                        В классике (6 игроков) вклад пропорционален σ каждого.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -175,26 +156,22 @@
 
     {{-- Форматы --}}
     <div class="ramka">
-        <h2 class="-mt-05">{{ __('players.rating_info_formats') }}</h2>
+        <h2 class="-mt-05 h2-ico"><x-ico name="layers" size="1.2em" /> {{ __('players.rating_info_formats') }}</h2>
         <p class="f-15" style="opacity:.8">{{ __('players.rating_info_formats_desc') }}</p>
         <div class="row row2">
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-14 b-600 mb-2"><x-ico name="beach" size="1.4em" /> Пляжный волейбол</div>
-                    <div class="d-flex gap-1 flex-wrap">
-                        @foreach(['2x2 — пары','3x3 — тройки','4x4 — четвёрки'] as $s)
-                        <span class="f-13 b-600 px-2 py-1" style="background:rgba(59,130,246,.1);border-radius:4px">{{ $s }}</span>
-                        @endforeach
+                <div class="ri-format ri-format--beach h-100">
+                    <div class="ri-format__head"><x-ico name="beach" size="2.8rem" /> Пляжный волейбол</div>
+                    <div class="scheme-pills">
+                        @foreach(['2x2 — пары','3x3 — тройки','4x4 — четвёрки'] as $s)<span class="scheme-pill scheme-pill--beach">{{ $s }}</span>@endforeach
                     </div>
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card">
-                    <div class="f-14 b-600 mb-2"><x-ico name="ball" /> Классический волейбол</div>
-                    <div class="d-flex gap-1 flex-wrap">
-                        @foreach(['4×4 — мини','4-2 — 6 игр.','5-1 — 6 игр.','5-1 с либеро — 7 игр.'] as $s)
-                        <span class="f-13 b-600 px-2 py-1" style="background:rgba(16,185,129,.1);border-radius:4px">{{ $s }}</span>
-                        @endforeach
+                <div class="ri-format ri-format--classic h-100">
+                    <div class="ri-format__head"><x-ico name="ball" size="2.6rem" /> Классический волейбол</div>
+                    <div class="scheme-pills">
+                        @foreach(['4×4 — мини','4-2 — 6 игр.','5-1 — 6 игр.','5-1 с либеро — 7 игр.'] as $s)<span class="scheme-pill scheme-pill--classic">{{ $s }}</span>@endforeach
                     </div>
                 </div>
             </div>
@@ -202,7 +179,7 @@
     </div>
 
     <div class="text-center mt-3 mb-3">
-        <a href="{{ route('players.rating') }}" class="btn">{{ __('players.rating_title') }} →</a>
+        <a href="{{ route('players.rating') }}" class="btn">{{ __('players.rating_title') }} <x-ico name="arrow-right" color="#ffffff" /></a>
     </div>
 
 </div>

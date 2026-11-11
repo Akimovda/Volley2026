@@ -8265,3 +8265,42 @@ body.dark .usage-pill--used{color:#86efac}body.dark .usage-pill--returned{color:
 .scheme-pill--beach{background:rgba(234,88,12,.12);color:#c2410c;box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.34)}
 body.dark .scheme-pill--classic{color:#93c5fd}
 body.dark .scheme-pill--beach{color:#fdba74}
+
+/* Страница «Как работает рейтинг» */
+.ri-hero{padding:2.2rem 2rem}
+.ri-formula{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1.2rem 1.4rem}
+.ri-chip{display:flex;flex-direction:column;align-items:center;min-width:12rem;padding:1.1rem 1.8rem;border-radius:1.6rem;line-height:1.2;text-align:center}
+.ri-chip b{font-size:2.6rem;font-weight:800}
+.ri-chip small{margin-top:.3rem;font-size:1.2rem;font-weight:600;opacity:.8}
+.ri-chip--mu{background:rgba(231,97,47,.12);color:#c2410c;box-shadow:inset 0 0 0 .15rem rgba(231,97,47,.32)}
+.ri-chip--sigma{background:rgba(99,102,241,.12);color:#4f46e5;box-shadow:inset 0 0 0 .15rem rgba(99,102,241,.34)}
+.ri-op{font-size:2.6rem;font-weight:800;opacity:.55}
+.ri-card{display:flex;flex-direction:column}
+.ri-badge{display:inline-flex;align-items:center;justify-content:center;width:5.2rem;height:5.2rem;margin-bottom:1.2rem;border-radius:1.6rem;font-size:3rem;font-weight:800;color:#fff}
+.ri-badge--mu{background:linear-gradient(135deg,#FFB171,#E7612F)}
+.ri-badge--sigma{background:linear-gradient(135deg,#818cf8,#4f46e5)}
+.ri-badge--cr{background:linear-gradient(135deg,#34d399,#059669)}
+.ri-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:auto;padding-top:1.4rem}
+.ri-stat{display:flex;flex-direction:column;align-items:center;padding:1rem .6rem;border-radius:1.2rem;background:rgba(128,128,128,.09);text-align:center;line-height:1.25}
+.ri-stat b{font-size:1.7rem;font-weight:700}
+.ri-stat span{margin-top:.3rem;font-size:1.15rem;opacity:.6}
+.ri-formula-mini{margin-top:auto;padding:1.4rem;border-radius:1.2rem;background:rgba(5,150,105,.1);color:#047857;font-weight:700;text-align:center}
+body.dark .ri-formula-mini{color:#6ee7b7}
+body.dark .ri-chip--mu{color:#fdba74}body.dark .ri-chip--sigma{color:#a5b4fc}
+.ri-bar{height:.7rem;margin-top:.5rem;border-radius:.4rem;background:rgba(128,128,128,.18);overflow:hidden;min-width:9rem}
+.ri-bar span{display:block;height:100%;border-radius:.4rem;background:linear-gradient(90deg,#FFB171,#E7612F)}
+.ri-tip{display:flex;align-items:center;gap:1.4rem;padding:1.4rem 1.6rem;border-radius:1.4rem;background:rgba(245,158,11,.12);box-shadow:inset 0 0 0 .1rem rgba(245,158,11,.35)}
+.ri-tip__ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:4.2rem;height:4.2rem;border-radius:50%;background:rgba(245,158,11,.22)}
+.ri-compare{padding:1.8rem;border-radius:1.6rem}
+.ri-compare__head{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;font-size:1.5rem;font-weight:700}
+.ri-compare--bad{background:rgba(220,38,38,.07);box-shadow:inset 0 0 0 .1rem rgba(220,38,38,.28)}
+.ri-compare--bad .ri-compare__head{color:#dc2626}
+.ri-compare--good{background:rgba(22,163,74,.08);box-shadow:inset 0 0 0 .1rem rgba(22,163,74,.3)}
+.ri-compare--good .ri-compare__head{color:#16a34a}
+.ri-feature{display:flex;gap:1.4rem;align-items:flex-start;padding:1.6rem;border-radius:1.6rem;background:rgba(128,128,128,.07)}
+.ri-feature__ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:5rem;height:5rem;border-radius:1.4rem}
+.ri-format{padding:1.8rem;border-radius:1.6rem}
+.ri-format__head{display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;font-size:1.7rem;font-weight:700}
+.ri-format--beach{background:rgba(234,88,12,.07);box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.25)}
+.ri-format--classic{background:rgba(41,103,186,.07);box-shadow:inset 0 0 0 .1rem rgba(41,103,186,.25)}
+@media (max-width:600px){.ri-chip{min-width:0;padding:.9rem 1.2rem}.ri-chip b{font-size:2.2rem}.ri-op{font-size:2.2rem}}
