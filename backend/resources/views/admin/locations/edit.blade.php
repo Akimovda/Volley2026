@@ -67,48 +67,21 @@
                     }
                 });
 				
-                // --- photos reorder
+                // --- photos reorder: порядок уходит вместе с формой (одна кнопка «Сохранить»), отдельного сохранения порядка нет
                 const grid = document.getElementById('photos_grid');
                 if (grid) {
-                    const hint = document.getElementById('photos_hint');
-                    const saveBtn = document.getElementById('photos_save_btn');
-                    const reorderUrl = @json(route('admin.locations.photos.reorder', $location));
-                    const csrf = @json(csrf_token());
-					
-                    function currentOrderIds() {
-                        return Array.from(grid.querySelectorAll('[data-photo-id]'))
-						.map(el => Number(el.getAttribute('data-photo-id')))
-						.filter(n => Number.isFinite(n));
-					}
-					
-                    async function saveOrder() {
-                        const photo_ids = currentOrderIds();
-                        if (!photo_ids.length) return;
-						
-                        if (hint) hint.textContent = @json(__('admin.loc_photos_save_progress'));
-                        try {
-                            const res = await fetch(reorderUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': csrf,
-								},
-                                body: JSON.stringify({ photo_ids }),
-							});
-							
-                            if (!res.ok) {
-                                if (hint) hint.textContent = @json(__('admin.loc_photos_save_http_err')).replace(':status', res.status);
-                                return;
-							}
-                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_done'));
-							} catch (e) {
-                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_net_err'));
-						}
-					}
-					
-                    new Sortable(grid, { animation: 150, ghostClass: 'opacity-50' });
-                    saveBtn?.addEventListener('click', saveOrder);
+                    const form = grid.closest('form');
+                    function syncOrderInputs() {
+                        if (!form) return;
+                        form.querySelectorAll('input[name="photo_order[]"]').forEach(function (el) { el.remove(); });
+                        grid.querySelectorAll('[data-photo-id]').forEach(function (el) {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden'; inp.name = 'photo_order[]'; inp.value = el.getAttribute('data-photo-id');
+                            form.appendChild(inp);
+                        });
+                    }
+                    new Sortable(grid, { animation: 150, ghostClass: 'opacity-50', onEnd: syncOrderInputs });
+                    if (form) form.addEventListener('submit', syncOrderInputs);
 				}
 			})();
 
@@ -667,9 +640,7 @@
                                 </div>
                                 @endforeach
                             </div>
-                            <div class="mt-2 text-center">
-                                <button type="button" id="photos_save_btn" class="btn">{{ __('admin.loc_photos_save_order') }}</button>
-                            </div>
+                            <div class="f-14 mt-1" style="opacity:.65">Порядок и новые фото сохраняются общей кнопкой «Сохранить» внизу формы.</div>
                             @endif
                         </div>
                     </div>

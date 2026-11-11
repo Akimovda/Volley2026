@@ -184,6 +184,16 @@ public function update(Request $request, Location $location)
 
     $location->save();
 
+    // Порядок загруженных фото (перетаскивание) — сохраняется вместе с формой
+    $order = array_values(array_filter((array) $request->input('photo_order', []), fn ($id) => ctype_digit((string) $id)));
+    foreach ($order as $i => $mediaId) {
+        \Spatie\MediaLibrary\MediaCollections\Models\Media::query()
+            ->where('id', (int) $mediaId)
+            ->where('model_type', Location::class)
+            ->where('model_id', $location->id)
+            ->update(['order_column' => $i + 1]);
+    }
+
     $uploaded = 0;
     foreach ($request->file('photos', []) as $file) {
         if (!$file) continue;
