@@ -89,4 +89,9 @@ if ($color && isset($icons[$name])) {
     $icons[$name] = preg_replace('/fill="#[0-9a-fA-F]{3,8}"/', 'fill="' . e($color) . '"', $icons[$name], 1);
 }
 @endphp
-@if(isset($icons[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]) !!}</span>@endif
+@php
+// Многоцветные иконки-иллюстрации (отдельные SVG-файлы, не inline): <x-ico name="beach" /> — пляжный зонт с мячом
+$files = ['beach' => '/assets/img/beach-umbrella.svg'];
+@endphp
+@if(isset($files[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.28em;flex-shrink:0"><img src="{{ $files[$name] }}" alt="" aria-hidden="true" width="100%" height="100%" style="display:block;width:100%;height:100%;object-fit:contain"></span>
+@elseif(isset($icons[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]) !!}</span>@endif

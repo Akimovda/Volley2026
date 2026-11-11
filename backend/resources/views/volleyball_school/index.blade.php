@@ -33,8 +33,8 @@
             <div class="mt-2" data-aos="fade-up" data-aos-delay="200">
                 @if($mySchool)
                     <div class="d-flex gap-1" style="flex-wrap:wrap">
-                        <a href="{{ route('volleyball_school.edit') }}" class="btn btn-secondary">✏️ Ред. мою школу</a>
-                        <a href="{{ route('volleyball_school.show', $mySchool->slug) }}" class="btn btn-secondary">👁 Моя страница</a>
+                        <a href="{{ route('volleyball_school.edit') }}" class="btn btn-secondary"><x-ico name="pencil" /> Ред. мою школу</a>
+                        <a href="{{ route('volleyball_school.show', $mySchool->slug) }}" class="btn btn-secondary"><x-ico name="eye" /> Моя страница</a>
                     </div>
                 @else
                     <a href="{{ route('volleyball_school.create') }}" class="btn">+ Создать страницу школы</a>
@@ -173,10 +173,16 @@
                             }
                             $cover = $coverSlides->first();
                             $dirLabel = match($school->direction) {
-                                'classic' => '🏐 Классический волейбол',
-                                'beach'   => '🏖 Пляжный волейбол',
-                                'both'    => '🏐🏖 Классика + Пляжка',
+                                'classic' => 'Классический волейбол',
+                                'beach'   => 'Пляжный волейбол',
+                                'both'    => 'Классика + Пляжка',
                                 default   => ''
+                            };
+                            $dirIcons = match($school->direction) {
+                                'classic' => ['ball'],
+                                'beach'   => ['beach'],
+                                'both'    => ['ball', 'beach'],
+                                default   => []
                             };
                         @endphp
                         <div class="col-sm-6 col-lg-4">
@@ -201,7 +207,7 @@
                                         </div>
                                         @elseif(!$cover)
                                         <div class="text-center mb-2">
-                                            <div style="width:8rem;height:8rem;border-radius:50%;background:var(--bg2,#f0f0f0);display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto;">🏐</div>
+                                            <div style="width:8rem;height:8rem;border-radius:50%;background:var(--bg2,#f0f0f0);display:flex;align-items:center;justify-content:center;font-size:3rem;margin:0 auto;"><x-ico name="ball" size="4.4rem" /></div>
                                         </div>
                                         @endif
 
@@ -210,7 +216,7 @@
 
                                         {{-- Направление --}}
                                         @if($dirLabel)
-                                        <div class="f-15 text-center mb-05">{{ $dirLabel }}</div>
+                                        <div class="f-15 text-center mb-05">@foreach($dirIcons as $__ic)<x-ico :name="$__ic" size="1.4em" /> @endforeach{{ $dirLabel }}</div>
                                         @endif
 
                                         {{-- Город --}}
@@ -221,7 +227,7 @@
                                         {{-- Организатор --}}
                                         @if($organizer)
                                         <div class="f-14 text-center mt-1" style="opacity:.6;">
-                                            👤 {{ trim($organizer->first_name . ' ' . $organizer->last_name) }}
+                                            <x-ico name="user" /> {{ trim($organizer->first_name . ' ' . $organizer->last_name) }}
                                         </div>
                                         @endif
 
@@ -229,7 +235,7 @@
                                         @if(auth()->check() && auth()->user()->isAdmin())
                                         <div class="d-flex gap-1 mt-2">
                                             <a href="{{ route('volleyball_school.edit') }}?id={{ $school->id }}"
-                                               class="btn btn-secondary btn-small w-100">✏️ Редактировать</a>
+                                               class="btn btn-secondary btn-small w-100"><x-ico name="pencil" /> Редактировать</a>
                                             <form method="POST" action="{{ route('volleyball_school.destroy', $school->id) }}">
                                                 @csrf @method('DELETE')
                                                 <button type="submit"
@@ -237,7 +243,7 @@
                                                     data-title="Удалить школу?"
                                                     data-text="{{ $school->name }}"
                                                     data-confirm-text="Да, удалить"
-                                                    data-cancel-text="Отмена">🗑</button>
+                                                    data-cancel-text="Отмена" aria-label="Удалить"><x-ico name="trash" /></button>
                                             </form>
                                         </div>
                                         @endif
