@@ -307,4 +307,7 @@ return [
     'my_last_visits'      => 'Последние занятия',
     'my_minus_one'        => '−1 занятие',
     'my_card_used'        => 'Использовано :pct%',
+    'feat_transfer' => 'Передача',
+    'feat_freeze'   => 'Заморозка',
+    'feat_auto'     => 'Автозапись',
 ];

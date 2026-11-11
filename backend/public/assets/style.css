@@ -8220,3 +8220,16 @@ body.dark .up-switch.is-on { background: #2967BA; }
 	.sub-layout__info > :first-child{margin-top:0}
 	.sub-layout__info .sub-actions{margin-top:1.6rem}
 }
+
+/* Абонемент: цвет полосы по остатку, имя держателя как на банковской карте, пилюли возможностей */
+.sub-card__bar--green span{background:#22c55e}
+.sub-card__bar--yellow span{background:#facc15}
+.sub-card__bar--red span{background:#ef4444}
+.sub-card__holder{position:relative;font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,"Courier New",monospace;font-size:1.5rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;text-shadow:0 .1rem 0 rgba(255,255,255,.28),0 -.1rem .1rem rgba(0,0,0,.5)}
+.sub-feats{display:flex;flex-wrap:wrap;gap:.7rem}
+.sub-feat{display:inline-flex;align-items:center;gap:.6rem;padding:.5rem 1.2rem .5rem 1rem;border-radius:2rem;font-size:1.25rem;font-weight:600;line-height:1.2}
+.sub-feat--transfer{background:rgba(20,184,166,.14);color:#0f766e;box-shadow:inset 0 0 0 .1rem rgba(20,184,166,.4)}
+.sub-feat--freeze{background:rgba(14,165,233,.14);color:#0369a1;box-shadow:inset 0 0 0 .1rem rgba(14,165,233,.4)}
+.sub-feat--auto{background:rgba(124,58,237,.14);color:#6d28d9;box-shadow:inset 0 0 0 .1rem rgba(124,58,237,.4)}
+body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7dd3fc}body.dark .sub-feat--auto{color:#c4b5fd}
+@media (max-width:480px){.sub-card__holder{font-size:1.3rem}}

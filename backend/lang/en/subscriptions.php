@@ -300,4 +300,7 @@ return [
     'my_last_visits'      => 'Recent sessions',
     'my_minus_one'        => '−1 session',
     'my_card_used'        => ':pct% used',
+    'feat_transfer' => 'Transferable',
+    'feat_freeze'   => 'Freezable',
+    'feat_auto'     => 'Auto-booking',
 ];

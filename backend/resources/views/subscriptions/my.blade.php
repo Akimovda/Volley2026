@@ -72,6 +72,16 @@
                 <div class="f-13 mt-05" style="opacity:.5">{{ __('subscriptions.my_all_events') }}</div>
                 @endif
 
+                {{-- Возможности абонемента --}}
+                @php $tpl = $sub->template; @endphp
+                @if($tpl->transfer_enabled || $tpl->freeze_enabled || $tpl->auto_booking_enabled)
+                <div class="sub-feats mt-2">
+                    @if($tpl->transfer_enabled)<span class="sub-feat sub-feat--transfer"><x-ico name="swap" size="1.6rem" color="#14b8a6" /> {{ __('subscriptions.feat_transfer') }}</span>@endif
+                    @if($tpl->freeze_enabled)<span class="sub-feat sub-feat--freeze"><x-ico name="clock" size="1.6rem" color="#0ea5e9" /> {{ __('subscriptions.feat_freeze') }}</span>@endif
+                    @if($tpl->auto_booking_enabled)<span class="sub-feat sub-feat--auto"><x-ico name="robot" size="1.6rem" color="#7c3aed" /> {{ __('subscriptions.feat_auto') }}</span>@endif
+                </div>
+                @endif
+
                 {{-- Действия --}}
                 <div class="sub-actions mt-2">
                     @if($needRenew && $org)

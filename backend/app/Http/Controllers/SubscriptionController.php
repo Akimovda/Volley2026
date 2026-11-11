@@ -195,7 +195,7 @@ class SubscriptionController extends Controller
     // Мои абонементы (для игрока)
     public function my(Request $request)
     {
-        $subs = Subscription::with(['template', 'organizer', 'usages', 'autoBookings.event'])
+        $subs = Subscription::with(['template', 'organizer', 'user', 'usages', 'autoBookings.event'])
             ->where('user_id', $request->user()->id)
             ->orderByDesc('id')
             ->get();

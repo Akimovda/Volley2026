@@ -13,6 +13,10 @@
         default                      => 'active',
     };
     $dim       = in_array($stateKey, ['expired', 'exhausted', 'cancelled'], true);
+    $leftPct   = $total > 0 ? ($left / $total * 100) : 0;
+    // цвет полосы по остатку: от 50% — зелёная, 49–30% — жёлтая, ниже 30% или 1–2 занятия — красная
+    $barTone   = ($left <= \App\Models\Subscription::ENDING_VISITS || $leftPct < 30) ? 'red' : ($leftPct < 50 ? 'yellow' : 'green');
+    $holder    = \App\Support\Translit::cardName($sub->user);
     $usedPct   = $total > 0 ? (int) max(0, min(100, round($used / $total * 100))) : 0;   // доля использованных занятий
 @endphp
 <div class="sub-card sub-card--{{ $stateKey }} {{ $dim ? 'is-dim' : '' }}"
@@ -26,7 +30,11 @@
     </div>
     <div class="sub-card__big">{{ trans_choice('subscriptions.my_card_visits', $total, ['n' => $total]) }}</div>
 
-    <div class="sub-card__bar" role="img" aria-label="{{ __('subscriptions.my_card_used', ['pct' => $usedPct]) }}"><span style="width: {{ $usedPct }}%"></span></div>
+    <div class="sub-card__bar sub-card__bar--{{ $barTone }}" role="img" aria-label="{{ __('subscriptions.my_card_used', ['pct' => $usedPct]) }}"><span style="width: {{ $usedPct }}%"></span></div>
+
+    @if($holder !== '')
+    <div class="sub-card__holder">{{ $holder }}</div>
+    @endif
 
     <div class="sub-card__foot">
         <span>{!! __('subscriptions.my_card_left', ['left' => '<b>' . $left . '</b>', 'total' => $total]) !!}</span>
