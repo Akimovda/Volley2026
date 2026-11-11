@@ -160,6 +160,8 @@ return [
 
     // Notifications section
     'sec_notifications'    => 'Notifications & subscriptions',
+    'notif_channels_hint' => 'The switch turns personal notifications in a messenger on or off. When you turn it on, the bot opens: confirm the connection and notifications will start arriving.',
+    'notif_channel_aria' => 'Notifications in :name',
     'notif_lead'           => 'Don\'t miss a thing — subscribe to notifications and stay in the loop with news, event announcements, and timely reminders before start.',
     'notif_tg_title'       => 'Telegram notifications',
     'notif_max_title'      => 'MAX notifications',
