@@ -68,7 +68,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$isClassicDirection = ((string)($event?->direction ?? 'classic') === 'classic');
 			$isBeachDirection   = ((string)($event?->direction ?? '') === 'beach');
-			$requiresPositionChoice = $isClassicDirection || (bool) $event?->registersByBeachRoles();
+			// Пляжка с несколькими основными ролями-слотами (например, кемп 4×4 с позициями) тоже требует выбора позиции —
+			// ровно то же правило, что и при записи на сервере (EventRoleSlotService::requiresPositionChoice)
+			$requiresPositionChoice = $isClassicDirection
+				|| (bool) $event?->registersByBeachRoles()
+				|| ($isBeachDirection && $event && app(\App\Services\EventRoleSlotService::class)->requiresPositionChoice($event));
 			
 			$trainerLabel = null;
 			if ($trainerColumn && $event) {
@@ -677,7 +681,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						@elseif ($join === null)
                         {{-- occurrences не обогащены --}}
-                        @if ($isBeachDirection)
+                        @if ($isBeachDirection && !$requiresPositionChoice)
                         <form class="w-100" method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
                             @csrf
                             <button type="submit" class="btn w-100">{{ __('events.btn_join') }}</button>
