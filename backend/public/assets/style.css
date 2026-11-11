@@ -8312,3 +8312,6 @@ body.dark .ri-chip--mu{color:#fdba74}body.dark .ri-chip--sigma{color:#a5b4fc}
 .ri-cell{display:flex;min-width:0}
 .ri-cell > *{flex:1 1 auto;min-width:0;margin-bottom:0}
 @media (max-width:768px){.ri-grid--3,.ri-grid--2{grid-template-columns:minmax(0,1fr)}}
+
+/* «Помощь»: отступ значка от текста в пунктах меню */
+.menu-item .menu-ico{margin-right:.9rem}
