@@ -171,6 +171,10 @@
                                 $legacyCover = $school->getFirstMediaUrl('cover', 'thumb') ?: $school->getFirstMediaUrl('cover');
                                 if ($legacyCover) $coverSlides = collect([$legacyCover]);
                             }
+                            // Своих фото нет (ни у организатора, ни устаревшей обложки) — показываем фото по умолчанию для направления школы
+                            if ($coverSlides->isEmpty() && $organizerCovers->isEmpty()) {
+                                $coverSlides = collect($school->defaultCoverUrls());
+                            }
                             $cover = $coverSlides->first();
                             $dirLabel = match($school->direction) {
                                 'classic' => 'Классический волейбол',

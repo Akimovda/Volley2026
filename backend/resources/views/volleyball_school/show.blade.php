@@ -231,6 +231,28 @@
 				<div class="ramka">
 					<img src="{{ $coverUrl }}" alt="{{ $school->name }}" class="school-cover">
 				</div>
+				@elseif(count($__defaultCovers = $school->defaultCoverUrls()) > 1)
+				{{-- Своих фото нет: фото по умолчанию — классика и пляж (пропадут, как только организатор загрузит свои) --}}
+				<div class="ramka">
+					<div class="swiper school-show-swiper">
+						<div class="swiper-wrapper">
+							@foreach($__defaultCovers as $dUrl)
+							<div class="swiper-slide"><img src="{{ $dUrl }}" alt="{{ $school->name }}" class="school-cover"></div>
+							@endforeach
+						</div>
+						<div class="swiper-pagination"></div>
+					</div>
+					@if(auth()->check() && auth()->id() === $school->organizer_id)
+					<div class="f-13 mt-1" style="opacity:.6">Сейчас показаны фото по умолчанию. <a href="{{ route('user.photos') }}" class="cd b-600">Загрузите свои фото</a> — они заменят эти.</div>
+					@endif
+				</div>
+				@elseif(count($__defaultCovers) === 1)
+				<div class="ramka">
+					<img src="{{ $__defaultCovers[0] }}" alt="{{ $school->name }}" class="school-cover">
+					@if(auth()->check() && auth()->id() === $school->organizer_id)
+					<div class="f-13 mt-1" style="opacity:.6">Сейчас показано фото по умолчанию. <a href="{{ route('user.photos') }}" class="cd b-600">Загрузите свои фото</a> — они заменят его.</div>
+					@endif
+				</div>
 				@else
 				<div class="ramka">
 						<div class="alert alert-info">
