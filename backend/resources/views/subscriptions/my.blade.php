@@ -28,131 +28,96 @@
             </div>
         @else
             @foreach($subs as $sub)
+            @php
+                $org = $sub->organizer;
+                $orgName = $org
+                    ? (($org->last_name || $org->first_name)
+                        ? trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? ''))
+                        : $org->name)
+                    : __('subscriptions.my_organizer_fallback');
+                // Мероприятия из event_ids шаблона
+                $tmplEventIds = $sub->template->event_ids ?? [];
+                $tmplEvents = !empty($tmplEventIds)
+                    ? \App\Models\Event::whereIn('id', $tmplEventIds)->get(['id','title'])
+                    : collect();
+                $canAuto = $sub->status === 'active' && $sub->template->auto_booking_enabled;
+                $needRenew = in_array($sub->status, ['expired', 'exhausted'], true)
+                    || ($sub->status === 'active' && $sub->visits_remaining > 0 && $sub->visits_remaining <= \App\Models\Subscription::ENDING_VISITS);
+                $lastUses = $sub->usages->where('action', 'used')->sortByDesc('used_at')->take(3);
+            @endphp
             <div class="ramka">
-                <div class="d-flex between fvc mb-2">
-                    <div>
-                        <h2 class="-mt-05">{{ $sub->template->name }}</h2>
-                        @php
-                            $org = $sub->organizer;
-                            $orgName = $org
-                                ? (($org->last_name || $org->first_name)
-                                    ? trim(($org->last_name ?? '') . ' ' . ($org->first_name ?? ''))
-                                    : $org->name)
-                                : __('subscriptions.my_organizer_fallback');
-                            // Мероприятия из event_ids шаблона
-                            $tmplEventIds = $sub->template->event_ids ?? [];
-                            $tmplEvents = !empty($tmplEventIds)
-                                ? \App\Models\Event::whereIn('id', $tmplEventIds)->get(['id','title'])
-                                : collect();
-                        @endphp
-                        <div class="f-14 mb-05" style="opacity:.7">
-                            {{ __('subscriptions.my_organizer') }}
-                            @if($org)
-                                <a href="{{ route('users.show', $org->id) }}" class="cd b-600">{{ $orgName }}</a>
-                            @else
-                                <span class="b-600">{{ $orgName }}</span>
-                            @endif
-                        </div>
-                        @if($tmplEvents->isNotEmpty())
-                        <div class="f-13" style="opacity:.6">
-                            {{ __('subscriptions.my_events_label') }}
-                            @foreach($tmplEvents as $ev)
-                                <a href="{{ route('events.show', $ev->id) }}" class="cd">{{ $ev->title }}</a>@if(!$loop->last), @endif
-                            @endforeach
-                        </div>
-                        @elseif($org)
-                        <div class="f-13" style="opacity:.5">
-                            {{ __('subscriptions.my_all_events') }}
-                        </div>
-                        @endif
-                    </div>
-                    <div class="text-right">
-                        @if($sub->status === 'active')
-                            <span class="cs b-600 f-18">{{ __('subscriptions.status_active') }}</span>
-                        @elseif($sub->status === 'frozen')
-                            <span class="cd b-600 f-18">{{ __('subscriptions.status_frozen') }}</span>
-                        @elseif($sub->status === 'expired')
-                            <span style="opacity:.5" class="f-18">{{ __('subscriptions.status_expired') }}</span>
-                        @elseif($sub->status === 'exhausted')
-                            <span style="opacity:.5" class="f-18">{{ __('subscriptions.status_exhausted') }}</span>
-                        @endif
-                    </div>
-                </div>
+                @include('subscriptions._card', ['sub' => $sub, 'card' => $cards[$sub->id]])
 
-                <div class="row">
-                    <div class="col-6 col-md-3">
-                        <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_visits_left') }}</div>
-                            <div class="f-32 b-700 {{ $sub->visits_remaining > 0 ? 'cs' : 'red' }}">
-                                {{ $sub->visits_remaining }}
-                            </div>
-                            <div class="f-13" style="opacity:.5">{{ __('subscriptions.my_visits_of', ['n' => $sub->visits_total]) }}</div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_valid_until') }}</div>
-                            <div class="f-18 b-600">
-                                {{ $sub->expires_at ? $sub->expires_at->format('d.m.Y') : '∞' }}
-                            </div>
-                        </div>
-                    </div>
-                    @if($sub->status === 'frozen')
-                    <div class="col-6 col-md-3">
-                        <div class="card text-center">
-                            <div class="f-13" style="opacity:.6">{{ __('subscriptions.my_frozen_until') }}</div>
-                            <div class="f-18 b-600 cd">{{ $sub->frozen_until?->format('d.m.Y') }}</div>
-                        </div>
-                    </div>
+                <div class="f-14 mt-2" style="opacity:.75">
+                    {{ __('subscriptions.my_organizer') }}
+                    @if($org)
+                        <a href="{{ route('users.show', $org->id) }}" class="cd b-600">{{ $orgName }}</a>
+                    @else
+                        <span class="b-600">{{ $orgName }}</span>
                     @endif
                 </div>
-
-                {{-- Прогресс-бар --}}
-                <div class="mt-2 mb-2">
-                    @php
-                        $pct = $sub->visits_total > 0 ? round(($sub->visits_remaining / $sub->visits_total) * 100) : 0;
-                        // Плавная градация цвета от красного (мало посещений) к зелёному (много) — не 3 фиксированные ступени
-                        $ratio = max(0, min(100, $pct)) / 100;
-                        $barColor = sprintf('#%02x%02x%02x',
-                            (int) round(220 + (40 - 220) * $ratio),
-                            (int) round(53 + (167 - 53) * $ratio),
-                            69,
-                        );
-                    @endphp
-                    <div style="background:#eee;border-radius:8px;height:10px">
-                        <div style="width:{{ $pct }}%;background:{{ $barColor }};height:10px;border-radius:8px;transition:width .3s"></div>
-                    </div>
-                    <div class="f-13 mt-05 text-right" style="opacity:.6">{{ __('subscriptions.my_pct_left', ['pct' => $pct]) }}</div>
+                @if($tmplEvents->isNotEmpty())
+                <div class="f-13 mt-05" style="opacity:.6">
+                    {{ __('subscriptions.my_events_label') }}
+                    @foreach($tmplEvents as $ev)
+                        <a href="{{ route('events.show', $ev->id) }}" class="cd">{{ $ev->title }}</a>@if(!$loop->last), @endif
+                    @endforeach
                 </div>
+                @elseif($org)
+                <div class="f-13 mt-05" style="opacity:.5">{{ __('subscriptions.my_all_events') }}</div>
+                @endif
 
                 {{-- Действия --}}
-                <div class="d-flex gap-2 flex-wrap mt-2">
-                    <a href="{{ route('subscriptions.usages', $sub) }}" class="btn btn-secondary btn-small">
-                        {{ __('subscriptions.my_btn_history') }}
-                    </a>
+                <div class="sub-actions mt-2">
+                    @if($needRenew && $org)
+                    <a href="{{ route('users.show', $org->id) }}" class="btn btn-small"><x-ico name="refresh" /> {{ __('subscriptions.my_btn_renew') }}</a>
+                    @endif
+
+                    @if($canAuto)
+                    <button type="button" class="btn btn-secondary btn-small js-open-sab" data-sub="{{ $sub->id }}">
+                        <x-ico name="robot" /> {{ __('subscriptions.my_btn_auto') }}@if($sub->autoBookings->count()) ({{ $sub->autoBookings->count() }})@endif
+                    </button>
+                    @endif
 
                     @if($sub->status === 'active' && $sub->template->freeze_enabled)
-                    <button class="btn btn-secondary btn-small" onclick="toggleFreeze({{ $sub->id }})">
-                        {{ __('subscriptions.my_btn_freeze') }}
+                    <button type="button" class="btn btn-secondary btn-small" onclick="toggleFreeze({{ $sub->id }})">
+                        <x-ico name="clock" /> {{ __('subscriptions.my_btn_freeze_short') }}
                     </button>
                     @endif
 
                     @if($sub->status === 'frozen')
-                    <form method="POST" action="{{ route('subscriptions.unfreeze', $sub) }}">
+                    <form method="POST" action="{{ route('subscriptions.unfreeze', $sub) }}" class="d-inline-block">
                         @csrf
                         <button class="btn btn-small">{{ __('subscriptions.my_btn_unfreeze') }}</button>
                     </form>
                     @endif
 
                     @if($sub->status === 'active' && $sub->template->transfer_enabled)
-                    <button class="btn btn-secondary btn-small" onclick="toggleTransfer({{ $sub->id }})">
-                        {{ __('subscriptions.my_btn_transfer') }}
+                    <button type="button" class="btn btn-secondary btn-small" onclick="toggleTransfer({{ $sub->id }})">
+                        <x-ico name="swap" /> {{ __('subscriptions.my_btn_transfer_short') }}
                     </button>
                     @endif
+
+                    <a href="{{ route('subscriptions.usages', $sub) }}" class="btn btn-secondary btn-small"><x-ico name="clipboard" /> {{ __('subscriptions.my_btn_history_short') }}</a>
                 </div>
 
-                @if($sub->status === 'active' && $sub->template->auto_booking_enabled)
+                @if($lastUses->isNotEmpty())
+                <div class="sub-last mt-2">
+                    <div class="sub-last__title">{{ __('subscriptions.my_last_visits') }}</div>
+                    @foreach($lastUses as $u)
+                    <div class="sub-last__row">
+                        <span>{{ $u->used_at?->translatedFormat('D, j F · H:i') }}</span>
+                        <span class="sub-last__minus">{{ __('subscriptions.my_minus_one') }}</span>
+                    </div>
+                    @endforeach
+                </div>
+                @endif
+
+                @if($canAuto)
+                {{-- Настройки автозаписи — в окне (открывается кнопкой «Автозапись» или после сохранения по ссылке #sab-ID) --}}
+                <div id="sab-popup-{{ $sub->id }}" style="display:none;max-width:56rem;width:100%">
                     @include('subscriptions._auto_booking', ['sub' => $sub, 'autoEvents' => $autoEvents])
+                </div>
                 @endif
 
                 {{-- Форма заморозки --}}
@@ -248,6 +213,14 @@
     })();
     </script>
     <script>
+    // Автозапись по абонементу — в окне; после сохранения/удаления страница открывается по #sab-ID и окно появляется снова
+    function openSab(id) {
+        if (!window.jQuery || !jQuery.fancybox) return;
+        jQuery.fancybox.open({ src: '#sab-popup-' + id, type: 'inline',
+            opts: { hideScrollbar: false, touch: false, toolbar: false, smallBtn: true, animationEffect: 'zoom-in-out' } });
+    }
+    document.querySelectorAll('.js-open-sab').forEach(function (b) { b.addEventListener('click', function () { openSab(b.dataset.sub); }); });
+    if (location.hash.indexOf('#sab-') === 0) { var __sid = location.hash.slice(5); if (document.getElementById('sab-popup-' + __sid)) setTimeout(function () { openSab(__sid); }, 250); }
     function toggleFreeze(id) {
         const el = document.getElementById('freeze_form_' + id);
         el.style.display = el.style.display === 'none' ? '' : 'none';

@@ -208,7 +208,61 @@ class SubscriptionController extends Controller
             }
         }
 
-        return view('subscriptions.my', compact('subs', 'autoEvents'));
+        return view('subscriptions.my', [
+            'subs'       => $subs,
+            'autoEvents' => $autoEvents,
+            'cards'      => $this->cardStyles($subs),
+        ]);
+    }
+
+    /**
+     * Оформление карточки абонемента: если у организатора есть своё приложение (бренд white-label) — цвета и логотип бренда,
+     * иначе — цвета и эмблема VolleyClub.
+     */
+    private function cardStyles($subs): array
+    {
+        $brands = \App\Models\Brand::cached()->keyBy('id');
+        $out = [];
+        foreach ($subs as $sub) {
+            $org   = $sub->organizer;
+            $brand = ($org && $org->brand_id) ? $brands->get($org->brand_id) : null;
+            if ($brand && $brand->is_default) {
+                $brand = null;
+            }
+            $theme   = $brand?->theme ?? [];
+            $primary = $theme['day']['primary'] ?? null;
+            $accent  = $theme['night']['primary'] ?? ($theme['day']['secondary'] ?? null);
+            if ($brand && $primary && preg_match('/^#[0-9a-fA-F]{6}$/', $primary)) {
+                $out[$sub->id] = [
+                    'branded' => true,
+                    'name'    => $brand->display_name,
+                    'logo'    => $brand->logo_night_url ?: $brand->logo_day_url,
+                    'from'    => $this->mixHex($primary, '#000000', 0.15),
+                    'to'      => $this->mixHex($primary, '#000000', 0.55),
+                    'accent'  => ($accent && preg_match('/^#[0-9a-fA-F]{6}$/', $accent)) ? $accent : '#C6F135',
+                ];
+            } else {
+                $out[$sub->id] = [
+                    'branded' => false,
+                    'name'    => 'VolleyClub',
+                    'logo'    => asset('icons/favicon.svg'),
+                    'from'    => '#2967BA',
+                    'to'      => '#173a74',
+                    'accent'  => '#FFB171',
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    private function mixHex(string $hex, string $with, float $ratio): string
+    {
+        [$r1, $g1, $b1] = sscanf($hex, '#%02x%02x%02x');
+        [$r2, $g2, $b2] = sscanf($with, '#%02x%02x%02x');
+        $m = fn ($a, $b) => (int) round($a + ($b - $a) * $ratio);
+
+        return sprintf('#%02x%02x%02x', $m($r1, $r2), $m($g1, $g2), $m($b1, $b2));
     }
 
     // Выдать абонемент вручную
