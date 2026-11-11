@@ -678,6 +678,9 @@
 				<div class="ramka is-app-only" style="display:none">
 					<h2 class="-mt-05 h2-ico"><x-ico name="shield-check" size="1.2em" /> {{ __('profile.sec_quick_login') }}</h2>
 					<p>{{ __('profile.quick_login_lead') }}</p>
+					<template id="bio-ico-ok"><x-ico name="check" size="1.5em" /></template>
+					<template id="bio-ico-phone"><x-ico name="smartphone" size="2rem" /></template>
+					<template id="bio-ico-del"><x-ico name="trash" size="2rem" /></template>
 					<div id="biometric-status" class="mb-2"></div>
 					<div id="biometric-devices" class="mb-2"></div>
 					<button id="biometric-disable-btn" class="btn btn-secondary btn-small" style="display:none">
@@ -1823,7 +1826,12 @@
 				try {
 					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
 					if (creds && creds.password) {
-						if (statusEl) statusEl.textContent = @json(__('profile.face_enabled_status'));
+						if (statusEl) {
+							statusEl.innerHTML = '<span class="bio-ok"></span>';
+							var okIco = document.getElementById('bio-ico-ok');
+							if (okIco) statusEl.firstChild.appendChild(okIco.content.cloneNode(true));
+							statusEl.firstChild.appendChild(document.createTextNode(@json(__('profile.face_enabled_status'))));
+						}
 						if (disableBtn) disableBtn.style.display = '';
 						if (enableBtn) enableBtn.style.display = 'none';
 						return;
@@ -1860,15 +1868,22 @@
 				h.style.fontWeight = '600';
 				h.textContent = @json(__('profile.face_devices_title'));
 				devicesEl.appendChild(h);
+				list.sort(function (x, y) { return (y.current ? 1 : 0) - (x.current ? 1 : 0); });
+				var tpl = function (id) { var t = document.getElementById(id); return t ? t.content.cloneNode(true) : document.createDocumentFragment(); };
 				list.forEach(function (d) {
-					var row = document.createElement('div');
-					row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.6rem;font-size:1.4rem';
-					var txt = document.createElement('span');
-					txt.textContent = d.label + (d.current ? ' · ' + @json(__('profile.face_device_current')) : '') + ' · ' +
-						(d.last_used_at ? @json(__('profile.face_device_last')) + ' ' + fmtDate(d.last_used_at) : @json(__('profile.face_device_never_used')));
+					var row = document.createElement('div'); row.className = 'bio-dev';
+					var ico = document.createElement('div'); ico.className = 'bio-dev-ico'; ico.appendChild(tpl('bio-ico-phone'));
+					var main = document.createElement('div'); main.className = 'bio-dev-main';
+					var name = document.createElement('div'); name.className = 'bio-dev-name';
+					name.textContent = (d.label && d.label !== 'Other') ? d.label : @json(__('profile.face_device_other'));
+					if (d.current) { var cur = document.createElement('span'); cur.className = 'bio-dev-cur'; cur.textContent = @json(__('profile.face_device_current')); name.appendChild(cur); }
+					var meta = document.createElement('div'); meta.className = 'bio-dev-meta';
+					meta.textContent = d.last_used_at ? @json(__('profile.face_device_last')) + ' ' + fmtDate(d.last_used_at) : @json(__('profile.face_device_never_used'));
+					main.appendChild(name); main.appendChild(meta);
 					var b = document.createElement('button');
-					b.type = 'button'; b.className = 'btn btn-secondary btn-small';
-					b.textContent = @json(__('profile.face_device_remove'));
+					b.type = 'button'; b.className = 'bio-dev-del';
+					b.title = @json(__('profile.face_device_remove')); b.setAttribute('aria-label', @json(__('profile.face_device_remove')));
+					b.appendChild(tpl('bio-ico-del'));
 					b.addEventListener('click', async function () {
 						b.disabled = true;
 						try {
@@ -1877,7 +1892,7 @@
 							await refreshStatus();
 						} catch (e) { b.disabled = false; }
 					});
-					row.appendChild(txt); row.appendChild(b);
+					row.appendChild(ico); row.appendChild(main); row.appendChild(b);
 					devicesEl.appendChild(row);
 				});
 			} catch (e) { /* список — вспомогательный */ }
