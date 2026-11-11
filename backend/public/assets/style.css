@@ -8213,3 +8213,10 @@ body.dark .up-switch.is-on { background: #2967BA; }
 .sub-actions .btn .ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;vertical-align:0}
 .sub-actions .btn .ico svg{display:block}
 @media (max-width:480px){.sub-card{padding:1.4rem 1.5rem}.sub-card__big{font-size:2.3rem}.sub-card__foot{font-size:1.2rem}}
+
+/* «Мои абонементы»: на широком экране информация и кнопки — справа от карточки; на узком всё друг под другом как раньше */
+@media (min-width: 900px) {
+	.sub-layout{display:grid;grid-template-columns:40rem minmax(0,1fr);gap:3rem;align-items:center}
+	.sub-layout__info > :first-child{margin-top:0}
+	.sub-layout__info .sub-actions{margin-top:1.6rem}
+}

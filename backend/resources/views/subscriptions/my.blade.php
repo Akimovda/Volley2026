@@ -46,7 +46,12 @@
                 $lastUses = $sub->usages->where('action', 'used')->sortByDesc('used_at')->take(3);
             @endphp
             <div class="ramka">
-                @include('subscriptions._card', ['sub' => $sub, 'card' => $cards[$sub->id]])
+                {{-- Широкий экран: карточка слева, информация и действия справа; узкий — всё друг под другом --}}
+                <div class="sub-layout">
+                    <div class="sub-layout__card">
+    @include('subscriptions._card', ['sub' => $sub, 'card' => $cards[$sub->id]])
+                    </div>
+                    <div class="sub-layout__info">
 
                 <div class="f-14 mt-2" style="opacity:.75">
                     {{ __('subscriptions.my_organizer') }}
@@ -112,6 +117,9 @@
                     @endforeach
                 </div>
                 @endif
+
+                    </div>
+                </div>
 
                 @if($canAuto)
                 {{-- Настройки автозаписи — в окне (открывается кнопкой «Автозапись» или после сохранения по ссылке #sab-ID) --}}
