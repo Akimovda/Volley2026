@@ -44,7 +44,7 @@
     <!-- Кнопка MAX: вход через бота (без OAuth), страница внутри приложения/браузера -->
     <a href="{{ route('auth.max.page', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-max">
         <span class="auth-icon-circle">
-            <img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img">
+            <img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img">
         </span>
         <span class="auth-text">{{ __('ui.auth_max') }}</span>
     </a>

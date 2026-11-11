@@ -643,7 +643,7 @@
 							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasMaxLogin ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
-										<span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img"></span>
+										<span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img"></span>
 										<span class="provider-card__title">MAX</span>
 									</div>
 
@@ -746,7 +746,7 @@
                         @endphp
                         @foreach($__chan as $__c)
                         <div class="notif-tile">
-                            <span class="provider-card__icon {{ $__c['icon'] }}">@if($__c['key'] === 'max')<img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img">@endif</span>
+                            <span class="provider-card__icon {{ $__c['icon'] }}">@if($__c['key'] === 'max')<img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img">@endif</span>
                             <span class="notif-tile__name">{{ $__c['name'] }}</span>
                             <button type="button" class="up-switch {{ $__c['on'] ? 'is-on' : '' }}" role="switch" aria-checked="{{ $__c['on'] ? 'true' : 'false' }}"
                                 aria-label="{{ __('profile.notif_channel_aria', ['name' => $__c['name']]) }}"

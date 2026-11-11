@@ -14,6 +14,7 @@
 
     <div class="container">
         <div class="ramka" style="max-width:62rem">
+            <div class="max-brand"><img src="/assets/img/max-logo.svg" alt="MAX" width="131" height="42"></div>
             <ol class="list" style="list-style:decimal;padding-left:2rem">
                 <li class="mb-1">{{ __('auth.max_step_open') }}</li>
                 <li class="mb-1">{{ __('auth.max_step_start') }}</li>
