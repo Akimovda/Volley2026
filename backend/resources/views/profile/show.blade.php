@@ -438,8 +438,15 @@
 					<div class="mt-2"> 
 						
 						<div class="row provider-cards fc">
+							{{-- Группы: сверху уже привязанные входы, ниже ещё не подключённые (порядок задаёт style="order") --}}
+							@if($linkedCount > 0)
+							<div class="provider-group-title" style="order:0">{{ __('profile.providers_group_linked') }} · {{ $linkedCount }}</div>
+							@endif
+							@if($linkedCount < 6)
+							<div class="provider-group-title" style="order:50">{{ __('profile.providers_group_unlinked') }} · {{ 6 - $linkedCount }}</div>
+							@endif
 							{{-- VK card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasVk ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-vk"></span>
@@ -474,7 +481,7 @@
 								</div>
 							</div>
 							{{-- Yandex card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasYa ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-yandex"></span>
@@ -509,7 +516,7 @@
 								</div>
 							</div>
 							{{-- Telegram card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasTg ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-tg"></span>
@@ -557,7 +564,7 @@
 							</div>
 							@unless(str_contains(request()->userAgent() ?? '', 'Android'))
 							{{-- Apple card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasApple ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-apple"></span>
@@ -592,7 +599,7 @@
 							</div>
 							@endunless
 							{{-- Google card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasGoogle ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon" style="background: linear-gradient(90deg, #4285F4 0%, #EA4335 30%, #FBBC05 60%, #34A853 100%);">
@@ -633,7 +640,7 @@
 								</div>
 							</div>
 							{{-- MAX card: вход через бота MAX (код подтверждения), привязка и отвязка --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasMaxLogin ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.png" alt="" width="40" height="40" class="auth-icon-img"></span>

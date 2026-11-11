@@ -104,6 +104,8 @@ return [
     'providers_step_1'  => 'Click the desired provider button below.',
     'providers_step_2'  => 'Confirm sign-in at the provider.',
     'providers_step_3'  => 'After returning to the site, the provider will be linked to the current account.',
+    'providers_group_linked' => 'Connected',
+    'providers_group_unlinked' => 'Available to connect',
     'providers_link_btn'    => 'Link',
     'providers_unlink_btn'  => 'Unlink',
     'providers_cant_unlink' => 'Cannot unlink',

@@ -104,6 +104,8 @@ return [
     'providers_step_1'  => 'Нажмите кнопку нужного провайдера ниже.',
     'providers_step_2'  => 'Подтвердите вход у провайдера.',
     'providers_step_3'  => 'После возврата на сайт провайдер привяжется к текущему аккаунту.',
+    'providers_group_linked' => 'Подключено',
+    'providers_group_unlinked' => 'Можно подключить',
     'providers_link_btn'   => 'Привязать',
     'providers_unlink_btn' => 'Отвязать',
     'providers_cant_unlink' => 'Нельзя отвязать',
