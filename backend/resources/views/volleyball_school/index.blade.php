@@ -247,7 +247,7 @@
                                                     data-title="Удалить школу?"
                                                     data-text="{{ $school->name }}"
                                                     data-confirm-text="Да, удалить"
-                                                    data-cancel-text="Отмена" aria-label="Удалить"><x-ico name="trash" /></button>
+                                                    data-cancel-text="Отмена" aria-label="Удалить"><x-ico name="trash" color="#ffffff" /></button>
                                             </form>
                                         </div>
                                         @endif

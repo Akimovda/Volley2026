@@ -94,4 +94,13 @@ if ($color && isset($icons[$name])) {
 $files = ['beach' => '/assets/img/beach-umbrella.svg'];
 @endphp
 @if(isset($files[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.28em;flex-shrink:0"><img src="{{ asset(ltrim($files[$name], '/')) }}" alt="" aria-hidden="true" width="100%" height="100%" style="display:block;width:100%;height:100%;object-fit:contain"></span>
-@elseif(isset($icons[$name]))<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]) !!}</span>@endif
+@elseif(isset($icons[$name]))
+@php
+// Глобальное правило сайта `.btn svg { fill:#fff }` перебивает атрибут fill корневого <svg> и превращает контурные значки в кляксы
+// внутри кнопок. Дублируем корневой fill инлайн-стилем — он сильнее любого правила из таблицы стилей.
+$__svg = str_replace('<svg ', '<svg width="100%" height="100%" ', $icons[$name]);
+if (preg_match('/<svg[^>]*?\sfill="([^"]+)"/', $__svg, $__m)) {
+    $__svg = preg_replace('/<svg /', '<svg style="fill:' . e($__m[1]) . '" ', $__svg, 1);
+}
+@endphp
+<span {{ $attributes->merge(['class' => 'ico']) }} style="display:inline-flex;width:{{ $size }};height:{{ $size }};vertical-align:-.22em;flex-shrink:0">{!! $__svg !!}</span>@endif
