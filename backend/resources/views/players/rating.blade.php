@@ -10,8 +10,8 @@
 </x-slot>
 <x-slot name="d_description">
     <div class="d-flex gap-1 mt-2 flex-wrap">
-        <a href="{{ route('players.teams') }}" class="btn btn-secondary">🤝 {{ __('players.teams_title') }}</a>
-        <a href="{{ route('pages.rating_info') }}" class="btn btn-secondary">❓ {{ __('players.how_rating_works') }}</a>
+        <a href="{{ route('players.teams') }}" class="btn btn-secondary"><x-ico name="users" /> {{ __('players.teams_title') }}</a>
+        <a href="{{ route('pages.rating_info') }}" class="btn btn-secondary"><x-ico name="help" /> {{ __('players.how_rating_works') }}</a>
     </div>
 </x-slot>
 
@@ -37,7 +37,10 @@
            class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{!! ico_text(__('players.classic')) !!}</a>
     </div>
     @if(!$isSeasonMode)
-    <div class="f-13 mb-3" style="opacity:.5">{{ $direction === 'beach' ? '2×2 · 3×3 · 4×4' : '4×4 · 4-2 · 5-1 · 5-1 ' . __('events.libero_word') }}</div>
+    @php $schemes = $direction === 'beach' ? ['2×2', '3×3', '4×4'] : ['4×4', '4-2', '5-1', '5-1 ' . __('events.libero_word')]; @endphp
+    <div class="scheme-pills mb-3" aria-label="{{ __('players.rating_schemes') }}">
+        @foreach($schemes as $__sc)<span class="scheme-pill scheme-pill--{{ $direction }}">{{ $__sc }}</span>@endforeach
+    </div>
     @else
     <div class="mb-3"></div>
     @endif
@@ -76,7 +79,7 @@
             'games'    => __('players.games'),
         ] as $key => $label)
         <a href="{{ ratingSortUrl($key, $sort, $dir, $qp) }}"
-           class="filter-tab {{ $sort === $key ? 'active' : '' }}">{{ $label }}{{ $sort === $key ? ($dir === 'desc' ? ' ↓' : ' ↑') : '' }}</a>
+           class="filter-tab {{ $sort === $key ? 'active' : '' }}">{{ $label }}@if($sort === $key) <x-ico :name="$dir === 'desc' ? 'arrow-down' : 'arrow-up'" size="1.3em" />@endif</a>
         @endforeach
     </div>
 
@@ -131,7 +134,7 @@
                 <tr>
                     <td>
                         @if($rank <= 3)
-                            <span class="f-16">{{ ['🥇','🥈','🥉'][$rank - 1] }}</span>
+                            <x-ico name="medal" size="2rem" :color="['#f59e0b','#9ca3af','#b45309'][$rank - 1]" />
                         @else
                             <span style="opacity:.5">{{ $rank }}</span>
                         @endif

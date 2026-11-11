@@ -78,6 +78,8 @@ $icons = [
     'bulb'      => $stroke('<path d="M9 18h6M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2V18h6v-1.3c0-.8.4-1.5 1-2A7 7 0 0 0 12 2z"/>', $amber),
     'key'       => $stroke('<circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.8-9.8M16 7l3 3M14 9l2 2"/>', $amber),
     'refresh'   => $stroke('<path d="M21 12a9 9 0 0 0-15.5-6.2L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 15.5 6.2L21 16"/><path d="M21 21v-5h-5"/>', $blue),
+    'arrow-up'    => $stroke('<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/>', $blue),
+    'arrow-down'  => $stroke('<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>', $blue),
     'arrow-right' => $stroke('<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>', $blue),
     'bluetooth' => $stroke('<path d="m7 7 10 10-5 5V2l5 5L7 17"/>', $blue),
     'dot-green' => $stroke('<circle cx="12" cy="12" r="7"/>', '#16a34a', '#4ade80'),
