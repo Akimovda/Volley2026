@@ -60,7 +60,24 @@
         @endif
 		
         <div class="ramka">
-			
+
+			{{-- Поиск по названию, адресу, городу (или ID) --}}
+			<form method="GET" action="{{ route('admin.locations.index') }}" class="form mb-2" id="locSearchForm">
+				<div class="d-flex fvc" style="gap:.8rem;flex-wrap:wrap">
+					<div style="flex:1 1 28rem;min-width:0">
+						<input type="search" name="q" value="{{ $search ?? '' }}" autocomplete="off"
+							placeholder="{{ __('admin.loc_search_placeholder') }}" id="locSearchInput">
+					</div>
+					<button type="submit" class="btn"><x-ico name="search" /> {{ __('admin.loc_search_btn') }}</button>
+					@if(($search ?? '') !== '')
+					<a href="{{ route('admin.locations.index') }}" class="btn btn-secondary"><x-ico name="x" /> {{ __('admin.loc_search_reset') }}</a>
+					@endif
+				</div>
+				@if(($search ?? '') !== '')
+				<div class="mt-1 f-14" style="opacity:.7">{{ __('admin.loc_search_found', ['n' => $locations->total()]) }}</div>
+				@endif
+			</form>
+
 			<div class="table-scrollable mb-0">
 				<div class="table-drag-indicator"></div>
 				<table class="table">
@@ -74,7 +91,7 @@
 						</tr>
 					</thead>
                     <tbody>
-                        @foreach($locations as $loc)
+                        @forelse($locations as $loc)
                         <tr>
                             <td>{{ $loc->id }}</td>
                             <td>
@@ -126,7 +143,9 @@
 								</div>
 							</td>
 						</tr>
-                        @endforeach
+                        @empty
+                        <tr><td colspan="5" class="text-center" style="padding:2rem;opacity:.7">{{ __('admin.loc_search_empty') }}</td></tr>
+                        @endforelse
 					</tbody>
 				</table>
 			</div>
@@ -138,4 +157,13 @@
             @endif
 		</div>
 	</div>
+<script>
+	// Поиск без лишних кликов: отправляем форму через 600 мс после последнего ввода
+	(function () {
+		var i = document.getElementById('locSearchInput'), f = document.getElementById('locSearchForm'), t = null;
+		if (!i || !f) return;
+		i.addEventListener('input', function () { clearTimeout(t); t = setTimeout(function () { f.submit(); }, 600); });
+		if (i.value) { var l = i.value.length; i.focus(); try { i.setSelectionRange(l, l); } catch (e) {} }
+	})();
+</script>
 </x-voll-layout>

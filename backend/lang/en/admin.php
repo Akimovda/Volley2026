@@ -489,4 +489,9 @@ return [
     'app_modes_hint' => 'Mode shown: pick Day or Night — both are saved together.',
     'app_open_all' => 'Expand all',
     'app_close_all' => 'Collapse all',
+    'loc_search_placeholder' => 'Search by name, address or city…',
+    'loc_search_btn' => 'Search',
+    'loc_search_reset' => 'Reset',
+    'loc_search_found' => 'Found: :n',
+    'loc_search_empty' => 'Nothing found. Try another query.',
 ];

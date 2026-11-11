@@ -16,15 +16,31 @@ use Illuminate\Validation\Rule;
 
 class AdminLocationController extends Controller
 {
-public function index()
+public function index(Request $request)
 {
+    $search = trim((string) $request->query('q', ''));
+
     $q = Location::query()
         ->with(['city:id,name,region,country_code,timezone']) // добавили region и country_code
         ->orderByRaw('COALESCE((select name from cities where cities.id = locations.city_id), \'\') asc')
         ->orderBy('name');
 
+    if ($search !== '') {
+        // Поиск по названию, адресу, городу (и по ID, если введено число); без учёта регистра, спецсимволы LIKE экранируем
+        $like = '%' . addcslashes(mb_substr($search, 0, 100), '\\%_') . '%';
+        $q->where(function ($w) use ($like, $search) {
+            $w->where('locations.name', 'ilike', $like)
+              ->orWhere('locations.address', 'ilike', $like)
+              ->orWhereHas('city', fn ($c) => $c->where('name', 'ilike', $like));
+            if (ctype_digit($search)) {
+                $w->orWhere('locations.id', (int) $search);
+            }
+        });
+    }
+
     return view('admin.locations.index', [
         'locations' => $q->paginate(30)->withQueryString(),
+        'search'    => $search,
     ]);
 }
 
