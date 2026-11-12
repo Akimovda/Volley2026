@@ -409,5 +409,7 @@
     "Для записи на «:title» необходимо заполнить личные данные.": "You need to fill in your personal details to sign up for “:title”.",
     " + :n в лист ожидания тура →": " + :n added to the waitlist of the round →",
     " + :n в лист ожидания следующего тура.": " + :n added to the waitlist of the next round.",
-    "Промоушен в :season: :active в основном составе, :reserve в резерве.": "Promotion to :season: :active in the main roster, :reserve in the reserve."
+    "Промоушен в :season: :active в основном составе, :reserve в резерве.": "Promotion to :season: :active in the main roster, :reserve in the reserve.",
+    "Ошибка сохранения": "Save error",
+    "Ошибка соединения": "Connection error"
 }

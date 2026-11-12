@@ -196,6 +196,15 @@ return [
     */
 
     'attributes' => [
+        'directions' => 'Directions',
+        'directions.*.courts_count' => 'Number of courts',
+        'directions.*.court_names.*' => 'Court name',
+        'directions.*.hours.*.opens_at' => 'Opening time',
+        'directions.*.hours.*.closes_at' => 'Closing time',
+        'directions.*.base_price' => 'Base price',
+        'directions.*.rules.*.price' => 'Price',
+        'directions.*.rules.*.starts_at' => 'Period start',
+        'directions.*.rules.*.ends_at' => 'Period end',
         'notify_unrated_players' => 'Announce to players without a level',
         'title' => 'Title',
         'direction' => 'Direction',

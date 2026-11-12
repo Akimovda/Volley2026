@@ -101,6 +101,15 @@ return [
     'uuid' => 'Поле «:attribute» заполнено неверно.',
 
     'attributes' => [
+        'directions' => 'Направления',
+        'directions.*.courts_count' => 'Количество кортов',
+        'directions.*.court_names.*' => 'Название корта',
+        'directions.*.hours.*.opens_at' => 'Время открытия',
+        'directions.*.hours.*.closes_at' => 'Время закрытия',
+        'directions.*.base_price' => 'Базовая цена',
+        'directions.*.rules.*.price' => 'Цена',
+        'directions.*.rules.*.starts_at' => 'Начало периода',
+        'directions.*.rules.*.ends_at' => 'Конец периода',
         'notify_unrated_players' => 'Рассылка игрокам без уровня',
         'title' => 'Название',
         'direction' => 'Направление',

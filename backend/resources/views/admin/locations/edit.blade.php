@@ -976,13 +976,13 @@
                         var res = await fetch(f.action, { method: 'POST', body: new FormData(f), credentials: 'same-origin',
                             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
                         if (!res.ok) {
-                            var msg = 'Ошибка сохранения', j = null;
+                            var msg = @json(__('Ошибка сохранения')), j = null;
                             try { j = await res.json(); } catch (e) {}
                             if (j && j.message) msg = j.message;
                             if (j && j.errors) msg += '\n' + Object.keys(j.errors).map(function (key) { return j.errors[key].join(' '); }).join('\n');
                             alert(msg); btn.disabled = false; btn.innerHTML = label; return;
                         }
-                    } catch (e) { alert('Ошибка соединения'); btn.disabled = false; btn.innerHTML = label; return; }
+                    } catch (e) { alert(@json(__('Ошибка соединения'))); btn.disabled = false; btn.innerHTML = label; return; }
                 }
                 main.requestSubmit();                                        // основная форма (фото, порядок, поля) — обычной отправкой с перезагрузкой
             }

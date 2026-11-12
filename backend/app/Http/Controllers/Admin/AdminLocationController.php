@@ -213,7 +213,7 @@ public function update(Request $request, Location $location)
     public function saveDirections(Request $request, Location $location)
     {
         $data = $request->validate([
-            'directions'                          => ['required', 'array'],
+            'directions'                          => ['nullable', 'array'],
             'directions.*.enabled'                 => ['nullable', 'boolean'],
             'directions.*.courts_count'            => ['nullable', 'integer', 'min:1', 'max:20'],
             'directions.*.court_names'             => ['nullable', 'array'],
@@ -228,7 +228,7 @@ public function update(Request $request, Location $location)
 
         DB::transaction(function () use ($data, $location) {
             foreach ([LocationDirection::DIRECTION_CLASSIC, LocationDirection::DIRECTION_BEACH] as $directionKey) {
-                $input = $data['directions'][$directionKey] ?? null;
+                $input = ($data['directions'] ?? [])[$directionKey] ?? null;
                 $enabled = (bool) ($input['enabled'] ?? false);
 
                 $existing = LocationDirection::where('location_id', $location->id)
@@ -326,7 +326,7 @@ public function update(Request $request, Location $location)
     public function savePriceRules(Request $request, Location $location)
     {
         $data = $request->validate([
-            'directions'                        => ['required', 'array'],
+            'directions'                        => ['nullable', 'array'],
             'directions.*.base_price'           => ['nullable', 'numeric', 'min:0.01', 'max:99999'],
             'directions.*.rules'                => ['nullable', 'array'],
             'directions.*.rules.*.court_id'     => ['nullable', 'integer', 'exists:location_courts,id'],
@@ -336,7 +336,7 @@ public function update(Request $request, Location $location)
             'directions.*.rules.*.price'        => ['required', 'numeric', 'min:0.01', 'max:99999'],
         ]);
 
-        foreach ($data['directions'] as $directionKey => $input) {
+        foreach (($data['directions'] ?? []) as $directionKey => $input) {
             foreach (($input['rules'] ?? []) as $i => $rule) {
                 $hasStart = !empty($rule['starts_at']);
                 $hasEnd = !empty($rule['ends_at']);
@@ -364,7 +364,7 @@ public function update(Request $request, Location $location)
                     continue;
                 }
 
-                $input = $data['directions'][$directionKey] ?? null;
+                $input = ($data['directions'] ?? [])[$directionKey] ?? null;
                 if ($input === null) {
                     continue;
                 }
