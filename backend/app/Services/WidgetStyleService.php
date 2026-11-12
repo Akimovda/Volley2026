@@ -167,6 +167,8 @@ class WidgetStyleService
                 'court_min_width'  => ['int', 130, [90, 260]],
                 'show_court_names' => ['bool', true],
                 'show_court_icons' => ['bool', true],
+                'show_prices'      => ['bool', true],
+                'show_legend'      => ['bool', true],
                 'show_titles'      => ['bool', false],
                 'busy_label'       => ['text', 'Занято', 30],
                 'free_hint'        => ['text', 'Свободно — нажмите, чтобы забронировать', 80],
@@ -187,6 +189,8 @@ class WidgetStyleService
             ],
             'click' => [
                 'click_mode'  => ['enum', 'event', ['event', 'link', 'none']],
+                'confirm_step' => ['bool', true],
+                'book_button_text' => ['text', 'Забронировать', 30],
                 'booking_url' => ['url', '', 300],
                 'link_target' => ['enum', '_blank', ['_blank', '_top', '_self']],
             ],

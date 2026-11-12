@@ -208,7 +208,7 @@
                         <div class="f-13 text-muted mb-05">{!! __('profile.rw_tl_booking_hint') !!}</div>
                         <textarea readonly rows="4" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">// {{ __('profile.rw_tl_booking_js') }}
 document.getElementById('volley-rental-timeline').addEventListener('volley-rental-pick', function (e) {
-  var p = e.detail; // location_id, location, direction, court_id, court, date, from, to, duration
+  var p = e.detail; // location_id, location, direction, court_id, court, date, from, to, duration, price, price_text
   openMyBookingForm(p);
 });</textarea>
                         <div class="f-13 text-muted" style="margin-top:.6rem">{!! __('profile.rw_tl_booking_url') !!}</div>

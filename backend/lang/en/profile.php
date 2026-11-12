@@ -1074,7 +1074,7 @@ return [
     'rw_tl_booking_title' => 'How to take bookings on your own site',
     'rw_tl_booking_hint' => 'When a free slot is clicked the widget fires the <code>volley-rental-pick</code> event (for iframe — a <code>postMessage</code> of type <code>volley-rental-pick</code>). Subscribe to it and open your own booking form:',
     'rw_tl_booking_js' => 'Free-slot click event',
-    'rw_tl_booking_url' => 'Or set “Booking link” in the settings — the widget opens it substituting <code>{location_id} {location} {direction} {court_id} {court} {date} {from} {to} {duration}</code>, e.g. <code>https://club.com/book?court={court_id}&amp;date={date}&amp;from={from}&amp;to={to}</code>.',
+    'rw_tl_booking_url' => 'Or set “Booking link” in the settings — the widget opens it substituting <code>{location_id} {location} {direction} {court_id} {court} {date} {from} {to} {duration} {price}</code>, e.g. <code>https://club.com/book?court={court_id}&amp;date={date}&amp;from={from}&amp;to={to}</code>.',
     'rw_fit_attrs_tl' => 'Container attributes override the settings: data-mode (day | week), data-theme (light | dark | custom), data-lang (ru | en | auto), data-accent (color), data-header="0" hides the header, data-location (venue id), data-direction (classic | beach).',
     'wst_g_view' => 'View and navigation',
     'wst_g_grid' => 'Timeline grid',
@@ -1123,4 +1123,8 @@ return [
     'wst_v__blank' => 'In a new tab',
     'wst_v__top' => 'In the same window (whole page)',
     'wst_v__self' => 'In the same window (inside frame)',
+    'wst_f_show_prices' => 'Slot price (by time of day and weekday)',
+    'wst_f_show_legend' => 'Legend under the timeline (colors and price by interval)',
+    'wst_f_confirm_step' => 'First select the time and show “Total”, then a “Book” button',
+    'wst_f_book_button_text' => 'Confirm button text',
 ];

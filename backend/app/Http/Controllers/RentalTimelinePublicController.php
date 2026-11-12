@@ -25,7 +25,8 @@ class RentalTimelinePublicController extends Controller
     {
         $out = [];
         foreach (['today', 'day', 'week', 'prev', 'next', 'loading', 'closed', 'no_courts', 'location', 'indoor', 'outdoor', 'busy_n',
-                  'closed_short', 'error', 'free_aria', 'empty', 'occupancy', 'now'] as $k) {
+                  'closed_short', 'error', 'free_aria', 'empty', 'occupancy', 'now', 'total', 'reset', 'book', 'h', 'min', 'legend_free',
+                  'legend_busy', 'legend_past', 'legend_prices', 'all_courts', 'per_hour', 'select_hint'] as $k) {
             $out[$k] = __('club.tl_' . $k);
         }
         $out['classic'] = __('events.card_dir_classic');

@@ -52,8 +52,11 @@
             <div id="pbPast" class="alert alert-info" style="display:none">{{ __('club.date_in_past') }}</div>
             <div id="pbGrid"></div>
 
-            <div id="pbCostWrap" class="mt-2 mb-2 f-16" style="display:none">
-                {{ __('club.cost') }}: <strong id="pbCostValue"></strong>
+            <div id="pbLegend" class="f-13 cd mt-2" style="display:none"></div>
+
+            <div id="pbCostWrap" class="mt-2 mb-2" style="display:none;padding:12px 14px;border:2px solid var(--accent, #e7612f);border-radius:12px">
+                <div class="f-14 cd" id="pbSummary"></div>
+                <div class="f-20 b-700">{{ __('club.total_you') }}: <strong id="pbCostValue"></strong></div>
             </div>
 
             <button type="submit" class="btn btn-primary w-100" id="pbSubmitBtn" disabled>{{ __('club.send_request') }}</button>
@@ -81,12 +84,43 @@
     var gridEl = document.getElementById('pbGrid');
     var costWrap = document.getElementById('pbCostWrap');
     var costValue = document.getElementById('pbCostValue');
+    var summaryEl = document.getElementById('pbSummary');
+    var legendEl = document.getElementById('pbLegend');
     var courtIdInput = document.getElementById('pbCourtId');
     var timeFromInput = document.getElementById('pbTimeFrom');
     var submitBtn = document.getElementById('pbSubmitBtn');
 
     var windowsUrl = @json(route('locations.booking_windows', $location));
     var freeLabel = @json(__('club.price_free'));
+    var loc = @json(app()->getLocale() === 'en' ? 'en-GB' : 'ru-RU');
+    var T = @json(['legend' => __('club.pb_legend_prices'), 'all' => __('club.tl_all_courts'), 'perHour' => __('club.tl_per_hour'), 'h' => __('club.tl_h'), 'min' => __('club.tl_min')]);
+
+    function money(v) { return Number(v).toLocaleString(loc, { maximumFractionDigits: 0 }) + ' ₽'; }
+    function hhmm(m) { return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
+    function toMin(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1]); }
+    function durText(min) { var h = Math.floor(min / 60), m = min % 60; return (h ? h + ' ' + T.h : '') + (m ? (h ? ' ' : '') + m + ' ' + T.min : ''); }
+
+    // Легенда «интервалы и стоимость» на выбранный день: корты с одинаковой сеткой цен объединены
+    function renderLegend(data) {
+        var courts = (data && data.courts) || [], rates = (data && data.rates) || {};
+        var groups = {}, order = [];
+        courts.forEach(function (c) {
+            var segs = rates[c.id] || [];
+            if (!segs.length) return;
+            var sig = JSON.stringify(segs);
+            if (!groups[sig]) { groups[sig] = { names: [], segs: segs }; order.push(sig); }
+            groups[sig].names.push(c.name);
+        });
+        if (!order.length) { legendEl.style.display = 'none'; legendEl.innerHTML = ''; return; }
+        var esc = window.__cbIco.esc;
+        legendEl.innerHTML = '<div class="mb-1">' + esc(T.legend) + ':</div>' + order.map(function (sig) {
+            var g = groups[sig];
+            return '<div style="margin-bottom:4px">' + (order.length === 1 ? esc(T.all) : '<b>' + esc(g.names.join(', ')) + '</b>') + ': ' +
+                g.segs.map(function (r) { return hhmm(r[0]) + '–' + hhmm(r[1]) + ' — <b>' + esc(money(r[2])) + esc(T.perHour) + '</b>'; }).join(' · ') + '</div>';
+        }).join('');
+        legendEl.style.display = '';
+    }
+
 
     function clearSelection() {
         courtIdInput.value = '';
@@ -94,6 +128,7 @@
         costWrap.style.display = 'none';
         submitBtn.disabled = true;
     }
+    function hideLegend() { legendEl.style.display = 'none'; legendEl.innerHTML = ''; }
 
     function currentDirection() {
         return directionSelect ? directionSelect.value : singleDirection;
@@ -102,6 +137,7 @@
     function renderGrid(data) {
         gridEl.innerHTML = '';
         clearSelection();
+        renderLegend(data);
 
         if (data && data.is_past) {
             emptyEl.style.display = 'none';
@@ -137,7 +173,7 @@
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'btn btn-small btn-secondary';
-                var priceText = (slot.price === null || slot.price === undefined) ? freeLabel : (Number(slot.price) + ' ₽');
+                var priceText = (slot.price === null || slot.price === undefined) ? freeLabel : money(slot.price);
                 btn.textContent = slot.start + ' · ' + priceText;
                 btn.addEventListener('click', function () {
                     gridEl.querySelectorAll('button').forEach(function (b) { b.classList.remove('btn-primary'); b.classList.add('btn-secondary'); });
@@ -147,6 +183,8 @@
                     courtIdInput.value = String(court.id);
                     timeFromInput.value = slot.start;
                     costValue.textContent = priceText;
+                    var dur = parseInt(durationSelect.value, 10) || 0;
+                    summaryEl.textContent = court.name + ' · ' + dateInput.value + ' · ' + slot.start + '–' + hhmm(toMin(slot.start) + dur) + ' (' + durText(dur) + ')';
                     costWrap.style.display = '';
                     submitBtn.disabled = false;
                 });
@@ -167,6 +205,7 @@
         clearSelection();
         emptyEl.style.display = 'none';
         pastEl.style.display = 'none';
+        hideLegend();
 
         if (!direction || !duration || !date) return;
 

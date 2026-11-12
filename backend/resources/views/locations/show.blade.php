@@ -129,6 +129,8 @@
                     </div>
                     @endif
 
+                    @include('club._partials.price_table', ['location' => $location])
+
                     @if(!empty($location->long_text_full))
 					<div>
 						{!! $location->long_text_full !!}

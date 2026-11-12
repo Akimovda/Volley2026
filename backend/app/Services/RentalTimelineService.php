@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Location;
+use App\Models\LocationCourt;
 use App\Models\RentalWidget;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class RentalTimelineService
 {
-    public function __construct(private TimelineService $timeline)
+    public function __construct(private TimelineService $timeline, private CourtPricingService $pricing)
     {
     }
 
@@ -73,7 +74,7 @@ class RentalTimelineService
             'now_min'    => $now->hour * 60 + $now->minute,
         ];
 
-        $key = 'rtl_v1_' . $location->id . '_' . $direction . '_' . $date->toDateString() . '_' . $mode . '_' . (int) $showTitles;
+        $key = 'rtl_v2_' . $location->id . '_' . $direction . '_' . $date->toDateString() . '_' . $mode . '_' . (int) $showTitles;
         $body = Cache::remember($key, 45, fn () => $mode === 'week'
             ? $this->week($location, $direction, $date, $now)
             : $this->day($location, $direction, $date, $showTitles));
@@ -88,6 +89,10 @@ class RentalTimelineService
             return ['closed' => true, 'courts' => []];
         }
 
+        $opens = $this->toMin($row['opens_at']);
+        $closes = $this->toMin($row['closes_at']);
+        $models = LocationCourt::with('direction.location.city')->whereIn('id', array_column($row['courts'], 'id'))->get()->keyBy('id');
+
         $courts = [];
         foreach ($row['courts'] as $c) {
             $slots = [];
@@ -98,7 +103,9 @@ class RentalTimelineService
                     'title' => ($showTitles && ($s['type'] ?? '') === 'event') ? ($s['title'] ?? null) : null,
                 ], fn ($v) => $v !== null);
             }
-            $courts[] = ['id' => $c['id'], 'name' => $c['name'], 'indoor' => (bool) $c['is_indoor'], 'slots' => $slots];
+            $model = $models->get($c['id']);
+            $rates = $model ? $this->pricing->ratesForDay($model, $date, $opens, $closes) : [];
+            $courts[] = ['id' => $c['id'], 'name' => $c['name'], 'indoor' => (bool) $c['is_indoor'], 'slots' => $slots, 'rates' => $rates];
         }
 
         return ['closed' => false, 'opens' => $row['opens_at'], 'closes' => $row['closes_at'], 'courts' => $courts];

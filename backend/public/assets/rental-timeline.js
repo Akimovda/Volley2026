@@ -34,7 +34,7 @@
       '.vrt{--vrt-accent:var(--vw-accent,' + s.accent + ');--vrt-text:var(--vw-text,' + s.color_text + ');--vrt-muted:var(--vw-muted,' + s.color_muted + ');' +
       '--vrt-grid:var(--vw-grid,' + s.color_grid + ');--vrt-free:var(--vw-free,' + s.color_free + ');--vrt-free-h:var(--vw-free-hover,' + s.color_free_hover + ');' +
       '--vrt-busy:var(--vw-busy,' + s.color_busy + ');--vrt-busy-t:var(--vw-busy-text,' + s.color_busy_text + ');--vrt-past:var(--vw-past,' + s.color_past + ');' +
-      '--vrt-r:var(--vw-radius,' + r + 'px);--vrt-classic:var(--vw-dir-classic,' + s.dir_classic + ');--vrt-beach:var(--vw-dir-beach,' + s.dir_beach + ');' +
+      '--vrt-panel:var(--vw-panel,' + (s.theme === 'dark' ? '#222333' : '#ffffff') + ');--vrt-r:var(--vw-radius,' + r + 'px);--vrt-classic:var(--vw-dir-classic,' + s.dir_classic + ');--vrt-beach:var(--vw-dir-beach,' + s.dir_beach + ');' +
       'box-sizing:border-box;font-family:' + (fonts[s.font] || fonts.system) + ';background:' + bg + ';color:var(--vrt-text);padding:12px;line-height:1.35;font-size:14px}' +
       '.vrt *,.vrt *::before,.vrt *::after{box-sizing:border-box}' +
       '.vrt button{font:inherit;color:inherit;cursor:pointer}' +
@@ -70,10 +70,19 @@
       '.vrt-free{position:absolute;left:3px;right:3px;border:0;border-radius:calc(var(--vrt-r) / 2);background:var(--vrt-free);padding:0;text-align:left;transition:background .12s;font-size:12px;color:var(--vrt-muted);display:flex;align-items:flex-start;padding:3px 6px}' +
       'button.vrt-free:hover,button.vrt-free:focus-visible{background:var(--vrt-free-h);outline:2px solid var(--vrt-accent);outline-offset:-2px;color:var(--vrt-text)}' +
       'div.vrt-free{cursor:default}' +
+      '.vrt-free.sel,button.vrt-free.sel:hover{background:var(--vrt-accent);color:#fff;outline:0}.vrt-free.sel .vrt-p{color:#fff}' +
+      '.vrt-free{flex-direction:column;gap:1px;justify-content:flex-start}.vrt-t{font-weight:600}.vrt-p{font-weight:700;color:var(--vrt-text);font-size:12px}' +
       '.vrt-busy{position:absolute;left:3px;right:3px;border-radius:calc(var(--vrt-r) / 2);background:var(--vrt-busy);color:var(--vrt-busy-t);padding:4px 6px;font-size:12px;font-weight:600;overflow:hidden;' +
       'background-image:repeating-linear-gradient(135deg,rgba(127,127,127,.12) 0 6px,transparent 6px 12px)}' +
       '.vrt-past{position:absolute;left:0;right:0;top:0;background:var(--vrt-past);opacity:.75;pointer-events:none}' +
       '.vrt-now{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;pointer-events:none;z-index:3}' +
+      '.vrt-sel{position:sticky;bottom:8px;z-index:5;margin-top:10px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:var(--vrt-r);border:2px solid var(--vrt-accent);background:var(--vrt-panel);box-shadow:0 6px 24px rgba(0,0,0,.16)}' +
+      '.vrt-sel-info{font-weight:600}.vrt-sel-info small{display:block;font-weight:400;color:var(--vrt-muted)}' +
+      '.vrt-total{font-size:20px;font-weight:800;white-space:nowrap}' +
+      '.vrt-book{border:0;background:var(--vrt-accent);color:#fff;border-radius:10px;padding:10px 20px;font-weight:700}.vrt-book:hover{opacity:.9}' +
+      '.vrt-legend{margin-top:12px;font-size:12px;color:var(--vrt-muted);display:flex;flex-direction:column;gap:6px}' +
+      '.vrt-legend-row{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}.vrt-sw{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:5px;border:1px solid var(--vrt-grid)}' +
+      '.vrt-prices b{color:var(--vrt-text)}' +
       '.vrt-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}' +
       '.vrt-wd{border:2px solid var(--vrt-grid);border-radius:var(--vrt-r);padding:10px 8px;background:transparent;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}' +
       'button.vrt-wd:hover{border-color:var(--vrt-accent)}' +
@@ -92,7 +101,7 @@
     var root = host.attachShadow ? (host.shadowRoot || host.attachShadow({ mode: 'open' })) : host;
     var st = {
       loc: opts.location || 0, dir: opts.direction || '', mode: opts.mode || '', date: '',
-      style: null, labels: null, locale: 'ru', data: null, error: null, loading: true
+      style: null, labels: null, locale: 'ru', data: null, error: null, loading: true, sel: null
     };
     var seq = 0;
 
@@ -131,6 +140,51 @@
       var min = s.hide_past ? d.today : null;
       var max = (+s.days_ahead > 0) ? addDays(d.today, +s.days_ahead) : null;
       return { min: min, max: max };
+    }
+
+    // Ставка корта (₽/час) в минуту суток из сжатых отрезков [from, to, rate]
+    function rateAt(court, m) {
+      var r = court.rates || [];
+      for (var i = 0; i < r.length; i++) { if (m >= r[i][0] && m < r[i][1]) return r[i][2]; }
+      return null;
+    }
+    // Цена слота: по получасам от начала слота — как на сервере (CourtPricingService::calculate)
+    function slotPrice(court, from, to) {
+      var total = 0, any = false;
+      for (var m = from; m < to; m += 30) {
+        var len = Math.min(30, to - m), rate = rateAt(court, m);
+        if (rate != null) { total += rate * len / 60; any = true; }
+      }
+      return any ? Math.round(total * 100) / 100 : null;
+    }
+    function fmtMoney(v) {
+      try { return v.toLocaleString(st.locale === 'en' ? 'en-GB' : 'ru-RU', { maximumFractionDigits: 0 }) + ' \u20BD'; } catch (e) { return Math.round(v) + ' \u20BD'; }
+    }
+
+    function courtById(id) {
+      var r = null;
+      ((st.data && st.data.courts) || []).forEach(function (c) { if (String(c.id) === String(id)) r = c; });
+      return r;
+    }
+    function rangeFree(court, a, b) {
+      return !court.slots.some(function (x) { return toMin(x.from) < b && toMin(x.to) > a; });
+    }
+    function fmtDur(min) {
+      var L = st.labels, h = Math.floor(min / 60), m = min % 60;
+      return (h ? h + ' ' + L.h : '') + (m ? (h ? ' ' : '') + m + ' ' + L.min : '');
+    }
+    // выбор диапазона слотов на одном корте: клик — выбрать, соседний слот — продлить, крайний выбранный — сократить
+    function toggleCell(courtId, from, to) {
+      var a = toMin(from), b = toMin(to), c = courtById(courtId), sel = st.sel;
+      if (!sel || sel.court !== +courtId) { st.sel = { court: +courtId, from: a, to: b }; return; }
+      if (a >= sel.from && b <= sel.to) {
+        if (a === sel.from && b === sel.to) { st.sel = null; return; }
+        if (a === sel.from) { sel.from = b; return; }
+        if (b === sel.to) { sel.to = a; return; }
+        st.sel = { court: +courtId, from: a, to: b }; return;
+      }
+      var nf = Math.min(a, sel.from), nt = Math.max(b, sel.to);
+      if (c && rangeFree(c, nf, nt)) { sel.from = nf; sel.to = nt; } else { st.sel = { court: +courtId, from: a, to: b }; }
     }
 
     function freeWindows(court, opens, closes, isToday, isPast, nowMin, hidePast) {
@@ -177,11 +231,17 @@
           for (var m = w[0]; m + slotMin <= w[1]; m += slotMin) {
             var style = 'top:' + Math.round((m - opens) * PX) + 'px;height:' + Math.round(slotMin * PX) + 'px';
             var from = toHHMM(m), to = toHHMM(m + slotMin);
-            var aria = L.free_aria.replace('{court}', c.name).replace('{date}', dayLabel(d.date, true)).replace('{from}', from).replace('{to}', to);
+            var price = s.show_prices ? slotPrice(c, m, m + slotMin) : null;
+            var priceText = price != null ? fmtMoney(price) : '';
+            var aria = L.free_aria.replace('{court}', c.name).replace('{date}', dayLabel(d.date, true)).replace('{from}', from).replace('{to}', to) + (priceText ? ', ' + priceText : '');
+            var cellH = slotMin * PX;
+            var inner = '<span class="vrt-t">' + (cellH >= 24 ? from : '') + '</span>' + (priceText && cellH >= 24 ? '<span class="vrt-p">' + esc(priceText) + '</span>' : '');
+            var tip = s.free_hint + (priceText ? ' \u2014 ' + priceText : '');
+            var isSel = st.sel && st.sel.court === c.id && m >= st.sel.from && m + slotMin <= st.sel.to;
             if (clickable) {
-              cells += '<button type="button" class="vrt-free" style="' + style + '" data-act="pick" data-court="' + c.id + '" data-from="' + from + '" data-to="' + to + '" title="' + esc(s.free_hint) + '" aria-label="' + esc(aria) + '">' + (slotMin * PX >= 30 ? from : '') + '</button>';
+              cells += '<button type="button" class="vrt-free' + (isSel ? ' sel' : '') + '" aria-pressed="' + (isSel ? 'true' : 'false') + '" style="' + style + '" data-act="pick" data-court="' + c.id + '" data-from="' + from + '" data-to="' + to + '" title="' + esc(tip) + '" aria-label="' + esc(aria) + '">' + inner + '</button>';
             } else {
-              cells += '<div class="vrt-free" style="' + style + '">' + (slotMin * PX >= 30 ? from : '') + '</div>';
+              cells += '<div class="vrt-free" style="' + style + '" title="' + esc(priceText) + '">' + inner + '</div>';
             }
           }
         });
@@ -197,6 +257,48 @@
 
       return '<div class="vrt-scroll"><div class="vrt-day" style="grid-template-columns:52px repeat(' + d.courts.length + ',minmax(' + (+s.court_min_width) + 'px,1fr))">' +
         '<div class="vrt-axis"><div style="height:34px"></div><div style="position:relative;height:' + H + 'px">' + axis + '</div></div>' + cols + '</div></div>';
+    }
+
+    function selPanel() {
+      var s = st.style, d = st.data, L = st.labels, sel = st.sel;
+      if (!sel || !s.confirm_step || s.click_mode === 'none') return '';
+      var c = courtById(sel.court);
+      if (!c) return '';
+      var price = s.show_prices ? slotPrice(c, sel.from, sel.to) : null;
+      return '<div class="vrt-sel" role="status"><div class="vrt-sel-info">' + esc(c.name) + ' \u00B7 ' + esc(dayLabel(d.date, true)) +
+        '<small>' + toHHMM(sel.from) + '\u2013' + toHHMM(sel.to) + ' (' + esc(fmtDur(sel.to - sel.from)) + ')</small></div>' +
+        (price != null ? '<div class="vrt-total">' + esc(L.total.replace('{sum}', fmtMoney(price))) + '</div>' : '') +
+        '<span style="display:inline-flex;gap:8px"><button type="button" class="vrt-btn" data-act="reset">' + esc(L.reset) + '</button>' +
+        '<button type="button" class="vrt-book" data-act="book">' + esc(s.book_button_text || L.book) + '</button></span></div>';
+    }
+
+    function legend() {
+      var s = st.style, d = st.data, L = st.labels;
+      if (!s.show_legend || d.closed || !(d.courts || []).length) return '';
+      var isToday = d.date === d.today;
+      var row = '<div class="vrt-legend-row"><span><i class="vrt-sw" style="background:var(--vrt-free)"></i>' + esc(L.legend_free) + '</span>' +
+        '<span><i class="vrt-sw" style="background:var(--vrt-busy)"></i>' + esc(L.legend_busy) + '</span>' +
+        (s.hide_past && (isToday || d.date < d.today) ? '<span><i class="vrt-sw" style="background:var(--vrt-past)"></i>' + esc(L.legend_past) + '</span>' : '') +
+        (s.click_mode !== 'none' ? '<span>' + esc(L.select_hint) + '</span>' : '') + '</div>';
+      var prices = '';
+      if (s.show_prices) {
+        var groups = {}, order = [];
+        d.courts.forEach(function (c) {
+          var segs = (c.rates || []).filter(function (r) { return r[2] != null; });
+          if (!segs.length) return;
+          var sig = JSON.stringify(segs);
+          if (!groups[sig]) { groups[sig] = { names: [], segs: segs }; order.push(sig); }
+          groups[sig].names.push(c.name);
+        });
+        if (order.length) {
+          prices = '<div class="vrt-prices"><div style="margin-bottom:3px">' + esc(L.legend_prices) + ':</div>' + order.map(function (sig) {
+            var g = groups[sig];
+            return '<div class="vrt-legend-row"><span>' + (order.length === 1 ? esc(L.all_courts) : '<b>' + esc(g.names.join(', ')) + '</b>') + ':</span>' +
+              g.segs.map(function (r) { return '<span>' + toHHMM(r[0]) + '\u2013' + toHHMM(r[1]) + ' \u2014 <b>' + esc(fmtMoney(r[2])) + esc(L.per_hour) + '</b></span>'; }).join('') + '</div>';
+          }).join('') + '</div>';
+        }
+      }
+      return '<div class="vrt-legend">' + row + prices + '</div>';
     }
 
     function renderWeek() {
@@ -256,7 +358,7 @@
           (s.show_today_button ? '<button type="button" class="vrt-btn" data-act="nav" data-date="' + d.today + '">' + esc(L.today) + '</button>' : '') + '</span>';
       }
       html += '<div class="vrt-bar">' + bar + '</div>';
-      html += d.mode === 'week' ? renderWeek() : renderDay();
+      html += d.mode === 'week' ? renderWeek() : renderDay() + selPanel() + legend();
 
       var origin = ''; try { origin = new URL(opts.api, location.href).host; } catch (e) {}
       if (origin) html += '<div class="vrt-foot"><a href="https://' + esc(origin) + '" target="_blank" rel="noopener">' + esc(origin) + '</a></div>';
@@ -274,14 +376,16 @@
       var d = st.data, s = st.style;
       var court = null;
       (d.courts || []).forEach(function (c) { if (String(c.id) === String(courtId)) court = c; });
+      var price = (court && s.show_prices) ? slotPrice(court, toMin(from), toMin(to)) : null;
       var detail = {
         location_id: d.location.id, location: d.location.name, direction: d.direction,
-        court_id: +courtId, court: court ? court.name : '', date: d.date, from: from, to: to, duration: toMin(to) - toMin(from)
+        court_id: +courtId, court: court ? court.name : '', date: d.date, from: from, to: to, duration: toMin(to) - toMin(from),
+        price: price, price_text: price != null ? fmtMoney(price) : '', currency: 'RUB'
       };
       try { host.dispatchEvent(new CustomEvent('volley-rental-pick', { detail: detail, bubbles: true, composed: true })); } catch (e) {}
       if (cfg.iframe) { try { parent.postMessage({ type: 'volley-rental-pick', detail: detail }, '*'); } catch (e) {} }
       if (s.click_mode === 'link' && s.booking_url) {
-        var url = s.booking_url.replace(/\{(\w+)\}/g, function (m, k) { return detail.hasOwnProperty(k) ? encodeURIComponent(detail[k]) : m; });
+        var url = s.booking_url.replace(/\{(\w+)\}/g, function (m, k) { return detail.hasOwnProperty(k) ? encodeURIComponent(detail[k] == null ? '' : detail[k]) : m; });
         if (/^https?:\/\//i.test(url)) {
           if (s.link_target === '_top') { try { window.top.location.href = url; } catch (e) { window.open(url, '_blank', 'noopener'); } }
           else if (s.link_target === '_self') { window.location.href = url; }
@@ -294,15 +398,25 @@
       var el = e.target.closest ? e.target.closest('[data-act]') : null;
       if (!el || el.disabled) return;
       var a = el.getAttribute('data-act');
-      if (a === 'pick') { pick(el.getAttribute('data-court'), el.getAttribute('data-from'), el.getAttribute('data-to')); return; }
-      if (a === 'dir') { st.dir = el.getAttribute('data-dir'); load(); }
-      else if (a === 'mode') { st.mode = el.getAttribute('data-mode'); load(); }
-      else if (a === 'nav') { st.date = el.getAttribute('data-date'); load(); }
-      else if (a === 'gotoday') { st.date = el.getAttribute('data-date'); st.mode = 'day'; load(); }
+      if (a === 'pick') {
+        var cid = el.getAttribute('data-court'), f = el.getAttribute('data-from'), t = el.getAttribute('data-to');
+        if (!st.style.confirm_step) { pick(cid, f, t); return; }
+        toggleCell(cid, f, t); render(); return;
+      }
+      if (a === 'book') {
+        var c = st.sel && courtById(st.sel.court);
+        if (c) pick(c.id, toHHMM(st.sel.from), toHHMM(st.sel.to));
+        return;
+      }
+      if (a === 'reset') { st.sel = null; render(); return; }
+      if (a === 'dir') { st.sel = null; st.dir = el.getAttribute('data-dir'); load(); }
+      else if (a === 'mode') { st.sel = null; st.mode = el.getAttribute('data-mode'); load(); }
+      else if (a === 'nav') { st.sel = null; st.date = el.getAttribute('data-date'); load(); }
+      else if (a === 'gotoday') { st.sel = null; st.date = el.getAttribute('data-date'); st.mode = 'day'; load(); }
     });
     root.addEventListener('change', function (e) {
       var el = e.target;
-      if (el && el.getAttribute && el.getAttribute('data-act') === 'loc') { st.loc = +el.value; st.dir = ''; load(); }
+      if (el && el.getAttribute && el.getAttribute('data-act') === 'loc') { st.sel = null; st.loc = +el.value; st.dir = ''; load(); }
     });
     window.addEventListener('resize', fit);
 
