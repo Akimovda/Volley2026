@@ -24,6 +24,11 @@ class WidgetStyleService
      */
     public static function groups(string $kind = 'events'): array
     {
+        // Виджет карточек площадок (kind=cards в rental_widgets) использует набор полей аренды
+        if ($kind === 'cards') {
+            $kind = 'rental';
+        }
+
         if ($kind === 'timeline') {
             return self::timelineGroups();
         }
