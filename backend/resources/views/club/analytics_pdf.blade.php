@@ -73,7 +73,7 @@ table.hm td { height: 17px; text-align: center; font-size: 7px; color: #444; bor
 
 
 <div class="delta">
-    <b>{{ __('club.xl_vs_prev', ['period' => $prevLabel]) }}:</b>
+    <b>{{ __('club.xl_vs_prev', ['period' => $prevLabel]) }}:</b>&nbsp;
     {{ __('club.kpi_occupancy') }} {{ $sgn($d['occupancy_pp']) }} {{ __('club.pp') }};
     {{ __('club.kpi_revenue') }} {{ $d['revenue_pct'] === null ? '—' : $sgn($d['revenue_pct']) . '%' }};
     {{ __('club.kpi_cancel') }} {{ $sgn($d['cancelled_diff']) }}
