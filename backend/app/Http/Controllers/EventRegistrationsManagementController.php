@@ -58,7 +58,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanManageEvent($user, $event);
 
         if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
-            return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
+            return back()->with('error', __('Нет колонки cancelled_at в event_registrations.'));
         }
 
         $hasPosition    = \App\Support\SchemaCache::hasColumn('event_registrations', 'position');
@@ -381,7 +381,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanManageEvent($authUser, $event);
 
         if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
-            return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
+            return back()->with('error', __('Нет колонки cancelled_at в event_registrations.'));
         }
 
         $event->loadMissing('gameSettings');
@@ -454,7 +454,7 @@ class EventRegistrationsManagementController extends Controller
                 ->filter(fn ($r) => $r->merged_into_user_id !== null || $r->deleted_at === null)
                 ->pluck('uid')->unique()->values()->all();
             if (!$memberIds) {
-                return back()->with('error', 'В команде нет участников.');
+                return back()->with('error', __('В команде нет участников.'));
             }
             $added = 0;
             $skipped = [];
@@ -470,7 +470,7 @@ class EventRegistrationsManagementController extends Controller
             }
             $msg = "Команда «{$team->name}»: добавлено {$added} из " . count($memberIds) . '.';
             $back = back()->with($added > 0 ? 'status' : 'error', $msg);
-            return $skipped ? $back->with('error', $msg . ' Не добавлены: ' . implode('; ', $skipped)) : $back;
+            return $skipped ? $back->with('error', $msg . ' ' . __('Не добавлены:') . ' ' . implode('; ', $skipped)) : $back;
         }
 
         $res = $this->addOnePlayer($event, $authUser, (int) $data['user_id'], $pos, (int) $occurrenceId, $addDirection, $addSlots, $addPositions, $addReserveMax);
@@ -549,7 +549,7 @@ class EventRegistrationsManagementController extends Controller
                     ->count();
                 if ($taken >= $maxForPos) {
                     $lbl = $addPositions[$pos] ?? $pos;
-                    return ['ok' => false, 'msg' => "Позиция «{$lbl}» заполнена ({$taken}/{$maxForPos})."];
+                    return ['ok' => false, 'msg' => __('Позиция «:pos» заполнена (:taken/:max).', ['pos' => $lbl, 'taken' => $taken, 'max' => $maxForPos])];
                 }
             }
         }
@@ -694,7 +694,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanManageEvent($user, $event);
 
         if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
-            return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
+            return back()->with('error', __('В таблице event_registrations нет колонки position (место).'));
         }
 
         $event->loadMissing('gameSettings');
@@ -728,7 +728,7 @@ class EventRegistrationsManagementController extends Controller
             ->first(['id', 'position', 'occurrence_id', 'user_id']);
 
         if (!$row) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         $newPos     = trim((string) ($data['position'] ?? ''));
@@ -750,7 +750,7 @@ class EventRegistrationsManagementController extends Controller
                     ->count();
                 if ($taken >= $maxForPos) {
                     $lbl = $updPositions[$newPos] ?? $newPos;
-                    return back()->with('error', "Позиция «{$lbl}» заполнена ({$taken}/{$maxForPos}).");
+                    return back()->with('error', __('Позиция «:pos» заполнена (:taken/:max).', ['pos' => $lbl, 'taken' => $taken, 'max' => $maxForPos]));
                 }
             }
         }
@@ -772,7 +772,7 @@ class EventRegistrationsManagementController extends Controller
 
         $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
 
-        return back()->with('status', 'Место обновлено ✅');
+        return back()->with('status', __('Место обновлено ✅'));
     }
 
     /**
@@ -790,7 +790,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanManageEvent($authUser, $event);
 
         if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
-            return back()->with('error', 'В таблице event_registrations нет колонки position (место).');
+            return back()->with('error', __('В таблице event_registrations нет колонки position (место).'));
         }
 
         $data = $request->validate([
@@ -811,17 +811,17 @@ class EventRegistrationsManagementController extends Controller
         $regB = $rows->get((int) $data['registration_id_b']);
 
         if (!$regA || !$regB) {
-            return back()->with('error', 'Одна из регистраций не найдена или отменена.');
+            return back()->with('error', __('Одна из регистраций не найдена или отменена.'));
         }
 
         if ((int) $regA->occurrence_id !== (int) $regB->occurrence_id) {
-            return back()->with('error', 'Игроки должны быть записаны на один и тот же тур.');
+            return back()->with('error', __('Игроки должны быть записаны на один и тот же тур.'));
         }
 
         $userA = User::find((int) $regA->user_id);
         $userB = User::find((int) $regB->user_id);
         if (!$userA || !$userB) {
-            return back()->with('error', 'Не удалось найти игроков для обмена.');
+            return back()->with('error', __('Не удалось найти игроков для обмена.'));
         }
 
         $occId = (int) $regA->occurrence_id;
@@ -829,7 +829,7 @@ class EventRegistrationsManagementController extends Controller
         $posB  = (string) ($regB->position ?? '');
 
         if ($posA === $posB) {
-            return back()->with('error', 'У выбранных игроков уже одинаковая позиция.');
+            return back()->with('error', __('У выбранных игроков уже одинаковая позиция.'));
         }
 
         // Гендерная квота — проверяем каждого игрока на позицию, в которую он переходит.
@@ -910,7 +910,7 @@ class EventRegistrationsManagementController extends Controller
             if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'swap_position', 'event', $event->id, "Поменял местами позиции игроков в мероприятии: {$event->title}");
         }
 
-        return back()->with('status', "Позиции обменены: «{$labelA}» ↔ «{$labelB}» ✅");
+        return back()->with('status', __('Позиции обменены: «:a» ↔ «:b» ✅', ['a' => $labelA, 'b' => $labelB]));
     }
 
     /**
@@ -928,7 +928,7 @@ class EventRegistrationsManagementController extends Controller
         $this->ensureCanManageEvent($authUser, $event);
 
         if (!\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
-            return back()->with('error', 'Нет колонки cancelled_at в event_registrations.');
+            return back()->with('error', __('Нет колонки cancelled_at в event_registrations.'));
         }
 
         $row = DB::table('event_registrations')
@@ -937,7 +937,7 @@ class EventRegistrationsManagementController extends Controller
             ->first(['id', 'user_id', 'group_key', 'cancelled_at', 'is_cancelled', 'status', 'occurrence_id', 'position']);
 
         if (!$row) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         // Проверяем все три поля — если хоть одно говорит «отменена», считаем отменённой
@@ -975,7 +975,7 @@ class EventRegistrationsManagementController extends Controller
                                 ->where('position', 'reserve')
                                 ->count();
                             if ($resMax > 0 && $takenReserve >= $resMax) {
-                                return back()->with('error', 'Позиция «Резерв» заполнена.');
+                                return back()->with('error', __('Позиция «Резерв» заполнена.'));
                             }
                         } else {
                             $slots = app(\App\Services\EventRoleSlotService::class)->getSlots($event);
@@ -988,7 +988,7 @@ class EventRegistrationsManagementController extends Controller
                                     ->where('position', $requestedPos)
                                     ->count();
                                 if ($taken >= (int) $slot->max_slots) {
-                                    return back()->with('error', 'Выбранная позиция заполнена.');
+                                    return back()->with('error', __('Выбранная позиция заполнена.'));
                                 }
                             }
                         }
@@ -1063,7 +1063,7 @@ class EventRegistrationsManagementController extends Controller
 
             $this->dispatchAnnounceUpdate((int) $event->id, $occId ?: null);
 
-            return back()->with('status', 'Восстановлено ✅');
+            return back()->with('status', __('Восстановлено ✅'));
         }
 
         $this->userNotificationService->createRegistrationCancelledByOrganizerNotification(
@@ -1092,7 +1092,7 @@ class EventRegistrationsManagementController extends Controller
             if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'cancel_registration', 'event', $event->id, "Отменил запись в мероприятие: {$event->title}");
         }
 
-        return back()->with('status', 'Бронь отменена ✅');
+        return back()->with('status', __('Бронь отменена ✅'));
     }
 
     /**
@@ -1112,7 +1112,7 @@ class EventRegistrationsManagementController extends Controller
             ->first(['id', 'user_id', 'group_key', 'occurrence_id', 'cancelled_at', 'is_cancelled', 'status', 'position']);
 
         if (!$row) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         if (!empty($row->group_key)) {
@@ -1129,7 +1129,7 @@ class EventRegistrationsManagementController extends Controller
             ->delete();
 
         if (!$deleted) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         // Триггерим вейтлист только если запись была активной (реально освободила место)
@@ -1167,7 +1167,7 @@ class EventRegistrationsManagementController extends Controller
             if ($orgId) app(StaffLogService::class)->log($authUser, $orgId, 'remove_participant', 'event', $event->id, "Удалил участника из мероприятия: {$event->title}");
         }
 
-        return back()->with('status', 'Регистрация удалена ✅');
+        return back()->with('status', __('Регистрация удалена ✅'));
     }
 
     /**
@@ -1187,11 +1187,11 @@ class EventRegistrationsManagementController extends Controller
             ->first(['id', 'user_id', 'cancelled_at']);
 
         if (!$row) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         if (!empty($row->cancelled_at)) {
-            return back()->with('error', 'Нельзя создать группу для отменённой регистрации.');
+            return back()->with('error', __('Нельзя создать группу для отменённой регистрации.'));
         }
 
         try {
@@ -1200,7 +1200,7 @@ class EventRegistrationsManagementController extends Controller
                 (int) $row->user_id
             );
 
-            return back()->with('status', 'Группа создана ✅ ' . $groupKey);
+            return back()->with('status', __('Группа создана ✅') . ' ' . $groupKey);
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -1229,7 +1229,7 @@ class EventRegistrationsManagementController extends Controller
                 (int) $data['to_user_id']
             );
 
-            return back()->with('status', 'Приглашение в группу отправлено ✅');
+            return back()->with('status', __('Приглашение в группу отправлено ✅'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -1252,7 +1252,7 @@ class EventRegistrationsManagementController extends Controller
             ->first(['id', 'user_id']);
 
         if (!$row) {
-            return back()->with('error', 'Регистрация не найдена.');
+            return back()->with('error', __('Регистрация не найдена.'));
         }
 
         try {
@@ -1261,7 +1261,7 @@ class EventRegistrationsManagementController extends Controller
                 (int) $row->user_id
             );
 
-            return back()->with('status', 'Игрок убран из группы ✅');
+            return back()->with('status', __('Игрок убран из группы ✅'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -1299,7 +1299,7 @@ class EventRegistrationsManagementController extends Controller
             return response()->json(['ok' => true]);
         }
 
-        return back()->with('status', 'Комментарий сохранён ✅');
+        return back()->with('status', __('Комментарий сохранён ✅'));
     }
 
     /**
@@ -1514,7 +1514,7 @@ class EventRegistrationsManagementController extends Controller
         $occurrenceId = (int) $request->query('occurrence', 0);
         if (!$occurrenceId) {
             return redirect()->route('events.registrations.index', ['event' => $event->id])
-                ->with('error', 'Выберите конкретную дату для рассылки.');
+                ->with('error', __('Выберите конкретную дату для рассылки.'));
         }
 
         $counts  = $this->buildBroadcastCounts($event->id, $occurrenceId);

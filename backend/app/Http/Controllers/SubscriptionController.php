@@ -293,7 +293,7 @@ class SubscriptionController extends Controller
             app(\App\Services\StaffLogService::class)->log($user, (int) $template->organizer_id, 'issue_subscription', 'subscription', $sub->id, "Выдал абонемент #{$sub->id} пользователю #{$data['user_id']}");
         }
 
-        return back()->with('status', "Абонемент #{$sub->id} выдан пользователю #{$data['user_id']}");
+        return back()->with('status', __('Абонемент #:id выдан пользователю #:uid', ['id' => $sub->id, 'uid' => $data['user_id']]));
     }
 
     // Покупка абонемента пользователем (с публичной страницы школы)
@@ -303,17 +303,17 @@ class SubscriptionController extends Controller
 
         // Проверяем что шаблон активен и доступен для продажи
         if (!$template->is_active || !$template->sale_enabled) {
-            return back()->with('error', 'Абонемент недоступен для покупки.');
+            return back()->with('error', __('Абонемент недоступен для покупки.'));
         }
 
         // Проверяем лимит продаж
         if ($template->sale_limit && $template->sold_count >= $template->sale_limit) {
-            return back()->with('error', 'Абонемент распродан.');
+            return back()->with('error', __('Абонемент распродан.'));
         }
 
         // Проверяем срок действия
         if ($template->valid_until && $template->valid_until->isPast()) {
-            return back()->with('error', 'Срок действия абонемента истёк.');
+            return back()->with('error', __('Срок действия абонемента истёк.'));
         }
 
         // Выдаём абонемент пользователю
@@ -327,7 +327,7 @@ class SubscriptionController extends Controller
         // Увеличиваем счётчик продаж
         $template->increment('sold_count');
 
-        return back()->with('status', 'Абонемент успешно получен! Он доступен в разделе «Мои абонементы».');
+        return back()->with('status', __('Абонемент успешно получен! Он доступен в разделе «Мои абонементы».'));
     }
 
     // Продлить срок
@@ -346,7 +346,7 @@ class SubscriptionController extends Controller
             app(StaffLogService::class)->log($authUser, (int) $subscription->organizer_id, 'extend_subscription', 'subscription', $subscription->id, "Продлил абонемент #{$subscription->id} на {$data['days']} дней");
         }
 
-        return back()->with('status', "Срок продлён на {$data['days']} дней");
+        return back()->with('status', __('Срок продлён на :days дней', ['days' => $data['days']]));
     }
 
     // Заморозить (пользователь)
@@ -359,7 +359,7 @@ class SubscriptionController extends Controller
         ]);
 
         $this->service->freeze($subscription, Carbon::parse($data['until']));
-        return back()->with('status', "Абонемент заморожен до {$data['until']}");
+        return back()->with('status', __('Абонемент заморожен до :until', ['until' => $data['until']]));
     }
 
     // Разморозить
@@ -372,7 +372,7 @@ class SubscriptionController extends Controller
         }
 
         $this->service->unfreeze($subscription);
-        return back()->with('status', 'Абонемент разморожен');
+        return back()->with('status', __('Абонемент разморожен'));
     }
 
     // Передача (пользователь)
@@ -385,7 +385,7 @@ class SubscriptionController extends Controller
         ]);
 
         $this->service->transfer($subscription, $data['to_user_id']);
-        return back()->with('status', 'Абонемент передан');
+        return back()->with('status', __('Абонемент передан'));
     }
 
     // История использований

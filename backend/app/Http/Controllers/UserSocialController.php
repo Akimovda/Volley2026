@@ -24,7 +24,7 @@ class UserSocialController extends Controller
         $voter = $request->user();
 
         if ($voter->id === $user->id) {
-            return back()->with('error', 'Нельзя голосовать за себя.');
+            return back()->with('error', __('Нельзя голосовать за себя.'));
         }
 
         UserLevelVote::updateOrCreate(
@@ -42,7 +42,7 @@ class UserSocialController extends Controller
             profileUrl: route('users.show', $user->id),
         );
 
-        return back()->with('status', 'Оценка сохранена!');
+        return back()->with('status', __('Оценка сохранена!'));
     }
 
     // Лайк "нравится играть"
@@ -51,7 +51,7 @@ class UserSocialController extends Controller
         $liker = $request->user();
 
         if ($liker->id === $user->id) {
-            return back()->with('error', 'Нельзя лайкать себя.');
+            return back()->with('error', __('Нельзя лайкать себя.'));
         }
 
         $existing = UserPlayLike::where('liker_id', $liker->id)
@@ -60,7 +60,7 @@ class UserSocialController extends Controller
 
         if ($existing) {
             $existing->delete();
-            return back()->with('status', 'Лайк убран.');
+            return back()->with('status', __('Лайк убран.'));
         }
 
         UserPlayLike::create([
@@ -74,6 +74,6 @@ class UserSocialController extends Controller
             profileUrl: route('users.show', $user->id),
         );
 
-        return back()->with('status', 'Лайк добавлен!');
+        return back()->with('status', __('Лайк добавлен!'));
     }
 }

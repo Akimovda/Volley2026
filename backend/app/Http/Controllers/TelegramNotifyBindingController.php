@@ -17,7 +17,7 @@ class TelegramNotifyBindingController extends Controller
         if ($botUsername === '') {
             return response()->json([
                 'ok' => false,
-                'message' => 'TELEGRAM_BOT_USERNAME не настроен.',
+                'message' => __('TELEGRAM_BOT_USERNAME не настроен.'),
             ], 500);
         }
 
@@ -65,6 +65,6 @@ class TelegramNotifyBindingController extends Controller
             ->whereNull('used_at')
             ->delete();
 
-        return back()->with('status', 'Уведомления в Telegram отключены ✅');
+        return back()->with('status', __('Уведомления в Telegram отключены ✅'));
     }
 }

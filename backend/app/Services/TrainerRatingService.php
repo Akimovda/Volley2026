@@ -30,7 +30,7 @@ class TrainerRatingService
     public function rate(int $occurrenceId, int $trainerUserId, int $raterUserId, int $score, ?string $comment = null): TrainerRating
     {
         if ($score < 1 || $score > 10) {
-            abort(422, 'Оценка должна быть от 1 до 10.');
+            abort(422, __('Оценка должна быть от 1 до 10.'));
         }
 
         $occurrence = EventOccurrence::with('event')->findOrFail($occurrenceId);

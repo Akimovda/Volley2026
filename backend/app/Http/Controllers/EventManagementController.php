@@ -359,7 +359,7 @@ if ($role === 'admin') {
             (int) ($division->season?->league?->organizer_id ?? 0) !== (int) $event->organizer_id
             && !$user->isAdmin()
         ) {
-            abort(403, 'Дивизион принадлежит другой лиге.');
+            abort(403, __('Дивизион принадлежит другой лиге.'));
         }
         $seasonId = $division->season_id;
 
@@ -414,7 +414,7 @@ if ($role === 'admin') {
             }
         }
 
-        return back()->with('success', 'Привязка к дивизиону обновлена.');
+        return back()->with('success', __('Привязка к дивизиону обновлена.'));
     }
     public function occurrences(\App\Models\Event $event)
     {
@@ -538,7 +538,7 @@ if ($role === 'admin') {
 
         return redirect()
             ->route('events.occurrences.edit', [$event, $occurrence])
-            ->with('status', 'Повтор сброшен до значений серии.');
+            ->with('status', __('Повтор сброшен до значений серии.'));
     }
 
     public function destroyOccurrence(\App\Models\EventOccurrence $occurrence, \Illuminate\Http\Request $request)
@@ -551,7 +551,7 @@ if ($role === 'admin') {
             if (!empty($channelMessages)) {
                 \App\Jobs\DeleteChannelPostsJob::dispatch($channelMessages)->onQueue('default')->afterCommit();
             }
-            return back()->with('status', 'Повтор удалён навсегда.');
+            return back()->with('status', __('Повтор удалён навсегда.'));
         }
 
         $occurrence->cancelled_at = now();
@@ -560,7 +560,7 @@ if ($role === 'admin') {
 
         \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrence->id)->onQueue('default')->afterCommit();
 
-        return back()->with('status', 'Повтор отменён.');
+        return back()->with('status', __('Повтор отменён.'));
     }
 
     public function editOccurrence(Request $request, Event $event, \App\Models\EventOccurrence $occurrence)
@@ -911,7 +911,7 @@ if ($role === 'admin') {
 
         return redirect()
             ->to(route('events.show', $event) . '?occurrence=' . $occurrence->id)
-            ->with('status', 'Изменения сохранены.');
+            ->with('status', __('Изменения сохранены.'));
     }
 
     
@@ -1896,7 +1896,7 @@ if ($role === 'admin') {
 
         return redirect()
             ->route('events.create.event_management', ['tab' => 'mine'])
-            ->with('status', 'Мероприятие обновлено. Активные записи сохранены.');
+            ->with('status', __('Мероприятие обновлено. Активные записи сохранены.'));
     }
     private function safeForceDeleteEvent(Event $event): void
     {
@@ -1960,12 +1960,12 @@ if ($role === 'admin') {
             $isPrivileged = in_array($role, ['admin'], true);
     
             if (!$isPrivileged) {
-                return back()->with('error', 'Полное удаление доступно только администратору.');
+                return back()->with('error', __('Полное удаление доступно только администратору.'));
             }
     
             $this->safeForceDeleteEvent($event);
     
-            return back()->with('status', 'Мероприятие удалено навсегда.');
+            return back()->with('status', __('Мероприятие удалено навсегда.'));
         }
     
         $now = CarbonImmutable::now('UTC');
@@ -1990,7 +1990,7 @@ if ($role === 'admin') {
         // cancel series
         if ($mode === 'series') {
             if (!$isRootRecurring) {
-                return back()->with('error', 'Удаление цепочки доступно только для повторяющегося (корневого) мероприятия.');
+                return back()->with('error', __('Удаление цепочки доступно только для повторяющегося (корневого) мероприятия.'));
             }
     
             $cancelledOccurrenceIds = [];
@@ -2037,7 +2037,7 @@ if ($role === 'admin') {
                 \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrenceId)->onQueue('default')->afterCommit();
             }
 
-            return back()->with('status', 'Цепочка удалена: повторение выключено, будущие occurrences отменены, история сохранена.');
+            return back()->with('status', __('Цепочка удалена: повторение выключено, будущие occurrences отменены, история сохранена.'));
         }
     
         // default = cancel one future date
@@ -2090,7 +2090,7 @@ if ($role === 'admin') {
         });
     
         if (empty($cancelledOccurrenceIds)) {
-            return back()->with('error', 'Нет будущих дат для отмены. История прошедших мероприятий сохраняется.');
+            return back()->with('error', __('Нет будущих дат для отмены. История прошедших мероприятий сохраняется.'));
         }
     
         foreach ($cancelledOccurrenceIds as $occurrenceId) {
@@ -2102,7 +2102,7 @@ if ($role === 'admin') {
             \App\Jobs\MarkAnnouncementCancelledJob::dispatch((int) $occurrenceId)->onQueue('default')->afterCommit();
         }
 
-        return back()->with('status', 'Мероприятие отменено: дата скрыта из UI, история сохранена.');
+        return back()->with('status', __('Мероприятие отменено: дата скрыта из UI, история сохранена.'));
     }
 
   public function bulkDelete(Request $request)
@@ -2123,7 +2123,7 @@ if ($role === 'admin') {
         $deleteMode = in_array($deleteMode, ['cancel', 'force'], true) ? $deleteMode : 'cancel';
 
         if ($deleteMode === 'force' && $role !== 'admin') {
-            return back()->with('error', 'Полное удаление доступно только администратору.');
+            return back()->with('error', __('Полное удаление доступно только администратору.'));
         }
 
         $ids = $request->input('ids', []);
@@ -2135,7 +2135,7 @@ if ($role === 'admin') {
         $ids = array_values(array_filter($ids, fn ($v) => $v > 0));
 
         if (empty($ids)) {
-            return back()->with('error', 'Ничего не выбрано для удаления.');
+            return back()->with('error', __('Ничего не выбрано для удаления.'));
         }
 
         $q = Event::query()->whereIn('id', $ids);

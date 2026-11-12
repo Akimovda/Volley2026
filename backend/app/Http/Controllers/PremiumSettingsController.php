@@ -16,7 +16,7 @@ class PremiumSettingsController extends Controller
 
         if (!$sub) {
             return redirect()->route('premium.index')
-                ->with('error', 'У вас нет активной Premium-подписки.');
+                ->with('error', __('У вас нет активной Premium-подписки.'));
         }
 
         // Список игроков, за которыми следит пользователь
@@ -48,7 +48,7 @@ class PremiumSettingsController extends Controller
 
         if (!$sub) {
             return redirect()->route('premium.index')
-                ->with('error', 'У вас нет активной Premium-подписки.');
+                ->with('error', __('У вас нет активной Premium-подписки.'));
         }
 
         $request->validate([
@@ -65,6 +65,6 @@ class PremiumSettingsController extends Controller
             'hide_from_followers' => $request->boolean('hide_from_followers'),
         ]);
 
-        return back()->with('status', '✅ Настройки уведомлений сохранены.');
+        return back()->with('status', __('✅ Настройки уведомлений сохранены.'));
     }
 }

@@ -63,14 +63,14 @@ class GoogleAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Google.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать Google.'));
             }
 
             $current = $request->user();
 
             if (User::where('google_id', $googleId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('google', $googleId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
+                return redirect('/user/profile')->with('error', __('Этот Google аккаунт уже привязан к другому пользователю.'));
             }
 
             $current->google_id = $googleId;
@@ -78,7 +78,7 @@ class GoogleAuthController extends Controller
 
             UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
 
-            return redirect()->to($returnTo)->with('status', 'Google привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Google привязан ✅'));
         }
 
         /* LOGIN */
@@ -93,7 +93,7 @@ class GoogleAuthController extends Controller
             $candidate = User::where('email', $email)->first();
             if ($candidate && (empty($candidate->google_id) || (string) $candidate->google_id === $googleId)) {
                 if (User::where('google_id', $googleId)->where('id', '!=', $candidate->id)->exists()) {
-                    return redirect()->route('login')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
+                    return redirect()->route('login')->with('error', __('Этот Google аккаунт уже привязан к другому пользователю.'));
                 }
                 $candidate->google_id = $googleId;
                 $candidate->save();

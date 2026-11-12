@@ -63,6 +63,6 @@ class PaymentSettingsController extends Controller
             ], $pricing)
         );
 
-        return back()->with('status', '✅ Настройки оплаты сохранены!');
+        return back()->with('status', __('✅ Настройки оплаты сохранены!'));
     }
 }

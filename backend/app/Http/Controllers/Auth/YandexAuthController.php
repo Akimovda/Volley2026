@@ -88,14 +88,14 @@ class YandexAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Яндекс.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать Яндекс.'));
             }
 
             $current = $request->user();
 
             if (User::where('yandex_id', $yandexId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('yandex', $yandexId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот Яндекс уже привязан к другому аккаунту.'));
             }
 
             $current->yandex_id = $yandexId;
@@ -106,7 +106,7 @@ class YandexAuthController extends Controller
             $request->session()->put('auth_provider', 'yandex');
             $request->session()->put('auth_provider_id', $yandexId);
 
-            return redirect()->to($returnTo)->with('status', 'Яндекс привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Яндекс привязан ✅'));
         }
 
         /* LOGIN */

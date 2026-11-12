@@ -15,23 +15,23 @@ class PlayerFollowController extends Controller
         $follower = $request->user();
 
         if (!$follower->isPremium()) {
-            return back()->with('error', 'Функция доступна только для Premium-подписчиков.');
+            return back()->with('error', __('Функция доступна только для Premium-подписчиков.'));
         }
         if ((int)$follower->id === (int)$user->id) {
-            return back()->with('error', 'Нельзя подписаться на себя.');
+            return back()->with('error', __('Нельзя подписаться на себя.'));
         }
         if (!$follower->isFriendWith($user->id)) {
-            return back()->with('error', 'Подписаться можно только на друзей.');
+            return back()->with('error', __('Подписаться можно только на друзей.'));
         }
 
         $this->followService->follow($follower, $user);
 
-        return back()->with('status', "Вы подписались на записи игрока «{$user->name}».");
+        return back()->with('status', __('Вы подписались на записи игрока «:name».', ['name' => $user->name]));
     }
 
     public function destroy(Request $request, User $user): \Illuminate\Http\RedirectResponse
     {
         $this->followService->unfollow($request->user(), $user);
-        return back()->with('status', "Подписка на «{$user->name}» отменена.");
+        return back()->with('status', __('Подписка на «:name» отменена.', ['name' => $user->name]));
     }
 }

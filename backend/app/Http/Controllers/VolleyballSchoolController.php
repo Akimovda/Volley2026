@@ -327,7 +327,7 @@ class VolleyballSchoolController extends Controller
             $existing = VolleyballSchool::where('organizer_id', $user->id)->first();
             if ($existing) {
                 return redirect()->route('volleyball_school.edit')
-                    ->with('status', 'У вас уже есть страница школы.');
+                    ->with('status', __('У вас уже есть страница школы.'));
             }
         }
 
@@ -375,10 +375,10 @@ class VolleyballSchoolController extends Controller
 
         // Проверка нецензурных слов
         if ($this->containsBadWords($data['name'])) {
-            return back()->withInput()->withErrors(['name' => 'Название содержит недопустимые слова.']);
+            return back()->withInput()->withErrors(['name' => __('Название содержит недопустимые слова.')]);
         }
         if (!empty($data['description']) && $this->containsBadWords(strip_tags($data['description']))) {
-            return back()->withInput()->withErrors(['description' => 'Описание содержит недопустимые слова.']);
+            return back()->withInput()->withErrors(['description' => __('Описание содержит недопустимые слова.')]);
         }
 
         // Организатор
@@ -478,10 +478,10 @@ class VolleyballSchoolController extends Controller
         }
 
         if ($this->containsBadWords($data['name'])) {
-            return back()->withInput()->withErrors(['name' => 'Название содержит недопустимые слова.']);
+            return back()->withInput()->withErrors(['name' => __('Название содержит недопустимые слова.')]);
         }
         if (!empty($data['description']) && $this->containsBadWords(strip_tags($data['description']))) {
-            return back()->withInput()->withErrors(['description' => 'Описание содержит недопустимые слова.']);
+            return back()->withInput()->withErrors(['description' => __('Описание содержит недопустимые слова.')]);
         }
 
         $cityName = $school->city;
@@ -509,7 +509,7 @@ class VolleyballSchoolController extends Controller
         $this->applyLogoAndCover($school, $school->organizer_id, $data);
 
         return redirect()->route('volleyball_school.show', $school->slug)
-            ->with('status', 'Страница обновлена!');
+            ->with('status', __('Страница обновлена!'));
     }
 
     /**
@@ -578,7 +578,7 @@ class VolleyballSchoolController extends Controller
         $school->clearMediaCollection('cover');
         $school->delete();
         return redirect()->route('volleyball_school.index')
-            ->with('status', 'Школа «'.$school->name.'» удалена.');
+            ->with('status', __('Школа «:name» удалена.', ['name' => $school->name]));
     }
 
     /** Телефон школы: страна — по городу школы, иначе по стране организатора; приводим к E.164. */

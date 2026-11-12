@@ -83,7 +83,7 @@ class EventTemplateController extends Controller
 
         return redirect()
             ->route('event_templates.index')
-            ->with('status', 'Шаблон создан ✅');
+            ->with('status', __('Шаблон создан ✅'));
     }
 
     public function edit(Request $request, EventTemplate $eventTemplate)
@@ -120,7 +120,7 @@ class EventTemplateController extends Controller
 
         return redirect()
             ->route('event_templates.index')
-            ->with('status', 'Шаблон обновлён ✅');
+            ->with('status', __('Шаблон обновлён ✅'));
     }
 
     public function destroy(Request $request, EventTemplate $eventTemplate)
@@ -134,7 +134,7 @@ class EventTemplateController extends Controller
 
         return redirect()
             ->route('event_templates.index')
-            ->with('status', 'Шаблон удалён ✅');
+            ->with('status', __('Шаблон удалён ✅'));
     }
 
     public function apply(Request $request, EventTemplate $eventTemplate)
@@ -171,7 +171,7 @@ logger()->info('TPL APPLY HIT', ['tpl' => $eventTemplate->id, 'user' => Auth::id
         return redirect()
             ->route('events.create')
             ->withInput($payload)
-            ->with('status', 'Шаблон применён ✅');
+            ->with('status', __('Шаблон применён ✅'));
     }
 
     private function assertOwned(EventTemplate $tpl, int $userId): void

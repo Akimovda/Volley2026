@@ -14,10 +14,10 @@ class BlockInImpersonation
     {
         if ($request->session()->has('impersonator_id')) {
             if ($request->expectsJson()) {
-                return response()->json(['error' => 'Действие недоступно в режиме просмотра от имени пользователя.'], 403);
+                return response()->json(['error' => __('Действие недоступно в режиме просмотра от имени пользователя.')], 403);
             }
 
-            return back()->with('error', 'Это действие недоступно в режиме просмотра от имени пользователя.');
+            return back()->with('error', __('Это действие недоступно в режиме просмотра от имени пользователя.'));
         }
 
         return $next($request);

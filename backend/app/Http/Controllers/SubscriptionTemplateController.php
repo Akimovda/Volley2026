@@ -108,7 +108,7 @@ class SubscriptionTemplateController extends Controller
         $this->logForOther($user, (int) $organizerId, 'create_subscription_template', $created->id, "Создал шаблон абонемента: {$created->name}");
 
         return redirect()->route('subscription_templates.index')
-            ->with('status', '✅ Шаблон абонемента создан!');
+            ->with('status', __('✅ Шаблон абонемента создан!'));
     }
 
     public function edit(SubscriptionTemplate $subscriptionTemplate)
@@ -164,7 +164,7 @@ class SubscriptionTemplateController extends Controller
         ]));
 
         return redirect()->route('subscription_templates.index')
-            ->with('status', '✅ Шаблон обновлён!');
+            ->with('status', __('✅ Шаблон обновлён!'));
     }
 
     public function destroy(SubscriptionTemplate $subscriptionTemplate)
@@ -172,7 +172,7 @@ class SubscriptionTemplateController extends Controller
         $this->authorizeTemplate($subscriptionTemplate);
         $this->logForOther(auth()->user(), (int) $subscriptionTemplate->organizer_id, 'delete_subscription_template', $subscriptionTemplate->id, "Деактивировал шаблон абонемента: {$subscriptionTemplate->name}");
         $subscriptionTemplate->update(['is_active' => false]);
-        return back()->with('status', 'Шаблон деактивирован');
+        return back()->with('status', __('Шаблон деактивирован'));
     }
 
     public function forceDelete(\Illuminate\Http\Request $request, SubscriptionTemplate $subscriptionTemplate)
@@ -181,7 +181,7 @@ class SubscriptionTemplateController extends Controller
 
         $forceCode = $request->input('force_code');
         if ($forceCode !== '973124') {
-            return back()->with('error', '❌ Неверный код подтверждения.');
+            return back()->with('error', __('❌ Неверный код подтверждения.'));
         }
 
         // Удаляем связанные абонементы
@@ -190,7 +190,7 @@ class SubscriptionTemplateController extends Controller
             ->delete();
 
         $subscriptionTemplate->delete();
-        return back()->with('status', '✅ Шаблон и связанные абонементы удалены');
+        return back()->with('status', __('✅ Шаблон и связанные абонементы удалены'));
     }
 
     private function authorizeTemplate(SubscriptionTemplate $template): void

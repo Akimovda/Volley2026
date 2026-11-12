@@ -83,7 +83,7 @@ class ProfileNotificationChannelController extends Controller
 
         return redirect()
             ->to(route('profile.notification_channels') . '#bind-result')
-            ->with('status', 'Ссылка для привязки канала создана. Следуйте инструкции ниже.')
+            ->with('status', __('Ссылка для привязки канала создана. Следуйте инструкции ниже.'))
             ->with('bind_request_id', $bind->id)
             ->with('bind_instruction', $instruction);
     }
@@ -110,7 +110,7 @@ class ProfileNotificationChannelController extends Controller
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', 'Канал уведомлений удалён.');
+            ->with('status', __('Канал уведомлений удалён.'));
     }
 
     /** POST /user/profile/notification-channels/{channel}/check — проверка канала/группы/темы (Telegram). */
@@ -177,7 +177,7 @@ class ProfileNotificationChannelController extends Controller
 
         return redirect()
             ->back()
-            ->with('status', 'Настройки уведомлений сохранены.');
+            ->with('status', __('Настройки уведомлений сохранены.'));
     }
 
     private function ensureCanManageChannels($user): void
@@ -202,7 +202,7 @@ class ProfileNotificationChannelController extends Controller
         return match ($platform) {
             'telegram' => [
                 'platform' => 'telegram',
-                'message' => 'Подключи бота в группу, супергруппу или канал Telegram.',
+                'message' => __('Подключи бота в группу, супергруппу или канал Telegram.'),
                 'button_text' => 'Подключить в группу',
                 'link' => 'https://t.me/' . config('services.telegram.bot_username') . '?startgroup=bind_' . $token,
                 'command' => null,
@@ -218,7 +218,7 @@ class ProfileNotificationChannelController extends Controller
 
             'vk' => [
                 'platform' => 'vk',
-                'message' => 'Привяжи бота к беседе или группе VK для отправки анонсов.',
+                'message' => __('Привяжи бота к беседе или группе VK для отправки анонсов.'),
                 'button_text' => 'Открыть сообщество',
                 'link' => (string) config('services.vk.bot_link', ''),
                 'command' => 'bind_' . $token,
@@ -234,7 +234,7 @@ class ProfileNotificationChannelController extends Controller
 
             'max' => [
                 'platform' => 'max',
-                'message' => 'В MAX нет автоматического выбора группы (как в Telegram), поэтому привязка идёт в два шага: сначала добавь бота в чат, затем выбери чат в личке с ботом.',
+                'message' => __('В MAX нет автоматического выбора группы (как в Telegram), поэтому привязка идёт в два шага: сначала добавь бота в чат, затем выбери чат в личке с ботом.'),
                 'button_text' => 'Открыть MAX',
                 'link' => $maxBotLink !== '' ? ($maxBotLink . '?start=' . $token) : '',
                 'command' => null,
@@ -250,7 +250,7 @@ class ProfileNotificationChannelController extends Controller
 
             default => [
                 'platform' => $platform,
-                'message' => 'Ссылка для привязки создана.',
+                'message' => __('Ссылка для привязки создана.'),
                 'button_text' => 'Открыть',
                 'link' => '',
                 'command' => 'bind_' . $token,

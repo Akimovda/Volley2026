@@ -26,12 +26,12 @@ class EventRegistrationGroupController extends Controller
         try {
             $this->groupService->createGroupForRegistration((int) $event->id, (int) $user->id);
 
-            return back()->with('status', 'Группа создана.');
+            return back()->with('status', __('Группа создана.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось создать группу.');
+            return back()->with('error', __('Не удалось создать группу.'));
         }
     }
 
@@ -53,12 +53,12 @@ class EventRegistrationGroupController extends Controller
                 (int) $data['to_user_id']
             );
 
-            return back()->with('status', 'Приглашение отправлено.');
+            return back()->with('status', __('Приглашение отправлено.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось отправить приглашение.');
+            return back()->with('error', __('Не удалось отправить приглашение.'));
         }
     }
 
@@ -72,12 +72,12 @@ class EventRegistrationGroupController extends Controller
         try {
             $this->groupService->acceptInvite($invite, (int) $user->id);
 
-            return back()->with('status', 'Приглашение принято.');
+            return back()->with('status', __('Приглашение принято.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось принять приглашение.');
+            return back()->with('error', __('Не удалось принять приглашение.'));
         }
     }
 
@@ -91,12 +91,12 @@ class EventRegistrationGroupController extends Controller
         try {
             $this->groupService->declineInvite($invite, (int) $user->id);
 
-            return back()->with('status', 'Приглашение отклонено.');
+            return back()->with('status', __('Приглашение отклонено.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось отклонить приглашение.');
+            return back()->with('error', __('Не удалось отклонить приглашение.'));
         }
     }
 
@@ -110,12 +110,12 @@ class EventRegistrationGroupController extends Controller
         try {
             $this->groupService->leaveGroup((int) $event->id, (int) $user->id);
 
-            return back()->with('status', 'Вы вышли из группы.');
+            return back()->with('status', __('Вы вышли из группы.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось выйти из группы.');
+            return back()->with('error', __('Не удалось выйти из группы.'));
         }
     }
 
@@ -140,12 +140,12 @@ class EventRegistrationGroupController extends Controller
                 (int) $data['to_user_id']
             );
 
-            return back()->with('status', 'Приглашение в группу отправлено.');
+            return back()->with('status', __('Приглашение в группу отправлено.'));
         } catch (DomainException $e) {
             return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
             report($e);
-            return back()->with('error', 'Не удалось отправить приглашение.');
+            return back()->with('error', __('Не удалось отправить приглашение.'));
         }
     }
 }

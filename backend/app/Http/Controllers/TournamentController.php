@@ -827,12 +827,12 @@ class TournamentController extends Controller
         }
 
         if ($teams->count() < 2) {
-            return back()->with('error', 'Нужно минимум 2 подтверждённых команды.');
+            return back()->with('error', __('Нужно минимум 2 подтверждённых команды.'));
         }
 
         if ($stage->canHaveFollowupStage()) {
             if ($groups->isEmpty()) {
-                return back()->with('error', 'Сначала создайте группы.');
+                return back()->with('error', __('Сначала создайте группы.'));
             }
 
             // Очистим старую жеребьёвку
@@ -1074,9 +1074,9 @@ class TournamentController extends Controller
 
         if (empty($sets)) {
             if ($request->expectsJson()) {
-                return response()->json(['error' => 'Введите счёт хотя бы одного сета.'], 422);
+                return response()->json(['error' => __('Введите счёт хотя бы одного сета.')], 422);
             }
-            return back()->with('error', 'Введите счёт хотя бы одного сета.');
+            return back()->with('error', __('Введите счёт хотя бы одного сета.'));
         }
 
         try {
@@ -1089,7 +1089,7 @@ class TournamentController extends Controller
                 }
                 return redirect()
                     ->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])
-                    ->with('success', 'Счёт записан.');
+                    ->with('success', __('Счёт записан.'));
             }
 
             if ($request->expectsJson()) {
@@ -1108,7 +1108,7 @@ class TournamentController extends Controller
             if ($nextMatch) {
                 return redirect()
                     ->route('tournament.matches.score.form', $nextMatch)
-                    ->with('success', 'Счёт записан. Следующий матч:');
+                    ->with('success', __('Счёт записан. Следующий матч:'));
             }
 
             // Все матчи текущей стадии сыграны
@@ -1131,7 +1131,7 @@ class TournamentController extends Controller
                 // Обычный турнир (не сезонный) — переход на итоги
                 return redirect()
                     ->route('tournament.public.show', $event)
-                    ->with('success', 'Все матчи завершены! Итоги турнира.');
+                    ->with('success', __('Все матчи завершены! Итоги турнира.'));
             }
 
             return $this->redirectToSetup($event, 'Счёт записан. Этап завершён.');
@@ -1158,7 +1158,7 @@ class TournamentController extends Controller
         }
 
         if (!$match->isCompleted()) {
-            return back()->with('error', 'Матч не завершён — используйте обычный ввод счёта.');
+            return back()->with('error', __('Матч не завершён — используйте обычный ввод счёта.'));
         }
 
         $stageIsDivStage = $stage->division_tier !== null || str_starts_with($stage->name, 'Группа ');
@@ -1169,7 +1169,7 @@ class TournamentController extends Controller
                     ->orWhere('name', 'like', 'Группа %'))
                 ->exists();
             if ($hasDivStages) {
-                return back()->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
+                return back()->with('error', __('Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.'));
             }
         }
 
@@ -1184,7 +1184,7 @@ class TournamentController extends Controller
         }
 
         if (empty($sets)) {
-            return back()->with('error', 'Введите счёт хотя бы одного сета.');
+            return back()->with('error', __('Введите счёт хотя бы одного сета.'));
         }
 
         try {
@@ -1251,7 +1251,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$event->season_id) {
-            return back()->with('error', 'Турнир не привязан к сезону.');
+            return back()->with('error', __('Турнир не привязан к сезону.'));
         }
 
         $occurrenceId = (int) $request->input('occurrence_id', 0);
@@ -1265,7 +1265,7 @@ class TournamentController extends Controller
             : $event->season?->leagues()->first();
 
         if (!$currentLeague) {
-            return back()->with('error', 'Дивизион не найден.');
+            return back()->with('error', __('Дивизион не найден.'));
         }
 
         // Стадии текущего тура (Hard/Lite/Medium группы). division_tier — основной
@@ -1280,10 +1280,10 @@ class TournamentController extends Controller
         $stages = $stagesQuery->get();
 
         if ($stages->isEmpty()) {
-            return back()->with('error', 'Группы (Hard/Lite) не найдены. Сначала сформируйте группы.');
+            return back()->with('error', __('Группы (Hard/Lite) не найдены. Сначала сформируйте группы.'));
         }
         if (!$stages->every(fn($s) => $s->status === 'completed')) {
-            return back()->with('error', 'Не все группы завершены.');
+            return back()->with('error', __('Не все группы завершены.'));
         }
 
         // Существующие резервы ДО транзакции (для переноса в waitlist следующего тура)
@@ -1431,10 +1431,10 @@ class TournamentController extends Controller
             $waitlistAdded = $this->transferReserveToNextOccurrenceWaitlist(
                 $event, $occurrenceId, $existingReserveUserIds, $reserveCaptainIds
             );
-            $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания тура →" : '';
+            $waitlistMsg = $waitlistAdded > 0 ? __(' + :n в лист ожидания тура →', ['n' => $waitlistAdded]) : '';
 
             return back()->with('success',
-                "Промоушен в {$nextSeason->name}: {$active} в основном составе, {$reserve} в резерве.{$waitlistMsg}");
+                __('Промоушен в :season: :active в основном составе, :reserve в резерве.', ['season' => $nextSeason->name, 'active' => $active, 'reserve' => $reserve]) . $waitlistMsg);
         }
 
         // Fallback (нет следующего сезона): переводим в резерв текущего дивизиона
@@ -1483,9 +1483,9 @@ class TournamentController extends Controller
         $waitlistAdded = $this->transferReserveToNextOccurrenceWaitlist(
             $event, $occurrenceId, $existingReserveUserIds, $reserveCaptainIds
         );
-        $waitlistMsg = $waitlistAdded > 0 ? " + {$waitlistAdded} в лист ожидания следующего тура." : '';
+        $waitlistMsg = $waitlistAdded > 0 ? __(' + :n в лист ожидания следующего тура.', ['n' => $waitlistAdded]) : '';
 
-        return back()->with('success', "Промоушен применён: {$movedCount} команд в резерв.{$waitlistMsg}");
+        return back()->with('success', __('Промоушен применён: команд в резерв — :n.', ['n' => $movedCount]) . $waitlistMsg);
     }
 
     public function formDivisions(Request $request, TournamentStage $stage)
@@ -1494,7 +1494,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$stage->isCompleted()) {
-            return back()->with('error', 'Стадия ещё не завершена.');
+            return back()->with('error', __('Стадия ещё не завершена.'));
         }
 
         try {
@@ -1742,7 +1742,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$stage->isCompleted()) {
-            return back()->with('error', 'Стадия ещё не завершена.');
+            return back()->with('error', __('Стадия ещё не завершена.'));
         }
 
         $advancePerGroup = max(1, (int) $request->input(
@@ -1770,7 +1770,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (! $stage->isCompleted()) {
-            return back()->with('error', 'Групповая стадия ещё не завершена.');
+            return back()->with('error', __('Групповая стадия ещё не завершена.'));
         }
 
         $validated = $request->validate([
@@ -1833,7 +1833,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (! $stage->isCompleted()) {
-            return back()->with('error', 'Групповая стадия ещё не завершена.');
+            return back()->with('error', __('Групповая стадия ещё не завершена.'));
         }
 
         $validated = $request->validate([
@@ -1896,7 +1896,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$stage->isPending()) {
-            return back()->with('error', 'Эта стадия уже запущена или завершена.');
+            return back()->with('error', __('Эта стадия уже запущена или завершена.'));
         }
 
         $prevStage = $event->tournamentStages()
@@ -1910,11 +1910,11 @@ class TournamentController extends Controller
         // Фолбэк на $prevStage сохраняет запуск для таких турниров (event 549).
         $finalsMode = $stage->cfg('finals_mode') ?? $prevStage?->cfg('finals_mode');
         if (!in_array($finalsMode, ['bracket', 'placement', 'divisions'], true)) {
-            return back()->with('error', 'У стадии не задан тип финала (finals_mode) — запуск невозможен.');
+            return back()->with('error', __('У стадии не задан тип финала (finals_mode) — запуск невозможен.'));
         }
 
         if (!$prevStage || !$prevStage->isCompleted()) {
-            return back()->with('error', 'Предыдущая стадия ещё не завершена.');
+            return back()->with('error', __('Предыдущая стадия ещё не завершена.'));
         }
 
         // Паритет со старыми advance()/advanceCrossover() — там эти параметры были
@@ -1967,26 +1967,26 @@ class TournamentController extends Controller
         // "разморозить" уже закрытую стадию — ни generateNextRound(), ни
         // generateNextMatch() сами статус не проверяют (report/finish_stage_recon_2026-08-21.md §4).
         if (!$stage->isInProgress()) {
-            return back()->with('error', 'Стадия уже завершена.');
+            return back()->with('error', __('Стадия уже завершена.'));
         }
 
         try {
             if ($stage->type === 'swiss') {
                 $matches = $this->swissService->generateNextRound($stage);
                 if ($matches->isEmpty()) {
-                    return back()->with('error', 'Все туры уже сыграны.');
+                    return back()->with('error', __('Все туры уже сыграны.'));
                 }
                 return $this->redirectToSetup($event, 'Тур ' . $matches->first()->round . ' сгенерирован (' . $matches->count() . ' матчей).');
 
             } elseif ($stage->isPlayerBasedMatches()) {
                 $nextStage = $this->kingBeachService->advanceToNextRound($stage);
                 if (!$nextStage) {
-                    return back()->with('error', 'Недостаточно игроков для следующего раунда (нужно минимум 4).');
+                    return back()->with('error', __('Недостаточно игроков для следующего раунда (нужно минимум 4).'));
                 }
                 return $this->redirectToSetup($event, 'Следующий раунд King of the Beach создан.', false, "stage_{$nextStage->id}");
             }
 
-            return back()->with('error', 'Действие недоступно для этого типа стадии.');
+            return back()->with('error', __('Действие недоступно для этого типа стадии.'));
 
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
@@ -2009,7 +2009,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($stage->type !== TournamentStage::TYPE_SWISS) {
-            return back()->with('error', 'Ручное завершение доступно только для Swiss.');
+            return back()->with('error', __('Ручное завершение доступно только для Swiss.'));
         }
 
         $hasUnplayed = $stage->matches()
@@ -2017,7 +2017,7 @@ class TournamentController extends Controller
             ->exists();
 
         if ($hasUnplayed) {
-            return back()->with('error', 'Есть несыгранные матчи — используйте «Отменить несыгранные и завершить».');
+            return back()->with('error', __('Есть несыгранные матчи — используйте «Отменить несыгранные и завершить».'));
         }
 
         $stage->update(['status' => TournamentStage::STATUS_COMPLETED]);
@@ -2039,7 +2039,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($stage->type !== TournamentStage::TYPE_SWISS) {
-            return back()->with('error', 'Ручное завершение доступно только для Swiss.');
+            return back()->with('error', __('Ручное завершение доступно только для Swiss.'));
         }
 
         DB::transaction(function () use ($stage) {
@@ -2069,7 +2069,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$stage->canHaveFollowupStage() || !$stage->isCompleted()) {
-            return back()->with('error', 'Групповая стадия должна быть завершена.');
+            return back()->with('error', __('Групповая стадия должна быть завершена.'));
         }
 
         // Турнир одного типа "группы+плей-офф" может иметь только ОДНУ финальную
@@ -2368,7 +2368,7 @@ class TournamentController extends Controller
             $group->update(['courts' => array_values(array_filter($courts))]);
         }
 
-        return back()->with('success', 'Площадки назначены.');
+        return back()->with('success', __('Площадки назначены.'));
     }
 
     public function generateSchedule(Request $request, TournamentStage $stage)
@@ -2418,7 +2418,7 @@ class TournamentController extends Controller
         if ($request->has('photo_ids')) {
             $photoIds = json_decode($request->input('photo_ids', '[]'), true);
             if (!is_array($photoIds) || empty($photoIds)) {
-                return back()->with('error', 'Выберите хотя бы одно фото.');
+                return back()->with('error', __('Выберите хотя бы одно фото.'));
             }
 
             // Удаляем старые tournament_photos
@@ -2500,7 +2500,7 @@ class TournamentController extends Controller
             $this->syncTeamToLeague($event, $application->team);
         }
 
-        return back()->with('success', "Заявка команды «{$application->team->name}» одобрена ✅");
+        return back()->with('success', __('Заявка команды «:team» одобрена ✅', ['team' => $application->team->name]));
     }
 
     public function rejectApplication(Request $request, Event $event, EventTeamApplication $application): RedirectResponse
@@ -2522,7 +2522,7 @@ class TournamentController extends Controller
 
         $application->team?->update(['status' => 'rejected']);
 
-        return back()->with('success', "Заявка команды «{$application->team->name}» отклонена.");
+        return back()->with('success', __('Заявка команды «:team» отклонена.', ['team' => $application->team->name]));
     }
 
     /**
@@ -2533,7 +2533,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$event->season_id) {
-            return back()->with('error', 'Событие не привязано к сезону.');
+            return back()->with('error', __('Событие не привязано к сезону.'));
         }
 
         $occurrenceId = (int) $request->input('occurrence_id', 0);
@@ -2547,7 +2547,7 @@ class TournamentController extends Controller
             : $event->season?->leagues()->first();
 
         if (!$league) {
-            return back()->with('error', 'В сезоне нет дивизионов.');
+            return back()->with('error', __('В сезоне нет дивизионов.'));
         }
 
         // Весь блок записи — одной транзакцией: без неё исключение на середине
@@ -2682,10 +2682,10 @@ class TournamentController extends Controller
 
         $total = $added + $linked;
         if ($total === 0) {
-            return back()->with('success', 'Все команды уже синхронизированы.');
+            return back()->with('success', __('Все команды уже синхронизированы.'));
         }
 
-        return back()->with('success', "Синхронизация: добавлено в лигу {$added}, добавлено в тур {$linked}.");
+        return back()->with('success', __('Синхронизация: добавлено в лигу :added, добавлено в тур :linked.', ['added' => $added, 'linked' => $linked]));
     }
 
     private function syncTeamToLeague(Event $event, EventTeam $team): void
@@ -2815,10 +2815,10 @@ class TournamentController extends Controller
         $awayScore = (int) ($rawSets[0][1] ?? 0);
 
         if ($homeScore === 0 && $awayScore === 0) {
-            return back()->with('error', 'Введите счёт партии.');
+            return back()->with('error', __('Введите счёт партии.'));
         }
         if ($homeScore === $awayScore) {
-            return back()->with('error', 'Ничья невозможна в king_beach партии.');
+            return back()->with('error', __('Ничья невозможна в king_beach партии.'));
         }
 
         $target = $stage->setPoints();
@@ -2826,16 +2826,16 @@ class TournamentController extends Controller
         $loser  = min($homeScore, $awayScore);
 
         if ($winner < $target) {
-            return back()->with('error', "Победитель должен набрать минимум {$target} очков (сейчас {$winner}).");
+            return back()->with('error', __('Победитель должен набрать минимум :target очков (сейчас :winner).', ['target' => $target, 'winner' => $winner]));
         }
         if ($winner - $loser < 2) {
-            return back()->with('error', "Разница должна быть минимум 2 очка ({$homeScore}:{$awayScore}).");
+            return back()->with('error', __('Разница должна быть минимум 2 очка (:score).', ['score' => $homeScore.':'.$awayScore]));
         }
         if ($loser >= $target - 1 && $winner - $loser !== 2) {
-            return back()->with('error', "При тай-брейке разница должна быть ровно 2 очка ({$homeScore}:{$awayScore}).");
+            return back()->with('error', __('При тай-брейке разница должна быть ровно 2 очка (:score).', ['score' => $homeScore.':'.$awayScore]));
         }
         if ($loser < $target - 1 && $winner !== $target) {
-            return back()->with('error', "Победитель должен набрать ровно {$target}, а не {$winner}.");
+            return back()->with('error', __('Победитель должен набрать ровно :target, а не :winner.', ['target' => $target, 'winner' => $winner]));
         }
 
         DB::transaction(function () use ($match, $homeScore, $awayScore, $request) {
@@ -2873,7 +2873,7 @@ class TournamentController extends Controller
         // Владелец ИЛИ staff у владельца — роль organizer не отменяет
         // staff-назначение на чужих мероприятиях.
         if (!app(\App\Services\EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
-            abort(403, 'Нет прав на управление турниром.');
+            abort(403, __('Нет прав на управление турниром.'));
         }
     }
 
@@ -2917,7 +2917,7 @@ class TournamentController extends Controller
         if (!$nextMatch) {
             return redirect()
                 ->route('tournament.public.show', $event)
-                ->with('success', 'Все матчи уже завершены.');
+                ->with('success', __('Все матчи уже завершены.'));
         }
 
         return redirect()->route('tournament.matches.score.form', $nextMatch);
@@ -2963,7 +2963,7 @@ class TournamentController extends Controller
         if (!$match->isCompleted()) {
             return redirect()
                 ->route('tournament.matches.rally.form', $match)
-                ->with('error', 'Статистика будет доступна для выгрузки после завершения матча.');
+                ->with('error', __('Статистика будет доступна для выгрузки после завершения матча.'));
         }
 
         $match->load(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'stage']);
@@ -2987,7 +2987,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if (!$match->isCompleted()) {
-            return back()->with('error', 'Сначала введите счёт матча.');
+            return back()->with('error', __('Сначала введите счёт матча.'));
         }
 
         $playerStatsService = app(PlayerMatchStatsService::class);
@@ -3049,17 +3049,17 @@ class TournamentController extends Controller
         if ($stage->isPlayerBasedMatches()) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
-                ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');
+                ->with('error', __('Поочковый ввод недоступен для формата "Король пляжа".'));
         }
         if ($match->isCompleted()) {
             return redirect()
                 ->route('tournament.matches.player_stats.form', $match)
-                ->with('error', 'Матч уже завершён.');
+                ->with('error', __('Матч уже завершён.'));
         }
         if (!$match->hasTeams()) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
-                ->with('error', 'У матча не назначены команды.');
+                ->with('error', __('У матча не назначены команды.'));
         }
 
         return null;
@@ -3100,7 +3100,7 @@ class TournamentController extends Controller
     public function rallyFragment(Request $request, TournamentMatch $match)
     {
         if ($this->guardRallyMode($request, $match)) {
-            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+            return response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422);
         }
 
         $setNumber = max(1, (int) $request->query('set', $this->rallyService->getActiveSetNumber($match)));
@@ -3112,7 +3112,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             if ($request->expectsJson()) {
-                return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+                return response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422);
             }
             return $redirect;
         }
@@ -3145,7 +3145,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             if ($request->expectsJson()) {
-                return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+                return response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422);
             }
             return $redirect;
         }
@@ -3179,7 +3179,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                ? response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422)
                 : $redirect;
         }
 
@@ -3194,7 +3194,7 @@ class TournamentController extends Controller
     public function rallyServeFirst(Request $request, TournamentMatch $match)
     {
         if ($this->guardRallyMode($request, $match)) {
-            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+            return response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422);
         }
 
         $validated = $request->validate(\App\Services\RallyInputService::serveFirstRules());
@@ -3208,7 +3208,7 @@ class TournamentController extends Controller
     public function rallyJersey(Request $request, TournamentMatch $match)
     {
         if ($this->guardRallyMode($request, $match)) {
-            return response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422);
+            return response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422);
         }
 
         $validated = $request->validate(\App\Services\RallyInputService::jerseyRules());
@@ -3233,7 +3233,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                ? response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422)
                 : $redirect;
         }
 
@@ -3250,7 +3250,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                ? response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422)
                 : $redirect;
         }
 
@@ -3266,7 +3266,7 @@ class TournamentController extends Controller
     {
         if ($redirect = $this->guardRallyMode($request, $match)) {
             return $request->expectsJson()
-                ? response()->json(['error' => 'Поочковый ввод недоступен для этого матча.'], 422)
+                ? response()->json(['error' => __('Поочковый ввод недоступен для этого матча.')], 422)
                 : $redirect;
         }
 
@@ -3327,7 +3327,7 @@ class TournamentController extends Controller
         if (!$this->rallyService->isMatchReadyToFinalize($match)) {
             return redirect()
                 ->route('tournament.matches.rally.form', $match)
-                ->with('error', 'Матч ещё не завершён по счёту.');
+                ->with('error', __('Матч ещё не завершён по счёту.'));
         }
 
         $sets = $this->rallyService->buildFinalSets($match);
@@ -3359,7 +3359,7 @@ class TournamentController extends Controller
         if ($stage->isPlayerBasedMatches()) {
             return redirect()
                 ->route('tournament.matches.score.form', $match)
-                ->with('error', 'Поочковый ввод недоступен для формата "Король пляжа".');
+                ->with('error', __('Поочковый ввод недоступен для формата "Король пляжа".'));
         }
 
         if (!$match->isCompleted()) {
@@ -3376,7 +3376,7 @@ class TournamentController extends Controller
             if ($hasDivStages) {
                 return redirect()
                     ->route('tournament.matches.score.form', $match)
-                    ->with('error', 'Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.');
+                    ->with('error', __('Нельзя исправить счёт — группы уже сформированы. Откатите распределение и повторите.'));
             }
         }
 
@@ -3406,7 +3406,7 @@ class TournamentController extends Controller
 
         return redirect()
             ->route('tournament.matches.rally.form', $match)
-            ->with('success', 'Матч временно переоткрыт для правки. После исправления нажмите «Записать счёт».');
+            ->with('success', __('Матч временно переоткрыт для правки. После исправления нажмите «Записать счёт».'));
     }
 
     /* ================================================================
@@ -3420,7 +3420,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($tiebreaker->status !== 'pending') {
-            return back()->with('error', 'Тайбрейк уже обработан.');
+            return back()->with('error', __('Тайбрейк уже обработан.'));
         }
 
         $maxNumber = TournamentMatch::where('stage_id', $stage->id)->max('match_number') ?? 0;
@@ -3445,7 +3445,7 @@ class TournamentController extends Controller
 
         return redirect()
             ->route('tournament.matches.score.form', $match)
-            ->with('success', 'Тайбрейк-матч создан. Введите счёт.');
+            ->with('success', __('Тайбрейк-матч создан. Введите счёт.'));
     }
 
     /* ================================================================
@@ -3459,7 +3459,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($tiebreaker->status !== 'pending') {
-            return back()->with('error', 'Тайбрейк уже обработан.');
+            return back()->with('error', __('Тайбрейк уже обработан.'));
         }
 
         $validated = $request->validate([
@@ -3491,7 +3491,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($set->status !== 'pending') {
-            return back()->with('error', 'Этот тайбрейк уже обработан.');
+            return back()->with('error', __('Этот тайбрейк уже обработан.'));
         }
 
         $teamIds = array_map('intval', $set->team_ids ?? []);
@@ -3538,7 +3538,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($set->status !== 'pending') {
-            return back()->with('error', 'Этот тайбрейк уже обработан.');
+            return back()->with('error', __('Этот тайбрейк уже обработан.'));
         }
 
         $validated = $request->validate([
@@ -3596,7 +3596,7 @@ class TournamentController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($set->status !== 'pending') {
-            return back()->with('error', 'Этот тайбрейк уже обработан.');
+            return back()->with('error', __('Этот тайбрейк уже обработан.'));
         }
 
         $teamIds = array_map('intval', $set->team_ids ?? []);
@@ -3609,7 +3609,7 @@ class TournamentController extends Controller
 
         $order = array_map('intval', $validated['order']);
         if (count(array_unique($order)) !== $count) {
-            return back()->with('error', 'Все команды должны быть указаны ровно один раз.');
+            return back()->with('error', __('Все команды должны быть указаны ровно один раз.'));
         }
 
         $set->update([

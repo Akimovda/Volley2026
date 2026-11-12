@@ -33,12 +33,12 @@ class MaxAuthController extends Controller
         $intent = Auth::check() ? 'link' : 'login';
 
         if ($intent === 'link' && $request->session()->has('impersonator_id')) {
-            return redirect('/user/profile')->with('error', 'Привязка входов недоступна в режиме входа под чужим аккаунтом.');
+            return redirect('/user/profile')->with('error', __('Привязка входов недоступна в режиме входа под чужим аккаунтом.'));
         }
 
         $botId = (string) config('services.max.bot_id');
         if ($botId === '') {
-            return redirect()->route('login')->with('error', 'Вход через MAX временно недоступен.');
+            return redirect()->route('login')->with('error', __('Вход через MAX временно недоступен.'));
         }
 
         // предыдущая незавершённая попытка этого браузера больше не нужна
@@ -112,14 +112,14 @@ class MaxAuthController extends Controller
         $user = $request->user();
         if (!$user || (int) $user->id !== (int) $a->user_id || $request->session()->has('impersonator_id')) {
             $a->update(['status' => 'denied']);
-            return response()->json(['state' => 'error', 'message' => 'Сессия изменилась — начните привязку заново.']);
+            return response()->json(['state' => 'error', 'message' => __('Сессия изменилась — начните привязку заново.')]);
         }
 
         $mid = (string) $a->max_user_id;
         if (User::where('max_user_id', $mid)->where('id', '!=', $user->id)->exists()
             || AccountLink::isTaken('max', $mid, $user->id)) {
             $a->update(['status' => 'used']);
-            return response()->json(['state' => 'error', 'message' => 'Этот MAX уже привязан к другому аккаунту.']);
+            return response()->json(['state' => 'error', 'message' => __('Этот MAX уже привязан к другому аккаунту.')]);
         }
 
         $user->max_user_id = $mid;

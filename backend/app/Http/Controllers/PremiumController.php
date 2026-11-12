@@ -42,7 +42,7 @@ class PremiumController extends Controller
         $user = $request->user();
 
         if ($this->premiumService->isPremium($user)) {
-            return back()->with('error', 'У вас уже есть активный Premium.');
+            return back()->with('error', __('У вас уже есть активный Premium.'));
         }
 
         // Проверяем что пробный ещё не использовался
@@ -51,12 +51,12 @@ class PremiumController extends Controller
             ->exists();
 
         if ($usedTrial) {
-            return back()->with('error', 'Пробный период уже был использован.');
+            return back()->with('error', __('Пробный период уже был использован.'));
         }
 
         $sub = $this->premiumService->activate($user, 'trial');
 
-        return back()->with('success', '🎉 Пробный период активирован до ' . $sub->expires_at->format('d.m.Y'));
+        return back()->with('success', __('🎉 Пробный период активирован до :date', ['date' => $sub->expires_at->format('d.m.Y')]));
     }
 
     // Платные планы — создаём платёж
@@ -68,12 +68,12 @@ class PremiumController extends Controller
         $plan = $request->plan;
 
         if ($this->premiumService->isPremium($user)) {
-            return back()->with('error', 'У вас уже есть активный Premium.');
+            return back()->with('error', __('У вас уже есть активный Premium.'));
         }
 
         $platformPayment = PlatformPaymentSetting::first();
         if (!$platformPayment) {
-            return back()->with('error', 'Оплата временно недоступна. Попробуйте позже.');
+            return back()->with('error', __('Оплата временно недоступна. Попробуйте позже.'));
         }
 
         // Создаём запись подписки со статусом pending
@@ -123,7 +123,7 @@ class PremiumController extends Controller
 
         $platformPayment = PlatformPaymentSetting::first();
         if (!$platformPayment) {
-            return back()->with('error', 'Оплата временно недоступна.');
+            return back()->with('error', __('Оплата временно недоступна.'));
         }
 
         // Создаём pending-подписку для продления
@@ -190,6 +190,6 @@ class PremiumController extends Controller
             \Illuminate\Support\Facades\Log::warning('PremiumController confirmPayment notify failed: ' . $e->getMessage());
         }
 
-        return back()->with('status', '✅ Отлично! Мы проверим перевод и активируем Premium в течение нескольких минут.');
+        return back()->with('status', __('✅ Отлично! Мы проверим перевод и активируем Premium в течение нескольких минут.'));
     }
 }

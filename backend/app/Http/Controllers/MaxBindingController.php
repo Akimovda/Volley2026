@@ -19,7 +19,7 @@ class MaxBindingController extends Controller
         if ($botId === '') {
             return response()->json([
                 'ok' => false,
-                'message' => 'MAX_BOT_ID не настроен.',
+                'message' => __('MAX_BOT_ID не настроен.'),
             ], 500);
         }
 
@@ -27,7 +27,7 @@ class MaxBindingController extends Controller
         if (!in_array($kind, ['channel', 'personal'], true)) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Некорректный тип привязки.',
+                'message' => __('Некорректный тип привязки.'),
             ], 422);
         }
 
@@ -81,6 +81,6 @@ class MaxBindingController extends Controller
             ->whereNull('used_at')
             ->delete();
 
-        return back()->with('status', 'MAX отключён ✅');
+        return back()->with('status', __('MAX отключён ✅'));
     }
 }

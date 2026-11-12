@@ -102,14 +102,14 @@ class VkAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать VK.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать VK.'));
             }
 
             $current = $request->user();
 
             if (User::where('vk_id', $vkId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('vk', $vkId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот VK уже привязан к другому аккаунту.'));
             }
 
             $current->vk_id = $vkId;
@@ -117,7 +117,7 @@ class VkAuthController extends Controller
 
             UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
 
-            return redirect()->to($returnTo)->with('status', 'VK привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('VK привязан ✅'));
         }
 
         /* LOGIN */
@@ -127,7 +127,7 @@ class VkAuthController extends Controller
             $user = User::where('vk_notify_user_id', $vkId)->first();
             if ($user) {
                 if (User::where('vk_id', $vkId)->where('id', '!=', $user->id)->exists()) {
-                    return redirect()->route('login')->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                    return redirect()->route('login')->with('error', __('Этот VK уже привязан к другому аккаунту.'));
                 }
                 $user->vk_id = $vkId;
                 $user->save();

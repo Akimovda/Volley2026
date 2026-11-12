@@ -17,7 +17,7 @@ class VkNotifyBindingController extends Controller
         if ($vkBotLink === '') {
             return response()->json([
                 'ok' => false,
-                'message' => 'VK_BOT_LINK не настроен.',
+                'message' => __('VK_BOT_LINK не настроен.'),
             ], 500);
         }
 
@@ -67,6 +67,6 @@ class VkNotifyBindingController extends Controller
             ->whereNull('used_at')
             ->delete();
 
-        return back()->with('status', 'Уведомления во VK отключены ✅');
+        return back()->with('status', __('Уведомления во VK отключены ✅'));
     }
 }

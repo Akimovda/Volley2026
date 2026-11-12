@@ -119,7 +119,7 @@ use App\Services\StaffLogService;
                        . md5($request->input('title', '') . $request->input('starts_at_local', ''));
                    $lock = \Illuminate\Support\Facades\Cache::lock($idempotencyKey, 10);
                    if (!$lock->get()) {
-                       return back()->withInput()->withErrors(['general' => 'Событие уже создаётся, подождите...']);
+                       return back()->withInput()->withErrors(['general' => __('Событие уже создаётся, подождите...')]);
                    }
 
                    $result = $this->storeService->store($request, $user);
@@ -145,7 +145,7 @@ use App\Services\StaffLogService;
                            // Несколько способов оплаты: организатор выберет способ на странице мероприятия (попап).
                            if (count($platSettings?->offeredMethods() ?? []) >= 2) {
                                return redirect()->route('events.show', $event)
-                                   ->with('success', '🎉 Ваше рекламное мероприятие создано! Выберите способ оплаты ниже.');
+                                   ->with('success', __('🎉 Ваше рекламное мероприятие создано! Выберите способ оплаты ниже.'));
                            }
 
                            $platMethod = $platSettings?->method ?? 'tbank_link';
@@ -175,7 +175,7 @@ use App\Services\StaffLogService;
 
                            // tbank/sber или fallback — редирект на страницу с инструкцией
                            return redirect()->route('events.show', $event)
-                               ->with('success', '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉');
+                               ->with('success', __('🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉'));
                        } else {
                            // Бесплатно — сразу публикуем
                            $event->ad_payment_status = 'paid';

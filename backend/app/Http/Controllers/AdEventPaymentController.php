@@ -19,7 +19,7 @@ class AdEventPaymentController extends Controller
         }
 
         if ($event->ad_payment_status !== 'pending') {
-            return back()->with('error', 'Мероприятие не ожидает оплаты.');
+            return back()->with('error', __('Мероприятие не ожидает оплаты.'));
         }
 
         // Сохраняем флаг и транзакцию ДО отправки уведомлений
@@ -40,7 +40,7 @@ class AdEventPaymentController extends Controller
             Log::warning('AdEventPaymentController notify failed: ' . $e->getMessage());
         }
 
-        return back()->with('success', '✅ Администратор уведомлён. Ожидайте подтверждения.');
+        return back()->with('success', __('✅ Администратор уведомлён. Ожидайте подтверждения.'));
     }
 
     public static function recordTransaction(Event $event, User $organizer): void

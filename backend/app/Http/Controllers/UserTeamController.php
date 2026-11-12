@@ -121,7 +121,7 @@ class UserTeamController extends Controller
             }
         });
 
-        return redirect()->route('profile.show')->with('status', 'Команда сохранена');
+        return redirect()->route('profile.show')->with('status', __('Команда сохранена'));
     }
 
     public function update(Request $request, UserTeam $team)
@@ -187,9 +187,9 @@ class UserTeamController extends Controller
 
         $returnTo = $request->input('return_to');
         if ($returnTo && str_starts_with($returnTo, '/')) {
-            return redirect($returnTo)->with('status', 'Команда обновлена');
+            return redirect($returnTo)->with('status', __('Команда обновлена'));
         }
-        return redirect()->route('profile.show')->with('status', 'Команда обновлена');
+        return redirect()->route('profile.show')->with('status', __('Команда обновлена'));
     }
 
     public function destroy(Request $request, UserTeam $team)
@@ -198,6 +198,6 @@ class UserTeamController extends Controller
         if (!$user) return redirect()->route('login');
         if ((int)$team->user_id !== (int)$user->id) abort(403);
         $team->delete();
-        return back()->with('status', 'Команда удалена');
+        return back()->with('status', __('Команда удалена'));
     }
 }

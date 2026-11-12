@@ -220,19 +220,19 @@
 			if ($isFirstCompletion) {
 				if (!empty($returnTo)) {
 					return redirect($returnTo)
-						->with('success', 'Профиль заполнен! Теперь вы можете записаться на мероприятие.');
+						->with('success', __('Профиль заполнен! Теперь вы можете записаться на мероприятие.'));
 				}
 				return redirect()->route('events.index')
-					->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+					->with('success', __('Профиль заполнен! Добро пожаловать 🏐'));
 			}
 
 			if (!empty($returnTo)) {
 				return redirect($returnTo)
-					->with('success', 'Профиль обновлён. Попробуйте записаться снова.');
+					->with('success', __('Профиль обновлён. Попробуйте записаться снова.'));
 			}
 
 			return redirect()
 				->route('profile.complete', ['user_id' => $target->id])
-				->with('success', 'Профиль обновлён.');
+				->with('success', __('Профиль обновлён.'));
 		}
 	}	

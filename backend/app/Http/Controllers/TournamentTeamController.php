@@ -114,7 +114,7 @@ class TournamentTeamController extends Controller
 
         return redirect()
             ->route('tournamentTeams.show', [$event, $team])
-            ->with('success', 'Название команды обновлено');
+            ->with('success', __('Название команды обновлено'));
     }
 
     public function store(Request $request, Event $event, TournamentTeamService $service): RedirectResponse
@@ -166,7 +166,7 @@ class TournamentTeamController extends Controller
                 );
                 if (!$windowResult->allowed) {
                     return back()
-                        ->withErrors(['team' => $windowResult->firstError() ?? 'Регистрация недоступна.'])
+                        ->withErrors(['team' => $windowResult->firstError() ?? __('Регистрация недоступна.')])
                         ->withInput();
                 }
             }
@@ -261,14 +261,14 @@ class TournamentTeamController extends Controller
                         'event'         => $event->id,
                         'occurrence_id' => !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null,
                     ]))
-                    ->with('success', 'Команда создана ✅');
+                    ->with('success', __('Команда создана ✅'));
                 if ($genderWarningMsg) $redirect->with('warning', $genderWarningMsg);
                 return $redirect;
             }
 
             $redirect = redirect()
                 ->route('tournamentTeams.show', [$event, $team])
-                ->with('success', 'Команда создана ✅');
+                ->with('success', __('Команда создана ✅'));
             if ($genderWarningMsg) $redirect->with('warning', $genderWarningMsg);
             return $redirect;
         } catch (DomainException $e) {
@@ -293,7 +293,7 @@ class TournamentTeamController extends Controller
             $service->confirmMember($team, $member->id, $request->user());
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Игрок подтверждён ✅');
+            return back()->with('success', __('Игрок подтверждён ✅'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'member' => $e->getMessage(),
@@ -316,7 +316,7 @@ class TournamentTeamController extends Controller
             $service->declineMember($team, $member->id, $request->user());
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Игрок отклонён.');
+            return back()->with('success', __('Игрок отклонён.'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'member' => $e->getMessage(),
@@ -342,7 +342,7 @@ class TournamentTeamController extends Controller
             $service->removeMember($team, $member->id, $request->user());
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return back()->with('success', 'Игрок удалён из команды.');
+            return back()->with('success', __('Игрок удалён из команды.'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'member' => $e->getMessage(),
@@ -375,7 +375,7 @@ class TournamentTeamController extends Controller
             $service->changeMemberPosition($team, $member, $data['position_code'], $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Позиция игрока изменена.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', __('Позиция игрока изменена.'));
         } catch (DomainException $e) {
             return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors([
                 'member' => $e->getMessage(),
@@ -409,7 +409,7 @@ class TournamentTeamController extends Controller
             $service->changeMemberTeamRole($team, $member, $data['team_role'], $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Роль игрока в команде изменена.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', __('Роль игрока в команде изменена.'));
         } catch (DomainException $e) {
             return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors([
                 'member' => $e->getMessage(),
@@ -447,7 +447,7 @@ class TournamentTeamController extends Controller
             $service->swapMembers($team, $member, $out, $request->user()->id);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', 'Замена выполнена: ' . ($member->user->name ?? '') . ' вышел(ла) в основу вместо ' . ($out->user->name ?? '') . '.');
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', __('Замена выполнена: :in вышел(ла) в основу вместо :out.', ['in' => $member->user->name ?? '', 'out' => $out->user->name ?? '']));
         } catch (DomainException $e) {
             return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors(['member' => $e->getMessage()]);
         }
@@ -492,7 +492,7 @@ class TournamentTeamController extends Controller
             );
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
 
-            $redirect = back()->with('success', 'Игрок добавлен в команду ✅');
+            $redirect = back()->with('success', __('Игрок добавлен в команду ✅'));
             // М/Ж-несоответствие настройкам регистрации — НЕ блокирует сохранение,
             // только предупреждение организатору (по явному решению задачи).
             // Два независимых источника: (1) сам добавленный игрок против
@@ -533,7 +533,7 @@ class TournamentTeamController extends Controller
             if ($offered) {
                 $paymentMethod = (string) $request->input('payment_method');
                 if (!in_array($paymentMethod, $offered, true)) {
-                    return back()->withErrors(['application' => 'Выберите способ оплаты.']);
+                    return back()->withErrors(['application' => __('Выберите способ оплаты.')]);
                 }
             }
         }
@@ -541,7 +541,7 @@ class TournamentTeamController extends Controller
         try {
             $service->submitApplication($team, $request->user(), $allowIncomplete, $paymentMethod);
 
-            return back()->with('success', 'Заявка на турнир подана ✅');
+            return back()->with('success', __('Заявка на турнир подана ✅'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'application' => $e->getMessage(),
@@ -569,7 +569,7 @@ class TournamentTeamController extends Controller
         $offered = \App\Models\PaymentSetting::offeredFor((int) $event->organizer_id);
         $method  = (string) $request->input('payment_method', $payment->method);
         if ($offered && $request->filled('payment_method') && !in_array($method, $offered, true)) {
-            return back()->withErrors(['application' => 'Выберите способ оплаты.']);
+            return back()->withErrors(['application' => __('Выберите способ оплаты.')]);
         }
 
         try {
@@ -588,7 +588,7 @@ class TournamentTeamController extends Controller
             return redirect()->route('payments.online.choose', $payment);
         }
 
-        return back()->with('success', 'Способ оплаты выбран ✅');
+        return back()->with('success', __('Способ оплаты выбран ✅'));
     }
 
     public function revokeApplication(
@@ -655,7 +655,7 @@ class TournamentTeamController extends Controller
                 'event'         => $event->id,
                 'occurrence_id' => $occurrenceId,
             ]))
-            ->with('success', "Команда удалена.");
+            ->with('success', __("Команда удалена."));
     }
 
     /**
@@ -677,18 +677,18 @@ class TournamentTeamController extends Controller
         $service = app(TournamentTeamService::class);
 
         if ($team->reserve_position === null || $event->season_id || !$occurrenceId) {
-            return $back->with('error', 'Команда не в резерве.');
+            return $back->with('error', __('Команда не в резерве.'));
         }
         if ($team->confirmation_token !== null) {
-            return $back->with('error', 'Этой команде место уже предложено.');
+            return $back->with('error', __('Этой команде место уже предложено.'));
         }
         if ($service->eventTournamentIsFull($event, $occurrenceId)) {
-            return $back->with('error', 'Свободных мест в основном составе нет.');
+            return $back->with('error', __('Свободных мест в основном составе нет.'));
         }
 
         $service->offerEventReserveSpot($team);
 
-        return $back->with('success', "Команде «{$team->name}» предложено место (подтверждение — 2 часа).");
+        return $back->with('success', __('Команде «:team» предложено место (подтверждение — 2 часа).', ['team' => $team->name]));
     }
 
     /**
@@ -753,7 +753,7 @@ class TournamentTeamController extends Controller
 
             $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
-            $msg = "Команда «{$teamName}» переведена в резерв.";
+            $msg = __('Команда «:team» переведена в резерв.', ['team' => $teamName]);
             if ($errors) {
                 $msg .= ' Ошибки: ' . implode('; ', $errors);
             }
@@ -799,7 +799,7 @@ class TournamentTeamController extends Controller
 
         $this->dispatchAnnounceRefresh($event, $occurrenceId);
 
-        return redirect($redirectUrl)->with('success', "Команда «{$teamName}» переведена в резерв.");
+        return redirect($redirectUrl)->with('success', __('Команда «:team» переведена в резерв.', ['team' => $teamName]));
     }
 
 
@@ -850,7 +850,7 @@ class TournamentTeamController extends Controller
 
         return redirect()
             ->route('tournamentTeams.show', [$event, $team])
-            ->with('success', "Команда «{$teamName}» переведена в резерв.");
+            ->with('success', __('Команда «:team» переведена в резерв.', ['team' => $teamName]));
     }
 
     /**
@@ -883,7 +883,7 @@ class TournamentTeamController extends Controller
 
         try {
             $service->joinRequest($team, $user);
-            return back()->with('success', 'Запрос на вступление отправлен. Ожидайте ответа капитана.');
+            return back()->with('success', __('Запрос на вступление отправлен. Ожидайте ответа капитана.'));
         } catch (DomainException $e) {
             return back()->withErrors(['join' => $e->getMessage()]);
         }
@@ -924,10 +924,10 @@ class TournamentTeamController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Не удалось сохранить команду: ' . $e->getMessage());
+            return back()->with('error', __('Не удалось сохранить команду: :msg', ['msg' => $e->getMessage()]));
         }
 
-        return back()->with('success', 'Команда «' . e($name) . '» сохранена в профиле ✅');
+        return back()->with('success', __('Команда «:name» сохранена в профиле ✅', ['name' => e($name)]));
     }
 
     /**
@@ -1016,7 +1016,7 @@ class TournamentTeamController extends Controller
         $this->dispatchAnnounceRefresh($event, !empty($data['occurrence_id']) ? (int) $data['occurrence_id'] : null);
 
         return redirect()->route('tournamentTeams.show', [$event, $team])
-            ->with('success', 'Команда создана из шаблона ✅ Участники получили приглашения.');
+            ->with('success', __('Команда создана из шаблона ✅ Участники получили приглашения.'));
     }
 
     /**
@@ -1266,7 +1266,7 @@ class TournamentTeamController extends Controller
             $service->confirmEventReserveSpot($team, $token);
             $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
             return redirect()->route('tournamentTeams.show', [$event, $team])
-                ->with('success', 'Участие подтверждено! Ваша команда в основном составе.');
+                ->with('success', __('Участие подтверждено! Ваша команда в основном составе.'));
         } catch (\DomainException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -1282,7 +1282,7 @@ class TournamentTeamController extends Controller
 
         $service->expireEventReserveOffer($team);
         return redirect()->route('events.show', $event)
-            ->with('success', 'Место передано следующей команде в очереди.');
+            ->with('success', __('Место передано следующей команде в очереди.'));
     }
 
     /**
@@ -1303,7 +1303,7 @@ class TournamentTeamController extends Controller
 
         try {
             $service->transferCaptain($team, (int) $data['new_captain_user_id'], (int) $request->user()->id);
-            return back()->with('success', 'Капитанство передано.');
+            return back()->with('success', __('Капитанство передано.'));
         } catch (DomainException $e) {
             return back()->withErrors(['transfer' => $e->getMessage()]);
         }
@@ -1335,7 +1335,7 @@ class TournamentTeamController extends Controller
 
             return redirect()
                 ->route('events.show', $event)
-                ->with('success', 'Команда расформирована.');
+                ->with('success', __('Команда расформирована.'));
         } catch (DomainException $e) {
             return back()->withErrors(['disband' => $e->getMessage()]);
         }

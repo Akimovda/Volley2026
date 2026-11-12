@@ -34,7 +34,7 @@ class TournamentKingOfCourtController extends Controller
         if (!$user) abort(403);
 
         if (!app(EventAccessService::class)->canManageEvent($user, (int) $event->organizer_id)) {
-            abort(403, 'Нет прав на управление турниром.');
+            abort(403, __('Нет прав на управление турниром.'));
         }
     }
 
@@ -234,7 +234,7 @@ class TournamentKingOfCourtController extends Controller
         $this->authorizeOrganizer($request, $event);
 
         if ($stage->cfg('round_status') !== 'finished') {
-            return back()->with('error', 'Текущий раунд ещё не завершён.');
+            return back()->with('error', __('Текущий раунд ещё не завершён.'));
         }
 
         try {

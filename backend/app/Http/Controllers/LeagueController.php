@@ -18,7 +18,7 @@ class LeagueController extends Controller
     {
         $user = $request->user();
         if (!in_array($user->role, ['organizer', 'admin'])) {
-            abort(403, 'Доступно только организаторам.');
+            abort(403, __('Доступно только организаторам.'));
         }
 
         if ($user->isAdmin()) {
@@ -41,7 +41,7 @@ class LeagueController extends Controller
     {
         $user = $request->user();
         if (!in_array($user->role, ['organizer', 'admin'])) {
-            abort(403, 'Доступно только организаторам.');
+            abort(403, __('Доступно только организаторам.'));
         }
 
         $organizers = collect();
@@ -62,7 +62,7 @@ class LeagueController extends Controller
     {
         $user = $request->user();
         if (!in_array($user->role, ['organizer', 'admin'])) {
-            abort(403, 'Доступно только организаторам.');
+            abort(403, __('Доступно только организаторам.'));
         }
 
         $validated = $request->validate([
@@ -103,7 +103,7 @@ class LeagueController extends Controller
 
         return redirect()
             ->route('leagues.edit', $league)
-            ->with('success', 'Лига создана. Добавьте первый сезон.');
+            ->with('success', __('Лига создана. Добавьте первый сезон.'));
     }
 
     /* ================================================================
@@ -181,7 +181,7 @@ class LeagueController extends Controller
             }
         }
 
-        return back()->with('success', 'Лига обновлена.');
+        return back()->with('success', __('Лига обновлена.'));
     }
 
     /* ================================================================
@@ -294,14 +294,14 @@ class LeagueController extends Controller
             $league->delete();
         });
 
-        return redirect()->route('leagues.index')->with('success', 'Лига удалена.');
+        return redirect()->route('leagues.index')->with('success', __('Лига удалена.'));
     }
 
     private function authorizeLeague(Request $request, League $league): void
     {
         $user = $request->user();
         if ($league->organizer_id !== $user->id && !$user->isAdmin()) {
-            abort(403, 'Вы не являетесь владельцем этой лиги.');
+            abort(403, __('Вы не являетесь владельцем этой лиги.'));
         }
     }
 }

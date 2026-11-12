@@ -86,18 +86,18 @@ class AppleAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Apple ID.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать Apple ID.'));
             }
 
             $current = $request->user();
 
             if ((string) ($current->apple_id ?? '') === $appleId) {
-                return redirect()->to($returnTo)->with('status', 'Apple ID уже привязан ✅');
+                return redirect()->to($returnTo)->with('status', __('Apple ID уже привязан ✅'));
             }
 
             if (User::where('apple_id', $appleId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('apple', $appleId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Apple ID уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот Apple ID уже привязан к другому аккаунту.'));
             }
 
             $current->apple_id = $appleId;
@@ -106,7 +106,7 @@ class AppleAuthController extends Controller
             $request->session()->put('auth_provider', 'apple');
             $request->session()->put('auth_provider_id', $appleId);
 
-            return redirect()->to($returnTo)->with('status', 'Apple ID привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Apple ID привязан ✅'));
         }
 
         /* LOGIN */

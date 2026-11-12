@@ -28,7 +28,7 @@ class EventWaitlistManagementController extends Controller
         $userId = (int) $request->input('user_id', 0);
         $user   = User::find($userId);
         if (!$user) {
-            return back()->with('error', 'Игрок не найден.');
+            return back()->with('error', __('Игрок не найден.'));
         }
 
         $alreadyRegistered = DB::table('event_registrations')
@@ -37,14 +37,14 @@ class EventWaitlistManagementController extends Controller
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->exists();
         if ($alreadyRegistered) {
-            return back()->with('error', 'Игрок уже записан в основной состав.');
+            return back()->with('error', __('Игрок уже записан в основной состав.'));
         }
 
         $alreadyWaiting = OccurrenceWaitlist::where('occurrence_id', $occurrence->id)
             ->where('user_id', $user->id)
             ->exists();
         if ($alreadyWaiting) {
-            return back()->with('error', 'Игрок уже в листе ожидания.');
+            return back()->with('error', __('Игрок уже в листе ожидания.'));
         }
 
         $positions = array_values(array_filter((array) $request->input('positions', [])));
@@ -56,7 +56,7 @@ class EventWaitlistManagementController extends Controller
             \App\Services\RegistrationEventLogger::resolveRealActorId($request),
         );
 
-        return back()->with('status', 'Игрок добавлен в лист ожидания.');
+        return back()->with('status', __('Игрок добавлен в лист ожидания.'));
     }
 
     // -----------------------------------------------------------------------
@@ -102,7 +102,7 @@ class EventWaitlistManagementController extends Controller
             }
         }
 
-        return back()->with('status', 'Игрок удалён из листа ожидания.');
+        return back()->with('status', __('Игрок удалён из листа ожидания.'));
     }
 
     // -----------------------------------------------------------------------
@@ -151,7 +151,7 @@ class EventWaitlistManagementController extends Controller
             }
         }
 
-        return back()->with('status', 'Позиции обновлены.');
+        return back()->with('status', __('Позиции обновлены.'));
     }
 
     // -----------------------------------------------------------------------

@@ -341,18 +341,18 @@ class TelegramAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->to($returnTo)->with('error', 'Сначала войдите, чтобы привязать Telegram.');
+                return redirect()->to($returnTo)->with('error', __('Сначала войдите, чтобы привязать Telegram.'));
             }
 
             $current = $request->user();
 
             if ((string)($current->telegram_id ?? '') === $tgId) {
-                return redirect()->to($returnTo)->with('status', 'Telegram уже привязан ✅');
+                return redirect()->to($returnTo)->with('status', __('Telegram уже привязан ✅'));
             }
 
             if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('telegram', $tgId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Telegram уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот Telegram уже привязан к другому аккаунту.'));
             }
 
             $current->telegram_id = $tgId;
@@ -368,7 +368,7 @@ class TelegramAuthController extends Controller
             $request->session()->put('auth_provider', 'telegram');
             $request->session()->put('auth_provider_id', $tgId);
 
-            return redirect()->to($returnTo)->with('status', 'Telegram привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Telegram привязан ✅'));
         }
 
         /* LOGIN */
@@ -484,7 +484,7 @@ class TelegramAuthController extends Controller
 
             if (User::where('telegram_id', $tgId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('telegram', $tgId, $current->id)) {
-                return response()->json(['error' => 'already_used', 'message' => 'Этот Telegram уже привязан к другому аккаунту.'], 422);
+                return response()->json(['error' => 'already_used', 'message' => __('Этот Telegram уже привязан к другому аккаунту.')], 422);
             }
 
             $current->telegram_id = $tgId;

@@ -402,10 +402,10 @@ class ProfileExtraController extends Controller
 
             if (!empty($returnTo)) {
                 $redirect = redirect($returnTo)
-                    ->with('success', 'Профиль обновлён. Попробуйте записаться снова.');
+                    ->with('success', __('Профиль обновлён. Попробуйте записаться снова.'));
             } else {
                 $redirect = redirect()->route('events.index')
-                    ->with('success', 'Профиль заполнен! Добро пожаловать 🏐');
+                    ->with('success', __('Профиль заполнен! Добро пожаловать 🏐'));
             }
 
             if ($duplicateWarning) {
@@ -415,7 +415,7 @@ class ProfileExtraController extends Controller
             return $redirect;
         }
 
-        $redirect = back()->with('status', 'Профиль обновлён.');
+        $redirect = back()->with('status', __('Профиль обновлён.'));
 
         if ($duplicateWarning) {
             $redirect = $redirect->with('duplicate_user_id', $duplicateWarning);

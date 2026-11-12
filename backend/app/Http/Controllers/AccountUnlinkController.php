@@ -52,13 +52,13 @@ class AccountUnlinkController extends Controller
         ];
 
         if (empty($providers[$provider])) {
-            return back()->with('error', 'Этот вход уже не привязан.');
+            return back()->with('error', __('Этот вход уже не привязан.'));
         }
 
         // нельзя отвязать последний вход
         $linkedCount = collect($providers)->filter()->count();
         if ($linkedCount <= 1) {
-            return back()->with('error', 'Нельзя отвязать последний способ входа. Сначала привяжите другой провайдер.');
+            return back()->with('error', __('Нельзя отвязать последний способ входа. Сначала привяжите другой провайдер.'));
         }
 
         if ($provider === 'telegram') {
@@ -110,6 +110,6 @@ class AccountUnlinkController extends Controller
             default => 'Provider',
         };
 
-        return back()->with('status', "{$label} отвязан ✅");
+        return back()->with('status', __(':label отвязан ✅', ['label' => $label]));
     }
 }

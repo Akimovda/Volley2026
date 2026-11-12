@@ -38,7 +38,7 @@ class MaxLoginWebhookController extends Controller
         // защита от «спама» попытками с одного пользователя MAX
         $rlKey = 'max_login_begin_' . $data['max_user_id'];
         if ((int) Cache::get($rlKey, 0) >= 10) {
-            return response()->json(['ok' => false, 'message' => 'Слишком много попыток входа. Подождите час и попробуйте снова.']);
+            return response()->json(['ok' => false, 'message' => __('Слишком много попыток входа. Подождите час и попробуйте снова.')]);
         }
         Cache::put($rlKey, (int) Cache::get($rlKey, 0) + 1, now()->addHour());
 
@@ -46,7 +46,7 @@ class MaxLoginWebhookController extends Controller
         if (!$attempt || $attempt->status !== 'pending' || $attempt->isExpired()) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Ссылка для входа устарела или уже использована. 📲 Вернитесь в VolleyClub и нажмите «Войти через MAX» ещё раз.',
+                'message' => __('Ссылка для входа устарела или уже использована. 📲 Вернитесь в VolleyClub и нажмите «Войти через MAX» ещё раз.'),
             ]);
         }
 
@@ -95,19 +95,19 @@ class MaxLoginWebhookController extends Controller
         if (hash_equals((string) $attempt->code, $digits)) {
             $attempt->update(['status' => 'approved', 'approved_at' => now()]);
 
-            return response()->json(['ok' => true, 'message' => '✅ Готово!👌 📲 Вернитесь в VolleyClub — вход выполнится автоматически.']);
+            return response()->json(['ok' => true, 'message' => __('✅ Готово!👌 📲 Вернитесь в VolleyClub — вход выполнится автоматически.')]);
         }
 
         $attempt->increment('attempts');
         if ($attempt->attempts >= MaxLoginAttempt::MAX_CODE_TRIES) {
             $attempt->update(['status' => 'denied']);
 
-            return response()->json(['ok' => false, 'message' => 'Слишком много неверных попыток. 📲 Вернитесь в VolleyClub и начните вход заново.']);
+            return response()->json(['ok' => false, 'message' => __('Слишком много неверных попыток. 📲 Вернитесь в VolleyClub и начните вход заново.')]);
         }
 
         return response()->json([
             'ok' => false,
-            'message' => 'Неверный код. Осталось попыток: ' . (MaxLoginAttempt::MAX_CODE_TRIES - $attempt->attempts) . '.',
+            'message' => __('Неверный код. Осталось попыток: :n.', ['n' => MaxLoginAttempt::MAX_CODE_TRIES - $attempt->attempts]),
         ]);
     }
 }

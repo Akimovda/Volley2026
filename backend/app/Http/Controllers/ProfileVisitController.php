@@ -12,7 +12,7 @@ class ProfileVisitController extends Controller
 
         if (!$user->isPremium()) {
             return redirect()->route('premium.index')
-                ->with('error', '👑 Раздел «Мои гости» доступен только Premium-пользователям.');
+                ->with('error', __('👑 Раздел «Мои гости» доступен только Premium-пользователям.'));
         }
 
         $visitors = $user->recentVisitors(7);

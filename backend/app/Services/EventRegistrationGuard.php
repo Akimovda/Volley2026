@@ -447,7 +447,7 @@
 
                 // Регистрация открыта — нужна команда
                 return (object)['allowed' => false, 'code' => 'team_only',
-                    'message' => 'Запись только в составе команды'];
+                    'message' => __('Запись только в составе команды')];
             }
 
             // --- Возраст ---
@@ -455,25 +455,25 @@
                 $birthDate = $user->birth_date ?? null;
                 if (!$birthDate) {
                     return (object)['allowed' => false, 'code' => 'age_blocked',
-                        'message' => '🔞 Вы не проходите по возрасту'];
+                        'message' => __('🔞 Вы не проходите по возрасту')];
                 }
                 $age = \Illuminate\Support\Carbon::parse($birthDate)
                          ->diffInYears(\Illuminate\Support\Carbon::parse($occurrence->starts_at, 'UTC'));
                 if ($agePolicy === 'adult') {
                     if ($age < 18) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Это мероприятие только для взрослых (18+)'];
+                            'message' => __('🔞 Это мероприятие только для взрослых (18+)')];
                     }
                 } else {
                     $ageMin = (int)($event?->child_age_min ?? 0);
                     $ageMax = (int)($event?->child_age_max ?? 0);
                     if ($ageMax > 0 && $age > $ageMax) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Вы не проходите по возрасту'];
+                            'message' => __('🔞 Вы не проходите по возрасту')];
                     }
                     if ($ageMin > 0 && $age < $ageMin) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Вы не проходите по возрасту'];
+                            'message' => __('🔞 Вы не проходите по возрасту')];
                     }
                 }
             }
@@ -494,11 +494,11 @@
             if ($hasRestriction && !is_null($userLevel)) {
                 if (!is_null($lvMax) && $userLevel > $lvMax) {
                     return (object)['allowed' => false, 'code' => 'level_too_high',
-                        'message' => '😎 Вы слишком крут(а) для этого мероприятия!'];
+                        'message' => __('😎 Вы слишком крут(а) для этого мероприятия!')];
                 }
                if (!is_null($lvMin) && $userLevel < $lvMin) {
                 return (object)['allowed' => false, 'code' => 'level_too_low',
-                    'message' => '😥 Вы ещё не готовы для этого мероприятия!'];
+                    'message' => __('😥 Вы ещё не готовы для этого мероприятия!')];
             }
         }
 
@@ -527,7 +527,7 @@
                     return (object)[
                         'allowed' => false,
                         'code'    => 'gender_reg_not_started',
-                        'message' => 'Регистрация для ' . $label . ' ещё не началась — откроется ' . $opensFormatted . '.',
+                        'message' => __('Регистрация для :label ещё не началась — откроется :opens.', ['label' => $label, 'opens' => $opensFormatted]),
                     ];
                 }
             }

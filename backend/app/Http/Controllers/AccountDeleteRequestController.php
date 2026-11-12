@@ -97,6 +97,6 @@ class AccountDeleteRequestController extends Controller
             return response()->json(['success' => true]);
         }
 
-        return redirect('/')->with('success', 'Ваш аккаунт удалён. Спасибо что были с нами.');
+        return redirect('/')->with('success', __('Ваш аккаунт удалён. Спасибо что были с нами.'));
     }
 }

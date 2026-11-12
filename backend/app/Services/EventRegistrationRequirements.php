@@ -30,13 +30,13 @@ class EventRegistrationRequirements
     {
         if (!is_null($event->classic_level_min) && !is_null($user->classic_level)) {
             if ($user->classic_level < $event->classic_level_min) {
-                abort(403, 'Ваш уровень в классике ниже требуемого.');
+                abort(403, __('Ваш уровень в классике ниже требуемого.'));
             }
         }
 
         if (!is_null($event->beach_level_min) && !is_null($user->beach_level)) {
             if ($user->beach_level < $event->beach_level_min) {
-                abort(403, 'Ваш уровень в пляже ниже требуемого.');
+                abort(403, __('Ваш уровень в пляже ниже требуемого.'));
             }
         }
     }

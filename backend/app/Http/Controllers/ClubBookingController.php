@@ -229,7 +229,7 @@ class ClubBookingController extends Controller
                 ->createCourtBookingConfirmedNotification($booking->user_id, $booking->load('court.direction.location'));
         }
 
-        return back()->with('success', 'Бронь подтверждена.');
+        return back()->with('success', __('Бронь подтверждена.'));
     }
 
     public function reject(Request $request, CourtBooking $booking, CourtBookingService $service)
@@ -255,6 +255,6 @@ class ClubBookingController extends Controller
                 ->createCourtBookingRejectedNotification($notifyUserId, $bookingForNotification, $data['reason'] ?? null);
         }
 
-        return back()->with('success', 'Бронь отклонена.');
+        return back()->with('success', __('Бронь отклонена.'));
     }
 }

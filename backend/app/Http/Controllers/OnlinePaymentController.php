@@ -68,7 +68,7 @@ class OnlinePaymentController extends Controller
             }
         } catch (\Throwable $e) {
             Log::error('OnlinePaymentController::start', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Не удалось создать платёж этим способом. Выберите другой или попробуйте позже.');
+            return back()->with('error', __('Не удалось создать платёж этим способом. Выберите другой или попробуйте позже.'));
         }
 
         return redirect()->away($url);
@@ -100,7 +100,7 @@ class OnlinePaymentController extends Controller
             $payment = $this->yookassa->createAdPayment($event, $method);
         } catch (\Throwable $e) {
             Log::error('OnlinePaymentController::adStart', ['event_id' => $event->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Не удалось создать платёж этим способом. Выберите другой или попробуйте позже.');
+            return back()->with('error', __('Не удалось создать платёж этим способом. Выберите другой или попробуйте позже.'));
         }
 
         $event->update([
@@ -137,7 +137,7 @@ class OnlinePaymentController extends Controller
                 return redirect()->away($payment['payment_url']);
             } catch (\Throwable $e) {
                 Log::error('OnlinePaymentController::adMethod', ['event_id' => $event->id, 'error' => $e->getMessage()]);
-                return redirect()->route('events.show', $event)->with('error', 'Не удалось создать платёж. Попробуйте позже.');
+                return redirect()->route('events.show', $event)->with('error', __('Не удалось создать платёж. Попробуйте позже.'));
             }
         }
 

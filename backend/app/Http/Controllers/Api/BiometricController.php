@@ -40,7 +40,7 @@ class BiometricController extends Controller
     {
         [$user, $device] = $this->resolve($request);
         if (!$user) {
-            return response()->json(['error' => 'Неверный токен биометрической авторизации.'], 401);
+            return response()->json(['error' => __('Неверный токен биометрической авторизации.')], 401);
         }
 
         // один API-токен на устройство: прежние токены этого устройства (и прежней схемы) удаляем, чтобы не копились
@@ -58,7 +58,7 @@ class BiometricController extends Controller
     {
         [$user] = $this->resolve($request);
         if (!$user) {
-            return response()->json(['error' => 'Неверный токен биометрической авторизации.'], 401);
+            return response()->json(['error' => __('Неверный токен биометрической авторизации.')], 401);
         }
 
         Auth::login($user, true);

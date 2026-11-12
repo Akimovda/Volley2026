@@ -21,7 +21,7 @@ class FriendshipController extends Controller
         $me = $request->user();
 
         if ($me->id === $user->id) {
-            return back()->with('error', 'Нельзя добавить себя в друзья.');
+            return back()->with('error', __('Нельзя добавить себя в друзья.'));
         }
 
         Friendship::firstOrCreate([
@@ -29,7 +29,7 @@ class FriendshipController extends Controller
             'friend_id' => $user->id,
         ]);
 
-        return back()->with('status', "«{$user->name}» добавлен в друзья ✅");
+        return back()->with('status', __('«:name» добавлен в друзья ✅', ['name' => $user->name]));
     }
 
     public function destroy(Request $request, User $user)
@@ -40,6 +40,6 @@ class FriendshipController extends Controller
             ->where('friend_id', $user->id)
             ->delete();
 
-        return back()->with('status', "«{$user->name}» удалён из друзей.");
+        return back()->with('status', __('«:name» удалён из друзей.', ['name' => $user->name]));
     }
 }

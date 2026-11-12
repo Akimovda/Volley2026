@@ -196,7 +196,7 @@ class LocationController extends Controller
 
         return response()->json([
             'ok' => true,
-            'message' => 'Локация создана ✅',
+            'message' => __('Локация создана ✅'),
             'data' => [
                 'id' => $location->id,
                 'name' => $location->name,

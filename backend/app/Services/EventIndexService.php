@@ -356,7 +356,7 @@ class EventIndexService
             $occ->join = !$quick->allowed
                 ? (object)['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
                 : (object)['allowed' => !$isJoined, 'code' => null,
-                'message' => $isJoined ? 'Вы уже записаны.' : null];
+                'message' => $isJoined ? __('Вы уже записаны.') : null];
 
             $occ->cancel = (object)[
                 'allowed' => $isJoined,
@@ -431,7 +431,7 @@ class EventIndexService
 
             $occ->join = !$quick->allowed
                 ? (object) ['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
-                : (object) ['allowed' => !$isJoined, 'code' => null, 'message' => $isJoined ? 'Вы уже записаны.' : null];
+                : (object) ['allowed' => !$isJoined, 'code' => null, 'message' => $isJoined ? __('Вы уже записаны.') : null];
 
             $occ->cancel = (object) ['allowed' => $isJoined, 'message' => null];
         }

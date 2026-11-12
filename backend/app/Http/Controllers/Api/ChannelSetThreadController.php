@@ -34,7 +34,7 @@ class ChannelSetThreadController extends Controller
         if (!$channel) {
             return response()->json([
                 'ok' => false,
-                'message' => 'Канал не найден. Сначала привяжите чат.',
+                'message' => __('Канал не найден. Сначала привяжите чат.'),
             ], 404);
         }
 

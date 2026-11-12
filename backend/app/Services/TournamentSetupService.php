@@ -135,7 +135,7 @@ class TournamentSetupService
         $scheduled = $this->maybeGenerateInitialSchedule($stage, $params);
 
         return [
-            'message' => "Команды продвинуты в плей-офф ({$matches->count()} матчей)."
+            'message' => __('Команды продвинуты в плей-офф (матчей: :n).', ['n' => $matches->count()])
                 . ($scheduled > 0 ? " Расписание сгенерировано: {$scheduled} матчей." : ''),
         ];
     }
@@ -147,7 +147,7 @@ class TournamentSetupService
         $created = $this->bracketService->generateGroupCrossover($prevStage, $stage, $placesCount, $this->standingsService);
 
         if ($created->isEmpty()) {
-            return ['message' => 'Все запрошенные места уже разыграны — новых матчей не создано.'];
+            return ['message' => __('Все запрошенные места уже разыграны — новых матчей не создано.')];
         }
 
         // Тот же паттерн переименования, что и в существующем advanceCrossover() —
@@ -161,7 +161,7 @@ class TournamentSetupService
         $scheduled = $this->maybeGenerateInitialSchedule($stage, $params);
 
         return [
-            'message' => "Матчи по местам созданы ({$created->count()})."
+            'message' => __('Матчи по местам созданы (:n).', ['n' => $created->count()])
                 . ($scheduled > 0 ? " Расписание сгенерировано: {$scheduled} матчей." : ''),
         ];
     }

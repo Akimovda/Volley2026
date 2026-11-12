@@ -208,7 +208,7 @@ class FriendlyGameController extends Controller
 
         return redirect()
             ->route('tournament.matches.score.form', $match)
-            ->with('success', "Матч №{$match->match_number} создан. Введите счёт (или перейдите на поочковый ввод со статистикой).");
+            ->with('success', __('Матч №:n создан. Введите счёт (или перейдите на поочковый ввод со статистикой).', ['n' => $match->match_number]));
     }
 
     /** Создать на туре команду из ботов системы (подходящих под требования мероприятия) */
@@ -230,7 +230,7 @@ class FriendlyGameController extends Controller
 
         return redirect()
             ->route('game.manage', [$event, 'occurrence' => $occurrence->id])
-            ->with('success', "Команда «{$team->name}» создана ({$team->members()->count()} ботов) — выберите её стороной 1 или 2 в блоке «Готовые команды».");
+            ->with('success', __('Команда «:team» создана (ботов: :n) — выберите её стороной 1 или 2 в блоке «Готовые команды».', ['team' => $team->name, 'n' => $team->members()->count()]));
     }
 
     /** Формат матча (партии/очки) — конфиг служебной стадии */
@@ -255,7 +255,7 @@ class FriendlyGameController extends Controller
         }
 
         return redirect()->route('game.manage', [$event, 'occurrence' => $occurrence->id])
-            ->with('success', 'Формат матча сохранён (действует для ещё не завершённых матчей).');
+            ->with('success', __('Формат матча сохранён (действует для ещё не завершённых матчей).'));
     }
 
     /** Записывает формат матча в конфиг служебной стадии (создаёт стадию с умолчаниями, если её ещё нет). */
@@ -288,7 +288,7 @@ class FriendlyGameController extends Controller
         }
 
         return redirect()->route('game.manage', [$event, 'occurrence' => $stage->occurrence_id])
-            ->with('success', "Матч №{$number} удалён.");
+            ->with('success', __('Матч №:n удалён.', ['n' => $number]));
     }
 
     /** Публичная страница результатов и статистики */

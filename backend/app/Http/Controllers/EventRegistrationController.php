@@ -55,7 +55,7 @@ class EventRegistrationController extends Controller
         if (!$occ) {
             return redirect()
                 ->route('events.show', ['event' => (int) $event->id])
-                ->with('error', 'Не удалось найти occurrence для события.');
+                ->with('error', __('Не удалось найти occurrence для события.'));
         }
 
         return $this->storeOccurrence($request, $occ);
@@ -98,7 +98,7 @@ class EventRegistrationController extends Controller
         if (!$occ) {
             return redirect()
                 ->route('events.show', ['event' => (int) $event->id])
-                ->with('error', 'Не удалось найти occurrence для события.');
+                ->with('error', __('Не удалось найти occurrence для события.'));
         }
 
         return $this->destroyOccurrence($request, $occ);
@@ -127,7 +127,7 @@ class EventRegistrationController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'ok'       => false,
-                    'message'  => 'Для записи на мероприятие необходимо заполнить данные в профиле.',
+                    'message'  => __('Для записи на мероприятие необходимо заполнить данные в профиле.'),
                     'redirect' => $profileUrl,
                 ], 422);
             }
@@ -146,12 +146,12 @@ class EventRegistrationController extends Controller
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([
                         'ok'       => false,
-                        'message'  => 'Для записи на это мероприятие необходимо заполнить личные данные.',
+                        'message'  => __('Для записи на это мероприятие необходимо заполнить личные данные.'),
                         'redirect' => route('profile.complete'),
                     ], 422);
                 }
                 return redirect()->route('profile.complete')
-                    ->with('warning', 'Для записи на «' . ($event->title ?? 'мероприятие') . '» необходимо заполнить личные данные.');
+                    ->with('warning', __('Для записи на «:title» необходимо заполнить личные данные.', ['title' => $event->title ?? __('мероприятие')]));
             }
 
             // Уведомляем пользователя об ошибке записи (inApp + мессенджеры)
@@ -258,7 +258,7 @@ class EventRegistrationController extends Controller
 
         if (!$event) {
             return redirect()->route('events.index')
-                ->with('error', 'Событие не найдено.');
+                ->with('error', __('Событие не найдено.'));
         }
 
         $guard = app(EventCancellationGuard::class);
@@ -516,7 +516,7 @@ class EventRegistrationController extends Controller
                     'event' => (int) $occurrence->event_id,
                     'occurrence' => (int) $occurrence->id,
                 ])->with('payment_pending', $payment->id)
-                  ->with('status', '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.');
+                  ->with('status', __('⏳ Место зарезервировано! Оплатите в течение :min мин.', ['min' => $eventModel->payment_hold_minutes ?? 15]));
             }
         }
 
@@ -560,7 +560,7 @@ class EventRegistrationController extends Controller
                     ? (in_array($eventModel->payment_method, ['tbank_link', 'sber_link'])
                         ? '✅ Записались! Переведите оплату и нажмите «Я оплатил».'
                         : ($eventModel->payment_method === 'yoomoney'
-                            ? '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.'
+                            ? __('⏳ Место зарезервировано! Оплатите в течение :min мин.', ['min' => $eventModel->payment_hold_minutes ?? 15])
                             : 'Записались ✅'))
                     : 'Записались ✅',
                 'payment_status'   => $paymentStatus,
@@ -577,13 +577,13 @@ class EventRegistrationController extends Controller
             return redirect()->route('events.show', [
                 'event' => (int) $occurrence->event_id,
                 'occurrence' => (int) $occurrence->id,
-            ])->with('status', '✅ Записались! Переведите оплату и нажмите «Я оплатил».');
+            ])->with('status', __('✅ Записались! Переведите оплату и нажмите «Я оплатил».'));
         }
 
         return redirect()->route('events.show', [
             'event' => (int) $occurrence->event_id,
             'occurrence' => (int) $occurrence->id,
-        ])->with('status', 'Записались ✅');
+        ])->with('status', __('Записались ✅'));
     }
 
     /**
