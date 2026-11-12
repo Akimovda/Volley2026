@@ -321,6 +321,11 @@
                         <span class="menu-text"><x-ico name="globe" /> {{ __('ui.org_widget') }}</span>
                     @endif
                 </a>
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                <a href="{{ route('profile.rental_widget') }}" class="menu-item {{ $activeMenu === 'org_rental_widget' ? 'active' : '' }}">
+                    <span class="menu-text"><x-ico name="building" /> {{ __('ui.org_rental_widget') }}</span>
+                </a>
+                @endif
                 {{-- 13. Организатор Pro --}}
                 <a href="{{ route('organizer_pro.index') }}"
                    class="menu-item {{ $activeMenu === 'org_pro' ? 'active' : '' }}">

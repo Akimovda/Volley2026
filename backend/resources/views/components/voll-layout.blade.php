@@ -593,6 +593,11 @@
 								<a href="/profile/widget" class="menu-item">
 									<span class="menu-text"><x-ico name="globe" /> {{ __('ui.org_widget') }}</span>
 								</a>
+								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
+								<a href="{{ route('profile.rental_widget') }}" class="menu-item">
+									<span class="menu-text"><x-ico name="building" /> {{ __('ui.org_rental_widget') }}</span>
+								</a>
+								@endif
 								{{-- 13. Организатор Pro --}}
 								<a href="/organizer-pro" class="menu-item">
 									<span class="menu-text"><x-ico name="star" /> {{ __('ui.org_pro') }}</span>

@@ -134,4 +134,5 @@ return [
     'pro_analytics_locked_text'  => 'Detailed player and tournament analytics (audience, top lists, churn, CSV/PDF export) is part of Organizer Pro.',
     'pro_analytics_locked_btn'   => 'Get Organizer Pro',
     'pro_analytics_locked_back'  => 'Back to organizer dashboard',
+    'org_rental_widget' => 'Court rental widget',
 ];

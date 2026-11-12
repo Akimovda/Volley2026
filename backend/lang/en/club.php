@@ -244,4 +244,10 @@ return [
     'xl_generated' => 'Generated',
     'report_title' => 'Club analytics',
     'report_generated' => 'Generated: :date',
+    'rw_title' => 'Court rental',
+    'rw_empty' => 'No venues available for rental right now.',
+    'rw_price_from' => 'from :price ₽/h',
+    'rw_today' => 'Today',
+    'rw_closed_today' => 'Closed today',
+    'rw_courts' => '{1} :n court|[2,*] :n courts',
 ];

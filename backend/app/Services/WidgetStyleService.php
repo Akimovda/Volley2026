@@ -22,9 +22,9 @@ class WidgetStyleService
      * Поля оформления по группам: key => [type, default, options]
      * type: color | int (min,max) | enum (values) | bool | text (max)
      */
-    public static function groups(): array
+    public static function groups(string $kind = 'events'): array
     {
-        return [
+        $groups = [
             'general' => [
                 'layout'         => ['enum', 'cards', ['cards', 'list', 'wide']],
                 'theme'          => ['enum', 'custom', ['custom', 'light', 'dark', 'contrast']],
@@ -108,6 +108,33 @@ class WidgetStyleService
                 'footer_color' => ['color', '#cccccc'],
             ],
         ];
+
+        // Виджет аренды кортов: свои тексты по умолчанию и дополнительная группа полей
+        if ($kind === 'rental') {
+            $groups['header']['header_text'] = ['text', 'Аренда кортов и площадок', 60];
+            $groups['button']['button_text'] = ['text', 'Забронировать корт', 40];
+            $groups['rental'] = [
+                'show_courts'      => ['bool', true],
+                'show_court_names' => ['bool', false],
+                'show_hours'       => ['bool', true],
+                'show_price_from'  => ['bool', true],
+                'show_desc'        => ['bool', false],
+            ];
+        }
+
+        return $groups;
+    }
+
+    /** Группы и поля, которые показываем в форме виджета аренды (остальное берётся из значений по умолчанию). */
+    public static function rentalFormGroups(): array
+    {
+        $g = self::groups('rental');
+        unset($g['blocks']);
+        unset($g['meta']['show_slots'], $g['meta']['show_level']);
+        unset($g['general']['layout']);
+        $g = ['general' => ['layout' => ['enum', 'cards', ['cards', 'list', 'wide']]] + $g['general']] + $g;
+
+        return $g;
     }
 
     /** Готовые темы: переопределяют часть полей (JS подставляет их в форму, на сервере хранятся итоговые значения). */
@@ -147,10 +174,10 @@ class WidgetStyleService
     }
 
     /** Значения по умолчанию; «@accent» — основной цвет виджета (settings.color, обратная совместимость). */
-    public static function defaults(string $accent = '#f59e0b'): array
+    public static function defaults(string $accent = '#f59e0b', string $kind = 'events'): array
     {
         $out = [];
-        foreach (self::groups() as $fields) {
+        foreach (self::groups($kind) as $fields) {
             foreach ($fields as $key => $def) {
                 $out[$key] = $def[1] === '@accent' ? $accent : $def[1];
             }
@@ -159,24 +186,24 @@ class WidgetStyleService
     }
 
     /** Сохранённое + дефолты (для рендера и формы). */
-    public static function resolve(?array $saved, string $accent = '#f59e0b'): array
+    public static function resolve(?array $saved, string $accent = '#f59e0b', string $kind = 'events'): array
     {
-        $defaults = self::defaults($accent);
+        $defaults = self::defaults($accent, $kind);
         $saved = $saved ?? [];
         // легаси-ключи до доработки раскладки (2026-10-06)
         if (isset($saved['columns']) && !isset($saved['columns_max'])) { $saved['columns_max'] = $saved['columns']; }
         if (isset($saved['meta_icons']) && !isset($saved['show_icons'])) { $saved['show_icons'] = $saved['meta_icons']; }
-        return array_replace($defaults, self::sanitize($saved, $defaults, false));
+        return array_replace($defaults, self::sanitize($saved, $defaults, false, $kind));
     }
 
     /**
      * Проверка пользовательского ввода: всё, что не прошло, → значение из $defaults.
      * $fillMissing=false — отсутствующие ключи не добавляются (для resolve()).
      */
-    public static function sanitize(array $input, array $defaults, bool $fillMissing = true): array
+    public static function sanitize(array $input, array $defaults, bool $fillMissing = true, string $kind = 'events'): array
     {
         $out = [];
-        foreach (self::groups() as $fields) {
+        foreach (self::groups($kind) as $fields) {
             foreach ($fields as $key => $def) {
                 if (!array_key_exists($key, $input)) {
                     if ($fillMissing) {

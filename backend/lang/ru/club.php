@@ -244,4 +244,10 @@ return [
     'xl_generated' => 'Сформировано',
     'report_title' => 'Аналитика клуба',
     'report_generated' => 'Сформировано: :date',
+    'rw_title' => 'Аренда кортов',
+    'rw_empty' => 'Сейчас нет площадок для аренды.',
+    'rw_price_from' => 'от :price ₽/ч',
+    'rw_today' => 'Сегодня',
+    'rw_closed_today' => 'Сегодня выходной',
+    'rw_courts' => '{1} :n корт|[2,4] :n корта|[5,*] :n кортов',
 ];

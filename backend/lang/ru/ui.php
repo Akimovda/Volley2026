@@ -134,4 +134,5 @@ return [
     'pro_analytics_locked_text'  => 'Детальная аналитика игроков и турниров (аудитория, топы, отток, экспорт в CSV/PDF) входит в подписку Организатор Pro.',
     'pro_analytics_locked_btn'   => 'Подключить Организатор Pro',
     'pro_analytics_locked_back'  => 'К панели организатора',
+    'org_rental_widget' => 'Виджет аренды кортов',
 ];

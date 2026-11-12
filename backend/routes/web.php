@@ -939,6 +939,13 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::post('/profile/widget/preview',
 	        [\App\Http\Controllers\OrganizerWidgetController::class, 'preview'])
 	        ->name('profile.widget.preview');
+
+	    // Виджет аренды кортов и площадок (Организатор Pro + управляющий клубом)
+	    Route::get('/profile/rental-widget', [\App\Http\Controllers\RentalWidgetController::class, 'index'])->name('profile.rental_widget');
+	    Route::post('/profile/rental-widget', [\App\Http\Controllers\RentalWidgetController::class, 'store'])->name('profile.rental_widget.store');
+	    Route::post('/profile/rental-widget/regenerate-key', [\App\Http\Controllers\RentalWidgetController::class, 'regenerateKey'])->name('profile.rental_widget.regenerate_key');
+	    Route::post('/profile/rental-widget/toggle', [\App\Http\Controllers\RentalWidgetController::class, 'toggle'])->name('profile.rental_widget.toggle');
+	    Route::post('/profile/rental-widget/preview', [\App\Http\Controllers\RentalWidgetController::class, 'preview'])->name('profile.rental_widget.preview');
 	});
 
 	// Публичные роуты виджета (без auth, без CSRF)
@@ -953,6 +960,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	Route::get('/widget/events.js',
 	    [\App\Http\Controllers\WidgetPublicController::class, 'script'])
 	    ->name('widget.script');
+
+	// Виджет аренды кортов: публичные адреса (iframe / JSON / JS)
+	Route::get('/widget/rental/{userId}', [\App\Http\Controllers\RentalWidgetPublicController::class, 'iframe'])->whereNumber('userId')->name('rental_widget.iframe');
+	Route::get('/api/widget/rental', [\App\Http\Controllers\RentalWidgetPublicController::class, 'json'])->name('rental_widget.json');
+	Route::get('/widget/rental.js', [\App\Http\Controllers\RentalWidgetPublicController::class, 'script'])->name('rental_widget.script');
 
 	/*
 	|--------------------------------------------------------------------------
