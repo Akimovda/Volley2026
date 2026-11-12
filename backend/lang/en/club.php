@@ -210,4 +210,5 @@ return [
     'refund_deadline_hours_label'  => 'Refund allowed up to N hours before start',
     'location_settings_btn' => 'Settings: :name',
     'location_menu' => 'My venue',
+    'my_locations' => 'My locations',
 ];

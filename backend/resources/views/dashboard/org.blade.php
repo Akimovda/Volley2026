@@ -33,9 +33,7 @@
             @if(auth()->user()?->is_club_manager && auth()->user()->ownedLocations()->exists())
             <a href="{{ route('club.bookings.index') }}" class="btn btn-secondary"><x-ico name="building" /> {{ __('club.court_bookings') }}</a>
             <a href="{{ route('club.analytics.index') }}" class="btn btn-secondary"><x-ico name="chart" /> {{ __('club.analytics') }}</a>
-            @foreach(auth()->user()->ownedLocations()->orderBy('name')->get(['id', 'name']) as $ownLoc)
-            <a href="{{ route('admin.locations.edit', $ownLoc) }}" class="btn btn-secondary"><x-ico name="sliders" /> {{ __('club.location_settings_btn', ['name' => $ownLoc->name]) }}</a>
-            @endforeach
+            <a href="{{ route('admin.locations.index') }}" class="btn btn-secondary"><x-ico name="sliders" /> {{ __('club.my_locations') }}</a>
             @endif
         </div>
     </x-slot>

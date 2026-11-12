@@ -18,9 +18,15 @@ class AdminLocationController extends Controller
 {
 public function index(Request $request)
 {
+    $user = $request->user();
+    $isAdmin = (bool) $user?->isAdmin();
+    // Администратор видит все локации, владелец площадки — только те, где он владелец
+    abort_unless($isAdmin || ($user && $user->is_club_manager && $user->ownedLocations()->exists()), 403);
+
     $search = trim((string) $request->query('q', ''));
 
     $q = Location::query()
+        ->when(!$isAdmin, fn ($w) => $w->where('locations.owner_id', $user->id))
         ->with(['city:id,name,region,country_code,timezone']) // добавили region и country_code
         ->orderByRaw('COALESCE((select name from cities where cities.id = locations.city_id), \'\') asc')
         ->orderBy('name');
@@ -41,6 +47,7 @@ public function index(Request $request)
     return view('admin.locations.index', [
         'locations' => $q->paginate(30)->withQueryString(),
         'search'    => $search,
+        'isAdmin'   => $isAdmin,
     ]);
 }
 

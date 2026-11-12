@@ -30,14 +30,14 @@
             <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
 		</li>
-        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span></a>
-            <meta itemprop="position" content="2">
-		</li>
         @endif
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ auth()->user()?->isAdmin() ? __('admin.loc_breadcrumb') : __('club.my_locations') }}</span></a>
+            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 2 : 1 }}">
+		</li>
+        <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <span itemprop="name">{{ $location->name }}</span>
-            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 3 : 1 }}">
+            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 3 : 2 }}">
 		</li>
 	</x-slot>
 	

@@ -991,6 +991,9 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		|--------------------------------------------------------------------------
 	*/
 	
+	// Список локаций: администратор — все, владелец площадки — только свои (проверка и фильтр в контроллере)
+	Route::middleware(['auth'])->get('/admin/locations', [AdminLocationController::class, 'index'])->name('admin.locations.index');
+
 	// Настройки локации: администратор или владелец площадки (с журналом изменений)
 	Route::middleware(['auth', 'location.manage'])
     ->prefix('admin')
@@ -1111,7 +1114,6 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		->name('organizer_requests.reject');
 		
         // Locations CRUD
-        Route::get('/locations', [AdminLocationController::class, 'index'])->name('locations.index');
         Route::get('/locations/create', [AdminLocationController::class, 'create'])->name('locations.create');
         Route::post('/locations', [AdminLocationController::class, 'store'])->name('locations.store');
 

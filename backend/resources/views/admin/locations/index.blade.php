@@ -9,7 +9,7 @@
 	</x-slot>
 	
     <x-slot name="h1">
-        {{ __('admin.loc_index_title') }}
+        {{ $isAdmin ? __('admin.loc_index_title') : __('club.my_locations') }}
 	</x-slot>
 	
     <x-slot name="h2">
@@ -17,10 +17,12 @@
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
+        @if($isAdmin)
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
 		</li>
+        @endif
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span>
             <meta itemprop="position" content="2">
@@ -32,11 +34,13 @@
 	</x-slot>	
 	
     <x-slot name="d_description">
+		@if($isAdmin)
 		<div data-aos-delay="250" data-aos="fade-up">
 			<a href="{{ route('admin.locations.create') }}" class="btn mt-2">
 				{{ __('admin.loc_btn_create') }}
 			</a>
 		</div>
+		@endif
 	</x-slot>
 	
 	
@@ -125,6 +129,7 @@
                                 <div class="d-flex fc">
                                     <a href="{{ route('admin.locations.edit', $loc) }}" class="icon-edit btn mr-1 btn-svg">
 									</a>
+                                    @if($isAdmin)
                                     <form class="d-inline-block" method="POST"
 									action="{{ route('admin.locations.destroy', $loc) }}">
                                         @csrf
@@ -140,6 +145,7 @@
 										
 										
 									</form>
+                                    @endif
 								</div>
 							</td>
 						</tr>
