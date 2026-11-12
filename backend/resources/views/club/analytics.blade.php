@@ -16,18 +16,8 @@
         return 'mid';
     };
     $fmtMoney = fn ($v) => number_format((float) $v, 0, ',', ' ') . ' ₽';
-
-    $periodLabel = '';
-    if ($location) {
-        $qNum = intdiv($periodStart->month - 1, 3) + 1;
-        $hNum = $periodStart->month <= 6 ? 1 : 2;
-        $periodLabel = match ($period) {
-            'quarter' => __('club.period_label_quarter', ['n' => $qNum, 'year' => $periodStart->year]),
-            'half_year' => __('club.period_label_half_year', ['n' => $hNum, 'year' => $periodStart->year]),
-            'year' => (string) $periodStart->year,
-            default => \Illuminate\Support\Str::ucfirst($periodStart->locale(app()->getLocale())->isoFormat('MMMM YYYY')),
-        };
-    }
+    $fmtHours = fn ($v) => rtrim(rtrim(number_format((float) $v, 1, ',', ' '), '0'), ',');
+    $noArrows = fn (string $t) => trim(str_replace(['←', '→'], '', $t));
 
     $periods = [
         'month' => __('club.period_month'),
@@ -43,6 +33,20 @@
             'anchor' => $periodStart->toDateString(),
         ], $overrides))
         : '#';
+
+    $exportQuery = $location ? [
+        'location_id' => $location->id,
+        'period' => $period,
+        'anchor' => $periodStart->toDateString(),
+    ] : [];
+
+    if ($location) {
+        $center = $stats['center'];
+        $allCourts = array_merge(...array_map(fn ($d) => $d['courts'], $stats['directions'] ?: [[]]));
+        $busyHours = array_sum(array_column($allCourts, 'occupied_hours'));
+        $totalHours = array_sum(array_column($allCourts, 'available_hours'));
+        $onlineShare = $center['revenue'] > 0 ? round($center['revenue_online'] / $center['revenue'] * 100) : 0;
+    }
 @endphp
 
 <div class="container">
@@ -50,26 +54,39 @@
         @if($locations->isEmpty())
             <div class="alert alert-info">{{ __('club.analytics_no_locations') }}</div>
         @else
-            <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
-                @if($locations->count() > 1)
-                <div>
-                    <label class="d-block mb-1 f-14 cd">{{ __('club.booking_location_label') }}</label>
+            <div class="ca-toolbar">
+                <div class="ca-toolbar__loc">
+                    @if($locations->count() > 1)
+                    <label class="d-block mb-1 f-14 cd"><x-ico name="building" /> {{ __('club.booking_location_label') }}</label>
                     <select id="caLocationSelect" class="btn-small">
                         @foreach($locations as $loc)
                         <option value="{{ $loc->id }}" @selected($loc->id === $location->id)>{{ $loc->name }}</option>
                         @endforeach
                     </select>
+                    @else
+                    <div class="b-600 f-18"><x-ico name="building" /> {{ $location->name }}</div>
+                    @endif
                 </div>
-                @else
-                <div class="b-600">{{ $location->name }}</div>
-                @endif
+
+                <div class="ca-toolbar__export">
+                    @if($canExport)
+                    <a href="{{ route('club.analytics.export_pdf', $exportQuery) }}" class="btn btn-small btn-secondary" title="{{ __('club.export_title') }} PDF"><x-ico name="file-text" /> {{ __('club.export_pdf') }}</a>
+                    <a href="{{ route('club.analytics.export_xlsx', $exportQuery) }}" class="btn btn-small btn-secondary" title="{{ __('club.export_title') }} Excel"><x-ico name="download" /> {{ __('club.export_xlsx') }}</a>
+                    @else
+                    <a href="{{ route('organizer_pro.index') }}" class="btn btn-small btn-secondary ca-export-lock" title="{{ __('club.export_pro_hint') }}"><x-ico name="lock" /> {{ __('club.export_pdf') }}</a>
+                    <a href="{{ route('organizer_pro.index') }}" class="btn btn-small btn-secondary ca-export-lock" title="{{ __('club.export_pro_hint') }}"><x-ico name="lock" /> {{ __('club.export_xlsx') }}</a>
+                    @endif
+                </div>
             </div>
+            @unless($canExport)
+            <div class="f-13 cd mb-2"><x-ico name="star" /> {{ __('club.export_pro_hint') }} — <a href="{{ route('organizer_pro.index') }}" class="blink">{{ __('club.export_pro_btn') }}</a></div>
+            @endunless
 
             <div class="d-flex between fvc mb-3" style="flex-wrap:wrap;gap:10px">
                 <div class="d-flex gap-1 fvc" style="flex-wrap:wrap">
-                    <a href="{{ $urlFor(['anchor' => $prevAnchor->toDateString()]) }}" class="btn btn-small btn-secondary">{{ __('club.period_prev') }}</a>
-                    <span class="b-600">{{ $periodLabel }}</span>
-                    <a href="{{ $urlFor(['anchor' => $nextAnchor->toDateString()]) }}" class="btn btn-small btn-secondary">{{ __('club.period_next') }}</a>
+                    <a href="{{ $urlFor(['anchor' => $prevAnchor->toDateString()]) }}" class="btn btn-small btn-secondary" title="{{ $noArrows(__('club.period_prev')) }}" aria-label="{{ $noArrows(__('club.period_prev')) }}"><x-ico name="arrow-left" /></a>
+                    <span class="b-600 f-18"><x-ico name="calendar" /> {{ $periodLabel }}</span>
+                    <a href="{{ $urlFor(['anchor' => $nextAnchor->toDateString()]) }}" class="btn btn-small btn-secondary" title="{{ $noArrows(__('club.period_next')) }}" aria-label="{{ $noArrows(__('club.period_next')) }}"><x-ico name="arrow-right" /></a>
                 </div>
                 <div class="d-flex gap-1" style="flex-wrap:wrap">
                     @foreach($periods as $key => $label)
@@ -78,36 +95,67 @@
                 </div>
             </div>
 
-            @php $center = $stats['center']; @endphp
-            <div class="club-analytics-summary">
-                <h2 class="-mt-05" style="margin:0 0 10px">{{ __('club.whole_center') }}</h2>
-                <div class="club-occ-row" style="margin-bottom:0">
-                    <div class="club-occ-row__name f-16">{{ __('club.occupancy') }}: <strong>{{ $center['occupancy_pct'] }}%</strong></div>
-                    <div class="club-occ-bar" style="flex:1 1 160px">
-                        <div class="club-occ-bar__fill club-occ-bar__fill--{{ $occLevel($center['occupancy_pct']) }}" style="width: {{ min(100, $center['occupancy_pct']) }}%"></div>
-                    </div>
-                    <div class="f-16" style="flex:0 0 auto">{{ __('club.revenue') }}: <strong>{{ $fmtMoney($center['revenue']) }}</strong></div>
+            <h2 class="-mt-05 ca-h"><x-ico name="chart" /> {{ __('club.whole_center') }}</h2>
+            <div class="ca-kpis">
+                <div class="ca-kpi">
+                    <div class="ca-kpi__label"><x-ico name="chart" /> {{ __('club.kpi_occupancy') }}</div>
+                    <div class="ca-kpi__value">{{ $center['occupancy_pct'] }}%</div>
+                    <div class="club-occ-bar"><div class="club-occ-bar__fill club-occ-bar__fill--{{ $occLevel($center['occupancy_pct']) }}" style="width: {{ min(100, $center['occupancy_pct']) }}%"></div></div>
                 </div>
-                @if($center['revenue_online'] > 0 && $center['revenue_on_site'] > 0)
-                <div class="f-14 cd mt-1">
-                    {{ __('club.paid_online') }}: {{ $fmtMoney($center['revenue_online']) }} ·
-                    {{ __('club.paid_on_site') }}: {{ $fmtMoney($center['revenue_on_site']) }}
+                <div class="ca-kpi">
+                    <div class="ca-kpi__label"><x-ico name="wallet" /> {{ __('club.kpi_revenue') }}</div>
+                    <div class="ca-kpi__value">{{ $fmtMoney($center['revenue']) }}</div>
                 </div>
-                @endif
+                <div class="ca-kpi">
+                    <div class="ca-kpi__label"><x-ico name="card" /> {{ __('club.kpi_online') }}</div>
+                    <div class="ca-kpi__value">{{ $fmtMoney($center['revenue_online']) }}</div>
+                    @if($center['revenue'] > 0)<div class="ca-kpi__sub">{{ $onlineShare }}%</div>@endif
+                </div>
+                <div class="ca-kpi">
+                    <div class="ca-kpi__label"><x-ico name="pin" /> {{ __('club.kpi_on_site') }}</div>
+                    <div class="ca-kpi__value">{{ $fmtMoney($center['revenue_on_site']) }}</div>
+                    @if($center['revenue'] > 0)<div class="ca-kpi__sub">{{ 100 - $onlineShare }}%</div>@endif
+                </div>
+                <div class="ca-kpi">
+                    <div class="ca-kpi__label"><x-ico name="clock" /> {{ __('club.kpi_hours') }}</div>
+                    <div class="ca-kpi__value">{{ $fmtHours($busyHours) }}</div>
+                    <div class="ca-kpi__sub">{{ __('club.kpi_hours_of', ['busy' => $fmtHours($busyHours), 'total' => $fmtHours($totalHours)]) }}</div>
+                </div>
+            </div>
+
+            <div class="ca-legend">
+                <span class="cd">{{ __('club.legend_title') }}:</span>
+                <span><i class="ca-dot ca-dot--low"></i> {{ __('club.legend_low') }}</span>
+                <span><i class="ca-dot ca-dot--mid"></i> {{ __('club.legend_mid') }}</span>
+                <span><i class="ca-dot ca-dot--high"></i> {{ __('club.legend_high') }}</span>
             </div>
 
             @forelse($stats['directions'] as $dir)
-                <h3 class="mb-2">
+                @php
+                    $courtsPct = array_column($dir['courts'], 'occupancy_pct');
+                    $bestIdx = count($courtsPct) > 1 ? array_search(max($courtsPct), $courtsPct) : null;
+                    $weakIdx = count($courtsPct) > 1 ? array_search(min($courtsPct), $courtsPct) : null;
+                    if ($bestIdx === $weakIdx) { $bestIdx = $weakIdx = null; }
+                @endphp
+                <h3 class="mb-2 ca-h">
+                    @if($dir['direction'] === 'beach')<x-ico name="beach" />@else<x-ico name="ball" />@endif
                     {{ $dir['direction'] === 'beach' ? __('club.direction_beach') : __('club.direction_classic') }}
-                    — {{ $dir['occupancy_pct'] }}% · {{ $fmtMoney($dir['revenue']) }}
+                    <span class="ca-pill">{{ $dir['occupancy_pct'] }}%</span>
+                    <span class="ca-pill ca-pill--money">{{ $fmtMoney($dir['revenue']) }}</span>
+                    <span class="ca-pill ca-pill--muted">{{ __('club.courts_count', ['n' => count($dir['courts'])]) }}</span>
                 </h3>
-                @forelse($dir['courts'] as $court)
+                @forelse($dir['courts'] as $i => $court)
                 <div class="club-occ-row">
-                    <div class="club-occ-row__name f-14">{{ $court['name'] }}</div>
+                    <div class="club-occ-row__name f-14">
+                        {{ $court['name'] }}
+                        @if($i === $bestIdx)<span title="{{ __('club.best_court') }}"><x-ico name="trophy" /></span>@endif
+                        @if($i === $weakIdx)<span title="{{ __('club.weak_court') }}"><x-ico name="eye-off" /></span>@endif
+                    </div>
                     <div class="club-occ-bar">
                         <div class="club-occ-bar__fill club-occ-bar__fill--{{ $occLevel($court['occupancy_pct']) }}" style="width: {{ min(100, $court['occupancy_pct']) }}%"></div>
                     </div>
                     <div class="club-occ-row__pct f-14">{{ $court['occupancy_pct'] }}%</div>
+                    <div class="club-occ-row__hours f-13 cd">{{ $fmtHours($court['occupied_hours']) }} / {{ $fmtHours($court['available_hours']) }} {{ __('club.hours_short') }}</div>
                     <div class="club-occ-row__revenue f-14">{{ $fmtMoney($court['revenue']) }}</div>
                 </div>
                 @empty

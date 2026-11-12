@@ -8315,3 +8315,23 @@ body.dark .ri-chip--mu{color:#fdba74}body.dark .ri-chip--sigma{color:#a5b4fc}
 
 /* «Помощь»: отступ значка от текста в пунктах меню */
 .menu-item .menu-ico{margin-right:.9rem}
+
+/* ===== Club analytics: тулбар, KPI-карточки, легенда, значки ===== */
+.ca-toolbar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+.ca-toolbar__export { display: flex; gap: 8px; flex-wrap: wrap; }
+.ca-export-lock { opacity: .75; }
+.ca-h { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.ca-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+.ca-kpi { border-radius: 1rem; border: .2rem solid rgba(0, 0, 0, .1); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 6px; }
+.ca-kpi__label { font-size: 1.3rem; opacity: .75; display: flex; align-items: center; gap: .4rem; }
+.ca-kpi__value { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+.ca-kpi__sub { font-size: 1.3rem; opacity: .65; }
+body.dark .ca-kpi { border-color: rgba(255, 255, 255, .1); }
+.ca-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 1.3rem; margin-bottom: 1.5rem; }
+.ca-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.ca-dot--low { background: #9E9E9E; } .ca-dot--mid { background: #E7612F; } .ca-dot--high { background: #34C759; }
+.ca-pill { font-size: 1.3rem; font-weight: 600; padding: .15rem .7rem; border-radius: 99px; background: rgba(231, 97, 47, .12); color: #E7612F; }
+.ca-pill--money { background: rgba(52, 199, 89, .14); color: #1f9d46; }
+.ca-pill--muted { background: rgba(17, 24, 39, .08); color: inherit; opacity: .8; font-weight: 500; }
+.club-occ-row__hours { flex: 0 0 110px; text-align: right; }
+@media (max-width: 640px) { .club-occ-row__hours { flex: 1 1 100%; text-align: left; } }

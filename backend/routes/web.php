@@ -219,6 +219,11 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
 			->name('club.analytics.index');
+		// Выгрузка аналитики — только Организатор Pro (админ — всегда)
+		Route::get('/club/analytics/export/pdf', [\App\Http\Controllers\ClubAnalyticsController::class, 'exportPdf'])
+			->middleware('organizer.pro')->name('club.analytics.export_pdf');
+		Route::get('/club/analytics/export/xlsx', [\App\Http\Controllers\ClubAnalyticsController::class, 'exportXlsx'])
+			->middleware('organizer.pro')->name('club.analytics.export_xlsx');
 
 		// Фаза 5 — прямая бронь корта игроком
 		// URL /my/bookings отдан под личные записи на мероприятия (см. задачу 1 обмена /my/events <-> /my/bookings),
