@@ -208,4 +208,5 @@ return [
     'refund_policy_full'           => 'Full refund before deadline',
     'refund_policy_none'           => 'No refunds',
     'refund_deadline_hours_label'  => 'Refund allowed up to N hours before start',
+    'location_settings_btn' => 'Settings: :name',
 ];

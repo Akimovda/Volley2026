@@ -411,5 +411,6 @@
     " + :n в лист ожидания следующего тура.": " + :n added to the waitlist of the next round.",
     "Промоушен в :season: :active в основном составе, :reserve в резерве.": "Promotion to :season: :active in the main roster, :reserve in the reserve.",
     "Ошибка сохранения": "Save error",
-    "Ошибка соединения": "Connection error"
+    "Ошибка соединения": "Connection error",
+    "Порядок фото сохранён ✅": "Photo order saved ✅"
 }

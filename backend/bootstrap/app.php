@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'organizer.pro'       => \App\Http\Middleware\EnsureOrganizerPro::class,
             'broadcast.link'      => \App\Http\Middleware\BroadcastLinkAccess::class,
             'scorer.link'         => \App\Http\Middleware\ScorerLinkAccess::class,
+            'location.manage'     => \App\Http\Middleware\EnsureCanManageLocation::class,
         ]);
         $middleware->append(\App\Http\Middleware\DetectBrand::class);
         $middleware->prependToGroup('web', \App\Http\Middleware\SkipSessionForBots::class);

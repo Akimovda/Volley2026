@@ -44,6 +44,17 @@ class Location extends Model implements HasMedia
         return $this->belongsTo(\App\Models\City::class, 'city_id');
     }
 
+    /** Администратор или владелец площадки (менеджер клуба, указанный как owner_id). */
+    public function canBeManagedBy(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->isAdmin()
+            || ($user->is_club_manager && (int) $this->owner_id === (int) $user->id);
+    }
+
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');

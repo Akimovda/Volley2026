@@ -25,6 +25,7 @@
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
+        @if(auth()->user()?->isAdmin())
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
@@ -33,9 +34,10 @@
             <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span></a>
             <meta itemprop="position" content="2">
 		</li>
+        @endif
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <span itemprop="name">{{ $location->name }}</span>
-            <meta itemprop="position" content="3">
+            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 3 : 1 }}">
 		</li>
 	</x-slot>
 	
@@ -508,6 +510,7 @@
 								placeholder="{{ __('admin.loc_search_city_ph') }}"
 								value="{{ old('city_label', $selectedCityLabel) }}"
 								autocomplete="off"
+								@disabled(!auth()->user()?->isAdmin())
 								@error('city_id') class="error" @enderror>
 								
 								{{-- dropdown --}}
@@ -515,6 +518,7 @@
 									<div id="city_results"></div>
 								</div>
 							</div>
+							@unless(auth()->user()?->isAdmin())<div class="f-13 cd mt-05">{{ __('admin.loc_admin_only_hint') }}</div>@endunless
 							@error('city_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
 						</div>
 					</div>
@@ -955,6 +959,8 @@
             </div>
         </div>
 
+
+        @include('admin.locations._audit', ['locationAudit' => $locationAudit])
 
         {{-- ЕДИНАЯ кнопка «Сохранить»: форма локации + направления и корты + прайс аренды (блок доверенных организаторов — отдельные действия) --}}
         <div class="loc-savebar">

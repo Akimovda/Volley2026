@@ -29,7 +29,12 @@ class AdminLocationPhotoController extends Controller
                 ->update(['order_column' => $order + 1]);
         }
 
-        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', 'Порядок фото сохранён ✅');
+        \App\Support\AdminAuditLogger::log('location.photos.reorder', 'location', $location->id, [
+            'actor_role'    => auth()->user()?->isAdmin() ? 'admin' : 'owner',
+            'location_name' => $location->name,
+        ]);
+
+        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', __('Порядок фото сохранён ✅'));
     }
 
     /**
@@ -43,8 +48,14 @@ class AdminLocationPhotoController extends Controller
             403
         );
 
+        \App\Support\AdminAuditLogger::log('location.photos.delete', 'location', $location->id, [
+            'actor_role'    => auth()->user()?->isAdmin() ? 'admin' : 'owner',
+            'location_name' => $location->name,
+            'file'          => $media->file_name,
+        ]);
+
         $media->delete();
 
-        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', 'Фото удалено ✅');
+        return redirect(route('admin.locations.edit', $location) . '#location-photos')->with('status', __('Фото удалено ✅'));
     }
 }

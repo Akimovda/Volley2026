@@ -991,6 +991,33 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		|--------------------------------------------------------------------------
 	*/
 	
+	// Настройки локации: администратор или владелец площадки (с журналом изменений)
+	Route::middleware(['auth', 'location.manage'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/locations/{location}/edit', [AdminLocationController::class, 'edit'])->name('locations.edit');
+        Route::put('/locations/{location}', [AdminLocationController::class, 'update'])->name('locations.update');
+        Route::post('/locations/{location}/photos/reorder', [AdminLocationPhotoController::class, 'reorder'])
+		->name('locations.photos.reorder');
+		
+        Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
+		->name('locations.photos.destroy');
+
+        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
+            ->name('locations.directions.save');
+
+        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
+            ->name('locations.price_rules.save');
+
+        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
+            ->name('locations.trust.save');
+        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
+            ->name('locations.trust.destroy');
+
+    });
+
+	
 	Route::middleware(['auth', 'can:is-admin'])
     ->prefix('admin')
     ->name('admin.')
@@ -1087,33 +1114,14 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
         Route::get('/locations', [AdminLocationController::class, 'index'])->name('locations.index');
         Route::get('/locations/create', [AdminLocationController::class, 'create'])->name('locations.create');
         Route::post('/locations', [AdminLocationController::class, 'store'])->name('locations.store');
-        Route::get('/locations/{location}/edit', [AdminLocationController::class, 'edit'])->name('locations.edit');
 
         // Platform payment settings (Premium + ads)
         Route::get('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'edit'])
             ->name('platform_payment_settings');
         Route::post('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'update'])
             ->name('platform_payment_settings.update');
-        Route::put('/locations/{location}', [AdminLocationController::class, 'update'])->name('locations.update');
         Route::delete('/locations/{location}', [AdminLocationController::class, 'destroy'])->name('locations.destroy');
 		
-        Route::post('/locations/{location}/photos/reorder', [AdminLocationPhotoController::class, 'reorder'])
-		->name('locations.photos.reorder');
-		
-        Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
-		->name('locations.photos.destroy');
-
-        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
-            ->name('locations.directions.save');
-
-        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
-            ->name('locations.price_rules.save');
-
-        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
-            ->name('locations.trust.save');
-        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
-            ->name('locations.trust.destroy');
-
         Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
         Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
         Route::get('/impersonate/search', [ImpersonationController::class, 'search'])->name('impersonate.search');
