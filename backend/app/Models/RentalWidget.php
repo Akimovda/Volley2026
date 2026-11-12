@@ -14,6 +14,11 @@ class RentalWidget extends OrganizerWidget
 {
     protected $table = 'rental_widgets';
 
+    public const KIND_CARDS = 'cards';
+    public const KIND_TIMELINE = 'timeline';
+
+    protected $fillable = ['user_id', 'kind', 'api_key', 'allowed_domains', 'settings', 'is_active'];
+
     public static function generateKey(): string
     {
         do {

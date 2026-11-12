@@ -23,6 +23,7 @@ class RentalWidgetPublicController extends Controller
     public function iframe(Request $request, int $userId): Response
     {
         $widget = RentalWidget::where('user_id', $userId)
+            ->where('kind', RentalWidget::KIND_CARDS)
             ->where('api_key', (string) $request->query('key', ''))
             ->where('is_active', true)
             ->first();
@@ -49,7 +50,7 @@ class RentalWidgetPublicController extends Controller
 
     public function json(Request $request): JsonResponse
     {
-        $widget = RentalWidget::where('api_key', (string) $request->query('key', ''))->where('is_active', true)->first();
+        $widget = RentalWidget::where('api_key', (string) $request->query('key', ''))->where('kind', RentalWidget::KIND_CARDS)->where('is_active', true)->first();
 
         if (!$widget) {
             return response()->json(['ok' => false, 'error' => 'Invalid key'], 403);

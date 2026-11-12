@@ -94,7 +94,7 @@
                         </div>
 
                         {{-- ===== Оформление ===== --}}
-                        <h3 class="mb-1">{{ __('profile.wst_h') }}</h3>
+                        <h3 class="mb-1"><x-ico name="sliders" /> {{ __('profile.wst_h') }}</h3>
 
                         <div class="card" style="height:auto;margin-bottom:1.6rem">
                             <div class="f-15 b-600 mb-05">{{ __('profile.wst_presets') }}</div>
@@ -162,7 +162,7 @@
                 <div class="ramka">
                     <div class="d-flex between mb-1" style="align-items:center">
                         <h3 class="mt-0 mb-0">🔑 API-ключ</h3>
-                        <div class="d-flex gap-05">
+                        <div class="d-flex" style="gap:.8rem">
                             <form method="POST" action="{{ route('profile.widget.toggle') }}">
                                 @csrf
                                 <button type="submit"
@@ -234,7 +234,7 @@
 
                 {{-- Предпросмотр (по несохранённым значениям формы) --}}
                 <div class="ramka" style="position:sticky;top:12rem">
-                    <h3 class="mt-0">{{ __('profile.wst_preview_h') }}</h3>
+                    <h3 class="mt-0"><x-ico name="eye" /> {{ __('profile.wst_preview_h') }}</h3>
                     <div class="d-flex gap-1 flex-wrap" style="margin-bottom:1rem;align-items:center">
                         <span class="f-13 text-muted">{{ __('profile.wst_preview_width') }}:</span>
                         @foreach([360, 768, 1200] as $pw)

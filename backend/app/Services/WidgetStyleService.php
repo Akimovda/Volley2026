@@ -24,6 +24,10 @@ class WidgetStyleService
      */
     public static function groups(string $kind = 'events'): array
     {
+        if ($kind === 'timeline') {
+            return self::timelineGroups();
+        }
+
         $groups = [
             'general' => [
                 'layout'         => ['enum', 'cards', ['cards', 'list', 'wide']],
@@ -125,6 +129,113 @@ class WidgetStyleService
         return $groups;
     }
 
+
+    /** Поля оформления и поведения виджета «Таймлайн бронирования» (аренда кортов на сайте площадки). */
+    public static function timelineGroups(): array
+    {
+        return [
+            'general' => [
+                'theme'          => ['enum', 'light', ['light', 'dark', 'custom']],
+                'lang'           => ['enum', 'ru', ['ru', 'en', 'auto']],
+                'font'           => ['enum', 'system', array_keys(self::FONTS)],
+                'radius'         => ['int', 12, [0, 24]],
+                'bg_transparent' => ['bool', true],
+                'bg'             => ['color', '#ffffff'],
+                'accent'         => ['color', '#f59e0b'],
+            ],
+            'header' => [
+                'header_show'   => ['bool', true],
+                'header_text'   => ['text', 'Бронирование кортов', 60],
+                'header_color'  => ['color', '@accent'],
+                'header_size'   => ['int', 18, [12, 36]],
+                'header_weight' => ['enum', '700', ['400', '600', '700']],
+                'header_align'  => ['enum', 'left', ['left', 'center', 'right']],
+            ],
+            'view' => [
+                'default_mode'         => ['enum', 'day', ['day', 'week']],
+                'show_mode_switch'     => ['bool', true],
+                'show_date_nav'        => ['bool', true],
+                'show_today_button'    => ['bool', true],
+                'show_direction_tabs'  => ['bool', true],
+                'show_location_select' => ['bool', true],
+                'hide_past'            => ['bool', true],
+                'days_ahead'           => ['int', 60, [0, 365]],
+            ],
+            'grid' => [
+                'slot_minutes'     => ['enum', 60, [30, 60, 90, 120]],
+                'row_height'       => ['int', 40, [24, 80]],
+                'court_min_width'  => ['int', 130, [90, 260]],
+                'show_court_names' => ['bool', true],
+                'show_court_icons' => ['bool', true],
+                'show_titles'      => ['bool', false],
+                'busy_label'       => ['text', 'Занято', 30],
+                'free_hint'        => ['text', 'Свободно — нажмите, чтобы забронировать', 80],
+            ],
+            'colors' => [
+                'color_text'       => ['color', '#1a1a1a'],
+                'color_muted'      => ['color', '#6b7280'],
+                'color_grid'       => ['color', '#e5e7eb'],
+                'color_free'       => ['color', '#ecfdf5'],
+                'color_free_hover' => ['color', '#a7f3d0'],
+                'color_busy'       => ['color', '#e5e7eb'],
+                'color_busy_text'  => ['color', '#4b5563'],
+                'color_past'       => ['color', '#f3f4f6'],
+                'dir_classic'      => ['color', '#2967ba'],
+                'dir_beach'        => ['color', '#e7612f'],
+                'tab_style'        => ['enum', 'pills', ['pills', 'underline']],
+                'footer_color'     => ['color', '#9ca3af'],
+            ],
+            'click' => [
+                'click_mode'  => ['enum', 'event', ['event', 'link', 'none']],
+                'booking_url' => ['url', '', 300],
+                'link_target' => ['enum', '_blank', ['_blank', '_top', '_self']],
+            ],
+        ];
+    }
+
+    /** Цветовые пары светлой/тёмной темы таймлайна (перекрывают поля colors при theme != custom). */
+    public static function timelineThemes(): array
+    {
+        return [
+            'light' => [
+                'bg_transparent' => true, 'color_text' => '#1a1a1a', 'color_muted' => '#6b7280', 'color_grid' => '#e5e7eb',
+                'color_free' => '#ecfdf5', 'color_free_hover' => '#a7f3d0', 'color_busy' => '#e5e7eb',
+                'color_busy_text' => '#4b5563', 'color_past' => '#f3f4f6', 'footer_color' => '#9ca3af',
+            ],
+            'dark' => [
+                'bg_transparent' => true, 'color_text' => '#ffffff', 'color_muted' => '#b5b7c8', 'color_grid' => '#33344a',
+                'color_free' => '#143d2c', 'color_free_hover' => '#1f6b4a', 'color_busy' => '#2c2d40',
+                'color_busy_text' => '#c3c5d6', 'color_past' => '#1c1d2b', 'footer_color' => '#6b6d80',
+            ],
+        ];
+    }
+
+    /** Итоговые значения таймлайна: сохранённый стиль → тема → переопределения из data-* (theme, lang, mode, accent). */
+    public static function forRenderTimeline(array $style, array $override = []): array
+    {
+        $defaults = self::defaults($style['accent'] ?? '#f59e0b', 'timeline');
+        $ov = self::sanitize(array_filter([
+            'theme'        => $override['theme'] ?? null,
+            'lang'         => $override['lang'] ?? null,
+            'default_mode' => $override['mode'] ?? null,
+            'header_show'  => isset($override['header']) ? (string) $override['header'] : null,
+        ], fn ($v) => $v !== null && $v !== ''), $defaults, false, 'timeline');
+        $style = array_replace($style, $ov);
+
+        if (isset(self::timelineThemes()[$style['theme']])) {
+            $style = array_replace($style, self::timelineThemes()[$style['theme']]);
+        }
+
+        $accent = (string) ($override['accent'] ?? '');
+        if ($accent !== '' && preg_match('/^#?[0-9a-f]{6}$/i', $accent)) {
+            $accent = '#' . ltrim(strtolower($accent), '#');
+            $style['accent'] = $accent;
+            $style['header_color'] = $accent;
+        }
+
+        return $style;
+    }
+
     /** Группы и поля, которые показываем в форме виджета аренды (остальное берётся из значений по умолчанию). */
     public static function rentalFormGroups(): array
     {
@@ -138,8 +249,17 @@ class WidgetStyleService
     }
 
     /** Готовые темы: переопределяют часть полей (JS подставляет их в форму, на сервере хранятся итоговые значения). */
-    public static function presets(): array
+    public static function presets(string $kind = 'events'): array
     {
+        if ($kind === 'timeline') {
+            return [
+                'light' => ['theme' => 'light'],
+                'dark' => ['theme' => 'dark', 'bg_transparent' => false, 'bg' => '#161721', 'header_color' => '#ffffff'],
+                'sport' => ['theme' => 'light', 'radius' => 18, 'header_size' => 22, 'tab_style' => 'pills', 'color_free' => '#fff4ee', 'color_free_hover' => '#ffd1b8'],
+                'minimal' => ['theme' => 'light', 'radius' => 4, 'tab_style' => 'underline', 'header_weight' => '600', 'header_size' => 16],
+            ];
+        }
+
         return [
             'light' => [],
             'dark' => [
@@ -220,6 +340,7 @@ class WidgetStyleService
                     'enum'  => in_array((string) $v, array_map('strval', $def[2]), true) ? (is_int($def[1]) ? (int) $v : (string) $v) : $defaults[$key],
                     'bool'  => filter_var($v, FILTER_VALIDATE_BOOLEAN),
                     'text'  => self::cleanText($v, $def[2], $defaults[$key]),
+                    'url'   => (is_string($v) && mb_strlen(trim($v)) <= $def[2] && preg_match('#^https?://[^\\s<>"\']+$#i', trim($v))) ? trim($v) : $defaults[$key],
                     default => $defaults[$key],
                 };
             }

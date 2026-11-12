@@ -948,6 +948,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::post('/profile/rental-widget/regenerate-key', [\App\Http\Controllers\RentalWidgetController::class, 'regenerateKey'])->name('profile.rental_widget.regenerate_key');
 	    Route::post('/profile/rental-widget/toggle', [\App\Http\Controllers\RentalWidgetController::class, 'toggle'])->name('profile.rental_widget.toggle');
 	    Route::post('/profile/rental-widget/preview', [\App\Http\Controllers\RentalWidgetController::class, 'preview'])->name('profile.rental_widget.preview');
+	    Route::get('/profile/rental-widget/timeline-data', [\App\Http\Controllers\RentalWidgetController::class, 'timelineData'])->name('profile.rental_widget.timeline_data');
 	});
 
 	// Публичные роуты виджета (без auth, без CSRF)
@@ -967,6 +968,11 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	Route::get('/widget/rental/{userId}', [\App\Http\Controllers\RentalWidgetPublicController::class, 'iframe'])->whereNumber('userId')->name('rental_widget.iframe');
 	Route::get('/api/widget/rental', [\App\Http\Controllers\RentalWidgetPublicController::class, 'json'])->name('rental_widget.json');
 	Route::get('/widget/rental.js', [\App\Http\Controllers\RentalWidgetPublicController::class, 'script'])->name('rental_widget.script');
+
+	// Виджет «Таймлайн бронирования»: публичные адреса (iframe / JSON / JS)
+	Route::get('/widget/rental-timeline/{userId}', [\App\Http\Controllers\RentalTimelinePublicController::class, 'iframe'])->whereNumber('userId')->name('rental_timeline.iframe');
+	Route::get('/api/widget/rental-timeline', [\App\Http\Controllers\RentalTimelinePublicController::class, 'data'])->middleware('throttle:120,1')->name('rental_timeline.data');
+	Route::get('/widget/rental-timeline.js', [\App\Http\Controllers\RentalTimelinePublicController::class, 'script'])->name('rental_timeline.script');
 
 	/*
 	|--------------------------------------------------------------------------

@@ -26,6 +26,12 @@
             <div class="ramka"><div class="alert alert-danger">{{ session('error') }}</div></div>
         @endif
 
+        <div class="d-flex mb-2" style="gap:.8rem;flex-wrap:wrap">
+            <a href="{{ route('profile.rental_widget', ['kind' => 'cards']) }}" class="btn {{ $kind === 'cards' ? 'btn-primary' : 'btn-secondary' }}"><x-ico name="building" /> {{ __('profile.rw_tab_cards') }}</a>
+            <a href="{{ route('profile.rental_widget', ['kind' => 'timeline']) }}" class="btn {{ $kind === 'timeline' ? 'btn-primary' : 'btn-secondary' }}"><x-ico name="calendar-check" /> {{ __('profile.rw_tab_timeline') }}</a>
+        </div>
+        <div class="f-14 mb-2" style="opacity:.75">{{ $kind === 'timeline' ? __('profile.rw_tab_timeline_hint') : __('profile.rw_tab_cards_hint') }}</div>
+
         @if(!($isPro ?? false))
         <div class="ramka text-center" style="padding:4rem 2rem">
             <div style="font-size:5rem;margin-bottom:1.5rem"><x-ico name="lock" size="1em" /></div>
@@ -51,17 +57,25 @@
 
                     <form method="POST" action="{{ route('profile.rental_widget.store') }}" class="form" id="widget-form">
                         @csrf
+                        <input type="hidden" name="kind" value="{{ $kind }}">
 
                         <div class="card" style="height:auto;margin-bottom:1.6rem">
                             <label class="f-15 b-600 mb-05"><x-ico name="building" /> {{ __('profile.rw_locations') }}</label>
-                            <div class="f-13 text-muted mb-1">{{ __('profile.rw_locations_hint') }}</div>
-                            @foreach($locations as $loc)
-                            <label class="checkbox-item">
-                                <input type="checkbox" name="settings[location_ids][]" value="{{ $loc->id }}" @checked(in_array($loc->id, $selectedIds, true))>
-                                <div class="custom-checkbox"></div>
-                                <span class="f-15">{{ $loc->name }}</span>
-                            </label>
-                            @endforeach
+                            @if($locations->count() === 1)
+                                {{-- одна площадка: выбирать нечего, она всегда в виджете --}}
+                                @php $only = $locations->first(); @endphp
+                                <input type="hidden" name="settings[location_ids][]" value="{{ $only->id }}">
+                                <div class="f-15 b-600"><x-ico name="check" /> {{ $only->name }}</div>
+                            @else
+                                <div class="f-13 text-muted mb-1">{{ __('profile.rw_locations_hint') }}</div>
+                                @foreach($locations as $loc)
+                                <label class="checkbox-item">
+                                    <input type="checkbox" name="settings[location_ids][]" value="{{ $loc->id }}" @checked(in_array($loc->id, $selectedIds, true) || $selectedIds === [])>
+                                    <div class="custom-checkbox"></div>
+                                    <span class="f-15">{{ $loc->name }}</span>
+                                </label>
+                                @endforeach
+                            @endif
                         </div>
 
                         <div class="card" style="height:auto;margin-bottom:1.6rem">
@@ -82,12 +96,12 @@
                                       class="w-100" style="font-family:monospace;font-size:14px">{{ implode("\n", $widget?->allowed_domains ?? []) }}</textarea>
                         </div>
 
-                        <h3 class="mb-1">{{ __('profile.wst_h') }}</h3>
+                        <h3 class="mb-1"><x-ico name="sliders" /> {{ __('profile.wst_h') }}</h3>
 
                         <div class="card" style="height:auto;margin-bottom:1.6rem">
                             <div class="f-15 b-600 mb-05">{{ __('profile.wst_presets') }}</div>
                             <div class="d-flex gap-1 flex-wrap" style="margin-bottom:.8rem">
-                                @foreach(['light', 'dark', 'sport', 'minimal'] as $pKey)
+                                @foreach(array_keys($presets) as $pKey)
                                     <button type="button" class="btn btn-outline btn-small js-wst-preset" data-preset="{{ $pKey }}">{{ __('profile.wst_p_'.$pKey) }}</button>
                                 @endforeach
                             </div>
@@ -147,9 +161,10 @@
                 <div class="ramka">
                     <div class="d-flex between mb-1" style="align-items:center">
                         <h3 class="mt-0 mb-0"><x-ico name="key" /> {{ __('profile.rw_api_key') }}</h3>
-                        <div class="d-flex gap-05">
+                        <div class="d-flex" style="gap:.8rem">
                             <form method="POST" action="{{ route('profile.rental_widget.toggle') }}">
                                 @csrf
+                                <input type="hidden" name="kind" value="{{ $kind }}">
                                 <button type="submit" class="btn btn-small {{ $widget->is_active ? 'btn-success' : 'btn-secondary' }}">
                                     <x-ico :name="$widget->is_active ? 'check' : 'dot-gray'" /> {{ $widget->is_active ? __('profile.rw_on') : __('profile.rw_off') }}
                                 </button>
@@ -157,6 +172,7 @@
                             <form method="POST" action="{{ route('profile.rental_widget.regenerate_key') }}"
                                   onsubmit="return confirm({{ json_encode(__('profile.rw_regen_confirm')) }})">
                                 @csrf
+                                <input type="hidden" name="kind" value="{{ $kind }}">
                                 <button type="submit" class="btn btn-small btn-danger"><x-ico name="refresh" /> {{ __('profile.rw_regen') }}</button>
                             </form>
                         </div>
@@ -167,18 +183,37 @@
 
                     <h3><x-ico name="clipboard" /> {{ __('profile.rw_code') }}</h3>
 
+                    @php
+                        $isTl = $kind === 'timeline';
+                        $iframeUrl = $isTl ? route('rental_timeline.iframe', ['userId' => auth()->id(), 'key' => $widget->api_key]) : route('rental_widget.iframe', ['userId' => auth()->id(), 'key' => $widget->api_key]);
+                        $scriptUrl = $isTl ? route('rental_timeline.script', ['key' => $widget->api_key]) : route('rental_widget.script', ['key' => $widget->api_key]);
+                        $containerId = $isTl ? 'volley-rental-timeline' : 'volley-rental-widget';
+                    @endphp
                     <div class="card" style="height:auto;margin-bottom:1.6rem">
                         <div class="f-15 b-600 mb-05">{{ __('profile.rw_variant_iframe') }}</div>
                         <div class="f-13 text-muted mb-05">{{ __('profile.rw_variant_iframe_hint') }}</div>
-                        <textarea readonly rows="3" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;iframe src="{{ route('rental_widget.iframe', ['userId' => auth()->id(), 'key' => $widget->api_key]) }}" width="100%" height="520" frameborder="0" style="border:0;max-width:100%"&gt;&lt;/iframe&gt;</textarea>
+                        <textarea readonly rows="3" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;iframe src="{{ $iframeUrl }}" width="100%" height="{{ $isTl ? 720 : 520 }}" frameborder="0" style="border:0;max-width:100%"&gt;&lt;/iframe&gt;</textarea>
                     </div>
 
                     <div class="card" style="height:auto;margin-bottom:1.6rem">
                         <div class="f-15 b-600 mb-05">{{ __('profile.rw_variant_js') }}</div>
                         <div class="f-13 text-muted mb-05">{{ __('profile.rw_variant_js_hint') }}</div>
-                        <textarea readonly rows="3" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-rental-widget"&gt;&lt;/div&gt;
-&lt;script src="{{ route('rental_widget.script', ['key' => $widget->api_key]) }}"&gt;&lt;/script&gt;</textarea>
+                        <textarea readonly rows="3" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="{{ $containerId }}"&gt;&lt;/div&gt;
+&lt;script src="{{ $scriptUrl }}"&gt;&lt;/script&gt;</textarea>
                     </div>
+
+                    @if($isTl)
+                    <div class="card" style="height:auto;margin-bottom:1.6rem">
+                        <div class="f-15 b-600 mb-05"><x-ico name="link" /> {{ __('profile.rw_tl_booking_title') }}</div>
+                        <div class="f-13 text-muted mb-05">{!! __('profile.rw_tl_booking_hint') !!}</div>
+                        <textarea readonly rows="4" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">// {{ __('profile.rw_tl_booking_js') }}
+document.getElementById('volley-rental-timeline').addEventListener('volley-rental-pick', function (e) {
+  var p = e.detail; // location_id, location, direction, court_id, court, date, from, to, duration
+  openMyBookingForm(p);
+});</textarea>
+                        <div class="f-13 text-muted" style="margin-top:.6rem">{!! __('profile.rw_tl_booking_url') !!}</div>
+                    </div>
+                    @endif
                 </div>
                 @else
                 <div class="ramka" style="margin-bottom:2rem">
@@ -193,6 +228,14 @@
                     <div class="card" style="height:auto;margin-bottom:1.6rem">
                         <div class="f-15 b-600 mb-05"><x-ico name="sliders" /> {{ __('profile.rw_fit_title') }}</div>
                         <div class="f-13 text-muted mb-05">{!! __('profile.rw_fit_hint') !!}</div>
+                        @if($kind === 'timeline')
+                        <textarea readonly rows="6" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">#volley-rental-timeline {
+  --vw-accent: #A6D920;
+  --vw-text: #1a1a1a;  --vw-muted: #6b7280;  --vw-grid: #e5e7eb;
+  --vw-free: #ecfdf5;  --vw-free-hover: #a7f3d0;
+  --vw-busy: #e5e7eb;  --vw-busy-text: #4b5563;  --vw-radius: 12px;
+}</textarea>
+                        @else
                         <textarea readonly rows="6" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">#volley-rental-widget {
   --vw-accent: #A6D920;
   --vw-card-bg: #ffffff;  --vw-card-radius: 14px;
@@ -200,8 +243,13 @@
   --vw-button-bg: #A6D920;  --vw-button-color: #fff;
   --vw-gap: 14px;  --vw-card-min: 280px;  --vw-card-max: 420px;
 }</textarea>
-                        <div class="f-13 text-muted" style="margin:.8rem 0 .5rem">{!! __('profile.rw_fit_attrs') !!}</div>
+                        @endif
+                        <div class="f-13 text-muted" style="margin:.8rem 0 .5rem">{!! $kind === 'timeline' ? __('profile.rw_fit_attrs_tl') : __('profile.rw_fit_attrs') !!}</div>
+                        @if($kind === 'timeline')
+                        <textarea readonly rows="2" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-rental-timeline" data-mode="week" data-theme="dark" data-lang="en" data-direction="beach" data-location="12"&gt;&lt;/div&gt;</textarea>
+                        @else
                         <textarea readonly rows="2" class="w-100" style="font-family:monospace;font-size:12px;resize:none" onclick="this.select()">&lt;div id="volley-rental-widget" data-layout="wide" data-columns="2" data-theme="dark" data-lang="en"&gt;&lt;/div&gt;</textarea>
+                        @endif
                     </div>
                 </div>
 
