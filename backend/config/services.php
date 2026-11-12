@@ -106,6 +106,8 @@ return [
     ],
 
     'apple' => [
+        // Показывать кнопку Apple и для российских IP (по умолчанию скрыта) — на время тестов.
+        'show_in_ru'  => (bool) env('APPLE_SHOW_IN_RU', false),
         'client_id'   => env('APPLE_CLIENT_ID'),
         // Допустимые aud нативных/web токенов: Services ID, bundle ID приложений (в т.ч. white-label).
         // Дополнительные — через APPLE_ALLOWED_AUDIENCES (через запятую).

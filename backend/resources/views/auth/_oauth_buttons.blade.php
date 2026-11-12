@@ -11,7 +11,7 @@
     $isAppleUa   = str_contains($ua, 'iPhone') || str_contains($ua, 'iPad') || str_contains($ua, 'Macintosh');
 @endphp
 <div class="social-auth{{ !$isRussianIp ? ' social-auth--foreign' : '' }}">
-    @if(!$isRussianIp)
+    @if(!$isRussianIp || config('services.apple.show_in_ru'))
     @unless($isAndroidUa)
     <!-- Кнопка Apple (обязательно первой по требованию Apple) -->
     <a href="{{ route('auth.apple.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-apple">
