@@ -92,8 +92,8 @@
 
     var windowsUrl = @json(route('locations.booking_windows', $location));
     var freeLabel = @json(__('club.price_free'));
-    var loc = @json(app()->getLocale() === 'en' ? 'en-GB' : 'ru-RU');
-    var T = @json(['legend' => __('club.pb_legend_prices'), 'all' => __('club.tl_all_courts'), 'perHour' => __('club.tl_per_hour'), 'h' => __('club.tl_h'), 'min' => __('club.tl_min')]);
+    var loc = {!! json_encode(app()->getLocale() === 'en' ? 'en-GB' : 'ru-RU') !!};
+    var T = {!! json_encode(['legend' => __('club.pb_legend_prices'), 'all' => __('club.tl_all_courts'), 'perHour' => __('club.tl_per_hour'), 'h' => __('club.tl_h'), 'min' => __('club.tl_min')], JSON_UNESCAPED_UNICODE) !!};
 
     function money(v) { return Number(v).toLocaleString(loc, { maximumFractionDigits: 0 }) + ' ₽'; }
     function hhmm(m) { return ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2); }
