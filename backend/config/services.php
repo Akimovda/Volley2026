@@ -107,6 +107,12 @@ return [
 
     'apple' => [
         'client_id'   => env('APPLE_CLIENT_ID'),
+        // Допустимые aud нативных/web токенов: Services ID, bundle ID приложений (в т.ч. white-label).
+        // Дополнительные — через APPLE_ALLOWED_AUDIENCES (через запятую).
+        'allowed_audiences' => array_values(array_unique(array_filter(array_map('trim', array_merge(
+            [env('APPLE_CLIENT_ID'), env('APN_BUNDLE_ID')],
+            explode(',', (string) env('APPLE_ALLOWED_AUDIENCES', ''))
+        ))))),
         'client_secret' => null,
         'team_id'     => env('APPLE_TEAM_ID'),
         'key_id'      => env('APPLE_KEY_ID'),

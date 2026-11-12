@@ -41,4 +41,5 @@ return [
     'max_status_error'       => 'Could not complete the sign-in. Please start again.',
     'max_hint'               => 'The code is valid for :min minutes and is shown only on this page — do not share it. If MAX did not open, copy the link and open it in MAX.',
     'max_restart_btn'        => 'Start again',
+    'apple_failed'           => 'Could not sign in with Apple. Please try again or use another sign-in method.',
 ];

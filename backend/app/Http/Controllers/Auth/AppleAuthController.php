@@ -175,24 +175,21 @@ class AppleAuthController extends Controller
             if (is_array($aud)) {
                 $aud = $aud[0] ?? '';
             }
-            // Нативный iOS токен (ASAuthorizationAppleIDProvider) ставит aud = bundle ID приложения,
-            // web-токен — Services ID (client_id). Принимаем оба.
-            $validAud = array_filter([
-                config('services.apple.client_id'),  // club.volleyplay.app.signin
-                config('apn.app_bundle_id', ''),     // club.volleyplay.app
-            ]);
+            // Нативный iOS токен (ASAuthorizationAppleIDProvider) ставит aud = bundle ID приложения
+            // (у white-label брендов свой), web-токен — Services ID. Список задаётся в конфиге.
+            $validAud = (array) config('services.apple.allowed_audiences', []);
             if (!in_array($aud, $validAud, true)) {
                 throw new \RuntimeException('Invalid audience: ' . $aud);
             }
         } catch (\Throwable $e) {
             Log::warning('[APPLE_NATIVE] JWT verification failed', ['error' => $e->getMessage()]);
-            return response()->json(['success' => false, 'error' => 'Не удалось верифицировать Apple ID.'], 422);
+            return response()->json(['success' => false, 'error' => __('auth.apple_failed')], 422);
         }
 
         $appleId = (string) ($decoded->sub ?? '');
         if ($appleId === '') {
             Log::warning('[APPLE_NATIVE] empty sub');
-            return response()->json(['success' => false, 'error' => 'Apple ID не определён.'], 422);
+            return response()->json(['success' => false, 'error' => __('auth.apple_failed')], 422);
         }
 
         // sub в JWT должен совпадать с user_identifier от iOS
@@ -201,7 +198,7 @@ class AppleAuthController extends Controller
                 'jwt_sub' => $appleId,
                 'sent'    => $validated['user_identifier'],
             ]);
-            return response()->json(['success' => false, 'error' => 'Apple ID не совпадает.'], 422);
+            return response()->json(['success' => false, 'error' => __('auth.apple_failed')], 422);
         }
 
         // ── LINK: пользователь уже залогинен → привязать к текущему аккаунту ──
