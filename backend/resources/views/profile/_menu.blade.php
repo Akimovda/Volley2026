@@ -256,6 +256,15 @@
                     @endif
                 </a>
                 @endif
+                {{-- 6а. Настройки площадки (локации) — владелец площадки --}}
+                @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())
+                @php $ownLocs = $menuUser->ownedLocations()->orderBy('name')->get(['id', 'name']); @endphp
+                @foreach($ownLocs as $ownLoc)
+                <a href="{{ route('admin.locations.edit', $ownLoc) }}" class="menu-item">
+                    <span class="menu-text"><x-ico name="building" /> {{ $ownLocs->count() > 1 ? __('club.location_settings_btn', ['name' => $ownLoc->name]) : __('club.location_menu') }}</span>
+                </a>
+                @endforeach
+                @endif
                 {{-- 7. Создать мероприятие --}}
                 <a href="{{ route('events.create') }}"
                    class="menu-item {{ $activeMenu === 'event_create' ? 'active' : '' }}">

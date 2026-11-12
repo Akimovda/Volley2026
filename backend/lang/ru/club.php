@@ -209,4 +209,5 @@ return [
     'refund_policy_none'           => 'Без возвратов',
     'refund_deadline_hours_label'  => 'Возврат возможен не позднее чем за N часов до начала',
     'location_settings_btn' => 'Настройки: :name',
+    'location_menu' => 'Моя площадка',
 ];

@@ -91,7 +91,6 @@ public function store(Request $request)
     $location->lat = array_key_exists('lat', $data) ? $data['lat'] : null;
     $location->lng = array_key_exists('lng', $data) ? $data['lng'] : null;
 
-    $changes = $this->dirtyDiff($location);
     $location->save();
 
     foreach ($request->file('photos', []) as $file) {
@@ -204,6 +203,7 @@ public function update(Request $request, Location $location)
     $location->lat = array_key_exists('lat', $data) ? $data['lat'] : null;
     $location->lng = array_key_exists('lng', $data) ? $data['lng'] : null;
 
+    $changes = $this->dirtyDiff($location);
     $location->save();
 
     // Порядок загруженных фото (перетаскивание) — сохраняется вместе с формой
