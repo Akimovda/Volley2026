@@ -26,6 +26,9 @@ class ClubAnalyticsController extends Controller
         $ctx = $this->context($request, $service);
         abort_if($ctx['location'] === null, 404);
 
+        // dompdf кэширует метрики шрифтов в storage/fonts — каталог должен существовать (его нет в git)
+        \Illuminate\Support\Facades\File::ensureDirectoryExists(storage_path('fonts'));
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('club.analytics_pdf', $ctx + [
             'brand' => $request->user()->brand,
         ])->setPaper('a4', 'portrait');
