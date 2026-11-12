@@ -515,3 +515,12 @@ if (! function_exists('ico_text')) {
         return new \Illuminate\Support\HtmlString((string) $safe);
     }
 }
+
+// Готовая SVG-иконка строкой (для JS-вставок: json_encode(ico_svg('sun')))
+if (! function_exists('ico_svg')) {
+    function ico_svg(string $name, string $size = '1.1em'): string
+    {
+        return \Illuminate\Support\Facades\Blade::render('<x-ico name="' . $name . '" size="' . $size . '" />');
+    }
+}
+

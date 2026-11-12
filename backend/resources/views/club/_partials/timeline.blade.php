@@ -21,7 +21,7 @@
         <h2 class="-mt-05" style="margin:0">{{ __('club.timeline') }}</h2>
         <div class="d-flex gap-1" style="flex-wrap:wrap">
             @if($showAddButton)
-            <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()">➕ {{ __('club.add_booking') }}</button>
+            <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
             @endif
             <button type="button" class="btn btn-small btn-primary" id="tlSwitchList">{{ __('club.list_view') }}</button>
             <button type="button" class="btn btn-small btn-secondary" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
@@ -62,6 +62,11 @@
 </div>
 
 <script>
+    window.__cbIco = window.__cbIco || {
+        indoor: {!! json_encode(ico_svg('building')) !!},
+        outdoor: {!! json_encode(ico_svg('sun')) !!},
+        esc: function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    };
 // ===== Таймлайн занятости кортов =====
 (function () {
     const section = document.getElementById('timelineSection');
@@ -295,7 +300,7 @@
 
                     const header = document.createElement('div');
                     header.className = 'timeline-court-header';
-                    header.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + court.name;
+                    header.innerHTML = (court.is_indoor ? window.__cbIco.indoor : window.__cbIco.outdoor) + ' ' + window.__cbIco.esc(court.name);
                     header.title = court.name;
                     col.appendChild(header);
 

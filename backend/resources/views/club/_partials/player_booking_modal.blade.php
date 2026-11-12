@@ -62,6 +62,11 @@
 </div>
 
 <script>
+    window.__cbIco = window.__cbIco || {
+        indoor: {!! json_encode(ico_svg('building')) !!},
+        outdoor: {!! json_encode(ico_svg('sun')) !!},
+        esc: function (t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    };
 (function () {
     var content = document.getElementById('playerBookingModalContent');
     if (!content) return;
@@ -121,7 +126,7 @@
 
             var title = document.createElement('div');
             title.className = 'b-600 f-16 mb-1';
-            title.textContent = (court.is_indoor ? '🏠 ' : '☀️ ') + court.name;
+            title.innerHTML = (court.is_indoor ? window.__cbIco.indoor : window.__cbIco.outdoor) + ' ' + window.__cbIco.esc(court.name);
             block.appendChild(title);
 
             var wrap = document.createElement('div');
