@@ -61,6 +61,7 @@ class CourtBookingService
             'status'        => $status,
             'price_total'   => $priceTotal,
             'payment_mode'  => $paymentMode,
+            'source'        => $event ? 'event' : 'player',
             'expires_at'    => $expiresAt,
         ], notify: true);
     }
@@ -110,6 +111,7 @@ class CourtBookingService
             'status'        => CourtBooking::STATUS_PENDING,
             'price_total'   => $priceTotal,
             'payment_mode'  => $canPrepay ? CourtBooking::PAYMENT_MODE_PREPAID : CourtBooking::PAYMENT_MODE_ON_SITE,
+            'source'        => 'player',
             'expires_at'    => $canPrepay ? now()->addMinutes(self::TTL_MINUTES) : null,
         ], notify: true);
     }
@@ -174,6 +176,7 @@ class CourtBookingService
             'status'             => $status,
             'price_total'        => $priceTotal,
             'payment_mode'       => CourtBooking::PAYMENT_MODE_ON_SITE,
+            'source'             => 'manual',
             'expires_at'         => null,
             'cancelled_by'       => null,
         ], notify: false);

@@ -40,6 +40,11 @@ Schedule::command('premium:notify-expiring')
     ->dailyAt('09:05')
     ->withoutOverlapping();
 
+// Ежемесячный отчёт по аналитике клуба (Организатор Pro, по согласию владельца): 1-го числа за прошлый месяц
+Schedule::command('club:send-monthly-report')
+    ->monthlyOn(1, '09:30')
+    ->withoutOverlapping();
+
 // Прогноз погоды для мероприятий на улице (OpenWeather, кеш по локации, TTL 6ч)
 Schedule::command('weather:refresh')->everyThreeHours()->withoutOverlapping();
 

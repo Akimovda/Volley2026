@@ -8335,3 +8335,14 @@ body.dark .ca-kpi { border-color: rgba(255, 255, 255, .1); }
 .ca-pill--muted { background: rgba(17, 24, 39, .08); color: inherit; opacity: .8; font-weight: 500; }
 .club-occ-row__hours { flex: 0 0 110px; text-align: right; }
 @media (max-width: 640px) { .club-occ-row__hours { flex: 1 1 100%; text-align: left; } }
+
+/* ===== Club analytics: изменения к прошлому периоду, тепловая карта ===== */
+.ca-delta { display: inline-flex; align-items: center; gap: .25rem; font-size: 1.2rem; font-weight: 600; }
+.ca-delta--up { color: #16a34a; } .ca-delta--down { color: #dc2626; } .ca-delta--flat { color: inherit; opacity: .6; font-weight: 400; }
+.ca-heat-wrap { overflow-x: auto; margin-bottom: 1rem; }
+.ca-heat { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 520px; table-layout: fixed; }
+.ca-heat th { font-size: 1.1rem; font-weight: 600; opacity: .7; padding: 2px 0; text-align: center; }
+.ca-heat tbody th { text-align: left; width: 3.2rem; }
+.ca-heat td { height: 2.8rem; text-align: center; font-size: 1rem; border-radius: 4px; color: rgba(0,0,0,.65); }
+body.dark .ca-heat td { color: rgba(255,255,255,.8); }
+.ca-hotcold { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }

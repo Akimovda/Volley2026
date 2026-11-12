@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\CourtBooking;
 use App\Models\Location;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ClubAnalyticsService
@@ -92,6 +93,17 @@ class ClubAnalyticsService
      * но это то же допущение, что уже принято в таймлайне (Фаза 2) — сумма загрузки
      * не претендует на бухгалтерскую точность для событий без явной привязки.
      */
+    /** Те же данные, но с кэшем на 5 минут (расчёт обходит каждый день периода — для года это сотни вызовов). */
+    public function forLocationCached(Location $location, Carbon $periodStart, Carbon $periodEnd, bool $refresh = false): array
+    {
+        $key = 'club_analytics_v2_' . $location->id . '_' . $periodStart->timestamp . '_' . $periodEnd->timestamp;
+        if ($refresh) {
+            Cache::forget($key);
+        }
+
+        return Cache::remember($key, 300, fn () => $this->forLocation($location, $periodStart, $periodEnd));
+    }
+
     public function forLocation(Location $location, Carbon $periodStart, Carbon $periodEnd): array
     {
         $location->loadMissing(['directions' => fn ($q) => $q->where('is_active', true)
@@ -106,15 +118,23 @@ class ClubAnalyticsService
             }
         }
 
+        // [день недели 0..6][час 0..23] => минуты занято / доступно по всем кортам (для тепловой карты)
+        $heatOcc = [];
+        $heatAvail = [];
+
         $cursor = $periodStart->copy();
         while ($cursor->lt($periodEnd)) {
-            $this->accumulateDay($location, $cursor, $courtOccupiedHours, $courtAvailableHours);
+            $this->accumulateDay($location, $cursor, $courtOccupiedHours, $courtAvailableHours, $heatOcc, $heatAvail);
             $cursor->addDay();
         }
 
         $courtRevenue = $this->revenueByCourt(array_keys($courtOccupiedHours), $periodStart, $periodEnd);
 
-        return $this->buildResult($location, $courtOccupiedHours, $courtAvailableHours, $courtRevenue);
+        $result = $this->buildResult($location, $courtOccupiedHours, $courtAvailableHours, $courtRevenue);
+        $result['heatmap'] = $this->buildHeatmap($heatOcc, $heatAvail);
+        $result['bookings'] = $this->bookingStats($location, $periodStart, $periodEnd);
+
+        return $result;
     }
 
     /**
@@ -123,9 +143,10 @@ class ClubAnalyticsService
      * дню недели, привязку турнирных матчей к конкретным кортам по имени, и
      * события/брони без явной привязки к корту (показ на всех кортах направления).
      */
-    private function accumulateDay(Location $location, Carbon $date, array &$occupiedHours, array &$availableHours): void
+    private function accumulateDay(Location $location, Carbon $date, array &$occupiedHours, array &$availableHours, array &$heatOcc, array &$heatAvail): void
     {
         $dayData = $this->timelineService->day($location, $date);
+        $dow = $date->dayOfWeekIso - 1;
 
         foreach ($dayData as $dirRow) {
             if ($dirRow['is_closed']) {
@@ -139,6 +160,7 @@ class ClubAnalyticsService
             foreach ($dirRow['courts'] as $courtRow) {
                 $courtId = $courtRow['id'];
                 $availableHours[$courtId] = ($availableHours[$courtId] ?? 0.0) + $dayHours;
+                $this->addToBuckets($heatAvail, $dow, $dayStart, $dayEnd);
 
                 foreach ($courtRow['slots'] as $slot) {
                     // Числитель — только реально подтверждённая занятость: pending-брони
@@ -156,6 +178,7 @@ class ClubAnalyticsService
                     $clampedStart = max($rawStart, $dayStart);
                     $clampedEnd = min($rawEnd, $dayEnd);
                     $occupiedHours[$courtId] = ($occupiedHours[$courtId] ?? 0.0) + max(0, $clampedEnd - $clampedStart) / 60;
+                    $this->addToBuckets($heatOcc, $dow, $clampedStart, $clampedEnd);
                 }
             }
         }
@@ -202,6 +225,107 @@ class ClubAnalyticsService
         }
 
         return $result;
+    }
+
+    /** Раскладывает интервал [from, to) в минутах от полуночи по часовым корзинам дня недели. */
+    private function addToBuckets(array &$buckets, int $dow, int $from, int $to): void
+    {
+        for ($h = intdiv($from, 60); $h * 60 < $to && $h < 24; $h++) {
+            $mins = min($to, ($h + 1) * 60) - max($from, $h * 60);
+            if ($mins > 0) {
+                $buckets[$dow][$h] = ($buckets[$dow][$h] ?? 0) + $mins;
+            }
+        }
+    }
+
+    /**
+     * Тепловая карта загрузки: ячейки [день недели][час] => % (null — в этот час всегда закрыто),
+     * плюс «горячие часы» (топ загрузки) и «свободные окна» (минимум загрузки среди рабочих часов).
+     */
+    private function buildHeatmap(array $occ, array $avail): array
+    {
+        $cells = [];
+        $minH = 24;
+        $maxH = -1;
+        $flat = [];
+        for ($d = 0; $d < 7; $d++) {
+            for ($h = 0; $h < 24; $h++) {
+                $a = $avail[$d][$h] ?? 0;
+                if ($a <= 0) {
+                    $cells[$d][$h] = null;
+                    continue;
+                }
+                $pct = round(($occ[$d][$h] ?? 0) / $a * 100);
+                $cells[$d][$h] = $pct;
+                $minH = min($minH, $h);
+                $maxH = max($maxH, $h);
+                $flat[] = ['dow' => $d, 'hour' => $h, 'pct' => $pct];
+            }
+        }
+
+        $hot = $flat;
+        usort($hot, fn ($x, $y) => $y['pct'] <=> $x['pct'] ?: $x['dow'] <=> $y['dow'] ?: $x['hour'] <=> $y['hour']);
+        $cold = $flat;
+        usort($cold, fn ($x, $y) => $x['pct'] <=> $y['pct'] ?: $x['dow'] <=> $y['dow'] ?: $x['hour'] <=> $y['hour']);
+
+        return [
+            'cells' => $cells,
+            'from_hour' => $maxH < 0 ? 0 : $minH,
+            'to_hour' => $maxH < 0 ? -1 : $maxH,
+            'hot' => array_values(array_filter(array_slice($hot, 0, 3), fn ($c) => $c['pct'] > 0)),
+            'cold' => array_slice($cold, 0, 3),
+        ];
+    }
+
+    /**
+     * Брони за период по всем кортам локации: отмены/истечения, потерянная выручка и разбивка выручки по источнику.
+     * Источник (court_bookings.source): player — игрок через сайт, manual — внесена управляющим, event — мероприятие,
+     * other — исторические брони без отметки.
+     */
+    private function bookingStats(Location $location, Carbon $periodStart, Carbon $periodEnd): array
+    {
+        $courtIds = DB::table('location_courts')
+            ->join('location_directions', 'location_directions.id', '=', 'location_courts.direction_id')
+            ->where('location_directions.location_id', $location->id)
+            ->pluck('location_courts.id')->all();
+
+        $empty = ['total' => 0, 'active' => 0, 'cancelled' => 0, 'expired' => 0, 'cancel_rate' => 0.0, 'lost_revenue' => 0.0,
+            'by_source' => ['player' => 0.0, 'manual' => 0.0, 'event' => 0.0, 'other' => 0.0]];
+        if ($courtIds === []) {
+            return $empty;
+        }
+
+        $startUtc = $periodStart->copy()->setTimezone('UTC');
+        $endUtc = $periodEnd->copy()->setTimezone('UTC');
+
+        $base = CourtBooking::query()->whereIn('court_id', $courtIds)->where('starts_at', '>=', $startUtc)->where('starts_at', '<', $endUtc);
+
+        $byStatus = (clone $base)->select('status', DB::raw('COUNT(*) as c'), DB::raw('COALESCE(SUM(price_total),0) as s'))
+            ->groupBy('status')->get()->keyBy('status');
+
+        $active = (int) ($byStatus[CourtBooking::STATUS_CONFIRMED]->c ?? 0) + (int) ($byStatus[CourtBooking::STATUS_PAID]->c ?? 0);
+        $cancelled = (int) ($byStatus[CourtBooking::STATUS_CANCELLED]->c ?? 0);
+        $expired = (int) ($byStatus[CourtBooking::STATUS_EXPIRED]->c ?? 0);
+        $considered = $active + $cancelled;
+
+        $bySource = $empty['by_source'];
+        $rows = (clone $base)->whereIn('status', [CourtBooking::STATUS_CONFIRMED, CourtBooking::STATUS_PAID])
+            ->select(DB::raw("COALESCE(source,'other') as src"), DB::raw('COALESCE(SUM(price_total),0) as s'))
+            ->groupBy('src')->get();
+        foreach ($rows as $r) {
+            $key = array_key_exists($r->src, $bySource) ? $r->src : 'other';
+            $bySource[$key] += (float) $r->s;
+        }
+
+        return [
+            'total' => $active + $cancelled + $expired,
+            'active' => $active,
+            'cancelled' => $cancelled,
+            'expired' => $expired,
+            'cancel_rate' => $considered > 0 ? round($cancelled / $considered * 100, 1) : 0.0,
+            'lost_revenue' => round((float) ($byStatus[CourtBooking::STATUS_CANCELLED]->s ?? 0), 2),
+            'by_source' => array_map(fn ($v) => round($v, 2), $bySource),
+        ];
     }
 
     private function buildResult(Location $location, array $occupiedHours, array $availableHours, array $courtRevenue): array

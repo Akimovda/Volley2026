@@ -17,6 +17,7 @@ class ClubAnalyticsController extends Controller
 
         return view('club.analytics', $ctx + [
             'canExport' => $this->canExport($request),
+            'reportOn' => (bool) $request->user()?->club_report_monthly,
         ]);
     }
 
@@ -72,6 +73,39 @@ class ClubAnalyticsController extends Controller
             (float) array_sum(array_column($all, 'occupied_hours')), (float) array_sum(array_column($all, 'available_hours')),
             (float) $center['revenue'], (float) $center['revenue_online'], (float) $center['revenue_on_site'],
         ];
+        $b = $stats['bookings'];
+        $rows[] = [''];
+        $rows[] = [__('club.xl_bookings_title')];
+        $rows[] = [__('club.xl_bookings_active'), (int) $b['active']];
+        $rows[] = [__('club.xl_bookings_cancelled'), (int) $b['cancelled'], __('club.xl_cancel_rate'), (float) $b['cancel_rate']];
+        $rows[] = [__('club.xl_bookings_lost'), (float) $b['lost_revenue']];
+        $rows[] = [''];
+        $rows[] = [__('club.src_title')];
+        foreach (['player', 'manual', 'event', 'other'] as $src) {
+            $rows[] = [__('club.src_' . $src), (float) $b['by_source'][$src]];
+        }
+        $d = $ctx['deltas'];
+        $rows[] = [''];
+        $rows[] = [__('club.xl_vs_prev', ['period' => $ctx['prevLabel']]), __('club.xl_occupancy') . ': ' . ($d['occupancy_pp'] >= 0 ? '+' : '') . $d['occupancy_pp'] . ' ' . __('club.pp'),
+            __('club.xl_revenue') . ': ' . ($d['revenue_pct'] === null ? '—' : (($d['revenue_pct'] >= 0 ? '+' : '') . $d['revenue_pct'] . '%'))];
+
+        $hm = $stats['heatmap'];
+        if ($hm['to_hour'] >= $hm['from_hour']) {
+            $rows[] = [''];
+            $rows[] = [__('club.heatmap_title')];
+            $head = [__('club.hm_day')];
+            for ($h = $hm['from_hour']; $h <= $hm['to_hour']; $h++) { $head[] = sprintf('%02d:00', $h); }
+            $rows[] = $head;
+            foreach ([0, 1, 2, 3, 4, 5, 6] as $dow) {
+                $line = [__('club.dow_' . $dow)];
+                for ($h = $hm['from_hour']; $h <= $hm['to_hour']; $h++) {
+                    $v = $hm['cells'][$dow][$h] ?? null;
+                    $line[] = $v === null ? '' : (float) $v;
+                }
+                $rows[] = $line;
+            }
+        }
+
         $rows[] = [''];
         $rows[] = [__('club.xl_period'), $ctx['periodLabel']];
         $rows[] = [__('club.xl_generated'), now($ctx['location']->effectiveTimezone())->format('d.m.Y H:i')];
@@ -124,6 +158,9 @@ class ClubAnalyticsController extends Controller
                 'prevAnchor' => null,
                 'nextAnchor' => null,
                 'stats' => null,
+                'prevStats' => null,
+                'prevLabel' => '',
+                'deltas' => null,
             ];
         }
 
@@ -140,7 +177,13 @@ class ClubAnalyticsController extends Controller
 
         [$periodStart, $periodEnd] = $service->resolvePeriod($period, $anchor);
 
-        $stats = $service->forLocation($location, $periodStart, $periodEnd);
+        $refresh = $request->boolean('refresh');
+        $stats = $service->forLocationCached($location, $periodStart, $periodEnd, $refresh);
+
+        // Сравнение с предыдущим периодом (тот же кэш)
+        $prevAnchor = $service->shiftAnchor($period, $anchor, -1);
+        [$prevStart, $prevEnd] = $service->resolvePeriod($period, $prevAnchor);
+        $prevStats = $service->forLocationCached($location, $prevStart, $prevEnd, $refresh);
 
         return [
             'locations' => $locations,
@@ -149,10 +192,40 @@ class ClubAnalyticsController extends Controller
             'periodStart' => $periodStart,
             'periodEnd' => $periodEnd,
             'periodLabel' => $this->periodLabel($period, $periodStart),
-            'prevAnchor' => $service->shiftAnchor($period, $anchor, -1),
+            'prevAnchor' => $prevAnchor,
             'nextAnchor' => $service->shiftAnchor($period, $anchor, 1),
             'stats' => $stats,
+            'prevStats' => $prevStats,
+            'prevLabel' => $this->periodLabel($period, $prevStart),
+            'deltas' => $this->deltas($stats, $prevStats),
         ];
+    }
+
+    /** Разница с предыдущим периодом: загрузка — в п.п., выручка и отмены — в % (если было с чем сравнивать). */
+    private function deltas(array $cur, array $prev): array
+    {
+        $pct = fn (float $now, float $was) => $was > 0 ? (int) round(($now - $was) / $was * 100) : null;
+
+        return [
+            'occupancy_pp' => round($cur['center']['occupancy_pct'] - $prev['center']['occupancy_pct'], 1),
+            'revenue_pct' => $pct((float) $cur['center']['revenue'], (float) $prev['center']['revenue']),
+            'revenue_abs' => round($cur['center']['revenue'] - $prev['center']['revenue'], 2),
+            'cancelled_diff' => ($cur['bookings']['cancelled'] ?? 0) - ($prev['bookings']['cancelled'] ?? 0),
+            'prev_revenue' => (float) $prev['center']['revenue'],
+            'prev_occupancy' => (float) $prev['center']['occupancy_pct'],
+        ];
+    }
+
+    /** Включить/выключить ежемесячный отчёт (1-го числа в уведомления: сайт, Telegram, VK, MAX). Только Организатор Pro. */
+    public function toggleReport(Request $request)
+    {
+        $user = $request->user();
+        abort_unless($user && $user->is_club_manager, 403);
+
+        $user->club_report_monthly = !$user->club_report_monthly;
+        $user->save();
+
+        return back()->with('status', $user->club_report_monthly ? __('club.report_on') : __('club.report_off'));
     }
 
     private function periodLabel(string $period, Carbon $start): string

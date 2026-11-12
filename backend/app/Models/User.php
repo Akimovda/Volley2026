@@ -66,6 +66,7 @@
         'google_id',
         'locale',
         'is_club_manager',
+        'club_report_monthly',
 		];
 		
 		/**
@@ -96,6 +97,7 @@
         'read_at' => 'datetime',
         'avatar_media_id' => 'integer',  // 👈 ДОБАВИТЬ
         'is_club_manager' => 'boolean',
+        'club_report_monthly' => 'boolean',
 		];
 		
 		protected function casts(): array

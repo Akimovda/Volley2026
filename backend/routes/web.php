@@ -219,6 +219,8 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
 			->name('club.analytics.index');
+		Route::post('/club/analytics/report-toggle', [\App\Http\Controllers\ClubAnalyticsController::class, 'toggleReport'])
+			->middleware('organizer.pro')->name('club.analytics.report_toggle');
 		// Выгрузка аналитики — только Организатор Pro (админ — всегда)
 		Route::get('/club/analytics/export/pdf', [\App\Http\Controllers\ClubAnalyticsController::class, 'exportPdf'])
 			->middleware('organizer.pro')->name('club.analytics.export_pdf');

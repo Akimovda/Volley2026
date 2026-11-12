@@ -14,6 +14,16 @@
     $allCourts = array_merge(...array_map(fn ($d) => $d['courts'], $stats['directions'] ?: [[]]));
     $busyHours = array_sum(array_column($allCourts, 'occupied_hours'));
     $totalHours = array_sum(array_column($allCourts, 'available_hours'));
+    $bk = $stats['bookings'];
+    $hm = $stats['heatmap'];
+    $d = $deltas;
+    $sgn = fn ($v) => ($v > 0 ? '+' : '') . $v;
+    $heatColor = function ($p) {
+        if ($p === null) return '#ffffff';
+        if ($p > 70) return 'rgba(52,199,89,' . round(.25 + $p / 100 * .65, 2) . ')';
+        if ($p >= 30) return 'rgba(231,97,47,' . round(.15 + $p / 100 * .6, 2) . ')';
+        return 'rgba(158,158,158,' . round(.12 + $p / 100 * .5, 2) . ')';
+    };
 @endphp
 <style>
 @@font-face { font-family: 'DejaVu Sans'; src: url("{{ $fontNormal }}") format('truetype'); font-weight: normal; font-style: normal; }
@@ -37,6 +47,10 @@ table.t td { padding: 5px; border-bottom: 1px solid #eee; vertical-align: middle
 .r { text-align: right; }
 .bar { width: 100%; height: 7px; background: #e5e7eb; border-radius: 4px; }
 .fill { height: 7px; border-radius: 4px; }
+table.hm { width: 100%; border-collapse: collapse; margin-top: 4px; }
+table.hm th { font-size: 8px; color: #666; padding: 3px 1px; text-align: center; }
+table.hm td { height: 17px; text-align: center; font-size: 7px; color: #444; border: 1px solid #fff; }
+.delta { font-size: 9px; color: #555; margin: 0 0 10px; }
 .foot { margin-top: 14px; font-size: 8.5px; color: #999; }
 </style>
 </head>
@@ -55,6 +69,21 @@ table.t td { padding: 5px; border-bottom: 1px solid #eee; vertical-align: middle
     <td class="kpi"><div class="l">{{ __('club.kpi_revenue') }}</div><div class="v">{{ $fmtMoney($center['revenue']) }}</div></td>
     <td class="kpi"><div class="l">{{ __('club.kpi_online') }} / {{ __('club.kpi_on_site') }}</div><div class="v" style="font-size:11px">{{ $fmtMoney($center['revenue_online']) }} / {{ $fmtMoney($center['revenue_on_site']) }}</div></td>
     <td class="kpi"><div class="l">{{ __('club.kpi_hours') }}</div><div class="v">{{ $fmtHours($busyHours) }}</div><div class="s">{{ __('club.kpi_hours_of', ['busy' => $fmtHours($busyHours), 'total' => $fmtHours($totalHours)]) }}</div></td>
+</tr></table>
+
+
+<div class="delta">
+    <b>{{ __('club.xl_vs_prev', ['period' => $prevLabel]) }}:</b>
+    {{ __('club.kpi_occupancy') }} {{ $sgn($d['occupancy_pp']) }} {{ __('club.pp') }};
+    {{ __('club.kpi_revenue') }} {{ $d['revenue_pct'] === null ? '—' : $sgn($d['revenue_pct']) . '%' }};
+    {{ __('club.kpi_cancel') }} {{ $sgn($d['cancelled_diff']) }}
+</div>
+
+<table class="kpis"><tr>
+    <td class="kpi"><div class="l">{{ __('club.kpi_cancel') }}</div><div class="v">{{ $bk['cancelled'] }} <span style="font-size:9px;color:#777">({{ $bk['cancel_rate'] }}%)</span></div><div class="s">{{ __('club.kpi_cancel_sub', ['n' => $bk['cancelled'], 'total' => $bk['active'] + $bk['cancelled'], 'lost' => $fmtMoney($bk['lost_revenue'])]) }}</div></td>
+    @foreach(['player', 'manual', 'event'] as $src)
+    <td class="kpi"><div class="l">{{ __('club.src_' . $src) }}</div><div class="v" style="font-size:12px">{{ $fmtMoney($bk['by_source'][$src]) }}</div></td>
+    @endforeach
 </tr></table>
 
 @forelse($stats['directions'] as $dir)
@@ -83,6 +112,29 @@ table.t td { padding: 5px; border-bottom: 1px solid #eee; vertical-align: middle
 @empty
     <p>{{ __('club.analytics_no_courts') }}</p>
 @endforelse
+
+
+@if($hm['to_hour'] >= $hm['from_hour'])
+<h3>{{ __('club.heatmap_title') }}</h3>
+<table class="hm">
+    <tr><th></th>@for($h = $hm['from_hour']; $h <= $hm['to_hour']; $h++)<th>{{ sprintf('%02d', $h) }}</th>@endfor</tr>
+    @foreach([0,1,2,3,4,5,6] as $dow)
+    <tr>
+        <th style="text-align:left;width:22px">{{ __('club.dow_' . $dow) }}</th>
+        @for($h = $hm['from_hour']; $h <= $hm['to_hour']; $h++)
+        @php $v = $hm['cells'][$dow][$h] ?? null; @endphp
+        <td style="background: {{ $heatColor($v) }}">{{ $v === null ? '' : $v }}</td>
+        @endfor
+    </tr>
+    @endforeach
+</table>
+<p class="delta" style="margin-top:6px">
+    <b>{{ __('club.hot_title') }}:</b>
+    @foreach($hm['hot'] as $c){{ __('club.hot_item', ['day' => __('club.dow_' . $c['dow']), 'from' => sprintf('%02d:00', $c['hour']), 'to' => sprintf('%02d:00', $c['hour'] + 1), 'pct' => $c['pct']]) }}@if(!$loop->last); @endif @endforeach
+    &nbsp;&nbsp;<b>{{ __('club.cold_title') }}:</b>
+    @foreach($hm['cold'] as $c){{ __('club.hot_item', ['day' => __('club.dow_' . $c['dow']), 'from' => sprintf('%02d:00', $c['hour']), 'to' => sprintf('%02d:00', $c['hour'] + 1), 'pct' => $c['pct']]) }}@if(!$loop->last); @endif @endforeach
+</p>
+@endif
 
 <div class="foot">{{ __('club.legend_title') }}: <span style="color:#9E9E9E">■</span> {{ __('club.legend_low') }} · <span style="color:#E7612F">■</span> {{ __('club.legend_mid') }} · <span style="color:#34C759">■</span> {{ __('club.legend_high') }}</div>
 </body>

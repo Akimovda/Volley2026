@@ -40,6 +40,7 @@ class CourtBooking extends Model
         'status',
         'price_total',
         'payment_mode',
+        'source',
         'expires_at',
         'cancelled_by',
         'cancel_reason',
