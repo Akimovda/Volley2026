@@ -1153,4 +1153,5 @@ return [
     'bk_loser_of' => 'Loser of match :n',
     'bk_final_title' => 'Final',
     'bk_scroll_hint' => 'scroll the bracket',
+    'bg_title' => 'Group stage',
 ];

@@ -495,6 +495,7 @@
 		============================================================ --}}
 		@elseif($tab === 'bracket')
 		<div class="ramka">
+		@include('tournaments.public._bracket_groups', ['stages' => $stages])
 		@foreach($stages as $stage)
 		@if(in_array($stage->type, ['single_elim', 'double_elim']))
 		<div class="mb-3">
