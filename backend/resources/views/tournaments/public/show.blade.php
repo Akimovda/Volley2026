@@ -619,6 +619,7 @@
 				<span class="match-score-cell b-700">
 					@if($m->isLive())
 					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}"><x-ico name="dot-red" size="1em" /> {{ __('tournaments.pub_match_live') }}</span>
+					@if($m->teamHome && $m->teamAway)@include('tournaments._partials.match_score_live', ['m' => $m])@endif
 					@php $__ls = $m->court_id ? ($__courtStreams[$m->court_id] ?? null) : null; @endphp
 					@if($__ls)<a href="{{ $__ls['links'][0]['url'] }}" target="_blank" rel="noopener nofollow" class="blink b-600 f-12" style="display:block"><x-ico name="broadcast" size="1.1em" /> {{ __('stream.watch') }}</a>@endif
 					@elseif(!$m->teamHome || !$m->teamAway)
@@ -803,6 +804,7 @@
 	
 	{{-- Live polling --}}
 	<x-slot name="script">
+		@include('tournaments._partials.flip_score_js')
 		@php $hasLiveMatch = $stages->flatMap->matches->contains(fn($m) => $m->isLive()); @endphp
 		@if($hasLiveMatch)
 		<script src="/js/pusher.min.js"></script>
@@ -915,6 +917,25 @@
 				}
 			})();
 			@endif
+
+			// Живой счёт идущих матчей в списках: очки переворачиваются без перезагрузки; старт/конец матча — перезагрузка страницы
+			(function () {
+				if (!document.querySelector('[id^="pub-pts-"]')) return;
+				var url = @json(route('tournament.tv.live', array_filter(['event' => $event->id, 'occurrence_id' => $selectedOccurrence?->id])));
+				var setTpl = @json(__('tournaments.rally_set_n', ['n' => '__N__']));
+				var sig = null;
+				setInterval(function () {
+					fetch(url, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+						if (sig === null) sig = d.sig; else if (sig !== d.sig) { location.reload(); return; }
+						d.matches.forEach(function (m) {
+							var b = document.getElementById('pub-pts-' + m.id);
+							if (b && window.FlipScore) FlipScore.update(b, m.pts_home, m.pts_away);
+							var l = document.getElementById('pub-setlbl-' + m.id);
+							if (l) l.textContent = setTpl.replace('__N__', m.set);
+						});
+					}).catch(function () {});
+				}, 6000);
+			})();
 
 			// В приложении файл скачивается/сохраняется через общий обработчик (script.js, [data-file-download])
 			document.querySelectorAll('a[href*="/pdf/"]').forEach(function(link) {

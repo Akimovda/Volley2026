@@ -74,7 +74,7 @@
         }
         .tv-match .team { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
         .tv-match .team.right { text-align: right; }
-        .tv-match .score { flex-shrink: 0; min-width: 110px; text-align: center; font-weight: 800; font-size: 18px; }
+        .tv-match .score { flex-shrink: 0; min-width: 190px; padding: 0 14px; text-align: center; font-weight: 800; font-size: 18px; }
         .tv-match .winner { color: #10b981; font-weight: 700; }
         .tv-match .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 6px; }
         .tv-match .live-badge { background: #dc2626; color: #fff; }
