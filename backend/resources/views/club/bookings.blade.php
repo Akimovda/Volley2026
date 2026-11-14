@@ -145,13 +145,13 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                                 @csrf
                                 <button type="submit" class="btn btn-small btn-primary"><x-ico name="check" /> {{ __('club.btn_confirm') }}</button>
                             </form>
-                            <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('cbRejectForm{{ $b->id }}').style.display='flex'"><x-ico name="x" /> {{ __('club.btn_reject') }}</button>
+                            <button type="button" class="btn btn-small btn-outline" onclick="document.getElementById('cbRejectForm{{ $b->id }}').style.display='flex'"><x-ico name="x" /> {{ __('club.btn_reject') }}</button>
                         </div>
                     </div>
                     <form method="POST" action="{{ route('club.bookings.reject', $b) }}" id="cbRejectForm{{ $b->id }}" class="form mt-1" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
                         @csrf
                         <input type="text" name="reason" placeholder="{{ __('club.reject_reason_label') }}" style="flex:1;min-width:12rem">
-                        <button type="submit" class="btn btn-small btn-secondary">{{ __('club.btn_reject_confirm') }}</button>
+                        <button type="submit" class="btn btn-small btn-outline">{{ __('club.btn_reject_confirm') }}</button>
                     </form>
                 </div>
             @empty
@@ -178,9 +178,9 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                         </div>
                         @if($row['can_manage'])
                         <div class="d-flex gap-1 cb-booking-actions" style="flex-wrap:wrap" data-booking="{{ json_encode($row) }}">
-                            <button type="button" class="btn btn-small btn-secondary cb-edit-btn"><x-ico name="pencil" /> {{ __('club.edit_booking') }}</button>
-                            <button type="button" class="btn btn-small btn-secondary cb-copy-btn"><x-ico name="clipboard" /> {{ __('club.copy_booking') }}</button>
-                            <button type="button" class="btn btn-small btn-secondary cb-cancel-btn"><x-ico name="x" /> {{ __('club.cancel_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-outline cb-edit-btn"><x-ico name="pencil" /> {{ __('club.edit_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-outline cb-copy-btn"><x-ico name="clipboard" /> {{ __('club.copy_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-outline cb-cancel-btn"><x-ico name="x" /> {{ __('club.cancel_booking') }}</button>
                         </div>
                         @endif
                     </div>
