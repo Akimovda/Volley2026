@@ -511,6 +511,10 @@ if ($initialStep < 1 || $initialStep > 3) {
 	{{-- Page JS --}}
 	<script src="/js/config/volleyball-config.js"></script>
 	<script src="@asset_v('js/events-create.js')"></script>
+	@if (session('draft_restored') || $errors->any())
+	<script>window.__restoreValues = {!! json_encode(old(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!};</script>
+	<script src="@asset_v('js/events-create-restore.js')"></script>
+	@endif
 		@include('partials.city-add')
 	
 	<script>
