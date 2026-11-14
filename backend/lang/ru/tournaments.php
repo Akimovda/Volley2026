@@ -1167,7 +1167,7 @@ return [
     'rally_opp_error_short' => 'Ошиб. соп.',
     'bk_champion' => 'Чемпион',
     'bk_bronze' => 'Бронза',
-    'bk_src' => 'Гр. :group · :place м.',
+    'bk_src' => ':place место · гр. :group',
     'bk_winner_of' => 'Победитель матча :n',
     'bk_loser_of' => 'Проигравший матча :n',
 ];

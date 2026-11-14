@@ -241,7 +241,7 @@ if ($__groupStageIds->isNotEmpty()) {
         ->each(function ($st) use (&$teamSource, $__groups, $__groupIdx, $groupPalette) {
             $g = $__groups->get($st->group_id);
             if ($g && $st->rank) {
-                $teamSource[$st->team_id] = ['group' => (string) $g->name, 'rank' => (int) $st->rank, 'color' => $groupPalette[($__groupIdx[$st->group_id] ?? 0) % count($groupPalette)]];
+                $teamSource[$st->team_id] = ['group' => trim((string) preg_replace('/^\s*(Группа|Group)\s+/iu', '', (string) $g->name)) ?: (string) $g->name, 'rank' => (int) $st->rank, 'color' => $groupPalette[($__groupIdx[$st->group_id] ?? 0) % count($groupPalette)]];
             }
         });
 }
@@ -699,12 +699,20 @@ if ($isDoubleElim) {
             var nextEl = map[nid], when = nextEl.getAttribute('data-when');
             if (when && !nextEl.__whenDrawn) {
                 nextEl.__whenDrawn = true;
+                var ty = y2 - 16;
                 var t = document.createElementNS('http://www.w3.org/2000/svg','text');
-                t.setAttribute('x', x2 - 8); t.setAttribute('y', y2 - 7);
-                t.setAttribute('text-anchor','end');
-                t.setAttribute('font-size','11'); t.setAttribute('font-weight','600');
-                t.setAttribute('fill', dark ? '#94a3b8' : '#64748b');
+                t.setAttribute('x', mx); t.setAttribute('y', ty + 4);
+                t.setAttribute('text-anchor','middle');
+                t.setAttribute('font-size','10.5'); t.setAttribute('font-weight','700');
+                t.setAttribute('fill', dark ? '#cbd5e1' : '#475569');
                 t.textContent = when;
+                var bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+                var wpx = when.length * 6.2 + 12;
+                bg.setAttribute('x', mx - wpx / 2); bg.setAttribute('y', ty - 9);
+                bg.setAttribute('width', wpx); bg.setAttribute('height', 18); bg.setAttribute('rx', 9);
+                bg.setAttribute('fill', dark ? '#1e293b' : '#ffffff');
+                bg.setAttribute('stroke', dark ? 'rgba(148,163,184,.35)' : 'rgba(15,23,42,.14)');
+                svg.appendChild(bg);
                 svg.appendChild(t);
             }
         });

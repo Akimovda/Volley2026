@@ -1148,7 +1148,7 @@ return [
     'rally_opp_error_short' => 'Opp. err.',
     'bk_champion' => 'Champion',
     'bk_bronze' => 'Bronze',
-    'bk_src' => 'Grp :group · #:place',
+    'bk_src' => '#:place · Grp :group',
     'bk_winner_of' => 'Winner of match :n',
     'bk_loser_of' => 'Loser of match :n',
 ];
