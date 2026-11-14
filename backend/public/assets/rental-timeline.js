@@ -78,6 +78,7 @@
       '.vrt-past{position:absolute;left:0;right:0;top:0;background:var(--vrt-past);opacity:.75;pointer-events:none}' +
       '.vrt-now{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;pointer-events:none;z-index:3}' +
       '.vrt-sel{position:sticky;bottom:8px;z-index:5;margin-top:10px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:var(--vrt-r);border:2px solid var(--vrt-accent);background:var(--vrt-panel);box-shadow:0 6px 24px rgba(0,0,0,.16)}' +
+      '.vrt-sel-rows{display:flex;flex-direction:column;gap:8px;flex:1 1 260px}.vrt-sel-row{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;justify-content:space-between}.vrt-total-all{border-top:1px solid var(--vrt-grid);padding-top:8px;text-align:right}' +
       '.vrt-sel-info{font-weight:600}.vrt-sel-info small{display:block;font-weight:400;color:var(--vrt-muted)}' +
       '.vrt-total{font-size:20px;font-weight:800;white-space:nowrap}' +
       '.vrt-book{border:0;background:var(--vrt-accent);color:#fff;border-radius:10px;padding:10px 20px;font-weight:700}.vrt-book:hover{opacity:.9}' +
@@ -174,18 +175,32 @@
       var L = st.labels, h = Math.floor(min / 60), m = min % 60;
       return (h ? h + ' ' + L.h : '') + (m ? (h ? ' ' : '') + m + ' ' + L.min : '');
     }
-    // выбор диапазона слотов на одном корте: клик — выбрать, соседний слот — продлить, крайний выбранный — сократить
+    // выбор диапазонов слотов: на каждом корте свой диапазон (st.sel — массив).
+    // клик — выбрать, соседний слот — продлить, крайний выбранный — сократить
+    function selOf(courtId) {
+      for (var i = 0; i < (st.sel || []).length; i++) if (st.sel[i].court === +courtId) return st.sel[i];
+      return null;
+    }
+    function selDrop(courtId) {
+      st.sel = (st.sel || []).filter(function (x) { return x.court !== +courtId; });
+      if (!st.sel.length) st.sel = null;
+    }
+    function selSet(courtId, a, b) {
+      var x = selOf(courtId);
+      if (x) { x.from = a; x.to = b; } else { (st.sel = st.sel || []).push({ court: +courtId, from: a, to: b }); }
+      st.sel.sort(function (p, q) { return p.court - q.court; });
+    }
     function toggleCell(courtId, from, to) {
-      var a = toMin(from), b = toMin(to), c = courtById(courtId), sel = st.sel;
-      if (!sel || sel.court !== +courtId) { st.sel = { court: +courtId, from: a, to: b }; return; }
+      var a = toMin(from), b = toMin(to), c = courtById(courtId), sel = selOf(courtId);
+      if (!sel) { selSet(courtId, a, b); return; }
       if (a >= sel.from && b <= sel.to) {
-        if (a === sel.from && b === sel.to) { st.sel = null; return; }
+        if (a === sel.from && b === sel.to) { selDrop(courtId); return; }
         if (a === sel.from) { sel.from = b; return; }
         if (b === sel.to) { sel.to = a; return; }
-        st.sel = { court: +courtId, from: a, to: b }; return;
+        sel.from = a; sel.to = b; return;
       }
       var nf = Math.min(a, sel.from), nt = Math.max(b, sel.to);
-      if (c && rangeFree(c, nf, nt)) { sel.from = nf; sel.to = nt; } else { st.sel = { court: +courtId, from: a, to: b }; }
+      if (c && rangeFree(c, nf, nt)) { sel.from = nf; sel.to = nt; } else { sel.from = a; sel.to = b; }
     }
 
     function freeWindows(court, opens, closes, isToday, isPast, nowMin, hidePast) {
@@ -240,7 +255,7 @@
             var cellH = slotMin * PX;
             var inner = priceText ? (cellH >= 18 ? '<span class="vrt-p">' + esc(priceText) + '</span>' : '') : '<span class="vrt-t">' + (cellH >= 24 ? from : '') + '</span>';
             var tip = s.free_hint + (priceText ? ' \u2014 ' + priceText : '');
-            var isSel = st.sel && st.sel.court === c.id && m >= st.sel.from && m + slotMin <= st.sel.to;
+            var cs = selOf(c.id), isSel = !!cs && m >= cs.from && m + slotMin <= cs.to;
             if (clickable) {
               cells += '<button type="button" class="vrt-free' + (isSel ? ' sel' : '') + '" aria-pressed="' + (isSel ? 'true' : 'false') + '" style="' + style + '" data-act="pick" data-court="' + c.id + '" data-from="' + from + '" data-to="' + to + '" title="' + esc(tip) + '" aria-label="' + esc(aria) + '">' + inner + '</button>';
             } else {
@@ -263,14 +278,21 @@
     }
 
     function selPanel() {
-      var s = st.style, d = st.data, L = st.labels, sel = st.sel;
-      if (!sel || !s.confirm_step || s.click_mode === 'none') return '';
-      var c = courtById(sel.court);
-      if (!c) return '';
-      var price = s.show_prices ? slotPrice(c, sel.from, sel.to) : null;
-      return '<div class="vrt-sel" role="status"><div class="vrt-sel-info">' + esc(c.name) + ' \u00B7 ' + esc(dayLabel(d.date, true)) +
-        '<small>' + toHHMM(sel.from) + '\u2013' + toHHMM(sel.to) + ' (' + esc(fmtDur(sel.to - sel.from)) + ')</small></div>' +
-        (price != null ? '<div class="vrt-total">' + esc(L.total.replace('{sum}', fmtMoney(price))) + '</div>' : '') +
+      var s = st.style, d = st.data, L = st.labels, sels = st.sel;
+      if (!sels || !sels.length || !s.confirm_step || s.click_mode === 'none') return '';
+      var rows = '', sum = 0, hasSum = false;
+      sels.forEach(function (sel) {
+        var c = courtById(sel.court);
+        if (!c) return;
+        var price = s.show_prices ? slotPrice(c, sel.from, sel.to) : null;
+        if (price != null) { sum += price; hasSum = true; }
+        rows += '<div class="vrt-sel-row"><div class="vrt-sel-info">' + esc(c.name) + ' \u00B7 ' + esc(dayLabel(d.date, true)) +
+          '<small>' + toHHMM(sel.from) + '\u2013' + toHHMM(sel.to) + ' (' + esc(fmtDur(sel.to - sel.from)) + ')</small></div>' +
+          (price != null ? '<div class="vrt-total">' + esc(L.total.replace('{sum}', fmtMoney(price))) + '</div>' : '') + '</div>';
+      });
+      if (!rows) return '';
+      var all = (sels.length > 1 && hasSum) ? '<div class="vrt-total vrt-total-all">' + esc(L.total_all.replace('{sum}', fmtMoney(sum))) + '</div>' : '';
+      return '<div class="vrt-sel" role="status"><div class="vrt-sel-rows">' + rows + all + '</div>' +
         '<span style="display:inline-flex;gap:8px"><button type="button" class="vrt-btn" data-act="reset">' + esc(L.reset) + '</button>' +
         '<button type="button" class="vrt-book" data-act="book">' + esc(s.book_button_text || L.book) + '</button></span></div>';
     }
@@ -375,16 +397,28 @@
       try { parent.postMessage({ type: 'volley-widget-height', height: document.documentElement.scrollHeight }, '*'); } catch (e) {}
     }
 
-    function pick(courtId, from, to) {
-      var d = st.data, s = st.style;
-      var court = null;
+    function pickDetail(courtId, from, to) {
+      var d = st.data, s = st.style, court = null;
       (d.courts || []).forEach(function (c) { if (String(c.id) === String(courtId)) court = c; });
       var price = (court && s.show_prices) ? slotPrice(court, toMin(from), toMin(to)) : null;
-      var detail = {
+      return {
         location_id: d.location.id, location: d.location.name, direction: d.direction,
         court_id: +courtId, court: court ? court.name : '', date: d.date, from: from, to: to, duration: toMin(to) - toMin(from),
         price: price, price_text: price != null ? fmtMoney(price) : '', currency: 'RUB'
       };
+    }
+    // items — список выбранных диапазонов [{court, from, to} (минуты)]; в событии первый — в основных полях, все — в items
+    function pick(courtId, from, to, items) {
+      var d = st.data, s = st.style;
+      var detail = pickDetail(courtId, from, to);
+      if (items && items.length > 1) {
+        var list = items.map(function (x) { return pickDetail(x.court, toHHMM(x.from), toHHMM(x.to)); }), tot = 0, has = false;
+        list.forEach(function (x) { if (x.price != null) { tot += x.price; has = true; } });
+        detail.items = list;
+        detail.court_ids = list.map(function (x) { return x.court_id; }).join(',');
+        detail.courts = list.map(function (x) { return x.court; }).join(', ');
+        detail.price = has ? tot : null; detail.price_text = has ? fmtMoney(tot) : '';
+      }
       try { host.dispatchEvent(new CustomEvent('volley-rental-pick', { detail: detail, bubbles: true, composed: true })); } catch (e) {}
       if (cfg.iframe) { try { parent.postMessage({ type: 'volley-rental-pick', detail: detail }, '*'); } catch (e) {} }
       if (s.click_mode === 'link' && s.booking_url) {
@@ -407,8 +441,8 @@
         toggleCell(cid, f, t); render(); return;
       }
       if (a === 'book') {
-        var c = st.sel && courtById(st.sel.court);
-        if (c) pick(c.id, toHHMM(st.sel.from), toHHMM(st.sel.to));
+        var sl = st.sel;
+        if (sl && sl.length) pick(sl[0].court, toHHMM(sl[0].from), toHHMM(sl[0].to), sl);
         return;
       }
       if (a === 'reset') { st.sel = null; render(); return; }

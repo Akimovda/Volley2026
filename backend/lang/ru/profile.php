@@ -1087,7 +1087,7 @@ return [
     'rw_tl_booking_title' => 'Как принимать бронирования на своём сайте',
     'rw_tl_booking_hint' => 'При клике по свободному слоту виджет отправляет событие <code>volley-rental-pick</code> (для iframe — сообщение <code>postMessage</code> с типом <code>volley-rental-pick</code>). Подпишитесь на него и откройте свою форму бронирования:',
     'rw_tl_booking_js' => 'Событие клика по свободному слоту',
-    'rw_tl_booking_url' => 'Либо задайте в настройках «Ссылка для бронирования» — виджет откроет её, подставив <code>{location_id} {location} {direction} {court_id} {court} {date} {from} {to} {duration} {price}</code>, например <code>https://club.ru/book?court={court_id}&amp;date={date}&amp;from={from}&amp;to={to}</code>.',
+    'rw_tl_booking_url' => 'Либо задайте в настройках «Ссылка для бронирования» — виджет откроет её, подставив <code>{location_id} {location} {direction} {court_id} {court} {date} {from} {to} {duration} {price}</code> (при нескольких кортах также <code>{court_ids}</code> и <code>{courts}</code>; <code>{price}</code> — сумма по всем, а полный список — в событии, поле <code>items</code>), например <code>https://club.ru/book?court={court_id}&amp;date={date}&amp;from={from}&amp;to={to}</code>.',
     'rw_fit_attrs_tl' => 'Атрибуты контейнера переопределяют настройки: data-mode (day | week), data-theme (light | dark | custom), data-lang (ru | en | auto), data-accent (цвет), data-header="0" скрывает заголовок, data-location (id площадки), data-direction (classic | beach).',
     'wst_g_view' => 'Вид и навигация',
     'wst_g_grid' => 'Сетка таймлайна',
