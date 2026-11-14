@@ -67,6 +67,7 @@
       '.vrt-ch{position:sticky;left:0;display:flex;align-items:center;justify-content:center;gap:6px;height:34px;font-weight:700;font-size:13px;border-bottom:1px solid var(--vrt-grid);padding:0 6px;text-align:center}' +
       '.vrt-body{position:relative}' +
       '.vrt-hl{position:absolute;left:0;right:0;height:0;border-top:1px solid var(--vrt-grid);pointer-events:none}' +
+      '.vrt-hl.half{border-top-style:dashed;opacity:.55}' +
       '.vrt-free{position:absolute;left:3px;right:3px;border:0;border-radius:calc(var(--vrt-r) / 2);background:var(--vrt-free);padding:0;text-align:left;transition:background .12s;font-size:12px;color:var(--vrt-muted);display:flex;align-items:flex-start;padding:3px 6px}' +
       'button.vrt-free:hover,button.vrt-free:focus-visible{background:var(--vrt-free-h);outline:2px solid var(--vrt-accent);outline-offset:-2px;color:var(--vrt-text)}' +
       'div.vrt-free{cursor:default}' +
@@ -211,10 +212,12 @@
       var isToday = d.date === d.today, isPast = d.date < d.today;
       var slotMin = +s.slot_minutes, clickable = s.click_mode !== 'none';
       var hl = '', axis = '';
-      for (var h = Math.ceil(opens / 60); h * 60 <= closes; h++) {
-        var top = Math.round((h * 60 - opens) * PX);
-        hl += '<div class="vrt-hl" style="top:' + top + 'px"></div>';
-        axis += '<span style="top:' + top + 'px">' + pad(h) + ':00</span>';
+      var tickStep = slotMin <= 30 ? 30 : 60, tm = Math.ceil(opens / tickStep) * tickStep;
+      var labelEvery = (tickStep * PX >= 22) ? 1 : 2;
+      for (var ti = 0; tm <= closes; tm += tickStep, ti++) {
+        var top = Math.round((tm - opens) * PX), isHour = tm % 60 === 0;
+        hl += '<div class="vrt-hl' + (isHour ? '' : ' half') + '" style="top:' + top + 'px"></div>';
+        if (isHour || labelEvery === 1) axis += '<span style="top:' + top + 'px">' + pad(Math.floor(tm / 60)) + ':' + pad(tm % 60) + '</span>';
       }
       var past = '';
       if (s.hide_past && (isPast || isToday)) {
