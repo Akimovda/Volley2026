@@ -40,7 +40,7 @@
     <div class="tot"><span>{{ __('club.rb_total') }}</span><span>{{ number_format($total, 0, ',', ' ') }} ₽</span></div>
     @if($canPay)
         @php $exp = $bookings->first()->expires_at?->copy()->setTimezone($bookings->first()->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow'); @endphp
-        <form method="POST" action="{{ route('rental_booking.pay', ['token' => $token]) }}">@csrf
+        <form method="POST" action="{{ route("rental_booking.pay", ["token" => $token, "lang" => app()->getLocale()]) }}">@csrf
             <button class="btn" type="submit">{{ __('club.rb_pay') }}</button>
         </form>
         <div class="note">{{ __('club.rb_pay_until', ['time' => $exp?->format('H:i')]) }}</div>
@@ -48,7 +48,7 @@
         <div class="note">{{ __('club.rb_status_pending_request') }}</div>
     @endif
     <div class="note">{{ __('club.rb_keep_link') }}</div>
-    <a class="btn sec" href="{{ route('rental_booking.status', ['token' => $token]) }}">{{ __('club.rb_refresh') }}</a>
+    <a class="btn sec" href="{{ route('rental_booking.status', ['token' => $token, 'lang' => app()->getLocale()]) }}">{{ __('club.rb_refresh') }}</a>
 </div>
 </body>
 </html>

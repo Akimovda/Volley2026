@@ -98,7 +98,7 @@ class RentalBookingPublicController extends Controller
             'consent'          => ['accepted'],
         ]);
         if ($validator->fails()) {
-            return $this->fail((string) $validator->errors()->first());
+            return $this->fail($validator->errors()->has('consent') ? __('club.rb_f_need_consent') : __('club.rb_f_err'));
         }
         $data = $validator->validated();
 
@@ -140,7 +140,7 @@ class RentalBookingPublicController extends Controller
         }
 
         $first = $created->first();
-        $statusUrl = route('rental_booking.status', ['token' => $first->order_token]);
+        $statusUrl = route('rental_booking.status', ['token' => $first->order_token, 'lang' => $lang]);
         $total = $created->sum(fn ($b) => (float) $b->price_total);
         $out = ['ok' => true, 'token' => $first->order_token, 'status_url' => $statusUrl, 'total' => $total,
             'mode' => $first->payment_mode === CourtBooking::PAYMENT_MODE_PREPAID ? 'prepaid' : 'request', 'pay_url' => null];
@@ -165,8 +165,11 @@ class RentalBookingPublicController extends Controller
     }
 
     /** Страница статуса заказа (по токену): статусы броней, оплата, подсказка, что дальше. */
-    public function status(string $token): Response
+    public function status(Request $request, string $token): Response
     {
+        if (in_array($request->query('lang'), ['ru', 'en'], true)) {
+            app()->setLocale($request->query('lang'));
+        }
         $bookings = CourtBooking::where('order_token', $token)->with('court.direction.location')->orderBy('starts_at')->orderBy('court_id')->get();
         abort_if($bookings->isEmpty(), 404);
 
@@ -189,8 +192,11 @@ class RentalBookingPublicController extends Controller
         ];
     }
 
-    public function pay(string $token)
+    public function pay(Request $request, string $token)
     {
+        if (in_array($request->query('lang'), ['ru', 'en'], true)) {
+            app()->setLocale($request->query('lang'));
+        }
         $bookings = CourtBooking::where('order_token', $token)->with('court.direction.location')->orderBy('id')->get();
         abort_if($bookings->isEmpty(), 404);
         $first = $bookings->first();
@@ -207,7 +213,7 @@ class RentalBookingPublicController extends Controller
         }
 
         try {
-            $payment = $this->payments->createForOrder($pending->values(), $settings, route('rental_booking.status', ['token' => $token]));
+            $payment = $this->payments->createForOrder($pending->values(), $settings, route('rental_booking.status', ['token' => $token, 'lang' => app()->getLocale()]));
         } catch (\Throwable $e) {
             report($e);
 

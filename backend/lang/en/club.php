@@ -372,4 +372,5 @@ return [
     'clients_delete_confirm' => 'Delete the client and anonymize their data in bookings?',
     'clients_deleted' => 'Deleted client',
     'clients_deleted_ok' => 'Client deleted, booking data anonymized.',
+    'rb_f_need_consent' => 'Consent to personal data processing is required.',
 ];
