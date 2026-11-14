@@ -1171,4 +1171,5 @@ return [
     'bk_winner_of' => 'Победитель матча :n',
     'bk_loser_of' => 'Проигравший матча :n',
     'bk_final_title' => 'Финал',
+    'bk_scroll_hint' => 'листайте сетку',
 ];

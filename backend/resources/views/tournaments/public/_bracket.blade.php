@@ -203,6 +203,7 @@ body.dark .bk-col-label--final{color:#fbbf24}
 .bk-hero-dots{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px}
 .bk-hero-dots i{display:block;background:linear-gradient(135deg,#38bdf8,#6366f1);transform:rotate(45deg);border-radius:2px}
 body.dark .bk-hero-date{color:#94a3b8}
+.bk-scroll-hint{text-align:center;font-size:.8rem;color:#94a3b8;margin:-4px 0 6px}
 body.dark .bk-hero{color:#fbbf24}
 </style>
 @endonce
@@ -788,7 +789,16 @@ if ($isDoubleElim) {
         @if($useSymmetric)
         // симметричная сетка шире экрана — открываем по центру (на ФИНАЛЕ)
         var sym = document.getElementById('{{ $bracketId }}');
-        if (sym && sym.parentElement) { sym.parentElement.scrollLeft = Math.max(0, (sym.parentElement.scrollWidth - sym.parentElement.clientWidth) / 2); }
+        if (sym && sym.parentElement) {
+            var wr = sym.parentElement;
+            wr.scrollLeft = Math.max(0, (wr.scrollWidth - wr.clientWidth) / 2);
+            if (wr.scrollWidth > wr.clientWidth + 4 && !(wr.nextElementSibling && wr.nextElementSibling.classList.contains('bk-scroll-hint'))) {
+                var hint = document.createElement('div');
+                hint.className = 'bk-scroll-hint';
+                hint.textContent = '\u2190 {{ __('tournaments.bk_scroll_hint') }} \u2192';
+                wr.parentNode.insertBefore(hint, wr.nextSibling);
+            }
+        }
         @endif
         @if($isDoubleElim)
         drawOne('{{ $bracketId }}-upper', '{{ $bracketId }}-upper-svg');

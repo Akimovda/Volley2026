@@ -1152,4 +1152,5 @@ return [
     'bk_winner_of' => 'Winner of match :n',
     'bk_loser_of' => 'Loser of match :n',
     'bk_final_title' => 'Final',
+    'bk_scroll_hint' => 'scroll the bracket',
 ];
