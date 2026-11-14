@@ -386,9 +386,9 @@ class EventIndexService
             ->pluck('l.name');
 
         // Блок «Скоро: кемпы, мастер-классы, турниры» — только на обычной ленте (без фильтров формата/направления/уровня/локации);
-        // показывает события дальше конца текущего окна, порядок случайный
+        // показывает события позже первых FEED_SKIP_DAYS (4) дней окна (раньше — позже всего окна в 10 дней), порядок случайный
         $upcomingSpecial = ($format === '' && $direction === '' && $level === null && $location === '')
-            ? app(\App\Services\UpcomingSpecialService::class)->forUser($user, $windowEnd->clone()->setTimezone('UTC'))
+            ? app(\App\Services\UpcomingSpecialService::class)->forUser($user, $windowStart->clone()->addDays(\App\Services\UpcomingSpecialService::FEED_SKIP_DAYS)->setTimezone('UTC'))
             : ['occurrences' => collect(), 'card' => []];
 
         return view('events.index',[
