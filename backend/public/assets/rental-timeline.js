@@ -72,7 +72,7 @@
       'button.vrt-free:hover,button.vrt-free:focus-visible{background:var(--vrt-free-h);outline:2px solid var(--vrt-accent);outline-offset:-2px;color:var(--vrt-text)}' +
       'div.vrt-free{cursor:default}' +
       '.vrt-free.sel,button.vrt-free.sel:hover{background:var(--vrt-accent);color:#fff;outline:0}.vrt-free.sel .vrt-p{color:#fff}' +
-      '.vrt-free{flex-direction:column;gap:1px;justify-content:flex-start}.vrt-t{font-weight:600}.vrt-p{font-weight:700;color:var(--vrt-text);font-size:12px}' +
+      '.vrt-free{flex-direction:column;gap:1px;justify-content:flex-start}.vrt-t{font-weight:600}.vrt-p{font-weight:' + (+s.price_weight || 400) + ';color:var(--vrt-text);font-size:' + (+s.price_size || 12) + 'px}' +
       '.vrt-busy{position:absolute;left:3px;right:3px;border-radius:calc(var(--vrt-r) / 2);background:var(--vrt-busy);color:var(--vrt-busy-t);padding:4px 6px;font-size:12px;font-weight:600;overflow:hidden;' +
       'background-image:repeating-linear-gradient(135deg,rgba(127,127,127,.12) 0 6px,transparent 6px 12px)}' +
       '.vrt-past{position:absolute;left:0;right:0;top:0;background:var(--vrt-past);opacity:.75;pointer-events:none}' +
@@ -238,7 +238,7 @@
             var priceText = price != null ? fmtMoney(price) : '';
             var aria = L.free_aria.replace('{court}', c.name).replace('{date}', dayLabel(d.date, true)).replace('{from}', from).replace('{to}', to) + (priceText ? ', ' + priceText : '');
             var cellH = slotMin * PX;
-            var inner = '<span class="vrt-t">' + (cellH >= 24 ? from : '') + '</span>' + (priceText && cellH >= 24 ? '<span class="vrt-p">' + esc(priceText) + '</span>' : '');
+            var inner = priceText ? (cellH >= 18 ? '<span class="vrt-p">' + esc(priceText) + '</span>' : '') : '<span class="vrt-t">' + (cellH >= 24 ? from : '') + '</span>';
             var tip = s.free_hint + (priceText ? ' \u2014 ' + priceText : '');
             var isSel = st.sel && st.sel.court === c.id && m >= st.sel.from && m + slotMin <= st.sel.to;
             if (clickable) {

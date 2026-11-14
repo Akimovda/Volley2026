@@ -1124,6 +1124,8 @@ return [
     'wst_v__top' => 'In the same window (whole page)',
     'wst_v__self' => 'In the same window (inside frame)',
     'wst_f_show_prices' => 'Slot price (by time of day and weekday)',
+    'wst_f_price_weight' => 'Price weight',
+    'wst_f_price_size' => 'Price size, px',
     'wst_f_show_legend' => 'Legend under the timeline (colors and price by interval)',
     'wst_f_confirm_step' => 'First select the time and show “Total”, then a “Book” button',
     'wst_f_book_button_text' => 'Confirm button text',

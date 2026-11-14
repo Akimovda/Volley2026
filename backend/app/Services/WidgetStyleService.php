@@ -173,6 +173,8 @@ class WidgetStyleService
                 'show_court_names' => ['bool', true],
                 'show_court_icons' => ['bool', true],
                 'show_prices'      => ['bool', true],
+                'price_weight'     => ['enum', '400', ['400', '600', '700']],
+                'price_size'       => ['int', 12, [10, 18]],
                 'show_legend'      => ['bool', true],
                 'show_titles'      => ['bool', false],
                 'busy_label'       => ['text', 'Занято', 30],
