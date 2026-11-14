@@ -136,6 +136,19 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 @keyframes rw-flip-top{to{transform:rotateX(-90deg)}}
 @keyframes rw-flip-bot{to{transform:rotateX(0)}}
 @media (prefers-reduced-motion:reduce){.rw-fd-ft,.rw-fd-fb{animation-duration:.01s;animation-delay:0s}}
+
+/* узкий экран: названия команд — вторым рядом под табло (симметрично), каждое под своей стороной и в её цвете; крупнее табло */
+.rw-hteam--home .b-700,.rw-hteam--home a{color:#c92d2d}
+.rw-hteam--away .b-700,.rw-hteam--away a{color:#2368c8}
+@media(max-width:560px){
+	.rw-headrow{display:grid !important;grid-template-columns:1fr 1fr;grid-template-areas:"s s" "h a";row-gap:12px;align-items:start}
+	.rw-headrow .rw-flipscore{grid-area:s;justify-self:center;font-size:clamp(40px,14vw,58px)}
+	.rw-hteam{min-width:0;text-align:center}
+	.rw-hteam--home{grid-area:h}.rw-hteam--away{grid-area:a}
+	/* кнопки «Своё очко / Ошибка соперника» компактнее */
+	#rw-live .js-rw-start{min-width:0 !important;font-size:13px;padding:11px 6px;white-space:nowrap;gap:6px}
+	#rw-live .js-rw-start .rw-bi{display:inline-flex}
+}
 /* мяч у подающей команды */
 .rw-srv-ball{display:inline-flex;color:#E7612F;vertical-align:-.15em}
 .rw-srv-ball .ball-ic{width:1.1em;height:1.1em}

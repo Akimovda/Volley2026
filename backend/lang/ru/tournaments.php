@@ -1164,4 +1164,5 @@ return [
     'rally_btn_back' => 'Назад',
     'rally_howto_title' => 'Как вносить очки',
     'rally_scroll_hint' => 'листайте таблицу',
+    'rally_opp_error_short' => 'Ошиб. соп.',
 ];

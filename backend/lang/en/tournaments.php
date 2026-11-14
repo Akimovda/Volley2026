@@ -1145,4 +1145,5 @@ return [
     'rally_btn_back' => 'Back',
     'rally_howto_title' => 'How to record points',
     'rally_scroll_hint' => 'scroll the table',
+    'rally_opp_error_short' => 'Opp. err.',
 ];
