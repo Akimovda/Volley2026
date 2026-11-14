@@ -1015,7 +1015,7 @@
 										<label>{{ __('events.desc_label') }}</label>
 										
 										{{-- Важно: hidden input + trix-editor --}}
-										<input id="description_html" type="hidden" name="description_html">
+										<input id="description_html" type="hidden" name="description_html" value="{{ old('description_html', $prefill['description_html'] ?? '') }}">
 										
 										<trix-editor input="description_html" class="trix-content"></trix-editor>
 <script>
