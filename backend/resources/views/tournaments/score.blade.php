@@ -64,8 +64,18 @@
 					</div>
 				</div>
 				@else
-				<div class="d-flex between fvc">
-					<div style="flex:1;text-align:center">
+				@php
+					// счёт по сетам для табло: при редактировании — из сохранённого результата; дальше пересчитывает скрипт ниже по выбранным значениям
+					$__hw = 0; $__aw = 0;
+					foreach (($isEdit ?? false) ? ($match->score_home ?? []) : [] as $__si => $__sh) {
+						$__sa = ($match->score_away ?? [])[$__si] ?? null;
+						if ($__sa === null) { continue; }
+						if ((int) $__sh > (int) $__sa) { $__hw++; } elseif ((int) $__sa > (int) $__sh) { $__aw++; }
+					}
+				@endphp
+				@include('tournaments._partials.flip_score_css')
+				<div class="d-flex between fvc rw-headrow">
+					<div style="flex:1;text-align:center" class="rw-hteam rw-hteam--home">
 						@if($match->teamHome && $match->teamHome->team_kind === 'classic_team')
 						{{-- Классика: только название команды + капитан --}}
 						<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
@@ -90,8 +100,11 @@
 						@endif
 						@endif
 					</div>
-					<div class="px-2 f-20 b-600">VS</div>
-					<div style="flex:1;text-align:center">
+					<div class="rw-scorebox px-2" style="text-align:center" id="sets_board">
+						@include('tournaments._partials.flip_score', ['home' => $__hw, 'away' => $__aw])
+						<div class="f-12" style="opacity:.65;margin-top:4px">{{ __('tournaments.score_by_sets') }}</div>
+					</div>
+					<div style="flex:1;text-align:center" class="rw-hteam rw-hteam--away">
 						@if($match->teamAway && $match->teamAway->team_kind === 'classic_team')
 						{{-- Классика: только название команды + капитан --}}
 						<div class="b-700 f-18">@include('tournaments._partials.team_name_link', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
@@ -200,10 +213,7 @@
 							@endfor
 						</div>
 						
-						<div class="mt-2 mb-3" style="text-align:center">
-							<span id="score_summary" class="f-20 b-800">0 : 0</span>
-							<div class="f-16">{{ __('tournaments.score_by_sets') }}</div>
-						</div>
+						<div class="mb-2"></div>
 						<div class="d-flex text-center gap-1">
 							<button type="submit" class="btn btn-primary w-100 mt-2" id="submitBtn" {{ $isEdit ? '' : 'disabled' }}>
 								{{ $isEdit ? __('tournaments.score_btn_save_edit') : __('tournaments.score_btn_save_new') }}
@@ -227,6 +237,7 @@
 				</div>
 			</div>
 			
+			@include('tournaments._partials.flip_score_js')
 			<script>
 				document.addEventListener('DOMContentLoaded', function() {
 					var maxSets = {{ $maxSets }};
@@ -235,7 +246,7 @@
 					var decidingPts = {{ $stage->decidingSetPoints() }};
 					var selects = document.querySelectorAll('.score-select');
 					var submitBtn = document.getElementById('submitBtn');
-					var summary = document.getElementById('score_summary');
+					var board = document.querySelector('#sets_board .rw-flipscore');
 					
 					// Определяем очки для конкретного сета
 					// Решающий сет (3-й в Bo3, 5-й в Bo5) играется до decidingPts
@@ -288,7 +299,7 @@
 							}
 						}
 						
-						summary.textContent = homeWon + ' : ' + awayWon;
+						if (board && window.FlipScore) { window.FlipScore.update(board, homeWon, awayWon); }
 						
 						// Показать/скрыть доп. сеты
 						for (var j = setsToWin; j < maxSets; j++) {
