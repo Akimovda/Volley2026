@@ -942,6 +942,7 @@ if ($role === 'admin') {
             'timezone'    => ['required', 'string', 'max:64'],
             'location_id' => ['required', 'integer'],
             'duration_sec'     => ['nullable', 'integer', 'min:0'],
+            'duration_days'    => ['nullable', 'integer', 'min:0', 'max:30'],
             'duration_hours'   => ['nullable', 'integer', 'min:0', 'max:23'],
             'duration_minutes' => ['nullable', 'integer', 'min:0', 'max:59'],
             'allow_registration'       => ['sometimes', 'boolean'],
@@ -1276,14 +1277,16 @@ if ($role === 'admin') {
         DB::transaction(function () use ($event, $data, $user, $staysKingBeach, $needTrainers, $trainerIds, $noPosNew, $noPosApplicable, $isMasterClass, $rolesNew, $rolesCurrent) {
             $tz = (string) $data['timezone'];
             $startsUtc = Carbon::parse($data['starts_at'], $tz)->utc();
-            // duration: приоритет у duration_sec (вычислен JS), fallback hours+min
+            // duration: приоритет у duration_sec (вычислен JS), fallback days+hours+min;
+            // если форма длительность не прислала — сохраняем прежнюю (раньше сохранение обнуляло длительность кемпа > 23 ч)
             if (!empty($data['duration_sec'])) {
                 $durationSec = (int) $data['duration_sec'];
-            } elseif (!empty($data['duration_hours']) || !empty($data['duration_minutes'])) {
-                $durationSec = ((int)($data['duration_hours'] ?? 0)) * 3600
+            } elseif (!empty($data['duration_days']) || !empty($data['duration_hours']) || !empty($data['duration_minutes'])) {
+                $durationSec = ((int)($data['duration_days'] ?? 0)) * 86400
+                             + ((int)($data['duration_hours'] ?? 0)) * 3600
                              + ((int)($data['duration_minutes'] ?? 0)) * 60;
             } else {
-                $durationSec = null;
+                $durationSec = $event->duration_sec ?: null;
             }
     
             $allowReg = (bool) ($data['allow_registration'] ?? false);

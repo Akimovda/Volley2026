@@ -315,24 +315,36 @@
                         <div class="col-md-4">
                             <div class="card" style="overflow:visible">
                                 <label>{{ __('events.duration_label_short') }}</label>
+                                @php
+                                    $__dsec = (int) ($event->duration_sec ?? 0);
+                                    $__dd = old('duration_days', intdiv($__dsec, 86400));
+                                    $__dh = old('duration_hours', intdiv($__dsec % 86400, 3600));
+                                    $__dm = old('duration_minutes', intdiv($__dsec % 3600, 60));
+                                @endphp
                                 <div class="row row2">
+                                    <div class="col-4">
+                                        <label>{{ __('events.duration_days') }}</label>
+                                        <select name="duration_days">
+                                            @for($d = 0; $d <= 30; $d++)
+                                                <option value="{{ $d }}" @selected((int) $__dd === $d)>{{ $d }}</option>
+                                            @endfor
+                                        </select>
+                                    </div>
                                     <div class="col-4">
                                         <label>{{ __('events.duration_h') }}</label>
                                         <select name="duration_hours">
                                             @for($h = 0; $h <= 23; $h++)
-                                                <option value="{{ $h }}" @selected((old('duration_hours', $event->duration_sec ? (int)floor($event->duration_sec / 3600) : 0)) == $h)>{{ $h }}</option>
+                                                <option value="{{ $h }}" @selected((int) $__dh === $h)>{{ $h }}</option>
                                             @endfor
                                         </select>
-                                            
                                     </div>
                                     <div class="col-4">
                                         <label>{{ __('events.duration_m') }}</label>
                                         <select name="duration_minutes">
                                             @foreach([0,15,30,45] as $m)
-                                                <option value="{{ $m }}" @selected((old('duration_minutes', $event->duration_sec ? (int)(($event->duration_sec % 3600) / 60) : 0)) == $m)>{{ $m }}</option>
+                                                <option value="{{ $m }}" @selected((int) $__dm === $m)>{{ $m }}</option>
                                             @endforeach
                                         </select>
-                                            
                                     </div>
                                 </div>
                                 <input type="hidden" name="duration_sec" id="duration_sec_edit"
@@ -2070,14 +2082,20 @@
         function initMgmtForm() {
 
             // --- Длительность ---
+            const dDays    = document.querySelector('[name="duration_days"]');
             const dHours   = document.querySelector('[name="duration_hours"]');
             const dMinutes = document.querySelector('[name="duration_minutes"]');
             const dSec     = document.getElementById('duration_sec_edit');
             function syncDuration() {
+                const d = Math.max(0, parseInt(dDays?.value || 0, 10));
                 const h = Math.max(0, parseInt(dHours?.value || 0, 10));
                 const m = Math.max(0, Math.min(59, parseInt(dMinutes?.value || 0, 10)));
-                if (dSec) dSec.value = h * 3600 + m * 60;
+                if (dSec) dSec.value = d * 86400 + h * 3600 + m * 60;
             }
+            dDays?.addEventListener('input', syncDuration);
+            dDays?.addEventListener('change', syncDuration);
+            dHours?.addEventListener('change', syncDuration);
+            dMinutes?.addEventListener('change', syncDuration);
             dHours?.addEventListener('input', syncDuration);
             dMinutes?.addEventListener('input', syncDuration);
             syncDuration();

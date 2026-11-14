@@ -673,7 +673,8 @@ class EventIndexService
         if (\App\Support\SchemaCache::hasColumn('event_occurrences','duration_sec')) {
     
             $query->whereRaw(
-                "starts_at + ((duration_sec) * interval '1 second') > ?",
+                // COALESCE: у тура без записанной длительности (NULL) конец = начало — иначе выражение даёт NULL и тур пропадает из ленты
+                "starts_at + (COALESCE(duration_sec, 0) * interval '1 second') > ?",
                 [$now]
             );
     
