@@ -255,6 +255,9 @@
                         <span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</span>
                     @endif
                 </a>
+                <a href="{{ route('club.clients.index') }}" class="menu-item {{ $activeMenu === 'club_clients' ? 'active' : '' }}">
+                    <span class="menu-text"><x-ico name="users" /> {{ __('club.clients_title') }}</span>
+                </a>
                 @endif
                 {{-- 6а. Локации владельца площадки (только свои) --}}
                 @if($menuUser->is_club_manager && $menuUser->ownedLocations()->exists())

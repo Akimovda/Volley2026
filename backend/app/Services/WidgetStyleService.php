@@ -195,11 +195,13 @@ class WidgetStyleService
                 'footer_color'     => ['color', '#9ca3af'],
             ],
             'click' => [
-                'click_mode'  => ['enum', 'event', ['event', 'link', 'none']],
+                'click_mode'  => ['enum', 'event', ['event', 'link', 'form', 'none']],
                 'confirm_step' => ['bool', true],
                 'book_button_text' => ['text', 'Забронировать', 30],
                 'booking_url' => ['url', '', 300],
                 'link_target' => ['enum', '_blank', ['_blank', '_top', '_self']],
+                'policy_url'  => ['url', '', 300],
+                'ask_comment' => ['bool', true],
             ],
         ];
     }

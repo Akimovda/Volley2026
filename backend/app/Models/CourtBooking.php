@@ -31,6 +31,10 @@ class CourtBooking extends Model
         'user_id',
         'guest_name',
         'guest_phone',
+        'guest_email',
+        'guest_comment',
+        'rental_client_id',
+        'order_token',
         'title',
         'color',
         'event_id',
@@ -61,6 +65,11 @@ class CourtBooking extends Model
     public function court(): BelongsTo
     {
         return $this->belongsTo(LocationCourt::class, 'court_id');
+    }
+
+    public function rentalClient(): BelongsTo
+    {
+        return $this->belongsTo(RentalClient::class);
     }
 
     public function user(): BelongsTo

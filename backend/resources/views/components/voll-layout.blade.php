@@ -554,6 +554,9 @@
 								<a href="{{ route('club.bookings.index') }}" class="menu-item">
 									<span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</span>
 								</a>
+								<a href="{{ route('club.clients.index') }}" class="menu-item">
+									<span class="menu-text"><x-ico name="users" /> {{ __('club.clients_title') }}</span>
+								</a>
 								<a href="{{ route('admin.locations.index') }}" class="menu-item">
 									<span class="menu-text"><x-ico name="building" /> {{ __('club.my_locations') }}</span>
 								</a>

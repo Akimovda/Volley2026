@@ -49,6 +49,54 @@ class PaymentService
         ]);
     }
     /**
+     * Платёж за заказ из виджета (общий для нескольких броней). Строка payments хранится на первой брони,
+     * остальные находятся по order_token (см. paidPaymentForBooking).
+     *
+     * @param \Illuminate\Support\Collection<int, CourtBooking> $bookings
+     */
+    public function createForOrder($bookings, PaymentSetting $settings, string $returnUrl): Payment
+    {
+        $first = $bookings->first();
+
+        $existing = Payment::where('court_booking_id', $first->id)->where('status', 'pending')
+            ->whereNotNull('yoomoney_confirmation_url')->latest('id')->first();
+        if ($existing && !$existing->isExpired()) {
+            return $existing;
+        }
+
+        $result = $this->yookassa->createOrderPayment(
+            $bookings, $settings, $returnUrl,
+            (string) $first->guest_email, (string) $first->guest_phone, (string) $first->guest_name
+        );
+
+        return Payment::create([
+            'user_id'                   => $settings->organizer_id, // гость без аккаунта: payments.user_id NOT NULL, подставляем арендодателя
+            'organizer_id'              => $settings->organizer_id,
+            'court_booking_id'          => $first->id,
+            'method'                    => 'yoomoney',
+            'status'                    => 'pending',
+            'amount_minor'              => (int) round($bookings->sum(fn ($b) => (float) $b->price_total) * 100),
+            'currency'                  => 'RUB',
+            'yoomoney_payment_id'       => $result['payment_id'],
+            'yoomoney_confirmation_url' => $result['payment_url'],
+            'expires_at'                => $first->expires_at,
+        ]);
+    }
+
+    /** Оплаченный платёж, покрывающий бронь: свой или общий платёж заказа из виджета. */
+    public function paidPaymentForBooking(CourtBooking $booking): ?Payment
+    {
+        $own = Payment::where('court_booking_id', $booking->id)->whereIn('status', ['paid', 'partially_refunded'])->latest('id')->first();
+        if ($own || !$booking->order_token) {
+            return $own;
+        }
+
+        $ids = CourtBooking::where('order_token', $booking->order_token)->pluck('id');
+
+        return Payment::whereIn('court_booking_id', $ids)->whereIn('status', ['paid', 'partially_refunded'])->latest('id')->first();
+    }
+
+    /**
      * Создать платёж при записи на мероприятие
      */
     public function createForRegistration(
@@ -153,7 +201,8 @@ class PaymentService
             }
 
             if ($payment->court_booking_id) {
-                CourtBooking::where('id', $payment->court_booking_id)
+                $token = CourtBooking::where('id', $payment->court_booking_id)->value('order_token');
+                CourtBooking::where(fn ($q) => $q->where('id', $payment->court_booking_id)->when($token, fn ($qq) => $qq->orWhere('order_token', $token)))
                     ->where('status', CourtBooking::STATUS_PENDING)
                     ->update(['status' => CourtBooking::STATUS_PAID, 'expires_at' => null]);
             }
@@ -170,22 +219,30 @@ class PaymentService
      * это для игрока-арендатора, а не для игрока мероприятия). Если брони не была оплачена
      * онлайн (нет yoomoney_payment_id) — возвращать нечего, вызывающая сторона просто отменяет.
      */
-    public function refundBooking(Payment $payment, PaymentSetting $settings, string $reason): void
+    public function refundBooking(Payment $payment, PaymentSetting $settings, string $reason, ?int $amountMinor = null): void
     {
         if (empty($payment->yoomoney_payment_id)) {
             return;
         }
 
+        $already = (int) ($payment->refund_amount_minor ?? 0);
+        $amount = $amountMinor ?? ($payment->amount_minor - $already);
+        $amount = min($amount, $payment->amount_minor - $already);
+        if ($amount <= 0) {
+            return;
+        }
+
         $result = $this->yookassa->createRefund(
             $payment->yoomoney_payment_id,
-            $payment->amount_minor,
+            $amount,
             $settings,
             $reason
         );
 
+        $total = $already + $amount;
         $payment->update([
-            'status'              => 'refunded',
-            'refund_amount_minor' => $payment->amount_minor,
+            'status'              => $total >= $payment->amount_minor ? 'refunded' : 'paid',
+            'refund_amount_minor' => $total,
             'refund_reason'       => $reason,
             'refunded_at'         => now(),
         ]);

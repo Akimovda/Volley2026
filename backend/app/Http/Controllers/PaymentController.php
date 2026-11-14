@@ -71,11 +71,16 @@ class PaymentController extends Controller
 
             if ($payment->court_booking_id) {
                 $booking = $payment->courtBooking()->with('court.direction.location')->first();
-                if ($booking && $booking->court?->direction?->location?->owner_id) {
-                    $this->notificationService->createCourtBookingPaidNotification(
-                        $booking->court->direction->location->owner_id,
-                        $booking
-                    );
+                $group = $booking && $booking->order_token
+                    ? \App\Models\CourtBooking::where('order_token', $booking->order_token)->with('court.direction.location')->get()
+                    : collect([$booking])->filter();
+                foreach ($group as $gb) {
+                    if ($gb->court?->direction?->location?->owner_id) {
+                        $this->notificationService->createCourtBookingPaidNotification(
+                            $gb->court->direction->location->owner_id,
+                            $gb
+                        );
+                    }
                 }
             } else {
                 $this->sendPaymentNotification($payment, 'paid');

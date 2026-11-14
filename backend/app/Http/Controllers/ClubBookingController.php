@@ -220,6 +220,12 @@ class ClubBookingController extends Controller
 
         try {
             $service->confirm($booking, $user);
+            // Заказ из виджета на несколько кортов подтверждается целиком.
+            if ($booking->order_token) {
+                CourtBooking::where('order_token', $booking->order_token)->where('id', '!=', $booking->id)
+                    ->where('status', CourtBooking::STATUS_PENDING)->get()
+                    ->each(fn ($b) => $service->confirm($b, $user));
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -246,6 +252,11 @@ class ClubBookingController extends Controller
 
         try {
             $service->reject($booking, $user, $data['reason'] ?? '');
+            if ($booking->order_token) {
+                CourtBooking::where('order_token', $booking->order_token)->where('id', '!=', $booking->id)
+                    ->whereIn('status', [CourtBooking::STATUS_PENDING])->get()
+                    ->each(fn ($b) => $service->reject($b, $user, $data['reason'] ?? ''));
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }

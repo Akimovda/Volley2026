@@ -79,6 +79,9 @@
       '.vrt-now{position:absolute;left:0;right:0;height:0;border-top:2px solid #ef4444;pointer-events:none;z-index:3}' +
       '.vrt-sel{position:sticky;bottom:8px;z-index:5;margin-top:10px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:12px 14px;border-radius:var(--vrt-r);border:2px solid var(--vrt-accent);background:var(--vrt-panel);box-shadow:0 6px 24px rgba(0,0,0,.16)}' +
       '.vrt-sel-rows{display:flex;flex-direction:column;gap:8px;flex:1 1 260px}.vrt-sel-row{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:center;justify-content:space-between}.vrt-total-all{border-top:1px solid var(--vrt-grid);padding-top:8px;text-align:right}' +
+      '.vrt-form{flex-direction:column;align-items:stretch;gap:10px;position:relative}.vrt-form-h{font-size:17px;font-weight:800}.vrt-form-sum{font-size:13px;display:flex;flex-direction:column;gap:2px}' +
+      '.vrt-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}.vrt-form input[type=text],.vrt-form input[type=tel],.vrt-form input[type=email],.vrt-form textarea{font:inherit;font-weight:400;padding:9px 10px;border:1px solid var(--vrt-grid);border-radius:8px;background:transparent;color:var(--vrt-text)}' +
+      '.vrt-form .vrt-check{flex-direction:row;align-items:flex-start;gap:8px;font-weight:400}.vrt-form .vrt-check input{margin-top:3px}.vrt-note{font-size:12px;color:var(--vrt-muted)}.vrt-form-err{color:#dc2626;font-size:13px;font-weight:600}.vrt-form-msg{font-weight:600;line-height:1.5}' +
       '.vrt-sel-info{font-weight:600}.vrt-sel-info small{display:block;font-weight:400;color:var(--vrt-muted)}' +
       '.vrt-total{font-size:20px;font-weight:800;white-space:nowrap}' +
       '.vrt-book{border:0;background:var(--vrt-accent);color:#fff;border-radius:10px;padding:10px 20px;font-weight:700}.vrt-book:hover{opacity:.9}' +
@@ -103,7 +106,7 @@
     var root = host.attachShadow ? (host.shadowRoot || host.attachShadow({ mode: 'open' })) : host;
     var st = {
       loc: opts.location || 0, dir: opts.direction || '', mode: opts.mode || '', date: '',
-      style: null, labels: null, locale: 'ru', data: null, error: null, loading: true, sel: null
+      style: null, labels: null, locale: 'ru', data: null, error: null, loading: true, sel: null, form: null
     };
     var seq = 0;
 
@@ -277,9 +280,11 @@
         '<div class="vrt-axis"><div style="height:34px"></div><div style="position:relative;height:' + H + 'px">' + axis + '</div></div>' + cols + '</div></div>';
     }
 
+    function needConfirm() { return !!(st.style.confirm_step || st.style.click_mode === 'form'); }
+
     function selPanel() {
       var s = st.style, d = st.data, L = st.labels, sels = st.sel;
-      if (!sels || !sels.length || !s.confirm_step || s.click_mode === 'none') return '';
+      if (!sels || !sels.length || !needConfirm() || s.click_mode === 'none') return '';
       var rows = '', sum = 0, hasSum = false;
       sels.forEach(function (sel) {
         var c = courtById(sel.court);
@@ -295,6 +300,73 @@
       return '<div class="vrt-sel" role="status"><div class="vrt-sel-rows">' + rows + all + '</div>' +
         '<span style="display:inline-flex;gap:8px"><button type="button" class="vrt-btn" data-act="reset">' + esc(L.reset) + '</button>' +
         '<button type="button" class="vrt-book" data-act="book">' + esc(s.book_button_text || L.book) + '</button></span></div>';
+    }
+
+    // ---- форма брони гостя (click_mode = form)
+    function formPanel() {
+      var s = st.style, L = st.labels, f = st.form, sels = st.sel;
+      if (!f) return '';
+      var prepaid = st.data.booking_mode === 'prepaid';
+      if (f.phase === 'done') {
+        return '<div class="vrt-sel vrt-form" role="status"><div class="vrt-form-msg">' + esc(L.rb_f_ok_request) +
+          '<br><a href="' + esc(f.result.status_url) + '" target="_blank" rel="noopener">' + esc(L.rb_f_ok_link) + '</a></div></div>';
+      }
+      var v = f.values;
+      var consent = esc(L.rb_f_consent) + (s.policy_url ? ' (<a href="' + esc(s.policy_url) + '" target="_blank" rel="noopener">' + esc(L.rb_f_policy) + '</a>)' : '');
+      var sum = 0, hasSum = false, lines = '';
+      (sels || []).forEach(function (x) {
+        var c = courtById(x.court); if (!c) return;
+        var pr = s.show_prices ? slotPrice(c, x.from, x.to) : null;
+        if (pr != null) { sum += pr; hasSum = true; }
+        lines += '<div>' + esc(c.name) + ' \u00B7 ' + esc(dayLabel(st.data.date, true)) + ' \u00B7 ' + toHHMM(x.from) + '\u2013' + toHHMM(x.to) + (pr != null ? ' \u00B7 ' + esc(fmtMoney(pr)) : '') + '</div>';
+      });
+      return '<form class="vrt-sel vrt-form" data-form="1" novalidate>' +
+        '<div class="vrt-form-h">' + esc(L.rb_f_title) + '</div><div class="vrt-form-sum">' + lines +
+        (hasSum ? '<b>' + esc(L.total_all.replace('{sum}', fmtMoney(sum))) + '</b>' : '') + '</div>' +
+        '<label>' + esc(L.rb_f_name) + '<input name="name" type="text" autocomplete="name" maxlength="150" value="' + esc(v.name) + '" required></label>' +
+        '<label>' + esc(L.rb_f_phone) + '<input name="phone" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" placeholder="+7" value="' + esc(v.phone) + '" required></label>' +
+        '<label>' + esc(L.rb_f_email) + '<input name="email" type="email" autocomplete="email" maxlength="190" value="' + esc(v.email) + '" required></label>' +
+        (s.ask_comment ? '<label>' + esc(L.rb_f_comment) + '<textarea name="comment" rows="2" maxlength="300">' + esc(v.comment) + '</textarea></label>' : '') +
+        '<input name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0">' +
+        '<label class="vrt-check"><input name="consent" type="checkbox"' + (v.consent ? ' checked' : '') + '> <span>' + consent + '</span></label>' +
+        '<div class="vrt-note">' + esc(prepaid ? L.rb_f_pay_info : L.rb_f_request_info) + '</div>' +
+        (f.error ? '<div class="vrt-form-err" role="alert">' + esc(f.error) + '</div>' : '') +
+        '<span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button type="button" class="vrt-btn" data-act="formback">' + esc(L.rb_f_back) + '</button>' +
+        '<button type="submit" class="vrt-book"' + (f.phase === 'sending' ? ' disabled' : '') + '>' + esc(f.phase === 'sending' ? L.rb_f_sending : (prepaid ? L.rb_f_submit_pay : L.rb_f_submit_request)) + '</button></span></form>';
+    }
+
+    function submitForm() {
+      var f = st.form, L = st.labels, s = st.style, d = st.data;
+      if (!f || f.phase === 'sending') return;
+      var v = f.values;
+      if (!v.name.trim() || v.name.trim().length < 3 || !v.phone.trim() || !/^\S+@\S+\.\S+$/.test(v.email.trim()) || !v.consent) { f.error = L.rb_f_err; render(); return; }
+      if (opts.styleOverride) { f.error = 'Preview'; render(); return; }
+      f.phase = 'sending'; f.error = ''; render();
+      var body = {
+        key: opts.key, lang: st.locale, date: d.date,
+        items: (st.sel || []).map(function (x) { return { court_id: x.court, from: toHHMM(x.from), to: toHHMM(x.to) }; }),
+        name: v.name.trim(), phone: v.phone.trim(), email: v.email.trim(), comment: v.comment || '', consent: v.consent ? 1 : 0, website: v.website || ''
+      };
+      var url = opts.api.replace(/\?.*$/, '').replace(/\/$/, '') + '/book';
+      fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (j) {
+          if (!j.ok) {
+            var msg = j.error || (j.errors && Object.keys(j.errors).length ? j.errors[Object.keys(j.errors)[0]][0] : '') || j.message || L.rb_f_err;
+            f.phase = 'form'; f.error = msg; render(); return;
+          }
+          var detail = { token: j.token, status_url: j.status_url, mode: j.mode, total: j.total, items: body.items, date: d.date };
+          try { host.dispatchEvent(new CustomEvent('volley-rental-booked', { detail: detail, bubbles: true, composed: true })); } catch (e) {}
+          if (cfg.iframe) { try { parent.postMessage({ type: 'volley-rental-booked', detail: detail }, '*'); } catch (e) {} }
+          st.sel = null;
+          if (j.pay_url) {
+            if (cfg.iframe) { try { window.top.location.href = j.pay_url; } catch (e) { window.open(j.pay_url, '_blank', 'noopener'); } }
+            else { window.location.href = j.pay_url; }
+            return;
+          }
+          f.phase = 'done'; f.result = j; render(); load();
+        })
+        .catch(function () { f.phase = 'form'; f.error = L.rb_f_err; render(); });
     }
 
     function legend() {
@@ -383,7 +455,7 @@
           (s.show_today_button ? '<button type="button" class="vrt-btn" data-act="nav" data-date="' + d.today + '">' + esc(L.today) + '</button>' : '') + '</span>';
       }
       html += '<div class="vrt-bar">' + bar + '</div>';
-      html += d.mode === 'week' ? renderWeek() : renderDay() + selPanel() + legend();
+      html += d.mode === 'week' ? renderWeek() : renderDay() + (st.form ? formPanel() : selPanel()) + legend();
 
       var origin = ''; try { origin = new URL(opts.api, location.href).host; } catch (e) {}
       if (origin) html += '<div class="vrt-foot"><a href="https://' + esc(origin) + '" target="_blank" rel="noopener">' + esc(origin) + '</a></div>';
@@ -437,23 +509,39 @@
       var a = el.getAttribute('data-act');
       if (a === 'pick') {
         var cid = el.getAttribute('data-court'), f = el.getAttribute('data-from'), t = el.getAttribute('data-to');
-        if (!st.style.confirm_step) { pick(cid, f, t); return; }
-        toggleCell(cid, f, t); render(); return;
+        if (!needConfirm()) { pick(cid, f, t); return; }
+        st.form = null; toggleCell(cid, f, t); render(); return;
       }
       if (a === 'book') {
         var sl = st.sel;
+        if (sl && sl.length && st.style.click_mode === 'form') {
+          st.form = { phase: 'form', error: '', result: null, values: st.formValues || { name: '', phone: '', email: '', comment: '', consent: false, website: '' } };
+          render(); return;
+        }
         if (sl && sl.length) pick(sl[0].court, toHHMM(sl[0].from), toHHMM(sl[0].to), sl);
         return;
       }
-      if (a === 'reset') { st.sel = null; render(); return; }
-      if (a === 'dir') { st.sel = null; st.dir = el.getAttribute('data-dir'); load(); }
-      else if (a === 'mode') { st.sel = null; st.mode = el.getAttribute('data-mode'); load(); }
-      else if (a === 'nav') { st.sel = null; st.date = el.getAttribute('data-date'); load(); }
-      else if (a === 'gotoday') { st.sel = null; st.date = el.getAttribute('data-date'); st.mode = 'day'; load(); }
+      if (a === 'reset') { st.sel = null; st.form = null; render(); return; }
+      if (a === 'formback') { st.form = null; render(); return; }
+      if (a === 'dir') { st.sel = null; st.form = null; st.dir = el.getAttribute('data-dir'); load(); }
+      else if (a === 'mode') { st.sel = null; st.form = null; st.mode = el.getAttribute('data-mode'); load(); }
+      else if (a === 'nav') { st.sel = null; st.form = null; st.date = el.getAttribute('data-date'); load(); }
+      else if (a === 'gotoday') { st.sel = null; st.form = null; st.date = el.getAttribute('data-date'); st.mode = 'day'; load(); }
+    });
+    root.addEventListener('input', function (e) {
+      var el = e.target;
+      if (!st.form || !el || !el.name || !st.form.values.hasOwnProperty(el.name)) return;
+      st.form.values[el.name] = el.type === 'checkbox' ? el.checked : el.value;
+      st.formValues = st.form.values;
+    });
+    root.addEventListener('submit', function (e) {
+      if (e.target && e.target.getAttribute && e.target.getAttribute('data-form')) { e.preventDefault(); submitForm(); }
     });
     root.addEventListener('change', function (e) {
       var el = e.target;
-      if (el && el.getAttribute && el.getAttribute('data-act') === 'loc') { st.sel = null; st.loc = +el.value; st.dir = ''; load(); }
+      if (st.form && el && el.name === 'consent') { st.form.values.consent = el.checked; st.formValues = st.form.values; }
+      var el = e.target;
+      if (el && el.getAttribute && el.getAttribute('data-act') === 'loc') { st.sel = null; st.form = null; st.loc = +el.value; st.dir = ''; load(); }
     });
     window.addEventListener('resize', fit);
 

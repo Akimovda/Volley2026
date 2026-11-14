@@ -29,6 +29,9 @@ class RentalTimelinePublicController extends Controller
                   'legend_busy', 'legend_past', 'legend_prices', 'all_courts', 'per_hour', 'select_hint'] as $k) {
             $out[$k] = __('club.tl_' . $k);
         }
+        foreach (['f_title', 'f_name', 'f_phone', 'f_email', 'f_comment', 'f_consent', 'f_policy', 'f_submit_request', 'f_submit_pay', 'f_back', 'f_sending', 'f_err', 'f_ok_request', 'f_ok_link', 'f_pay_info', 'f_request_info'] as $k) {
+            $out['rb_' . $k] = __('club.rb_' . $k);
+        }
         $out['classic'] = __('events.card_dir_classic');
         $out['beach'] = __('events.card_dir_beach');
 
@@ -94,7 +97,9 @@ class RentalTimelinePublicController extends Controller
             'style'  => $style,
             'labels' => self::labels(),
             'locale' => app()->getLocale(),
-            'data'   => $this->service->payload($locations, $params, (bool) $style['show_titles']),
+            'data'   => $this->service->payload($locations, $params, (bool) $style['show_titles']) + [
+                'booking_mode' => app(\App\Services\CourtBookingService::class)->canPrepayOnline((int) $widget->user_id) ? 'prepaid' : 'request',
+            ],
         ])->header('Access-Control-Allow-Origin', '*');
     }
 

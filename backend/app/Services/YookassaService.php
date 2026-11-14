@@ -96,6 +96,62 @@ class YookassaService
     }
 
     /**
+     * Один платёж ЮKassa за заказ из виджета (одна или несколько броней). Чек (54-ФЗ) — если включён у
+     * арендодателя: покупатель — гость, email из формы, по строке чека на каждую бронь.
+     *
+     * @param \Illuminate\Support\Collection<int, CourtBooking> $bookings
+     * @return array{payment_id: string, payment_url: string}
+     */
+    public function createOrderPayment($bookings, PaymentSetting $settings, string $returnUrl, string $email, string $phone, string $fullName): array
+    {
+        $client = $this->makeClientFor($settings);
+        $first = $bookings->first();
+        $idempotenceKey = 'court-order-' . $first->id . '-' . Str::random(8);
+        $total = $bookings->sum(fn ($b) => (float) $b->price_total);
+
+        $params = [
+            'amount'       => ['value' => number_format($total, 2, '.', ''), 'currency' => 'RUB'],
+            'confirmation' => ['type' => 'redirect', 'return_url' => $returnUrl],
+            'capture'      => true,
+            'description'  => 'Бронь кортов, заказ #' . $first->id,
+            'metadata'     => ['court_booking_id' => $first->id, 'order_token' => (string) $first->order_token, 'type' => 'court_booking'],
+        ];
+
+        if ($settings->yookassa_receipt_enabled) {
+            $items = [];
+            foreach ($bookings as $b) {
+                $b->loadMissing('court.direction.location');
+                $tz = $b->court?->direction?->location?->effectiveTimezone() ?? 'Europe/Moscow';
+                $desc = 'Аренда корта «' . ($b->court?->name ?? '') . '» ' . $b->starts_at->copy()->setTimezone($tz)->format('d.m.Y H:i')
+                    . '–' . $b->ends_at->copy()->setTimezone($tz)->format('H:i');
+                $items[] = [
+                    'description'     => mb_substr($desc, 0, 128),
+                    'quantity'        => '1.00',
+                    'amount'          => ['value' => number_format((float) $b->price_total, 2, '.', ''), 'currency' => 'RUB'],
+                    'vat_code'        => (int) ($settings->yookassa_vat_code ?: 1),
+                    'payment_mode'    => 'full_payment',
+                    'payment_subject' => 'service',
+                ];
+            }
+            $receipt = [
+                'customer' => array_filter(['full_name' => mb_substr($fullName, 0, 256), 'email' => $email, 'phone' => $phone ? '+' . ltrim($phone, '+') : null]),
+                'items'    => $items,
+            ];
+            if ($settings->yookassa_tax_system_code) {
+                $receipt['tax_system_code'] = (int) $settings->yookassa_tax_system_code;
+            }
+            $params['receipt'] = $receipt;
+        }
+
+        $response = $client->createPayment($params, $idempotenceKey);
+
+        return [
+            'payment_id'  => $response->getId(),
+            'payment_url' => $response->getConfirmation()->getConfirmationUrl(),
+        ];
+    }
+
+    /**
      * Переспросить статус конкретного платежа напрямую у ЮKassa (не доверять телу вебхука) —
      * тем же способом, что уже используется для рекламных платежей (handleWebhook() ниже).
      */

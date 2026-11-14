@@ -117,6 +117,81 @@ class CourtBookingService
     }
 
     /**
+     * Заказ гостя из виджета: одна или несколько броней (разные корты/диапазоны) атомарно — либо все, либо ни одной.
+     * Режим определяется настройками арендодателя: онлайн-оплата включена и ЮKassa готова → prepaid (TTL 30 мин),
+     * иначе заявка на подтверждение арендодателем (on_site).
+     *
+     * @param array<int, array{court: LocationCourt, starts_at: Carbon, ends_at: Carbon}> $items
+     * @param array{name: string, phone: string, email: string, comment?: ?string, consent: bool} $guest
+     * @return \Illuminate\Support\Collection<int, CourtBooking>
+     */
+    public function createGuestOrder(int $ownerId, array $items, array $guest)
+    {
+        if (!$items) {
+            throw new InvalidArgumentException('Не выбрано время.');
+        }
+
+        $canPrepay = $this->canPrepayOnline($ownerId);
+        $token = \Illuminate\Support\Str::random(40);
+        // Предоплата возможна, только если у каждого слота есть цена; иначе — заявка на подтверждение.
+        foreach ($items as $it) {
+            $pr = $this->pricingService->calculate($it['court'], $it['starts_at'], $it['ends_at']);
+            if ($pr === null || $pr <= 0) { $canPrepay = false; break; }
+        }
+
+        return DB::transaction(function () use ($ownerId, $items, $guest, $canPrepay, $token) {
+            $client = \App\Models\RentalClient::firstOrNew([
+                'owner_id' => $ownerId,
+                'phone'    => \App\Models\RentalClient::normalizePhone($guest['phone']),
+            ]);
+            $client->name = $guest['name'];
+            $client->email = $guest['email'];
+            $client->consent_at = $client->consent_at ?: now();
+            $client->save();
+
+            // Пока у клиента висят неоплаченные/неподтверждённые заявки — не плодим новые (защита от спама).
+            $pending = CourtBooking::where('rental_client_id', $client->id)->where('status', CourtBooking::STATUS_PENDING)->count();
+            if ($pending >= 6) {
+                throw new InvalidArgumentException('У вас уже есть заявки, ожидающие подтверждения. Дождитесь ответа по ним.');
+            }
+
+            $out = collect();
+            foreach ($items as $it) {
+                /** @var LocationCourt $court */
+                $court = $it['court'];
+                [, $location] = $this->validateBookingWindow($court, $it['starts_at'], $it['ends_at']);
+
+                if ((int) $location->owner_id !== $ownerId) {
+                    throw new InvalidArgumentException('Эта площадка недоступна для бронирования.');
+                }
+                if ($it['starts_at']->gt(now()->addDays(self::PLAYER_MAX_ADVANCE_DAYS * 2))) {
+                    throw new InvalidArgumentException('Слишком далёкая дата бронирования.');
+                }
+
+                $out->push($this->insertBooking($court, $it['starts_at'], $it['ends_at'], [
+                    'court_id'         => $court->id,
+                    'user_id'          => null,
+                    'guest_name'       => $guest['name'],
+                    'guest_phone'      => $client->phone,
+                    'guest_email'      => $guest['email'],
+                    'guest_comment'    => $guest['comment'] ?? null,
+                    'rental_client_id' => $client->id,
+                    'order_token'      => $token,
+                    'starts_at'        => $it['starts_at'],
+                    'ends_at'          => $it['ends_at'],
+                    'status'           => CourtBooking::STATUS_PENDING,
+                    'price_total'      => $this->pricingService->calculate($court, $it['starts_at'], $it['ends_at']),
+                    'payment_mode'     => $canPrepay ? CourtBooking::PAYMENT_MODE_PREPAID : CourtBooking::PAYMENT_MODE_ON_SITE,
+                    'source'           => 'widget',
+                    'expires_at'       => $canPrepay ? now()->addMinutes(self::TTL_MINUTES) : null,
+                ], notify: true));
+            }
+
+            return $out;
+        });
+    }
+
+    /**
      * Может ли владелец локации принимать онлайн-оплату аренды (Фаза 4).
      */
     public function canPrepayOnline(?int $locationOwnerId): bool
@@ -430,7 +505,7 @@ class CourtBookingService
         foreach ($refundCandidates as $b) {
             $b->loadMissing('court.direction.location');
             $ownerId = $b->court?->direction?->location?->owner_id;
-            $payment = Payment::where('court_booking_id', $b->id)->where('status', 'paid')->latest('id')->first();
+            $payment = $this->paymentService->paidPaymentForBooking($b);
             $settings = $ownerId ? PaymentSetting::where('organizer_id', $ownerId)->first() : null;
 
             if (!$payment || !$settings || !$settings->isYoomoneyReady()) {
@@ -438,7 +513,7 @@ class CourtBookingService
             }
 
             try {
-                $this->paymentService->refundBooking($payment, $settings, 'Отмена брони клубом: ' . ($reason ?? '—'));
+                $this->paymentService->refundBooking($payment, $settings, 'Отмена брони клубом: ' . ($reason ?? '—'), $b->order_token ? (int) round($b->price_total * 100) : null);
                 $refundedIds[] = $b->id;
             } catch (\Throwable $e) {
                 Log::error('[CourtBookingService] Возврат при отмене клубом не удался', [
@@ -606,7 +681,7 @@ class CourtBookingService
             return false;
         }
 
-        $payment = Payment::where('court_booking_id', $booking->id)->where('status', 'paid')->latest('id')->first();
+        $payment = $this->paymentService->paidPaymentForBooking($booking);
         $settings = PaymentSetting::where('organizer_id', $location->owner_id)->first();
 
         if (!$payment || !$settings || !$settings->isYoomoneyReady()) {
@@ -614,7 +689,7 @@ class CourtBookingService
         }
 
         try {
-            $this->paymentService->refundBooking($payment, $settings, 'Отмена брони игроком до дедлайна возврата');
+            $this->paymentService->refundBooking($payment, $settings, 'Отмена брони игроком до дедлайна возврата', $booking->order_token ? (int) round($booking->price_total * 100) : null);
             return true;
         } catch (\Throwable $e) {
             Log::error('[CourtBookingService] Возврат при отмене игроком не удался', [

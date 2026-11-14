@@ -217,6 +217,10 @@ Route::get('/logout', fn () => redirect('/'));
 		Route::post('/club/bookings/{booking}/cancel', [\App\Http\Controllers\ClubBookingController::class, 'cancel'])
 			->name('club.bookings.cancel');
 
+		Route::get('/club/clients', [\App\Http\Controllers\ClubClientsController::class, 'index'])->name('club.clients.index');
+		Route::put('/club/clients/{client}', [\App\Http\Controllers\ClubClientsController::class, 'update'])->name('club.clients.update');
+		Route::delete('/club/clients/{client}', [\App\Http\Controllers\ClubClientsController::class, 'destroy'])->name('club.clients.destroy');
+
 		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
 			->name('club.analytics.index');
 		Route::post('/club/analytics/report-toggle', [\App\Http\Controllers\ClubAnalyticsController::class, 'toggleReport'])
@@ -968,6 +972,13 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	Route::get('/widget/rental/{userId}', [\App\Http\Controllers\RentalWidgetPublicController::class, 'iframe'])->whereNumber('userId')->name('rental_widget.iframe');
 	Route::get('/api/widget/rental', [\App\Http\Controllers\RentalWidgetPublicController::class, 'json'])->name('rental_widget.json');
 	Route::get('/widget/rental.js', [\App\Http\Controllers\RentalWidgetPublicController::class, 'script'])->name('rental_widget.script');
+
+	// Бронирование гостем из таймлайна (форма в виджете): POST с CORS, страница статуса заказа по токену
+	Route::options('/api/widget/rental-timeline/book', [\App\Http\Controllers\RentalBookingPublicController::class, 'preflight']);
+	Route::post('/api/widget/rental-timeline/book', [\App\Http\Controllers\RentalBookingPublicController::class, 'store'])
+		->middleware('throttle:30,1')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])->name('rental_booking.store');
+	Route::get('/widget/rental-booking/{token}', [\App\Http\Controllers\RentalBookingPublicController::class, 'status'])->where('token', '[A-Za-z0-9]{40}')->name('rental_booking.status');
+	Route::post('/widget/rental-booking/{token}/pay', [\App\Http\Controllers\RentalBookingPublicController::class, 'pay'])->where('token', '[A-Za-z0-9]{40}')->name('rental_booking.pay');
 
 	// Виджет «Таймлайн бронирования»: публичные адреса (iframe / JSON / JS)
 	Route::get('/widget/rental-timeline/{userId}', [\App\Http\Controllers\RentalTimelinePublicController::class, 'iframe'])->whereNumber('userId')->name('rental_timeline.iframe');

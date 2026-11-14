@@ -65,6 +65,9 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
         'organizer_id' => $booking->user_id,
         'guest_name' => $booking->guest_name,
         'guest_phone' => $booking->guest_phone,
+        'guest_email' => $booking->guest_email,
+        'guest_comment' => $booking->guest_comment,
+        'order_token' => $booking->order_token,
         'title' => $booking->title,
         'color' => $booking->color,
         'event' => $booking->event,
@@ -115,7 +118,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                                 <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                             </div>
                             <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                             @if($row['event'])
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
@@ -151,7 +154,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                                 <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                             </div>
                             <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                             @if($row['event'])
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
@@ -180,7 +183,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                                 <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                     </div>
                     <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                    <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                    <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                     @if($row['event'])
                     <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                     @endif
