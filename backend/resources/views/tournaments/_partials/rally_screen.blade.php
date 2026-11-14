@@ -104,6 +104,40 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
 .rw-sidesw{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#2967BA;color:#fff;padding:12px 20px;border-radius:14px;font-size:17px;font-weight:700;z-index:10003;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 14px rgba(20,48,107,.35);text-align:center;max-width:90vw}
 .rw-sidesw.on{opacity:1}
+/* ===== Улучшения экрана ввода очков (мобильная эргономика) ===== */
+/* картинка-баннер раздела на рабочем экране судьи лишняя */
+.tournament-rally-page .top-section-img{display:none}
+.tournament-rally-page .top-section-txt{width:100%}
+@media(max-width:767px){.tournament-rally-page .top-section{padding-top:9rem}.tournament-rally-page .top-section-txt{padding-bottom:1.5rem}}
+/* плитка «Подаёт»: название команды целиком, подпись (капитан/игроки) отдельной строкой — без разрыва по слогам */
+#rw-live .rw-serve-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow-wrap:break-word;word-break:normal}
+#rw-live .rw-serve-btn span{text-transform:none;letter-spacing:0}
+/* мяч у подающей команды */
+.rw-srv-ball{display:inline-flex;color:#E7612F;vertical-align:-.15em}
+.rw-srv-ball .ball-ic{width:1.1em;height:1.1em}
+/* инструкции — раскрывающийся блок */
+.rw-howto{background:rgba(41,103,186,.06);border:1px solid rgba(41,103,186,.2);border-radius:12px;padding:0 12px}
+.rw-howto summary{cursor:pointer;font-weight:700;font-size:14px;padding:11px 0;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.rw-howto summary::-webkit-details-marker{display:none}
+.rw-howto summary::after{content:'▾';opacity:.6;transition:transform .2s}
+.rw-howto[open] summary::after{transform:rotate(180deg)}
+.rw-howto[open]{padding-bottom:6px}
+body.dark .rw-howto{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.14)}
+/* компактная полоса счёта сверху при прокрутке */
+.rw-scorebar{position:fixed;left:8px;right:8px;top:0;z-index:900;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid #B5C3D9;border-radius:14px;box-shadow:0 6px 20px rgba(20,48,107,.22);opacity:0;transform:translateY(-12px);pointer-events:none;transition:opacity .18s,transform .18s}
+.rw-scorebar.on{opacity:1;transform:none}
+.rw-sb-team{display:flex;align-items:center;gap:4px;font-weight:700;font-size:14px;min-width:0}
+.rw-sb-team--l{justify-content:flex-start}.rw-sb-team--r{justify-content:flex-end}
+.rw-sb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rw-sb-score{font-size:22px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.rw-sb-set{grid-column:1/-1;text-align:center;font-size:11px;opacity:.6;margin-top:-4px}
+body.dark .rw-scorebar{background:#222333;border-color:rgba(181,195,217,.35);color:#cacaca}
+/* таблица статистики: компактнее + подсказка прокрутки на узком экране */
+.rw-stats-table{font-size:12px}
+.rw-stats-table th,.rw-stats-table td{padding:.6rem .5rem}
+.rw-scroll-hint{display:none;text-align:center;font-size:11px;opacity:.55;padding:2px 0 8px}
+@media(max-width:600px){.rw-scroll-hint{display:block}}
+
 
 
 
@@ -747,3 +781,23 @@ window.RallyLive = (function () {
 @include('tournaments._partials.player_card_js')
 @include('tournaments._partials.beach_serve_js')
 @endif
+
+<script>
+/* Полоса счёта: показываем, когда шапка матча ушла за верх экрана; ставим ниже фиксированной шапки сайта. */
+(function () {
+	var live = document.getElementById('rw-live');
+	if (!live) return;
+	function upd() {
+		var bar = document.getElementById('rw-scorebar'), head = document.getElementById('rw-headcard');
+		if (!bar || !head) return;
+		var hdr = document.querySelector('.fix-header');
+		var top = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) + 6 : 6;
+		bar.style.top = top + 'px';
+		bar.classList.toggle('on', head.getBoundingClientRect().bottom < top);
+	}
+	window.addEventListener('scroll', upd, { passive: true });
+	window.addEventListener('resize', upd);
+	if (window.MutationObserver) new MutationObserver(upd).observe(live, { childList: true });
+	upd();
+})();
+</script>

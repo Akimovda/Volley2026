@@ -1162,4 +1162,6 @@ return [
     'lineup_btn_undo_short' => 'Отменить',
     'rally_btn_finalize_short' => 'Записать',
     'rally_btn_back' => 'Назад',
+    'rally_howto_title' => 'Как вносить очки',
+    'rally_scroll_hint' => 'листайте таблицу',
 ];

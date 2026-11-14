@@ -1143,4 +1143,6 @@ return [
     'lineup_btn_undo_short' => 'Undo',
     'rally_btn_finalize_short' => 'Save',
     'rally_btn_back' => 'Back',
+    'rally_howto_title' => 'How to record points',
+    'rally_scroll_hint' => 'scroll the table',
 ];
