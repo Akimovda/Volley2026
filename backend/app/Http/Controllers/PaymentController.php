@@ -74,6 +74,10 @@ class PaymentController extends Controller
                 $group = $booking && $booking->order_token
                     ? \App\Models\CourtBooking::where('order_token', $booking->order_token)->with('court.direction.location')->get()
                     : collect([$booking])->filter();
+                if ($booking && $booking->order_token) {
+                    app(\App\Services\RentalOrderMailer::class)->toClient('paid', $booking->order_token);
+                    app(\App\Services\RentalOrderMailer::class)->toOwner('owner_paid', $booking->order_token);
+                }
                 foreach ($group as $gb) {
                     if ($gb->court?->direction?->location?->owner_id) {
                         $this->notificationService->createCourtBookingPaidNotification(

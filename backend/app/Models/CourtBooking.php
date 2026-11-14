@@ -33,6 +33,7 @@ class CourtBooking extends Model
         'guest_phone',
         'guest_email',
         'guest_comment',
+        'guest_locale',
         'rental_client_id',
         'order_token',
         'title',

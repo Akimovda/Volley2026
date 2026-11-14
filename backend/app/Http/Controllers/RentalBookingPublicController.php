@@ -125,7 +125,7 @@ class RentalBookingPublicController extends Controller
         try {
             $created = $this->bookings->createGuestOrder((int) $widget->user_id, $items, [
                 'name' => trim(preg_replace('/\s+/u', ' ', $data['name'])), 'phone' => $data['phone'],
-                'email' => mb_strtolower(trim($data['email'])), 'comment' => $data['comment'] ?? null, 'consent' => true,
+                'email' => mb_strtolower(trim($data['email'])), 'comment' => $data['comment'] ?? null, 'consent' => true, 'locale' => $lang,
             ]);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage());
@@ -159,6 +159,12 @@ class RentalBookingPublicController extends Controller
 
                 return $this->fail(__('club.rb_pay_failed'), 502);
             }
+        }
+
+        if ($out['mode'] === 'request') {
+            $mailer = app(\App\Services\RentalOrderMailer::class);
+            $mailer->toClient('received', $first->order_token);
+            $mailer->toOwner('owner_new', $first->order_token);
         }
 
         return $this->cors(response()->json($out));

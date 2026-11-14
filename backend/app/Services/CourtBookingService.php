@@ -175,6 +175,7 @@ class CourtBookingService
                     'guest_phone'      => $client->phone,
                     'guest_email'      => $guest['email'],
                     'guest_comment'    => $guest['comment'] ?? null,
+                    'guest_locale'     => $guest['locale'] ?? null,
                     'rental_client_id' => $client->id,
                     'order_token'      => $token,
                     'starts_at'        => $it['starts_at'],

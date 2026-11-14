@@ -198,6 +198,10 @@ class ClubBookingController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        foreach (collect($result['cancelled'])->pluck('order_token')->filter()->unique() as $tok) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('cancelled', $tok, $data['reason'] ?? null);
+        }
+
         $notificationService = app(\App\Services\UserNotificationService::class);
         $refundedIds = $result['refunded_ids'];
         foreach ($result['cancelled'] as $b) {
@@ -230,6 +234,10 @@ class ClubBookingController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        if ($booking->order_token) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('confirmed', $booking->order_token);
+        }
+
         if ($booking->user_id) {
             app(\App\Services\UserNotificationService::class)
                 ->createCourtBookingConfirmedNotification($booking->user_id, $booking->load('court.direction.location'));
@@ -259,6 +267,10 @@ class ClubBookingController extends Controller
             }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($booking->order_token) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('rejected', $booking->order_token, $data['reason'] ?? null);
         }
 
         if ($notifyUserId) {
