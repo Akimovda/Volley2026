@@ -213,7 +213,7 @@
       var slotMin = +s.slot_minutes, clickable = s.click_mode !== 'none';
       var hl = '', axis = '';
       var tickStep = slotMin <= 30 ? 30 : 60, tm = Math.ceil(opens / tickStep) * tickStep;
-      var labelEvery = (tickStep * PX >= 22) ? 1 : 2;
+      var labelEvery = (tickStep * PX >= 14) ? 1 : 2;
       for (var ti = 0; tm <= closes; tm += tickStep, ti++) {
         var top = Math.round((tm - opens) * PX), isHour = tm % 60 === 0;
         hl += '<div class="vrt-hl' + (isHour ? '' : ' half') + '" style="top:' + top + 'px"></div>';
