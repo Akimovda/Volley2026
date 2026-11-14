@@ -194,6 +194,9 @@ return [
 
     // Duration short labels
     'dur_hours_short' => 'h',
+    'dur_days_full'   => ':count day|:count days',
+    'dur_hours_full'  => ':count hour|:count hours',
+    'dur_mins_full'   => ':count minute|:count minutes',
     'dur_min_short'   => 'm',
 
     // «Date at time» format for Carbon::translatedFormat (English letters must be escaped to be literal)

@@ -524,3 +524,28 @@ if (! function_exists('ico_svg')) {
     }
 }
 
+if (!function_exists('event_duration_label')) {
+    /**
+     * Длительность мероприятия в днях/часах/минутах: «5 дней 5 часов» (style=full) или «5 дн. 5 ч» (style=compact).
+     * Нулевые части пропускаются. Для длинных мероприятий (кемпы) вместо «120ч».
+     */
+    function event_duration_label(int $seconds, string $style = 'full'): string
+    {
+        $mins = max(0, intdiv($seconds, 60));
+        $d = intdiv($mins, 1440);
+        $h = intdiv($mins % 1440, 60);
+        $m = $mins % 60;
+        $parts = [];
+        if ($style === 'compact') {
+            if ($d > 0) $parts[] = $d . ' ' . __('events.dur_d_short');
+            if ($h > 0) $parts[] = $h . ' ' . __('events.dur_h_short');
+            if ($m > 0) $parts[] = $m . ' ' . __('events.dur_m_short');
+            return $parts ? implode(' ', $parts) : ('0 ' . __('events.dur_m_short'));
+        }
+        if ($d > 0) $parts[] = trans_choice('events.dur_days_full', $d, ['count' => $d]);
+        if ($h > 0) $parts[] = trans_choice('events.dur_hours_full', $h, ['count' => $h]);
+        if ($m > 0) $parts[] = trans_choice('events.dur_mins_full', $m, ['count' => $m]);
+        return $parts ? implode(' ', $parts) : trans_choice('events.dur_mins_full', 0, ['count' => 0]);
+    }
+}
+

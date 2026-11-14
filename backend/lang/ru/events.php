@@ -201,6 +201,9 @@ return [
 
     // Сокращения длительности
     'dur_hours_short' => 'ч',
+    'dur_days_full'   => ':count день|:count дня|:count дней',
+    'dur_hours_full'  => ':count час|:count часа|:count часов',
+    'dur_mins_full'   => ':count минута|:count минуты|:count минут',
     'dur_min_short'   => 'м',
 
     // Формат «дата в время» для Carbon::translatedFormat (литералы вне символов формата)

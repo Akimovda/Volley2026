@@ -245,7 +245,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$mins = intdiv((int)$occ->duration_sec, 60);
 			$h = intdiv($mins, 60);
 			$m = $mins % 60;
-			$durLabel = sprintf('%d:%02d', $h, $m);
+			$durLabel = $mins >= 1440 ? event_duration_label((int)$occ->duration_sec, 'compact') : sprintf('%d:%02d', $h, $m);
 			}
 			
 			if ($dir === 'beach') {

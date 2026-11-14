@@ -55,6 +55,10 @@ $m = $mins % 60;
 $dHr = __('events.dur_hours_short');
 $dMn = __('events.dur_min_short');
 $durationLabel = ($h > 0 ? "{$h}{$dHr} " : '') . ($m > 0 ? "{$m}{$dMn}" : ($h > 0 ? '' : "{$mins}{$dMn}"));
+// длинные мероприятия (кемпы, 24 ч и больше): «5 дней 5 часов» вместо «125ч»
+if ($mins >= 1440) {
+$durationLabel = event_duration_label($mins * 60, 'full');
+}
 }
 
 // =========================
