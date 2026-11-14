@@ -259,7 +259,7 @@
 													<div class="col-4">
 														
 														<label>{{ __('events.subtype_label') }}</label>
-														<select name="game_subtype" id="game_subtype" class="w-full rounded-lg border-gray-200">
+														<select name="game_subtype" id="game_subtype" data-initial="{{ old('game_subtype', $prefill['game_subtype'] ?? '') }}" class="w-full rounded-lg border-gray-200">
 															<!-- <option value="">{{ __('events.tournament_choose') }}</option> -->
 															<option value="4x4" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='4x4')>4×4</option>
 															<option value="4x2" @selected(old('game_subtype', $prefill['game_subtype'] ?? '4x2')==='4x2')>4-2</option>

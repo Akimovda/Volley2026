@@ -600,6 +600,14 @@ document.addEventListener("trix-file-accept", function (event) {
 			];
 		}
 		
+		// Восстановление черновика/копии: сервер рисует список только для классики, а сохранённое значение (например, пляжное 2x2)
+		// в нём отсутствует и подменяется первым вариантом — берём исходное значение, если оно есть в списке для текущего направления
+		var initialSubtype = gameSubtype.getAttribute('data-initial') || '';
+		if (initialSubtype) {
+			gameSubtype.removeAttribute('data-initial');
+			for (var k = 0; k < opts.length; k++) { if (opts[k].v === initialSubtype) { current = initialSubtype; break; } }
+		}
+		
 		gameSubtype.innerHTML = '';
 		for (var i = 0; i < opts.length; i++) {
 			var o = document.createElement('option');
