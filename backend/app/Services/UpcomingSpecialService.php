@@ -80,9 +80,11 @@ class UpcomingSpecialService
             if (!$event || isset($seen[$event->id])) {
                 continue;
             }
+            // свои мероприятия организатор видит в блоке, даже будучи записанным (организатор записывается автоматически) —
+            // скрыть их можно только крестиком
+            $isOwn = $userId > 0 && (int) $event->organizer_id === $userId;
             if (in_array((int) $event->id, $dismissed, true)
-                || in_array((int) $event->id, $joinedEventIds, true)
-                || in_array((int) $occ->id, $joinedOccIds, true)) {
+                || (!$isOwn && (in_array((int) $event->id, $joinedEventIds, true) || in_array((int) $occ->id, $joinedOccIds, true)))) {
                 continue;
             }
             $isTournament = !in_array($event->format, ['camp', 'master_class'], true);
