@@ -25,7 +25,7 @@ class RentalOrderMailer
     private function send(string $kind, string $orderToken, bool $owner, ?string $reason): void
     {
         try {
-            $first = CourtBooking::where('order_token', $orderToken)->with('court.direction.location.owner')->orderBy('id')->first();
+            $first = CourtBooking::where('order_token', $orderToken)->with('court.direction.location.owner', 'court.direction.location.city')->orderBy('id')->first();
             if (!$first) {
                 return;
             }
@@ -33,7 +33,9 @@ class RentalOrderMailer
             if (!$to || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
                 return;
             }
-            $lang = $owner ? 'ru' : ($first->guest_locale ?: 'ru');
+            // Язык: локация вне России → английский; в России — язык виджета гостя (по умолчанию русский).
+            $country = strtoupper((string) ($first->court?->direction?->location?->city?->country_code ?? 'RU'));
+            $lang = $country !== 'RU' ? 'en' : ($owner ? 'ru' : ($first->guest_locale ?: 'ru'));
             Mail::to($to)->queue(new RentalOrderMail($kind, $orderToken, $lang, $reason));
         } catch (\Throwable $e) {
             report($e);
