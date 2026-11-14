@@ -25,7 +25,29 @@ class PublishOccurrenceAnnouncementService
      * @param int|null $repostChannelId  повтор анонса (кемпы/мастер-классы/турниры): отправить НОВОЕ сообщение только в этот
      *                           канал; запись переходит на новое сообщение, чтобы дальше обновлялось оно. Прежнее остаётся в канале.
      */
+    /**
+     * Публикация/обновление анонса тура. Выполняется под блокировкой по туру: два одновременных задания (например, при создании
+     * мероприятия и его правке) раньше оба видели «записи ещё нет» и оба отправляли пост — второй пост оставался без записи в базе
+     * (нарушение уникальности) и больше не обновлялся. Теперь второе задание ждёт первое, видит запись и просто обновляет/пропускает.
+     */
     public function publish(EventOccurrence $occurrence, bool $refreshOnly = false, ?int $repostChannelId = null): void
+    {
+        $lock = \Illuminate\Support\Facades\Cache::lock('announce-publish:' . $occurrence->id, 120);
+        try {
+            $lock->block(90);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            Log::warning('PublishOccurrenceAnnouncement: lock timeout', ['occurrence_id' => $occurrence->id]);
+            return;
+        }
+
+        try {
+            $this->publishLocked($occurrence, $refreshOnly, $repostChannelId);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function publishLocked(EventOccurrence $occurrence, bool $refreshOnly = false, ?int $repostChannelId = null): void
     {
         $event = $occurrence->event()
             ->with([
