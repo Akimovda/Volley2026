@@ -12,11 +12,16 @@
 <div class="container">
     @if(session('success'))<div class="alert alert-success">{{ session('success') }}</div>@endif
     <div class="card">
-        <form method="GET" action="{{ route('club.clients.index') }}" class="mb-2" style="display:flex;gap:8px;flex-wrap:wrap">
-            <input type="text" name="q" value="{{ $q }}" placeholder="{{ __('club.clients_search') }}" style="max-width:320px">
-            <button class="btn btn-secondary" type="submit">{{ __('club.clients_find') }}</button>
-            <a class="btn btn-secondary" href="{{ route('club.bookings.index') }}">{{ __('club.bookings_title') }}</a>
+        <style>
+            .cl-search{display:grid;grid-template-columns:1fr auto;gap:10px;margin-bottom:12px}
+            .cl-search input{min-width:0}
+            .cl-back{margin-bottom:12px}
+        </style>
+        <form method="GET" action="{{ route('club.clients.index') }}" class="cl-search">
+            <input type="text" name="q" value="{{ $q }}" placeholder="{{ __('club.clients_search') }}">
+            <button class="btn btn-small btn-primary" type="submit">{{ __('club.clients_find') }}</button>
         </form>
+        <div class="cl-back"><a class="btn btn-small btn-outline" href="{{ route('club.bookings.index') }}"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</a></div>
         <p class="f-13 cd">{{ __('club.clients_hint') }}</p>
         @if($clients->isEmpty())
             <div class="alert alert-info">{{ __('club.clients_empty') }}</div>
@@ -39,12 +44,12 @@
                         <td>
                             <form method="POST" action="{{ route('club.clients.update', $c) }}" style="display:flex;gap:6px">@csrf @method('PUT')
                                 <input type="text" name="notes" value="{{ $c->notes }}" maxlength="1000" style="min-width:160px">
-                                <button class="btn btn-small btn-secondary" type="submit">{{ __('club.clients_save') }}</button>
+                                <button class="btn btn-small btn-outline" type="submit">{{ __('club.clients_save') }}</button>
                             </form>
                         </td>
                         <td>
                             <form method="POST" action="{{ route('club.clients.destroy', $c) }}" onsubmit="return confirm('{{ __('club.clients_delete_confirm') }}')">@csrf @method('DELETE')
-                                <button class="btn btn-small btn-secondary" type="submit">{{ __('club.clients_delete') }}</button>
+                                <button class="btn btn-small btn-outline-danger" type="submit">{{ __('club.clients_delete') }}</button>
                             </form>
                         </td>
                     </tr>

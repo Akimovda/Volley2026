@@ -99,13 +99,29 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
         @include('club._partials.timeline', ['locations' => $locations, 'showAddButton' => false])
         @endif
 
-        <div class="d-flex gap-1 mb-2" style="flex-wrap:wrap">
-            @if($locations->isNotEmpty())
-            <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
-            @endif
-            <button type="button" class="btn btn-small btn-primary" id="cbTabPending">{{ __('club.tab_pending') }} ({{ $pending->count() }})</button>
-            <button type="button" class="btn btn-small btn-secondary" id="cbTabActive">{{ __('club.tab_active') }} ({{ $active->count() }})</button>
-            <button type="button" class="btn btn-small btn-secondary" id="cbTabHistory">{{ __('club.tab_history') }} ({{ $history->count() }})</button>
+        <style>
+            .cb-actions{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+            .cb-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+            .cb-tabs .btn{white-space:normal;line-height:1.2;text-align:center;padding:.9rem .5rem}
+            .cb-top{display:flex;flex-wrap:wrap;gap:8px}
+            @media (min-width:768px){
+                .cb-actions{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}
+                .cb-tabs{display:flex;gap:8px}
+                .cb-tabs .btn{white-space:nowrap;padding:1rem}
+            }
+        </style>
+        <div class="cb-actions">
+            <div class="cb-top">
+                @if($locations->isNotEmpty())
+                <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
+                @endif
+                <a class="btn btn-small btn-outline" href="{{ route('club.clients.index') }}"><x-ico name="users" /> {{ __('club.clients_title') }}</a>
+            </div>
+            <div class="cb-tabs">
+                <button type="button" class="btn btn-small btn-primary" id="cbTabPending">{{ __('club.tab_pending') }} ({{ $pending->count() }})</button>
+                <button type="button" class="btn btn-small btn-outline" id="cbTabActive">{{ __('club.tab_active') }} ({{ $active->count() }})</button>
+                <button type="button" class="btn btn-small btn-outline" id="cbTabHistory">{{ __('club.tab_history') }} ({{ $history->count() }})</button>
+            </div>
         </div>
 
         <div id="cbPanelPending">
@@ -210,7 +226,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusI
                     var isActive = k === key;
                     tabs[k].panel.style.display = isActive ? '' : 'none';
                     tabs[k].btn.classList.toggle('btn-primary', isActive);
-                    tabs[k].btn.classList.toggle('btn-secondary', !isActive);
+                    tabs[k].btn.classList.toggle('btn-outline', !isActive);
                 });
             }
             tabs.pending.btn.addEventListener('click', function () { selectTab('pending'); });

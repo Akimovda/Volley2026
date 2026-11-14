@@ -16,6 +16,18 @@
     $showAddButton = $showAddButton ?? true;
 @endphp
 
+<style>
+    #timelineSection .tl-bar{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    #timelineSection .tl-nav{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;width:100%}
+    #timelineSection .tl-nav-center{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+    #timelineSection .tl-nav-center input{max-width:100%}
+    #timelineSection .tl-mode{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+    @media (min-width:768px){
+        #timelineSection .tl-nav{display:flex;width:auto}
+        #timelineSection .tl-nav-center{flex-direction:row;gap:10px}
+        #timelineSection .tl-mode{display:flex;width:auto}
+    }
+</style>
 <div class="ramka" id="timelineSection">
     <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
         <h2 class="-mt-05" style="margin:0">{{ __('club.timeline') }}</h2>
@@ -24,7 +36,7 @@
             <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
             @endif
             <button type="button" class="btn btn-small btn-primary" id="tlSwitchList">{{ __('club.list_view') }}</button>
-            <button type="button" class="btn btn-small btn-secondary" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
+            <button type="button" class="btn btn-small btn-outline" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
         </div>
     </div>
 
@@ -41,16 +53,18 @@
     @endif
 
     <div id="timelinePanel">
-        <div class="d-flex between fvc mb-2" style="flex-wrap:wrap;gap:10px">
-            <div class="d-flex gap-1 fvc" style="flex-wrap:wrap">
-                <button type="button" class="btn btn-small btn-secondary" id="tlPrev">{{ __('club.yesterday') }}</button>
-                <span class="b-600" id="tlCurrentLabel">{{ __('club.today') }}</span>
-                <input type="date" id="tlDatePicker" class="btn-small">
-                <button type="button" class="btn btn-small btn-secondary" id="tlNext">{{ __('club.tomorrow') }}</button>
+        <div class="tl-bar">
+            <div class="tl-nav">
+                <button type="button" class="btn btn-small btn-outline" id="tlPrev">{{ __('club.yesterday') }}</button>
+                <div class="tl-nav-center">
+                    <span class="b-600" id="tlCurrentLabel">{{ __('club.today') }}</span>
+                    <input type="date" id="tlDatePicker" class="btn-small">
+                </div>
+                <button type="button" class="btn btn-small btn-outline" id="tlNext">{{ __('club.tomorrow') }}</button>
             </div>
-            <div class="d-flex gap-1" id="tlModeToggleWrap">
+            <div class="tl-mode" id="tlModeToggleWrap">
                 <button type="button" class="btn btn-small btn-primary" id="tlModeDay">{{ __('club.day_view') }}</button>
-                <button type="button" class="btn btn-small btn-secondary" id="tlModeWeek">{{ __('club.week_view') }}</button>
+                <button type="button" class="btn btn-small btn-outline" id="tlModeWeek">{{ __('club.week_view') }}</button>
             </div>
         </div>
 
@@ -178,8 +192,8 @@
     }
 
     function setActive(btnActive, btnInactive) {
-        btnActive.classList.remove('btn-secondary'); btnActive.classList.add('btn-primary');
-        btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-secondary');
+        btnActive.classList.remove('btn-outline'); btnActive.classList.add('btn-primary');
+        btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-outline');
     }
 
     // Режим "Список" — брони+события выбранного дня одним списком по времени
@@ -521,7 +535,7 @@
             } else {
                 const link = document.createElement('a');
                 link.href = '/events/' + slot.event_id;
-                link.className = 'btn btn-small btn-secondary';
+                link.className = 'btn btn-small btn-outline';
                 link.textContent = openEventLabel;
                 card.querySelector('.timeline-list-actions').appendChild(link);
             }
