@@ -109,8 +109,11 @@
         .tv-lpill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.08); font-weight: 700; letter-spacing: .02em; }
         .tv-lpill--live { background: #dc2626; color: #fff; }
         .tv-ldot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: pulse 1.4s infinite; }
-        .tv-lrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
-        .tv-lteam { min-width: 0; text-align: center; font-weight: 800; font-size: clamp(22px, 2.4vw, 40px); line-height: 1.1; overflow-wrap: anywhere; }
+        .tv-lrow { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "h a" "s s"; align-items: center; row-gap: 6px; column-gap: 20px; }
+        .tv-lrow .rw-flipscore { grid-area: s; justify-self: center; }
+        .tv-lteam--home { grid-area: h; } .tv-lteam--away { grid-area: a; }
+        .tv-lteam { min-width: 0; text-align: center; font-weight: 800; font-size: clamp(22px, 2.3vw, 42px); line-height: 1.1; overflow-wrap: break-word; word-break: normal; }
+        .tv-live-strip .rw-flipscore--tv { font-size: clamp(52px, 6.4vw, 120px); }
         .tv-lteam--home { color: #ff7a7a; }
         .tv-lteam--away { color: #7db4ff; }
         .tv-lsets { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; font-size: 15px; opacity: .9; }
@@ -119,8 +122,8 @@
         @media (max-width: 768px) {
             .tv-main { height: auto; }
             .tv-live-strip { padding: 14px 16px 0; grid-template-columns: 1fr; }
-            .tv-lrow { grid-template-columns: 1fr; gap: 8px; }
-            .tv-lrow .rw-flipscore { justify-self: center; order: -1; font-size: clamp(48px, 16vw, 80px); }
+            .tv-lrow { gap: 8px; }
+            .tv-live-strip .rw-flipscore--tv { font-size: clamp(44px, 15vw, 76px); }
         }
 
         .updated-flash { animation: flash .5s ease; }
