@@ -739,7 +739,11 @@ if ($role === 'admin') {
 
         $durationSec = ((int)($data['duration_hours'] ?? 0)) * 3600
                      + ((int)($data['duration_minutes'] ?? 0)) * 60;
-        if ($durationSec <= 0) {
+        $currentDuration = (int) ($occurrence->duration_sec ?: ($event->duration_sec ?: 0));
+        if ($currentDuration >= 86400) {
+            // форма тура выражает длительность только часами/минутами (до 12 ч): у кемпов/многодневных не затираем прежнюю
+            $durationSec = $currentDuration;
+        } elseif ($durationSec <= 0) {
             $durationSec = $occurrence->duration_sec ?: ($event->duration_sec ?: 7200);
         }
 
