@@ -683,6 +683,11 @@
 								<div class="col-md-4">
 									@php
 									$userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
+									// old('event_photos') приходит JSON-СТРОКОЙ из скрытого поля (и из черновика) — раскодировать до массива id,
+									// иначе строка кодируется повторно и разваливается на отдельные символы
+									$__selPhotos = old('event_photos', $eventPhotos ?? []);
+									for ($__i = 0; $__i < 3 && is_string($__selPhotos); $__i++) { $__selPhotos = json_decode($__selPhotos, true) ?? []; }
+									$__selPhotos = array_values(array_unique(array_filter(array_map('intval', (array) $__selPhotos), fn ($n) => $n > 0)));
 									@endphp
 
 									<div class="card">
@@ -693,7 +698,7 @@
 										</div>
 
 										<div class="event-photos-selector"
-											data-selected='{{ json_encode(old('event_photos', $eventPhotos ?? [])) }}'
+											data-selected='{{ json_encode($__selPhotos) }}'
 											id="event-photos-swiper-wrap"
 											@if($userEventPhotos->count() === 0) style="display:none" @endif>
 											<div class="swiper eventPhotosSwiper">
@@ -748,8 +753,14 @@
 										@endif
 
 										const selectorEl = document.querySelector('.event-photos-selector');
-										const savedPhotos = JSON.parse(selectorEl ? selectorEl.dataset.selected || '[]' : '[]');
-										let selectedPhotos = [...savedPhotos];
+										// защита от «испорченных» значений (двойное кодирование в старых черновиках): только числовые id существующих фото
+										function normalizePhotoIds(v) {
+											for (let i = 0; i < 3 && typeof v === 'string'; i++) { try { v = JSON.parse(v); } catch (e) { v = []; } }
+											return Array.isArray(v) ? v.map(x => parseInt(x)).filter(n => n > 0) : [];
+										}
+										const availablePhotoIds = new Set(Array.from(document.querySelectorAll('.photo-select')).map(c => parseInt(c.value)));
+										const savedPhotos = normalizePhotoIds(selectorEl ? selectorEl.dataset.selected || '[]' : '[]');
+										let selectedPhotos = Array.from(new Set(savedPhotos.filter(id => availablePhotoIds.has(id)))).slice(0, 10);
 										const photoSelectLabel = @json(__('events.photo_select'));
 										const photoMainLabel   = @json(__('events.photo_main'));
 										const photoPosLabel    = @json(__('events.photo_pos_n', ['n' => '']));
