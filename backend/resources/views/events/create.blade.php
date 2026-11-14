@@ -723,27 +723,30 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function (e) {
         var btn = form.querySelector('button[type="submit"]');
         if (!btn) return;
-        // валидация шага могла отменить отправку — кнопку не блокируем
-        if (e.defaultPrevented) return;
         if (btn.dataset.submitted === 'true') {
             e.preventDefault();
             return;
         }
-        btn.dataset.origText = btn.textContent;
-        btn.dataset.submitted = 'true';
-        btn.disabled = true;
-        btn.textContent = txtSaving;
+        // Валидаторы (тренер, шаги) могут отменить отправку уже ПОСЛЕ этого обработчика (он стоит раньше в очереди),
+        // поэтому блокируем кнопку и заводим таймер только если отправка действительно состоялась.
+        setTimeout(function () {
+            if (e.defaultPrevented) return;
+            btn.dataset.origText = btn.textContent;
+            btn.dataset.submitted = 'true';
+            btn.disabled = true;
+            btn.textContent = txtSaving;
 
-        // Если ответа нет слишком долго (обрыв сети, зависший WebView) — не оставляем
-        // человека с вечным «Сохранение...»: данные формы на странице целы, можно повторить.
-        timer = setTimeout(function () {
-            unlock(btn);
-            if (window.swal) {
-                swal({ text: txtStuck, icon: 'warning' });
-            } else {
-                alert(txtStuck);
-            }
-        }, SAVE_TIMEOUT_MS);
+            // Если ответа нет слишком долго (обрыв сети, зависший WebView) — не оставляем
+            // человека с вечным «Сохранение...»: данные формы на странице целы, можно повторить.
+            timer = setTimeout(function () {
+                unlock(btn);
+                if (window.swal) {
+                    swal({ text: txtStuck, icon: 'warning' });
+                } else {
+                    alert(txtStuck);
+                }
+            }, SAVE_TIMEOUT_MS);
+        }, 0);
     });
 
     // Возврат на страницу из bfcache (кнопка «назад») — иначе кнопка остаётся заблокированной
