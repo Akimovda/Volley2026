@@ -403,7 +403,7 @@
         @else
             <div class="tv-panel" style="flex:1;text-align:center;display:flex;align-items:center;justify-content:center">
                 <div>
-                    <div style="font-size:48px;margin-bottom:16px">🏐</div>
+                    <div style="font-size:48px;margin-bottom:16px;display:flex;justify-content:center"><x-ico name="ball" size="1em" /></div>
                     <div style="font-size:22px;font-weight:700">{{ __('tournaments.tv_starting_soon') }}</div>
                 </div>
             </div>

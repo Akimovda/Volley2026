@@ -193,7 +193,7 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .mc-net span{position:absolute;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:rgba(15,23,42,.7);color:#fff;padding:0 6px;border-radius:6px;top:-5px;line-height:1.5}
 .mc-title{font-weight:800;font-size:13px;text-align:center;margin:2px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mc-ball{opacity:0;margin-right:4px;transition:opacity .2s;display:inline-flex;vertical-align:-.15em}
-.ball-ic{width:1.05em;height:1.05em;display:inline-block;fill:none !important}
+.ball-ic{width:1.05em;height:1.05em;display:inline-flex;vertical-align:-.15em}.ball-ic svg{width:100%;height:100%;fill:currentColor;stroke:none}
 .mc-server-ic{display:inline-flex;vertical-align:-.15em;margin-right:4px}
 .mc-server--warn{color:#dc2626;font-weight:800}
 .ls-bi{display:inline-flex;vertical-align:-.15em}
