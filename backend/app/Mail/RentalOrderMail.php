@@ -25,11 +25,11 @@ class RentalOrderMail extends Mailable implements ShouldQueue
         public ?string $reason = null,
     ) {
         $this->afterCommit();
+        $this->locale($lang);
     }
 
     public function build(): static
     {
-        $this->locale($this->lang);
         $bookings = CourtBooking::where('order_token', $this->orderToken)
             ->with('court.direction.location')->orderBy('starts_at')->orderBy('court_id')->get();
         $first = $bookings->first();
