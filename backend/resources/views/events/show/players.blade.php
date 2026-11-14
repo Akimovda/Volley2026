@@ -899,6 +899,19 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 		$subtype         = (string)($gs->subtype ?? '');
 		$isPair          = $subtype === '2x2';
 		$inviteLabel     = $isPair ? __('events.show_pl_invite_mode_pair') : __('events.show_pl_invite_mode_team');
+		// кого текущий пользователь уже пригласил на этот тур (приглашение = уведомление event_invite): показываем пилюлями вместо подсказки
+		$invitedUsers = collect();
+		if (auth()->check()) {
+			$invitedIds = \Illuminate\Support\Facades\DB::table('user_notifications')
+				->where('type', 'event_invite')
+				->whereRaw("(payload->>'occurrence_id') = ?", [(string) $occurrence->id])
+				->whereRaw("(payload->>'from_user_id') = ?", [(string) auth()->id()])
+				->orderByDesc('id')->limit(100)->pluck('user_id')->unique()->values();
+			if ($invitedIds->isNotEmpty()) {
+				$invitedUsers = \App\Models\User::query()->whereIn('id', $invitedIds)->get(['id', 'first_name', 'last_name', 'name'])
+					->sortBy(fn ($u) => $invitedIds->search($u->id))->values();
+			}
+		}
 		@endphp
 	
 		<div class="ramka" id="invite-players-block" style="z-index:5;display:{{ $isRegistered ? '' : 'none' }}">
@@ -922,9 +935,21 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 			
 			{{-- === БЛОК: Пригласить на игру === --}}
 			<div id="invite-game-block">
+				@if($invitedUsers->isNotEmpty())
+				<div class="mb-2" id="invite-sent-pills">
+					<div class="text-muted small mb-1">{{ __('events.show_pl_invite_sent_label') }}</div>
+					<div style="display:flex;flex-wrap:wrap;gap:.6rem">
+						@foreach($invitedUsers as $iu)
+						@php $iuName = trim(($iu->last_name ?? '') . ' ' . ($iu->first_name ?? '')) ?: ($iu->name ?: ('#' . $iu->id)); @endphp
+						<span class="badge badge-sm" style="font-size:1.3rem;padding:.5rem 1.1rem">{{ $iuName }}</span>
+						@endforeach
+					</div>
+				</div>
+				@else
 				<div class="text-muted small mb-2">
 					{{ __('events.show_pl_invite_game_hint') }}
 				</div>
+				@endif
 				<form class="form w-100" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
 					@csrf
 					<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
@@ -935,7 +960,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 							placeholder="{{ __('events.show_pl_invite_search_ph') }}">
 							<div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
 						</div>
-						<button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
+						<button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled title="{{ __('events.show_pl_invite_pick_hint') }}">
 							{{ __('events.show_pl_invite_send') }}
 						</button>
 					</div>

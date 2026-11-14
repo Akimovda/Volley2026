@@ -376,6 +376,8 @@ return [
     'show_pl_invite_mode_pair'    => 'В пару',
     'show_pl_invite_mode_team'    => 'В команду',
     'show_pl_invite_game_hint'    => 'Игрок получит уведомление с информацией о мероприятии и ссылкой для записи.',
+    'show_pl_invite_sent_label'   => 'Приглашены:',
+    'show_pl_invite_pick_hint'    => 'Найдите игрока по имени и выберите его в списке — кнопка станет активной',
     'show_pl_invite_search_ph'    => 'Введите имя или email игрока…',
     'show_pl_invite_send'         => 'Отправить приглашения',
     'show_pl_group_pair_lineup'   => 'Состав пары',

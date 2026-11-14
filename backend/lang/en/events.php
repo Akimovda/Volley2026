@@ -369,6 +369,8 @@ return [
     'show_pl_invite_mode_pair'    => 'To the pair',
     'show_pl_invite_mode_team'    => 'To the team',
     'show_pl_invite_game_hint'    => 'The player will receive a notification with event details and a registration link.',
+    'show_pl_invite_sent_label'   => 'Invited:',
+    'show_pl_invite_pick_hint'    => 'Find a player by name and pick them from the list — the button will become active',
     'show_pl_invite_search_ph'    => 'Enter player name or email…',
     'show_pl_invite_send'         => 'Send invitations',
     'show_pl_group_pair_lineup'   => 'Pair lineup',
