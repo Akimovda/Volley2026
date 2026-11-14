@@ -112,6 +112,8 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 /* плитка «Подаёт»: название команды целиком, подпись (капитан/игроки) отдельной строкой — без разрыва по слогам */
 #rw-live .rw-serve-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow-wrap:break-word;word-break:normal}
 #rw-live .rw-serve-btn span{text-transform:none;letter-spacing:0}
+/* счёт в шапке матча — вдвое крупнее прежнего (было 24px); на узком экране ужимается, чтобы двузначный счёт не ломал строку */
+.rw-bigscore{font-size:clamp(34px,12vw,48px);line-height:1;white-space:nowrap;letter-spacing:.02em}
 /* мяч у подающей команды */
 .rw-srv-ball{display:inline-flex;color:#E7612F;vertical-align:-.15em}
 .rw-srv-ball .ball-ic{width:1.1em;height:1.1em}

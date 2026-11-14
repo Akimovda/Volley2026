@@ -151,7 +151,7 @@
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
 					@endunless
 				</div>
-				<div class="f-24 b-800 px-2">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
+				<div class="b-800 px-2 rw-bigscore">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
 				<div style="flex:1">
 					<div class="b-700 f-18">@if($servingSide === 'away')<span class="rw-srv-ball" title="{{ __('tournaments.so_serving') }}">@include('tournaments._partials.ball_icon')</span> @endif @include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
 					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamAway))
