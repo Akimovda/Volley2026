@@ -184,6 +184,12 @@ body.dark .bk-match{background:linear-gradient(#1e293b,#18222f)}
 body.dark .bk-header{background:linear-gradient(90deg,rgba(59,130,246,.14),rgba(59,130,246,0));color:#94a3b8}
 body.dark .bk-team--win{background:linear-gradient(90deg,rgba(16,185,129,.22),rgba(16,185,129,.04))}
 body.dark .bk-col-label--final{color:#fbbf24}
+
+/* подписи источника: «Гр. A · 1 место» цветом группы; «Победитель матча N» в пустых слотах */
+.bk-nameline{display:flex;align-items:center;gap:8px;min-width:0}
+.bk-nameline .bk-team-name-link{flex:1;min-width:0}
+.bk-src{display:inline-flex;align-items:center;flex-shrink:0;background:var(--gc,#64748b);color:#fff;border-radius:6px;padding:1px 7px;font-size:.62rem;font-weight:700;letter-spacing:.02em;line-height:1.5;white-space:nowrap}
+.bk-src--line{align-self:flex-start;margin-bottom:1px}
 </style>
 @endonce
 
@@ -217,6 +223,38 @@ $isThirdPlaceMatch = function ($m) {
 };
 $thirdPlace  = $matches->first($isThirdPlaceMatch);
 $mainMatches = $matches->reject(fn($m) => $thirdPlace && $m->id === $thirdPlace->id);
+
+// Откуда команда: место в группе (из группового этапа того же тура) — подпись «Гр. A · 1 место» цветом группы,
+// как «Winners Group A» в футбольных сетках. Работает и для уже созданных турниров (берём из таблиц групп).
+$groupPalette = ['#7c3aed', '#0d9488', '#dc2626', '#d97706', '#16a34a', '#2563eb', '#db2777', '#0891b2'];
+$teamSource = [];
+$__groupStageIds = \App\Models\TournamentStage::query()
+    ->where('event_id', $stage->event_id)
+    ->when($stage->occurrence_id, fn ($q) => $q->where('occurrence_id', $stage->occurrence_id), fn ($q) => $q->whereNull('occurrence_id'))
+    ->where('id', '!=', $stage->id)
+    ->whereHas('groups')
+    ->pluck('id');
+if ($__groupStageIds->isNotEmpty()) {
+    $__groups = \App\Models\TournamentGroup::whereIn('stage_id', $__groupStageIds)->orderBy('sort_order')->get()->keyBy('id');
+    $__groupIdx = $__groups->keys()->flip();
+    \App\Models\TournamentStanding::whereIn('stage_id', $__groupStageIds)->whereNotNull('group_id')->get(['team_id', 'group_id', 'rank'])
+        ->each(function ($st) use (&$teamSource, $__groups, $__groupIdx, $groupPalette) {
+            $g = $__groups->get($st->group_id);
+            if ($g && $st->rank) {
+                $teamSource[$st->team_id] = ['group' => (string) $g->name, 'rank' => (int) $st->rank, 'color' => $groupPalette[($__groupIdx[$st->group_id] ?? 0) % count($groupPalette)]];
+            }
+        });
+}
+// Для пустых слотов (команда ещё не известна): «Победитель матча N» / «Проигравший матча N» по связям next_match / loser_next_match
+$slotFrom = [];
+foreach ($matches as $__f) {
+    if ($__f->next_match_id && $__f->next_match_slot) {
+        $slotFrom[$__f->next_match_id][$__f->next_match_slot] = ['win', $__f->match_number];
+    }
+    if ($__f->loser_next_match_id && $__f->loser_next_match_slot) {
+        $slotFrom[$__f->loser_next_match_id][$__f->loser_next_match_slot] = ['lose', $__f->match_number];
+    }
+}
 
 // double_elim: раскладка в одну линию колонок по глобальному round (как для
 // single_elim ниже) визуально разъезжается — upper/lower идут вперемешку одна
@@ -266,8 +304,9 @@ $initials = function(?string $first, ?string $last): string {
 };
 
 // Отрисовка секции команды (home или away)
-$renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isCompleted, string $side = 'home') use ($avatarColor, $initials): string {
+$renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isCompleted, string $side = 'home', ?string $tbdLabel = null) use ($avatarColor, $initials, $teamSource): string {
     $html  = '<div class="bk-team' . ($isWinner ? ' bk-team--win' : '') . '">';
+    $src = $team ? ($teamSource[$team->id] ?? null) : null;
 
     if ($team && $team->team_kind === 'classic_team') {
         // Классика: название команды (ссылка на состав) + капитан отдельной строкой
@@ -275,7 +314,11 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
         $captain = $team->captain;
 
         $html .= '<div class="bk-team-classic">';
-        $html .= '<a href="' . e($teamUrl) . '" class="bk-team-name-link">' . e($team->name ?: '?') . '</a>';
+        $html .= '<div class="bk-nameline"><a href="' . e($teamUrl) . '" class="bk-team-name-link">' . e($team->name ?: '?') . '</a>';
+        if ($src) {
+            $html .= '<span class="bk-src" style="--gc:' . $src['color'] . '">' . e(__('tournaments.bk_src', ['group' => $src['group'], 'place' => $src['rank']])) . '</span>';
+        }
+        $html .= '</div>';
 
         if ($captain) {
             $first    = $captain->first_name ?? '';
@@ -299,6 +342,9 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
         $html .= '</div>'; // .bk-team-classic
     } else {
         $html .= '<div class="bk-players">';
+        if ($src) {
+            $html .= '<span class="bk-src bk-src--line" style="--gc:' . $src['color'] . '">' . e(__('tournaments.bk_src', ['group' => $src['group'], 'place' => $src['rank']])) . '</span>';
+        }
 
         if ($team) {
             // Пляжка: до 2 участников пары, капитан первым
@@ -331,7 +377,7 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
             // TBD
             $html .= '<div class="bk-player">';
             $html .= '<div class="bk-player-avatar bk-player-avatar--initials" style="background:#e5e7eb;color:#9ca3af">?</div>';
-            $html .= '<span class="bk-player-name bk-player-name--tbd">TBD</span>';
+            $html .= '<span class="bk-player-name bk-player-name--tbd">' . e($tbdLabel ?: 'TBD') . '</span>';
             $html .= '</div>';
         }
 
@@ -351,7 +397,12 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
 // Отрисовка одной карточки матча (шапка + обе команды/счёт) — вынесено из
 // прежнего инлайн-@foreach, чтобы переиспользовать без дублирования разметки
 // и для single_elim (одна секция), и для double_elim (upper/lower/GF секции).
-$renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam, $isThirdPlaceMatch, $totalRounds): string {
+$renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam, $isThirdPlaceMatch, $totalRounds, $slotFrom): string {
+    $tbdFor = function (string $slot) use ($m, $slotFrom): ?string {
+        $f = $slotFrom[$m->id][$slot] ?? null;
+        return $f ? __('tournaments.' . ($f[0] === 'win' ? 'bk_winner_of' : 'bk_loser_of'), ['n' => $f[1]]) : null;
+    };
+    $when = $m->scheduled_at ? $m->scheduled_at->setTimezone($tz)->format('d.m H:i') : '';
     $isCompleted = $m->status === 'completed';
     // Bracket reset: GF2 cancelled = reset не потребовался (upper-представитель
     // выиграл GF1 напрямую) — это не "матч ожидает команды" (bk-match--empty),
@@ -365,7 +416,7 @@ $renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam, $isT
     elseif (!$m->team_home_id || !$m->team_away_id)  $cls .= ' bk-match--empty';
     if ($m->status === 'live')                       $cls .= ' bk-match--live';
 
-    $html = '<div class="' . $cls . '" data-match-id="' . $m->id . '" data-next-match-id="' . e($m->next_match_id) . '">';
+    $html = '<div class="' . $cls . '" data-match-id="' . $m->id . '" data-next-match-id="' . e($m->next_match_id) . '" data-when="' . e($when) . '">';
     $html .= '<div class="bk-header">';
     $html .= '<span>Матч&thinsp;' . e($m->match_number) . '</span>';
     if ($m->court)         $html .= '<span class="bk-court">' . e($courtLabel($m->court)) . '</span>';
@@ -377,8 +428,8 @@ $renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam, $isT
     if ($isCancelled) {
         $html .= '<div class="bk-cancelled-note">Решающий матч не потребовался</div>';
     } else {
-        $html .= $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted, 'home');
-        $html .= $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted, 'away');
+        $html .= $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted, 'home', $tbdFor('home'));
+        $html .= $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted, 'away', $tbdFor('away'));
 
         // лента победителя: финал — «Чемпион», матч за 3-е место — «Бронза»
         if ($isCompleted && ($homeWin || $awayWin)) {
@@ -543,6 +594,9 @@ if ($isDoubleElim) {
     $c3 = $m3->status === 'completed';
     $h3 = $m3->winner_team_id && $m3->winner_team_id === $m3->team_home_id;
     $a3 = $m3->winner_team_id && $m3->winner_team_id === $m3->team_away_id;
+    $tbd3 = fn (string $slot) => isset($slotFrom[$m3->id][$slot])
+        ? __('tournaments.' . ($slotFrom[$m3->id][$slot][0] === 'win' ? 'bk_winner_of' : 'bk_loser_of'), ['n' => $slotFrom[$m3->id][$slot][1]])
+        : null;
     $cls3 = 'bk-match bk-match--third' . ($c3 ? ' bk-match--completed' : (!$m3->team_home_id || !$m3->team_away_id ? ' bk-match--empty' : ''));
 @endphp
 <div class="bk-third-section">
@@ -554,8 +608,8 @@ if ($isDoubleElim) {
             @if($m3->scheduled_at)<span class="bk-time">{{ $m3->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
             @if($c3)<span class="bk-check"><x-ico name="check" size="1em" /></span>@endif
         </div>
-        {!! $renderTeam($m3->teamHome, $h3, $c3 ? $m3->sets_home : null, $c3, 'home') !!}
-        {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3, 'away') !!}
+        {!! $renderTeam($m3->teamHome, $h3, $c3 ? $m3->sets_home : null, $c3, 'home', $tbd3('home')) !!}
+        {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3, 'away', $tbd3('away')) !!}
         @if($c3 && ($h3 || $a3))
         <div class="bk-ribbon bk-ribbon--bronze"><x-ico name="medal-bronze" size="1.15em" /><span>{{ __('tournaments.bk_bronze') }} · {{ ($h3 ? $m3->teamHome : $m3->teamAway)?->name }}</span></div>
         @endif
@@ -597,6 +651,7 @@ if ($isDoubleElim) {
         var svg = document.getElementById(svgId);
         if(!svg) return;
         svg.innerHTML = '';
+        inner.querySelectorAll('[data-match-id]').forEach(function(e){ e.__whenDrawn = false; });
 
         var iRect = inner.getBoundingClientRect();
         var dark  = document.body.classList.contains('dark');
@@ -617,13 +672,41 @@ if ($isDoubleElim) {
             var cx = (x2 - x1) * 0.46;
 
             var done = el.classList.contains('bk-match--completed');
+            // ортогональные линии с закруглёнными углами: от карточки вправо → вертикаль на середине зазора → в следующую карточку
+            var mx = x1 + (x2 - x1) / 2, r = Math.min(10, Math.abs(y2 - y1) / 2, (x2 - x1) / 4);
+            var dir = y2 >= y1 ? 1 : -1;
+            var d = (Math.abs(y2 - y1) < 2)
+                ? 'M ' + x1 + ' ' + y1 + ' L ' + x2 + ' ' + y2
+                : 'M ' + x1 + ' ' + y1 + ' L ' + (mx - r) + ' ' + y1 +
+                  ' Q ' + mx + ' ' + y1 + ' ' + mx + ' ' + (y1 + dir * r) +
+                  ' L ' + mx + ' ' + (y2 - dir * r) +
+                  ' Q ' + mx + ' ' + y2 + ' ' + (mx + r) + ' ' + y2 +
+                  ' L ' + x2 + ' ' + y2;
             var p = document.createElementNS('http://www.w3.org/2000/svg','path');
-            p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+cx)+' '+y1+' '+(x2-cx)+' '+y2+' '+x2+' '+y2);
+            p.setAttribute('d', d);
             p.setAttribute('fill','none');
             p.setAttribute('stroke', done ? (dark ? 'rgba(52,211,153,.7)' : 'rgba(16,185,129,.6)') : color);
             p.setAttribute('stroke-width', done ? '3' : '2');
             p.setAttribute('stroke-linecap','round');
+            p.setAttribute('stroke-linejoin','round');
             svg.appendChild(p);
+            // кружок-«узел» у выхода из карточки
+            var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+            dot.setAttribute('cx', x1); dot.setAttribute('cy', y1); dot.setAttribute('r', done ? '4' : '3');
+            dot.setAttribute('fill', done ? (dark ? 'rgba(52,211,153,.9)' : '#10b981') : (dark ? 'rgba(100,116,139,.7)' : 'rgba(0,0,0,.2)'));
+            svg.appendChild(dot);
+            // дата/время следующего матча — над входом в карточку (как дата на стыке линий в футбольных сетках), один раз на матч
+            var nextEl = map[nid], when = nextEl.getAttribute('data-when');
+            if (when && !nextEl.__whenDrawn) {
+                nextEl.__whenDrawn = true;
+                var t = document.createElementNS('http://www.w3.org/2000/svg','text');
+                t.setAttribute('x', x2 - 8); t.setAttribute('y', y2 - 7);
+                t.setAttribute('text-anchor','end');
+                t.setAttribute('font-size','11'); t.setAttribute('font-weight','600');
+                t.setAttribute('fill', dark ? '#94a3b8' : '#64748b');
+                t.textContent = when;
+                svg.appendChild(t);
+            }
         });
     }
     function draw(){
