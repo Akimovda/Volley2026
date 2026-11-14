@@ -5,6 +5,9 @@
 .rw-flipgroup{display:inline-flex;gap:.07em}
 .rw-flipscore--mini{font-size:24px;gap:.16em}
 .rw-flipscore--mini .rw-fd{box-shadow:0 1px 3px rgba(10,16,40,.35)}
+.rw-flipscore--sm{font-size:20px;gap:.16em}
+.rw-flipscore--sm .rw-fd{box-shadow:0 1px 2px rgba(10,16,40,.3)}
+.rw-flipscore--tv{font-size:clamp(56px,8vw,140px);gap:.2em}
 .rw-fcolon{font-weight:800;opacity:.5;font-size:.6em;line-height:1;padding-bottom:.08em}
 .rw-fd{position:relative;display:inline-block;width:.66em;height:1em;perspective:7em;color:#fff;font-weight:800;font-variant-numeric:tabular-nums;border-radius:.13em;box-shadow:0 .05em .16em rgba(10,16,40,.4)}
 .rw-fd i{font-style:normal;position:absolute;left:0;right:0;height:1em;line-height:1em;text-align:center}

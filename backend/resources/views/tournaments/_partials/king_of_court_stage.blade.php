@@ -116,13 +116,13 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 	<div class="card mt-2 p-3" style="text-align:center">
 		<div class="koc-vs-row">
 			<div class="koc-vs-side">
-				<div class="f-12" style="opacity:.6">👑 {{ __('tournaments.koc_lbl_king') }}</div>
+				<div class="f-12" style="opacity:.6"><x-ico name="crown" size="1em" /> {{ __('tournaments.koc_lbl_king') }}</div>
 				<div class="b-700 f-18">{{ $kocTeamsById->get($kocState['king_team_id'])?->name ?? '?' }}</div>
 				<div class="f-14">{{ (int) ($kocState['round_points'][$kocState['king_team_id']] ?? 0) }} {{ __('tournaments.pub_pts_label') }}</div>
 			</div>
 			<div class="koc-vs-divider"></div>
 			<div class="koc-vs-side">
-				<div class="f-12" style="opacity:.6">🙋 {{ __('tournaments.koc_lbl_challenger') }}</div>
+				<div class="f-12" style="opacity:.6"><x-ico name="hand" size="1em" /> {{ __('tournaments.koc_lbl_challenger') }}</div>
 				<div class="b-700 f-18">{{ $kocTeamsById->get($kocState['challenger_team_id'])?->name ?? '?' }}</div>
 			</div>
 		</div>
@@ -176,7 +176,7 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 	{{-- Итоговый лидерборд (без мест 1-2-3-4 — только рейтинг по очкам) --}}
 	@if($stage->isCompleted() && $kocStandings->isNotEmpty())
 	<div class="card mt-2 p-3">
-		<div class="b-700 f-16 mb-1">🏆 {{ __('tournaments.koc_lbl_final_standings') }}</div>
+		<div class="b-700 f-16 mb-1"><x-ico name="trophy" size="1.1em" /> {{ __('tournaments.koc_lbl_final_standings') }}</div>
 		<div class="table-scrollable">
 			<table class="table f-14">
 				<tbody>
@@ -203,7 +203,7 @@ $kocShowFormFinalBtn = $kocBatchId && $stage->isCompleted() && $batchInfo && $ba
 		<p class="f-16 mb-1">{{ __('tournaments.koc_hint_batch_completed') }}</p>
 		<form method="POST" action="{{ route('tournament.kingOfCourt.formFinal', $stage) }}">
 			@csrf
-			<button type="submit" class="btn btn-primary">🏆 {{ __('tournaments.koc_btn_form_final') }}</button>
+			<button type="submit" class="btn btn-primary"><x-ico name="trophy" size="1.1em" /> {{ __('tournaments.koc_btn_form_final') }}</button>
 		</form>
 	</div>
 	@endif

@@ -31,7 +31,7 @@ $top3 = $podiumItems->take(3);
 $rest = $podiumItems->slice(3);
 $byRank = $top3->keyBy('rank');
 $order = [2, 1, 3]; // визуальный порядок колонок: серебро - золото - бронза
-$medal = [1 => '🥇', 2 => '🥈', 3 => '🥉'];
+$medal = [1 => 'medal-gold', 2 => 'medal-silver', 3 => 'medal-bronze'];
 $cls   = [1 => 'podium-gold', 2 => 'podium-silver', 3 => 'podium-bronze'];
 @endphp
 
@@ -41,7 +41,7 @@ $cls   = [1 => 'podium-gold', 2 => 'podium-silver', 3 => 'podium-bronze'];
 	@php $s = $byRank->get($rank); @endphp
 	@if($s)
 	<div class="podium-col {{ $cls[$rank] }}">
-		<div class="podium-medal">{{ $medal[$rank] }}</div>
+		<div class="podium-medal"><x-ico :name="$medal[$rank]" size="1em" /></div>
 		<div class="podium-name">@include('tournaments._partials.team_name_link', ['team' => $s->team, 'fallback' => $s->team_name_fallback ?? null])</div>
 		<div class="podium-sub">@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'podium-sub-line'])</div>
 		@if($hasRecord($s))

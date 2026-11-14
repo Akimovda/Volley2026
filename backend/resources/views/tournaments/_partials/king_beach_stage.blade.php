@@ -266,7 +266,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 							<div style="min-width:0">
 								<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
 								<div class="f-13" style="opacity:.85">
-									<span style="color:{{ $kbGenderColor }};font-weight:700">{{ $kbGenderSign }}</span> ·
+									<span style="color:{{ $kbGenderColor }};font-weight:700"><x-ico :name="$p->gender === 'f' ? 'female' : 'male'" size="1em" /></span> ·
 									@if($kbLevel)
 									<span class="levelmark levelmark--event level-{{ $kbLevel }}">{{ level_name_short($kbLevel, $kbLevelScope) }}</span>
 									@else
@@ -326,7 +326,7 @@ $kbHasSpawnedDivisions = $stage->event->tournamentStages()
 											<div style="min-width:0">
 												<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
 												<div class="f-13" style="opacity:.85">
-													<span style="color:{{ $kbGenderColor2 }};font-weight:700">{{ $kbGenderSign2 }}</span>
+													<span style="color:{{ $kbGenderColor2 }};font-weight:700"><x-ico :name="$p->gender === 'f' ? 'female' : 'male'" size="1em" /></span>
 													@if($kbLevel2)
 													<span class="levelmark levelmark--event level-{{ $kbLevel2 }}">{{ level_name_short($kbLevel2, $kbLevelScope) }}</span>
 													@else

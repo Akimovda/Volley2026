@@ -1211,6 +1211,8 @@ Route::get('/organizer/{organizer}/tournaments', [TournamentPublicController::cl
 
 Route::get('/events/{event}/tournament/tv', [TournamentTvController::class, 'tv'])
     ->name('tournament.tv');
+Route::get('/events/{event}/tournament/tv/live', [TournamentTvController::class, 'tvLive'])
+    ->middleware('throttle:120,1')->name('tournament.tv.live');
 
 Route::get('/events/{event}/tournament/pdf/schedule', [TournamentTvController::class, 'pdfSchedule'])
     ->name('tournament.pdf.schedule');

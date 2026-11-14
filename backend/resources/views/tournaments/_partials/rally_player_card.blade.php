@@ -26,7 +26,7 @@ $genderSign = $player['gender'] === 'f' ? '♀' : ($player['gender'] === 'm' ? '
 		<div class="rp-player-name">{{ $player['name'] }}</div>
 		@if($genderSign || $positionLabel)
 		<div class="rp-player-meta">
-			@if($genderSign)<span>{{ $genderSign }}</span>@endif
+			@if($genderSign)<span><x-ico :name="$player['gender'] === 'f' ? 'female' : 'male'" size="1em" /></span>@endif
 			@if($genderSign && $positionLabel) · @endif
 			@if($positionLabel)<span>{{ $positionLabel }}</span>@endif
 		</div>

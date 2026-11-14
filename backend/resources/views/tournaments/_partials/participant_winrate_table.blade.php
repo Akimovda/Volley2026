@@ -13,7 +13,7 @@ $topPlayers = app(\App\Services\TournamentStatsService::class)->getTopPlayers($e
     <div class="b-700 f-16 mb-2">{{ __('tournaments.pub_player_ranking') }}</div>
 
     @if($topPlayers->isNotEmpty())
-    <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none">👆 {{ __('tournaments.pub_swipe_left_hint') }}</div>
+    <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none"><x-ico name="pointer" size="1em" /> {{ __('tournaments.pub_swipe_left_hint') }}</div>
     <style>
         @media (max-width:768px) { .d-none-desktop { display:block !important; } }
     </style>

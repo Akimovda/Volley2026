@@ -20,7 +20,7 @@ $direction = $ratingData['direction'];
     @if(empty($rows))
     <div class="f-13" style="opacity:.5">Нет данных. Статистика появится после первых сыгранных матчей.</div>
     @else
-    <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none">👆 {{ __('tournaments.pub_swipe_left_hint') }}</div>
+    <div class="d-none-desktop f-12 mb-1" style="opacity:.4;display:none"><x-ico name="pointer" size="1em" /> {{ __('tournaments.pub_swipe_left_hint') }}</div>
     <style>
         @media (max-width:768px) { .d-none-desktop { display:block !important; } }
     </style>
@@ -50,7 +50,7 @@ $direction = $ratingData['direction'];
                 <tr style="border-bottom:1px solid rgba(128,128,128,.1)">
                     <td class="p-1">
                         @if($i < 3)
-                        <span class="f-16">{{ ['🥇','🥈','🥉'][$i] }}</span>
+                        <span class="f-16"><x-ico :name="['medal-gold','medal-silver','medal-bronze'][$i]" size="1.2em" /></span>
                         @else
                         <span style="opacity:.5">{{ $i + 1 }}</span>
                         @endif
@@ -60,7 +60,7 @@ $direction = $ratingData['direction'];
                             <img src="{{ $r['user']?->profile_photo_url }}" alt="" loading="lazy" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0">
                             <a href="{{ route('users.show', $r['user_id']) }}" class="blink b-600">{{ $r['user']?->displayName() ?? '#' . $r['user_id'] }}</a>
                             @if($event->tournament_mvp_user_id && (int) $event->tournament_mvp_user_id === (int) $r['user_id'])
-                            <span class="f-13" title="MVP турнира (назначен организатором)">🏆 MVP</span>
+                            <span class="f-13" title="MVP турнира (назначен организатором)"><x-ico name="trophy" size="1em" /> MVP</span>
                             @endif
                         </div>
                     </td>

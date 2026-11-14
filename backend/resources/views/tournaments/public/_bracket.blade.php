@@ -329,7 +329,7 @@ $renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam): str
     $html .= '<span>Матч&thinsp;' . e($m->match_number) . '</span>';
     if ($m->court)         $html .= '<span class="bk-court">' . e($courtLabel($m->court)) . '</span>';
     if ($m->scheduled_at)  $html .= '<span class="bk-time">' . e($m->scheduled_at->setTimezone($tz)->format('H:i')) . '</span>';
-    if ($isCompleted)      $html .= '<span class="bk-check">✓</span>';
+    if ($isCompleted)      $html .= '<span class="bk-check">' . ico_svg('check', '1em') . '</span>';
     $html .= '</div>';
 
     if ($isCancelled) {
@@ -492,13 +492,13 @@ if ($isDoubleElim) {
     $cls3 = 'bk-match bk-match--third' . ($c3 ? ' bk-match--completed' : (!$m3->team_home_id || !$m3->team_away_id ? ' bk-match--empty' : ''));
 @endphp
 <div class="bk-third-section">
-    <div class="bk-third-section-label">🥉 Матч за 3-е место</div>
+    <div class="bk-third-section-label"><x-ico name="medal-bronze" size="1.1em" /> Матч за 3-е место</div>
     <div class="{{ $cls3 }}" style="max-width:244px">
         <div class="bk-header">
             <span>Матч&thinsp;{{ $m3->match_number }}</span>
             @if($m3->court)<span class="bk-court">{{ $courtLabel($m3->court) }}</span>@endif
             @if($m3->scheduled_at)<span class="bk-time">{{ $m3->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
-            @if($c3)<span class="bk-check">✓</span>@endif
+            @if($c3)<span class="bk-check"><x-ico name="check" size="1em" /></span>@endif
         </div>
         {!! $renderTeam($m3->teamHome, $h3, $c3 ? $m3->sets_home : null, $c3) !!}
         {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3) !!}
@@ -521,7 +521,7 @@ if ($isDoubleElim) {
 @endphp
 @if($deThirdPlaceEntry)
 <div class="bk-third-section">
-    <div class="bk-third-section-label">🥉 3-е место</div>
+    <div class="bk-third-section-label"><x-ico name="medal-bronze" size="1.1em" /> 3-е место</div>
     <div class="bk-third-place-name">{{ $deThirdPlaceEntry['team_name'] }}</div>
 </div>
 @endif

@@ -74,7 +74,7 @@
         }
         .tv-match .team { flex: 1; min-width: 0; overflow-wrap: break-word; word-break: break-word; }
         .tv-match .team.right { text-align: right; }
-        .tv-match .score { flex-shrink: 0; min-width: 100px; text-align: center; font-weight: 800; font-size: 18px; }
+        .tv-match .score { flex-shrink: 0; min-width: 110px; text-align: center; font-weight: 800; font-size: 18px; }
         .tv-match .winner { color: #10b981; font-weight: 700; }
         .tv-match .status-badge { font-size: 12px; padding: 3px 8px; border-radius: 6px; }
         .tv-match .live-badge { background: #dc2626; color: #fff; }
@@ -98,6 +98,31 @@
             .tv-match .score { min-width: 70px; font-size: 15px; }
         }
 
+
+        /* ===== ТВ: блок «Сейчас играют» (крупное табло) ===== */
+        .tv-main { height: calc(100vh - 90px); display: flex; flex-direction: column; min-height: 0; }
+        .tv-main .tv-body { flex: 1; height: auto; min-height: 0; }
+        .tv-live-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(460px, 1fr)); gap: 20px; padding: 20px 40px 0; }
+        .tv-lcard { background: radial-gradient(120% 140% at 50% 0%, #25294a 0%, #171a2c 70%); border: 1px solid rgba(255,255,255,.08); border-radius: 22px; padding: 18px 26px 20px; box-shadow: 0 14px 40px rgba(0,0,0,.45); position: relative; overflow: hidden; }
+        .tv-lcard::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 4px; background: linear-gradient(90deg, #e64a4a 0 50%, #3f86e8 50% 100%); }
+        .tv-lmeta { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 15px; opacity: .85; margin-bottom: 10px; }
+        .tv-lpill { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; background: rgba(255,255,255,.08); font-weight: 700; letter-spacing: .02em; }
+        .tv-lpill--live { background: #dc2626; color: #fff; }
+        .tv-ldot { width: 9px; height: 9px; border-radius: 50%; background: #fff; animation: pulse 1.4s infinite; }
+        .tv-lrow { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; }
+        .tv-lteam { min-width: 0; text-align: center; font-weight: 800; font-size: clamp(22px, 2.4vw, 40px); line-height: 1.1; overflow-wrap: anywhere; }
+        .tv-lteam--home { color: #ff7a7a; }
+        .tv-lteam--away { color: #7db4ff; }
+        .tv-lsets { display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; font-size: 15px; opacity: .9; }
+        .tv-lsets .rw-flipscore { font-size: 30px; }
+        .tv-rank-ico { display: inline-flex; vertical-align: -.2em; }
+        @media (max-width: 768px) {
+            .tv-main { height: auto; }
+            .tv-live-strip { padding: 14px 16px 0; grid-template-columns: 1fr; }
+            .tv-lrow { grid-template-columns: 1fr; gap: 8px; }
+            .tv-lrow .rw-flipscore { justify-self: center; order: -1; font-size: clamp(48px, 16vw, 80px); }
+        }
+
         .updated-flash { animation: flash .5s ease; }
         @keyframes flash { 0%{ background:rgba(231,97,47,.2); } 100%{ background:transparent; } }
 
@@ -118,12 +143,13 @@
             --text-success: #5dcaa5;
         }
     </style>
+    @include('tournaments._partials.flip_score_css')
 </head>
 <body>
 
     <div class="tv-header">
         <div>
-            <div class="tv-title"><span>▶</span> {{ $event->title }}</div>
+            <div class="tv-title"><span class="tv-rank-ico" style="color:#E7612F"><x-ico name="ball" size="1.1em" /></span> {{ $event->title }}</div>
             @if(isset($occurrences) && $occurrences->count() > 1)
             <div style="display:flex;gap:6px;margin-top:8px">
                 @foreach($occurrences as $occ)
@@ -141,7 +167,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:20px">
             @if($stages->where('status','in_progress')->isNotEmpty())
-                <div class="tv-live">● LIVE</div>
+                <div class="tv-live" style="display:inline-flex;align-items:center;gap:8px"><span class="tv-ldot"></span> LIVE</div>
             @endif
             <div class="tv-qr">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=160x160&data={{ urlencode(route('tournament.public.show', $event)) }}" alt="QR">
@@ -149,6 +175,30 @@
             </div>
         </div>
     </div>
+
+    <div class="tv-main">
+    @if(!empty($liveCards))
+    <div class="tv-live-strip" id="tvLiveStrip">
+        @foreach($liveCards as $c)
+        <div class="tv-lcard" data-live-match="{{ $c['id'] }}">
+            <div class="tv-lmeta">
+                <span class="tv-lpill tv-lpill--live"><span class="tv-ldot"></span> LIVE</span>
+                <span>@if($c['court'])<span class="tv-lpill">{{ $c['court'] }}</span> @endif{{ $c['stage'] }}@if($c['group']) · {{ $c['group'] }}@endif</span>
+                <span class="tv-lpill" data-live-setlabel>{{ __('tournaments.rally_set_n', ['n' => $c['set']]) }} · {{ __('tournaments.score_to_pts') }} {{ $c['target'] }}</span>
+            </div>
+            <div class="tv-lrow">
+                <div class="tv-lteam tv-lteam--home">{{ $c['home'] }}</div>
+                @include('tournaments._partials.flip_score', ['home' => $c['pts_home'], 'away' => $c['pts_away'], 'size' => 'tv', 'id' => 'tv-pts-' . $c['id']])
+                <div class="tv-lteam tv-lteam--away">{{ $c['away'] }}</div>
+            </div>
+            <div class="tv-lsets">
+                <span>{{ __('tournaments.score_by_sets') }}</span>
+                @include('tournaments._partials.flip_score', ['home' => $c['sets_home'], 'away' => $c['sets_away'], 'digits' => 1, 'id' => 'tv-sets-' . $c['id']])
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
 
     <div class="tv-body" id="tvBody">
         @php
@@ -172,7 +222,7 @@
             @if($hasDivisions)
                 @foreach($divisions as $divName => $divTeams)
                 <div class="tv-panel">
-                    <h3>🏆 {{ $divName }}</h3>
+                    <h3><x-ico name="trophy" size="1em" /> {{ $divName }}</h3>
                     @foreach($divTeams as $i => $c)
                         @php
                             $place = $i + 1;
@@ -180,7 +230,7 @@
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
-                                {{ $place === 1 ? '🥇' : ($place === 2 ? '🥈' : ($place === 3 ? '🥉' : $place . '.')) }}
+                                @if($place <= 3)<span class="tv-rank-ico"><x-ico :name="['medal-gold','medal-silver','medal-bronze'][$place - 1]" size="1.15em" /></span>@else{{ $place }}.@endif
                             </div>
                             <div style="flex:1">
                                 <div style="font-weight:700;font-size:18px;{{ $place <= 3 ? 'color:#E7612F' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</div>
@@ -196,14 +246,14 @@
                 @endforeach
             @else
                 <div class="tv-panel" style="flex:2">
-                    <h3>🏆 {{ __('tournaments.tv_results') }}</h3>
+                    <h3><x-ico name="trophy" size="1em" /> {{ __('tournaments.tv_results') }}</h3>
                     @foreach($classification as $c)
                         @php
                             $team = \App\Models\EventTeam::with('members.user', 'captain')->find($c['team_id']);
                         @endphp
                         <div class="tv-match" style="border-bottom:1px solid rgba(255,255,255,.05);padding:12px 0">
                             <div style="width:40px;font-size:22px;text-align:center">
-                                {{ $c['place'] === 1 ? '🥇' : ($c['place'] === 2 ? '🥈' : ($c['place'] === 3 ? '🥉' : $c['place'] . '.')) }}
+                                @if($c['place'] <= 3)<span class="tv-rank-ico"><x-ico :name="['medal-gold','medal-silver','medal-bronze'][$c['place'] - 1]" size="1.15em" /></span>@else{{ $c['place'] }}.@endif
                             </div>
                             <div style="flex:1">
                                 <div style="font-weight:700;font-size:18px;{{ $c['place'] <= 3 ? 'color:#E7612F' : '' }}">@include('tournaments._partials.team_name_link', ['team' => $team, 'fallback' => $c['team_name']])</div>
@@ -223,7 +273,7 @@
                 @php $mvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
                 <div class="tv-panel" style="flex:0.5;text-align:center;display:flex;flex-direction:column;justify-content:center">
                     <div style="font-size:14px;opacity:.5;margin-bottom:8px">{{ __('tournaments.tv_mvp') }}</div>
-                    <div style="font-size:48px;margin-bottom:8px">⭐</div>
+                    <div style="font-size:48px;margin-bottom:8px;display:flex;justify-content:center"><x-ico name="star" size="1em" /></div>
                     <div style="font-size:22px;font-weight:800;color:#E7612F">{{ $mvp?->last_name }} {{ $mvp?->first_name }}</div>
                 </div>
             @endif
@@ -248,11 +298,11 @@
                     @if($kocState)
                     <div style="display:flex;gap:24px;margin-bottom:16px">
                         <div>
-                            <div style="font-size:12px;opacity:.6">👑 {{ __('tournaments.koc_lbl_king') }}</div>
+                            <div style="font-size:12px;opacity:.6"><x-ico name="crown" size="1em" /> {{ __('tournaments.koc_lbl_king') }}</div>
                             <div style="font-size:22px;font-weight:800">{{ $kocTeamsById->get($kocState['king_team_id'])?->name ?? '?' }}</div>
                         </div>
                         <div>
-                            <div style="font-size:12px;opacity:.6">🙋 {{ __('tournaments.koc_lbl_challenger') }}</div>
+                            <div style="font-size:12px;opacity:.6"><x-ico name="hand" size="1em" /> {{ __('tournaments.koc_lbl_challenger') }}</div>
                             <div style="font-size:22px;font-weight:800">{{ $kocTeamsById->get($kocState['challenger_team_id'])?->name ?? '?' }}</div>
                         </div>
                     </div>
@@ -326,8 +376,7 @@
                                     </div>
                                     <div class="score">
                                         @if($m->isCompleted() && $m->teamHome && $m->teamAway)
-                                            {{ $m->setsScore() }}
-                                            <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
+                                            @include('tournaments._partials.match_score_board', ['m' => $m])
                                         @elseif($m->status === 'live')
                                             <span class="status-badge live-badge">LIVE</span>
                                         @else
@@ -381,8 +430,7 @@
                             </div>
                             <div class="score">
                                 @if($m->isCompleted() && $m->teamHome && $m->teamAway)
-                                    {{ $m->setsScore() }}
-                                    <div style="font-size:11px;opacity:.5">{{ $m->detailedScore() }}</div>
+                                    @include('tournaments._partials.match_score_board', ['m' => $m])
                                 @elseif($m->status === 'live')
                                     <span class="status-badge live-badge">LIVE</span>
                                 @elseif($m->isCompleted())
@@ -409,27 +457,35 @@
             </div>
         @endif
     </div>
+    </div>{{-- /.tv-main --}}
 
+    @include('tournaments._partials.flip_score_js')
     <script>
     (function() {
-        var liveUrl = @json($liveUrl);
-        var interval = 12000;
+        var scoreUrl = @json($scoreUrl);
+        var baseSig = @json($tvSig);
+        var shown = @json(collect($liveCards)->pluck('id')->values());
+        var labels = { set: @json(__('tournaments.rally_set_n', ['n' => '__N__'])), to: @json(__('tournaments.score_to_pts')) };
 
-        function poll() {
-            fetch(liveUrl)
+        function tick() {
+            fetch(scoreUrl, { cache: 'no-store' })
                 .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    // Для MVP: перезагрузка страницы при изменениях
-                    // В будущем — точечное обновление DOM с анимациями
-                    var hasLive = data.stages.some(function(s) { return s.status === 'in_progress'; });
-                    if (hasLive) {
-                        location.reload();
-                    }
+                .then(function(d) {
+                    var ids = d.matches.map(function(m) { return m.id; });
+                    // изменилась структура (старт/конец матча, смена этапа) — перезагружаем страницу целиком
+                    if (d.sig !== baseSig || ids.join(',') !== shown.join(',')) { location.reload(); return; }
+                    d.matches.forEach(function(m) {
+                        var pts = document.getElementById('tv-pts-' + m.id);
+                        var sets = document.getElementById('tv-sets-' + m.id);
+                        if (pts && window.FlipScore) FlipScore.update(pts, m.pts_home, m.pts_away);
+                        if (sets && window.FlipScore) FlipScore.update(sets, m.sets_home, m.sets_away);
+                        var card = document.querySelector('[data-live-match="' + m.id + '"] [data-live-setlabel]');
+                        if (card) card.textContent = labels.set.replace('__N__', m.set) + ' · ' + labels.to + ' ' + m.target;
+                    });
                 })
                 .catch(function() {});
         }
-
-        setInterval(poll, interval);
+        setInterval(tick, 4000);
     })();
 
     function tvSetView(view) {
