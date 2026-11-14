@@ -151,7 +151,16 @@
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
 					@endunless
 				</div>
-				<div class="b-800 px-2 rw-bigscore">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
+				@php
+					// счёт «как на перекидных часах»: минимум две цифры (00 : 00, 01 : 08); цифры — плитки, меняются анимацией переворота (скрипт в rally_screen)
+					$flipDigits = fn ($n) => str_split(str_pad((string) max(0, (int) $n), 2, '0', STR_PAD_LEFT));
+				@endphp
+				<div class="rw-flipscore px-2" role="img" aria-label="{{ $board['score']['home'] }} : {{ $board['score']['away'] }}" data-home="{{ $board['score']['home'] }}" data-away="{{ $board['score']['away'] }}">
+					@foreach(['home', 'away'] as $__fs)
+					@if($__fs === 'away')<span class="rw-fcolon" aria-hidden="true">:</span>@endif
+					<span class="rw-flipgroup" data-side="{{ $__fs }}" aria-hidden="true">@foreach($flipDigits($board['score'][$__fs]) as $__d)<span class="rw-fd" data-d="{{ $__d }}"><span class="rw-fd-t"><i>{{ $__d }}</i></span><span class="rw-fd-b"><i>{{ $__d }}</i></span></span>@endforeach</span>
+					@endforeach
+				</div>
 				<div style="flex:1">
 					<div class="b-700 f-18">@if($servingSide === 'away')<span class="rw-srv-ball" title="{{ __('tournaments.so_serving') }}">@include('tournaments._partials.ball_icon')</span> @endif @include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
 					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamAway))

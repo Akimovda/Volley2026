@@ -112,8 +112,23 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 /* плитка «Подаёт»: название команды целиком, подпись (капитан/игроки) отдельной строкой — без разрыва по слогам */
 #rw-live .rw-serve-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow-wrap:break-word;word-break:normal}
 #rw-live .rw-serve-btn span{text-transform:none;letter-spacing:0}
-/* счёт в шапке матча — вдвое крупнее прежнего (было 24px); на узком экране ужимается, чтобы двузначный счёт не ломал строку */
-.rw-bigscore{font-size:clamp(34px,12vw,48px);line-height:1;white-space:nowrap;letter-spacing:.02em}
+/* счёт в шапке матча — плитки как у перекидных часов (две цифры на команду, переворот при изменении) */
+.rw-flipscore{display:inline-flex;align-items:center;justify-content:center;gap:.22em;font-size:clamp(34px,11vw,46px);line-height:1;white-space:nowrap}
+.rw-flipgroup{display:inline-flex;gap:.07em}
+.rw-fcolon{font-weight:800;opacity:.5;font-size:.6em;line-height:1;padding-bottom:.08em}
+.rw-fd{position:relative;display:inline-block;width:.66em;height:1em;perspective:7em;color:#fff;font-weight:800;font-variant-numeric:tabular-nums;border-radius:.13em;box-shadow:0 .05em .16em rgba(10,16,40,.4)}
+.rw-fd i{font-style:normal;position:absolute;left:0;right:0;height:1em;line-height:1em;text-align:center}
+.rw-fd-t,.rw-fd-b,.rw-fd-ft,.rw-fd-fb{position:absolute;left:0;right:0;height:50%;overflow:hidden;background:linear-gradient(#323655,#222540);backface-visibility:hidden}
+.rw-fd-t,.rw-fd-ft{top:0;border-radius:.13em .13em 0 0}
+.rw-fd-b,.rw-fd-fb{bottom:0;border-radius:0 0 .13em .13em;background:linear-gradient(#1d2036,#14162a)}
+.rw-fd-t i,.rw-fd-ft i{top:0}
+.rw-fd-b i,.rw-fd-fb i{top:-100%}
+.rw-fd::after{content:'';position:absolute;left:0;right:0;top:50%;height:2px;margin-top:-1px;background:rgba(0,0,0,.55);z-index:6}
+.rw-fd-ft{transform-origin:50% 100%;z-index:4;animation:rw-flip-top .26s ease-in forwards}
+.rw-fd-fb{transform-origin:50% 0;transform:rotateX(90deg);z-index:3;animation:rw-flip-bot .26s .26s ease-out forwards}
+@keyframes rw-flip-top{to{transform:rotateX(-90deg)}}
+@keyframes rw-flip-bot{to{transform:rotateX(0)}}
+@media (prefers-reduced-motion:reduce){.rw-fd-ft,.rw-fd-fb{animation-duration:.01s;animation-delay:0s}}
 /* мяч у подающей команды */
 .rw-srv-ball{display:inline-flex;color:#E7612F;vertical-align:-.15em}
 .rw-srv-ball .ball-ic{width:1.1em;height:1.1em}
@@ -797,9 +812,43 @@ window.RallyLive = (function () {
 		bar.style.top = top + 'px';
 		bar.classList.toggle('on', head.getBoundingClientRect().bottom < top);
 	}
+	/* Счёт-часы: при изменении счёта (в т.ч. после перезагрузки страницы — прежний счёт берём из sessionStorage) переворачиваем изменившиеся цифры */
+	function flipDigit(el, od, nd) {
+		if (od === nd) return;
+		var bi = el.querySelector('.rw-fd-b i');
+		if (bi) bi.textContent = od;
+		var ft = document.createElement('span'); ft.className = 'rw-fd-ft'; ft.innerHTML = '<i>' + od + '</i>';
+		var fb = document.createElement('span'); fb.className = 'rw-fd-fb'; fb.innerHTML = '<i>' + nd + '</i>';
+		el.appendChild(ft); el.appendChild(fb);
+		var done = false;
+		function fin() { if (done) return; done = true; if (bi) bi.textContent = nd; if (ft.parentNode) ft.remove(); if (fb.parentNode) fb.remove(); }
+		fb.addEventListener('animationend', fin);
+		setTimeout(fin, 1200);
+	}
+	function flips() {
+		var box = document.querySelector('.rw-flipscore');
+		if (!box) return;
+		var key = 'rwScore:' + location.pathname + ':' + (live.getAttribute('data-set') || '');
+		var cur = { home: box.getAttribute('data-home'), away: box.getAttribute('data-away') };
+		var prev = null;
+		try { prev = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) {}
+		try { sessionStorage.setItem(key, JSON.stringify(cur)); } catch (e) {}
+		if (!prev) return;
+		['home', 'away'].forEach(function (side) {
+			if (String(prev[side]) === String(cur[side])) return;
+			var grp = box.querySelector('.rw-flipgroup[data-side="' + side + '"]');
+			if (!grp) return;
+			var ds = grp.querySelectorAll('.rw-fd');
+			var old = String(prev[side]);
+			while (old.length < ds.length) old = '0' + old;
+			if (old.length > ds.length) return;
+			for (var i = 0; i < ds.length; i++) flipDigit(ds[i], old.charAt(i), ds[i].getAttribute('data-d'));
+		});
+	}
 	window.addEventListener('scroll', upd, { passive: true });
 	window.addEventListener('resize', upd);
-	if (window.MutationObserver) new MutationObserver(upd).observe(live, { childList: true });
+	if (window.MutationObserver) new MutationObserver(function () { upd(); flips(); }).observe(live, { childList: true });
 	upd();
+	flips();
 })();
 </script>
