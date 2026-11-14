@@ -2222,6 +2222,12 @@ document.addEventListener("trix-file-accept", function (event) {
 				if (!need) return true;
 				
 				var ids = currentIds();
+				// «Тренер — я» — источник истины: если галочка стоит, а чип по какой-то причине не создался, добавляем его здесь
+				var selfCb = document.getElementById('trainer-self-cb');
+				if (!ids.length && selfCb && selfCb.checked && selfCb.getAttribute('data-user-id')) {
+					addChip(selfCb.getAttribute('data-user-id'), selfCb.getAttribute('data-label') || '');
+					ids = currentIds();
+				}
 				if (!ids.length) {
 					e.preventDefault();
 					alert('Выбери минимум одного тренера из выпадающего списка.');

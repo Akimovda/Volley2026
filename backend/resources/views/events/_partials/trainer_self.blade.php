@@ -7,7 +7,7 @@
 @if($me)
 <div class="mb-1" id="trainer-self-wrap">
     <label class="checkbox-item">
-        <input type="checkbox" id="trainer-self-cb">
+        <input type="checkbox" id="trainer-self-cb" data-user-id="{{ (int) $me->id }}" data-label="{{ e($meLabel) }}">
         <div class="custom-checkbox"></div>
         <span>{{ __('events.trainer_self_label') }}</span>
     </label>
