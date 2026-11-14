@@ -36,7 +36,7 @@
             <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
             @endif
             <button type="button" class="btn btn-small btn-primary" id="tlSwitchList">{{ __('club.list_view') }}</button>
-            <button type="button" class="btn btn-small btn-outline" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
+            <button type="button" class="btn btn-small btn-secondary" id="tlSwitchTimeline">{{ __('club.timeline') }}</button>
         </div>
     </div>
 
@@ -55,16 +55,16 @@
     <div id="timelinePanel">
         <div class="tl-bar">
             <div class="tl-nav">
-                <button type="button" class="btn btn-small btn-outline" id="tlPrev">{{ __('club.yesterday') }}</button>
+                <button type="button" class="btn btn-small btn-secondary" id="tlPrev">{{ __('club.yesterday') }}</button>
                 <div class="tl-nav-center">
                     <span class="b-600" id="tlCurrentLabel">{{ __('club.today') }}</span>
                     <input type="date" id="tlDatePicker" class="btn-small">
                 </div>
-                <button type="button" class="btn btn-small btn-outline" id="tlNext">{{ __('club.tomorrow') }}</button>
+                <button type="button" class="btn btn-small btn-secondary" id="tlNext">{{ __('club.tomorrow') }}</button>
             </div>
             <div class="tl-mode" id="tlModeToggleWrap">
                 <button type="button" class="btn btn-small btn-primary" id="tlModeDay">{{ __('club.day_view') }}</button>
-                <button type="button" class="btn btn-small btn-outline" id="tlModeWeek">{{ __('club.week_view') }}</button>
+                <button type="button" class="btn btn-small btn-secondary" id="tlModeWeek">{{ __('club.week_view') }}</button>
             </div>
         </div>
 
@@ -192,8 +192,8 @@
     }
 
     function setActive(btnActive, btnInactive) {
-        btnActive.classList.remove('btn-outline'); btnActive.classList.add('btn-primary');
-        btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-outline');
+        btnActive.classList.remove('btn-secondary'); btnActive.classList.add('btn-primary');
+        btnInactive.classList.remove('btn-primary'); btnInactive.classList.add('btn-secondary');
     }
 
     // Режим "Список" — брони+события выбранного дня одним списком по времени
@@ -535,7 +535,7 @@
             } else {
                 const link = document.createElement('a');
                 link.href = '/events/' + slot.event_id;
-                link.className = 'btn btn-small btn-outline';
+                link.className = 'btn btn-small btn-secondary';
                 link.textContent = openEventLabel;
                 card.querySelector('.timeline-list-actions').appendChild(link);
             }
