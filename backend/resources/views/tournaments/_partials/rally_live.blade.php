@@ -131,7 +131,7 @@
 		{{-- Компактная полоса счёта: появляется сверху при прокрутке вниз (скрипт в rally_screen), чтобы счёт был виден при вводе очков --}}
 		<div class="rw-scorebar" id="rw-scorebar" aria-hidden="true">
 			<span class="rw-sb-team rw-sb-team--l">@if($servingSide === 'home')<span class="rw-srv-ball">@include('tournaments._partials.ball_icon')</span>@endif<span class="rw-sb-name">{{ $match->teamHome->name ?? 'TBD' }}</span></span>
-			<b class="rw-sb-score">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</b>
+			@include('tournaments._partials.flip_score', ['home' => $board['score']['home'], 'away' => $board['score']['away'], 'mini' => true])
 			<span class="rw-sb-team rw-sb-team--r"><span class="rw-sb-name">{{ $match->teamAway->name ?? 'TBD' }}</span>@if($servingSide === 'away')<span class="rw-srv-ball">@include('tournaments._partials.ball_icon')</span>@endif</span>
 			<span class="rw-sb-set">{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }}</span>
 		</div>
@@ -151,16 +151,7 @@
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
 					@endunless
 				</div>
-				@php
-					// счёт «как на перекидных часах»: минимум две цифры (00 : 00, 01 : 08); цифры — плитки, меняются анимацией переворота (скрипт в rally_screen)
-					$flipDigits = fn ($n) => str_split(str_pad((string) max(0, (int) $n), 2, '0', STR_PAD_LEFT));
-				@endphp
-				<div class="rw-flipscore px-2" role="img" aria-label="{{ $board['score']['home'] }} : {{ $board['score']['away'] }}" data-home="{{ $board['score']['home'] }}" data-away="{{ $board['score']['away'] }}">
-					@foreach(['home', 'away'] as $__fs)
-					@if($__fs === 'away')<span class="rw-fcolon" aria-hidden="true">:</span>@endif
-					<span class="rw-flipgroup" data-side="{{ $__fs }}" aria-hidden="true">@foreach($flipDigits($board['score'][$__fs]) as $__d)<span class="rw-fd" data-d="{{ $__d }}"><span class="rw-fd-t"><i>{{ $__d }}</i></span><span class="rw-fd-b"><i>{{ $__d }}</i></span></span>@endforeach</span>
-					@endforeach
-				</div>
+				@include('tournaments._partials.flip_score', ['home' => $board['score']['home'], 'away' => $board['score']['away']])
 				<div style="flex:1">
 					<div class="b-700 f-18">@if($servingSide === 'away')<span class="rw-srv-ball" title="{{ __('tournaments.so_serving') }}">@include('tournaments._partials.ball_icon')</span> @endif @include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
 					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamAway))

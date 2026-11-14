@@ -115,6 +115,8 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 /* счёт в шапке матча — плитки как у перекидных часов (две цифры на команду, переворот при изменении) */
 .rw-flipscore{display:inline-flex;align-items:center;justify-content:center;gap:.22em;font-size:clamp(28px,9vw,40px);line-height:1;white-space:nowrap}
 .rw-flipgroup{display:inline-flex;gap:.07em}
+.rw-flipscore--mini{font-size:24px;gap:.16em}
+.rw-flipscore--mini .rw-fd{box-shadow:0 1px 3px rgba(10,16,40,.35)}
 .rw-fcolon{font-weight:800;opacity:.5;font-size:.6em;line-height:1;padding-bottom:.08em}
 .rw-fd{position:relative;display:inline-block;width:.66em;height:1em;perspective:7em;color:#fff;font-weight:800;font-variant-numeric:tabular-nums;border-radius:.13em;box-shadow:0 .05em .16em rgba(10,16,40,.4)}
 .rw-fd i{font-style:normal;position:absolute;left:0;right:0;height:1em;line-height:1em;text-align:center}
@@ -831,23 +833,27 @@ window.RallyLive = (function () {
 		setTimeout(fin, 1200);
 	}
 	function flips() {
-		var box = document.querySelector('.rw-flipscore');
-		if (!box) return;
+		var boxes = document.querySelectorAll('.rw-flipscore');
+		if (!boxes.length) return;
+		var box = boxes[0];
 		var key = 'rwScore:' + location.pathname + ':' + (live.getAttribute('data-set') || '');
 		var cur = { home: box.getAttribute('data-home'), away: box.getAttribute('data-away') };
 		var prev = null;
 		try { prev = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) {}
 		try { sessionStorage.setItem(key, JSON.stringify(cur)); } catch (e) {}
 		if (!prev) return;
-		['home', 'away'].forEach(function (side) {
-			if (String(prev[side]) === String(cur[side])) return;
-			var grp = box.querySelector('.rw-flipgroup[data-side="' + side + '"]');
-			if (!grp) return;
-			var ds = grp.querySelectorAll('.rw-fd');
-			var old = String(prev[side]);
-			while (old.length < ds.length) old = '0' + old;
-			if (old.length > ds.length) return;
-			for (var i = 0; i < ds.length; i++) flipDigit(ds[i], old.charAt(i), ds[i].getAttribute('data-d'));
+		// одно и то же изменение анимируем на всех табло страницы (шапка матча и компактная полоса)
+		Array.prototype.forEach.call(boxes, function (bx) {
+			['home', 'away'].forEach(function (side) {
+				if (String(prev[side]) === String(cur[side])) return;
+				var grp = bx.querySelector('.rw-flipgroup[data-side="' + side + '"]');
+				if (!grp) return;
+				var ds = grp.querySelectorAll('.rw-fd');
+				var old = String(prev[side]);
+				while (old.length < ds.length) old = '0' + old;
+				if (old.length > ds.length) return;
+				for (var i = 0; i < ds.length; i++) flipDigit(ds[i], old.charAt(i), ds[i].getAttribute('data-d'));
+			});
 		});
 	}
 	window.addEventListener('scroll', upd, { passive: true });
