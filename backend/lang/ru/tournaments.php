@@ -1170,4 +1170,5 @@ return [
     'bk_src' => ':place место · гр. :group',
     'bk_winner_of' => 'Победитель матча :n',
     'bk_loser_of' => 'Проигравший матча :n',
+    'bk_final_title' => 'Финал',
 ];

@@ -190,6 +190,20 @@ body.dark .bk-col-label--final{color:#fbbf24}
 .bk-nameline .bk-team-name-link{flex:1;min-width:0}
 .bk-src{display:inline-flex;align-items:center;flex-shrink:0;background:var(--gc,#64748b);color:#fff;border-radius:6px;padding:1px 7px;font-size:.62rem;font-weight:700;letter-spacing:.02em;line-height:1.5;white-space:nowrap}
 .bk-src--line{align-self:flex-start;margin-bottom:1px}
+
+/* ── Симметричная сетка: ФИНАЛ по центру ── */
+.bk-rounds--sym{margin-top:96px}
+.bk-col--final{width:300px}
+.bk-col--final .bk-match{width:300px;box-shadow:0 8px 28px rgba(245,158,11,.22);border-left-color:#f59e0b}
+.bk-col--final .bk-match--completed{border-left-color:#f59e0b}
+.bk-hero{position:absolute;left:0;right:0;bottom:calc(100% + 14px);text-align:center;color:#b45309}
+.bk-hero svg{display:block;margin:0 auto 2px}
+.bk-hero-title{font-size:2rem;font-weight:900;letter-spacing:.18em;line-height:1;background:linear-gradient(90deg,#2563eb,#7c3aed 45%,#e7612f);-webkit-background-clip:text;background-clip:text;color:transparent;text-transform:uppercase}
+.bk-hero-date{font-size:.9rem;font-weight:600;color:#64748b;margin-top:4px}
+.bk-hero-dots{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:8px}
+.bk-hero-dots i{display:block;background:linear-gradient(135deg,#38bdf8,#6366f1);transform:rotate(45deg);border-radius:2px}
+body.dark .bk-hero-date{color:#94a3b8}
+body.dark .bk-hero{color:#fbbf24}
 </style>
 @endonce
 
@@ -468,6 +482,30 @@ $renderColumn = function ($roundMatches, string $label, int $relR) use ($stepH, 
     return $html;
 };
 
+// Симметричная сетка (как футбольные): левая половина → ФИНАЛ по центру ← правая половина (зеркально). Включается для single_elim с ≥2 раундами.
+$useSymmetric = !$isDoubleElim && $totalRounds >= 2;
+$renderFinalColumn = function ($m) use ($stepH, $totalRounds, $renderMatchCard, $tz): string {
+    // карточка финала — на той же высоте, что и полуфиналы (они сходятся к ней с двух сторон)
+    $padTop = (int) round($stepH * (pow(2, max(0, $totalRounds - 2)) - 1));
+    $when = $m->scheduled_at
+        ? $m->scheduled_at->copy()->setTimezone($tz)->locale(app()->getLocale())->translatedFormat('j F · H:i')
+        : '';
+    $diamonds = '';
+    foreach ([6, 8, 10, 13, 10, 8, 6] as $i => $sz) {
+        $diamonds .= '<i style="width:' . $sz . 'px;height:' . $sz . 'px"></i>';
+    }
+    $html  = '<div class="bk-col bk-col--final">';
+    $html .= '<div class="bk-col-label"></div>';
+    $html .= '<div class="bk-matches" style="padding-top:' . $padTop . 'px;position:relative">';
+    $html .= '<div class="bk-hero">' . ico_svg('trophy', '1.6em')
+        . '<div class="bk-hero-title">' . e(__('tournaments.bk_final_title')) . '</div>'
+        . ($when ? '<div class="bk-hero-date">' . e($when) . '</div>' : '')
+        . '<div class="bk-hero-dots">' . $diamonds . '</div></div>';
+    $html .= $renderMatchCard($m);
+    $html .= '</div></div>';
+    return $html;
+};
+
 if ($isDoubleElim) {
     // Группировка по секциям (рецептура из генератора, report_recon_bracket.md
     // Блок 2 п.4): GF/GF-reset формально bracket_position='upper' — фильтруем
@@ -561,6 +599,32 @@ if ($isDoubleElim) {
 <div class="bk-wrap">
 <div class="bk-inner" id="{{ $bracketId }}">
 
+@if($useSymmetric)
+<div class="bk-rounds bk-rounds--sym">
+@for($r = 1; $r < $totalRounds; $r++)
+    @php
+        $__all = $matchesByRound[$r] ?? collect();
+        $__left = $__all->slice(0, (int) ceil($__all->count() / 2))->values();
+        $__rep = $__left->first();
+        $__label = $__rep ? ($stage->roundLabelFor($__rep) ?? 'Раунд ' . $r) : 'Раунд ' . $r;
+    @endphp
+    @if($r > 1)<div class="bk-col-gap"></div>@endif
+    {!! $renderColumn($__left, $__label, $r) !!}
+@endfor
+<div class="bk-col-gap"></div>
+{!! $renderFinalColumn(($matchesByRound[$totalRounds] ?? collect())->first()) !!}
+@for($r = $totalRounds - 1; $r >= 1; $r--)
+    @php
+        $__all = $matchesByRound[$r] ?? collect();
+        $__right = $__all->slice((int) ceil($__all->count() / 2))->values();
+        $__rep = $__right->first();
+        $__label = $__rep ? ($stage->roundLabelFor($__rep) ?? 'Раунд ' . $r) : 'Раунд ' . $r;
+    @endphp
+    <div class="bk-col-gap"></div>
+    {!! $renderColumn($__right, $__label, $r) !!}
+@endfor
+</div>{{-- .bk-rounds--sym --}}
+@else
 <div class="bk-rounds">
 @for($r = 1; $r <= $totalRounds; $r++)
     @php
@@ -577,6 +641,7 @@ if ($isDoubleElim) {
     {!! $renderColumn($roundMatches, $label, $r) !!}
 @endfor
 </div>{{-- .bk-rounds --}}
+@endif
 
 {{-- SVG коннекторы (bezier, через JS) --}}
 <svg id="{{ $bracketId }}-svg"
@@ -667,20 +732,22 @@ if ($isDoubleElim) {
 
             var a = el.getBoundingClientRect();
             var b = map[nid].getBoundingClientRect();
-            var x1 = a.right  - iRect.left,  y1 = a.top + a.height/2 - iRect.top;
-            var x2 = b.left   - iRect.left,  y2 = b.top + b.height/2 - iRect.top;
+            // правая половина симметричной сетки идёт справа налево: линия из левого края карточки в правый край следующей
+            var rtl = (b.left + b.width/2) < (a.left + a.width/2);
+            var x1 = (rtl ? a.left  : a.right) - iRect.left,  y1 = a.top + a.height/2 - iRect.top;
+            var x2 = (rtl ? b.right : b.left)  - iRect.left,  y2 = b.top + b.height/2 - iRect.top;
             var cx = (x2 - x1) * 0.46;
 
             var done = el.classList.contains('bk-match--completed');
             // ортогональные линии с закруглёнными углами: от карточки вправо → вертикаль на середине зазора → в следующую карточку
-            var mx = x1 + (x2 - x1) / 2, r = Math.min(10, Math.abs(y2 - y1) / 2, (x2 - x1) / 4);
-            var dir = y2 >= y1 ? 1 : -1;
+            var mx = x1 + (x2 - x1) / 2, r = Math.min(10, Math.abs(y2 - y1) / 2, Math.abs(x2 - x1) / 4);
+            var dir = y2 >= y1 ? 1 : -1, sx = x2 >= x1 ? 1 : -1;
             var d = (Math.abs(y2 - y1) < 2)
                 ? 'M ' + x1 + ' ' + y1 + ' L ' + x2 + ' ' + y2
-                : 'M ' + x1 + ' ' + y1 + ' L ' + (mx - r) + ' ' + y1 +
+                : 'M ' + x1 + ' ' + y1 + ' L ' + (mx - sx * r) + ' ' + y1 +
                   ' Q ' + mx + ' ' + y1 + ' ' + mx + ' ' + (y1 + dir * r) +
                   ' L ' + mx + ' ' + (y2 - dir * r) +
-                  ' Q ' + mx + ' ' + y2 + ' ' + (mx + r) + ' ' + y2 +
+                  ' Q ' + mx + ' ' + y2 + ' ' + (mx + sx * r) + ' ' + y2 +
                   ' L ' + x2 + ' ' + y2;
             var p = document.createElementNS('http://www.w3.org/2000/svg','path');
             p.setAttribute('d', d);
@@ -718,6 +785,11 @@ if ($isDoubleElim) {
         });
     }
     function draw(){
+        @if($useSymmetric)
+        // симметричная сетка шире экрана — открываем по центру (на ФИНАЛЕ)
+        var sym = document.getElementById('{{ $bracketId }}');
+        if (sym && sym.parentElement) { sym.parentElement.scrollLeft = Math.max(0, (sym.parentElement.scrollWidth - sym.parentElement.clientWidth) / 2); }
+        @endif
         @if($isDoubleElim)
         drawOne('{{ $bracketId }}-upper', '{{ $bracketId }}-upper-svg');
         drawOne('{{ $bracketId }}-lower', '{{ $bracketId }}-lower-svg');
