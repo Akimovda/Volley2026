@@ -1,4 +1,5 @@
 @once
+@include('tournaments._partials.flip_score_css')
 <style>
 /* ───── Tournament Bracket ───── */
 .bk-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 2px 16px}
@@ -145,6 +146,44 @@ body.dark .bk-third-section{border-color:rgba(255,255,255,.08)}
 body.dark .bk-team-name-link{color:#93c5fd}
 body.dark .bk-team--win .bk-team-name-link{color:#6ee7b7}
 body.dark .bk-third-place-name{color:#e2e8f0}
+
+/* ───── Оформление 2026-11: крупнее, мягче, акценты победителя ───── */
+.bk-wrap{text-align:center}
+.bk-inner{text-align:left}
+.bk-col{width:264px}
+.bk-match{
+    width:264px;border-radius:16px;border:1px solid rgba(15,23,42,.08);border-left:4px solid #2967BA;
+    background:linear-gradient(#fff,#fbfcff);box-shadow:0 2px 10px rgba(15,23,42,.08);
+    transition:box-shadow .2s,transform .2s;
+}
+.bk-match:hover{box-shadow:0 10px 24px rgba(15,23,42,.15);transform:translateY(-1px)}
+.bk-match--completed{border-color:rgba(16,185,129,.3);border-left-color:#10b981;box-shadow:0 3px 12px rgba(16,185,129,.12)}
+.bk-match--live{border-color:rgba(220,38,38,.35);border-left-color:#dc2626;animation:bk-livepulse 2s infinite}
+@keyframes bk-livepulse{0%,100%{box-shadow:0 2px 10px rgba(220,38,38,.15)}50%{box-shadow:0 0 0 4px rgba(220,38,38,.12),0 3px 16px rgba(220,38,38,.3)}}
+.bk-header{height:34px;background:linear-gradient(90deg,rgba(41,103,186,.07),rgba(41,103,186,0));font-size:.76rem;color:#475569}
+.bk-live-pill{display:inline-flex;align-items:center;gap:5px;background:#dc2626;color:#fff;border-radius:999px;padding:1px 9px;font-size:.66rem;font-weight:800;letter-spacing:.04em;flex-shrink:0;margin-left:auto}
+.bk-live-pill i{width:6px;height:6px;border-radius:50%;background:#fff;animation:bk-livepulse-dot 1.2s infinite}
+@keyframes bk-livepulse-dot{0%,100%{opacity:1}50%{opacity:.35}}
+.bk-team{min-height:58px;padding:9px 12px;position:relative}
+.bk-team--win{background:linear-gradient(90deg,rgba(16,185,129,.16),rgba(16,185,129,.03))}
+.bk-team--win::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#10b981}
+.bk-player-name,.bk-team-name-link{font-size:.9rem}
+.bk-flip{display:inline-flex;font-size:30px;flex-shrink:0;line-height:1}
+.bk-team:not(.bk-team--win) .bk-flip{opacity:.5;filter:saturate(.35)}
+.bk-col-label{display:flex;align-items:center;justify-content:center;gap:6px}
+.bk-col-label--final{color:#b45309}
+.bk-ribbon{display:flex;align-items:center;justify-content:center;gap:8px;padding:9px 12px;font-weight:800;font-size:.85rem;letter-spacing:.01em}
+.bk-ribbon--champ{background:linear-gradient(90deg,#f59e0b,#fcd34d,#f59e0b);color:#3b2a05}
+.bk-ribbon--bronze{background:linear-gradient(90deg,#c2763a,#e6a574,#c2763a);color:#2b1606}
+.bk-ribbon span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-third-section{text-align:center}
+.bk-third-section .bk-match{margin:0 auto;text-align:left}
+.bk-third-section-label{display:flex;align-items:center;justify-content:center;gap:6px}
+@media (max-width:600px){.bk-wrap{scroll-snap-type:x proximity}.bk-col{scroll-snap-align:center}}
+body.dark .bk-match{background:linear-gradient(#1e293b,#18222f)}
+body.dark .bk-header{background:linear-gradient(90deg,rgba(59,130,246,.14),rgba(59,130,246,0));color:#94a3b8}
+body.dark .bk-team--win{background:linear-gradient(90deg,rgba(16,185,129,.22),rgba(16,185,129,.04))}
+body.dark .bk-col-label--final{color:#fbbf24}
 </style>
 @endonce
 
@@ -227,7 +266,7 @@ $initials = function(?string $first, ?string $last): string {
 };
 
 // Отрисовка секции команды (home или away)
-$renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isCompleted) use ($avatarColor, $initials): string {
+$renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isCompleted, string $side = 'home') use ($avatarColor, $initials): string {
     $html  = '<div class="bk-team' . ($isWinner ? ' bk-team--win' : '') . '">';
 
     if ($team && $team->team_kind === 'classic_team') {
@@ -300,8 +339,9 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
     }
 
     if ($isCompleted && $sets !== null) {
-        $cls   = $isWinner ? 'bk-score--win' : 'bk-score--lose';
-        $html .= '<div class="bk-score ' . $cls . '">' . $sets . '</div>';
+        // счёт по сетам — плитка-табло в цвете стороны (домашняя красная, гостевая синяя); у проигравшего приглушена
+        $d = (string) max(0, (int) $sets);
+        $html .= '<span class="rw-flipgroup bk-flip" data-side="' . $side . '" aria-label="' . e($d) . '"><span class="rw-fd" data-d="' . $d . '"><span class="rw-fd-t"><i>' . $d . '</i></span><span class="rw-fd-b"><i>' . $d . '</i></span></span></span>';
     }
 
     $html .= '</div>'; // .bk-team
@@ -311,7 +351,7 @@ $renderTeam = function(?object $team, bool $isWinner, ?int $sets, bool $isComple
 // Отрисовка одной карточки матча (шапка + обе команды/счёт) — вынесено из
 // прежнего инлайн-@foreach, чтобы переиспользовать без дублирования разметки
 // и для single_elim (одна секция), и для double_elim (upper/lower/GF секции).
-$renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam): string {
+$renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam, $isThirdPlaceMatch, $totalRounds): string {
     $isCompleted = $m->status === 'completed';
     // Bracket reset: GF2 cancelled = reset не потребовался (upper-представитель
     // выиграл GF1 напрямую) — это не "матч ожидает команды" (bk-match--empty),
@@ -323,6 +363,7 @@ $renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam): str
     if ($isCompleted)                                $cls .= ' bk-match--completed';
     elseif ($isCancelled)                            $cls .= ' bk-match--cancelled';
     elseif (!$m->team_home_id || !$m->team_away_id)  $cls .= ' bk-match--empty';
+    if ($m->status === 'live')                       $cls .= ' bk-match--live';
 
     $html = '<div class="' . $cls . '" data-match-id="' . $m->id . '" data-next-match-id="' . e($m->next_match_id) . '">';
     $html .= '<div class="bk-header">';
@@ -330,13 +371,25 @@ $renderMatchCard = function (object $m) use ($courtLabel, $tz, $renderTeam): str
     if ($m->court)         $html .= '<span class="bk-court">' . e($courtLabel($m->court)) . '</span>';
     if ($m->scheduled_at)  $html .= '<span class="bk-time">' . e($m->scheduled_at->setTimezone($tz)->format('H:i')) . '</span>';
     if ($isCompleted)      $html .= '<span class="bk-check">' . ico_svg('check', '1em') . '</span>';
+    if ($m->status === 'live') $html .= '<span class="bk-live-pill"><i></i>LIVE</span>';
     $html .= '</div>';
 
     if ($isCancelled) {
         $html .= '<div class="bk-cancelled-note">Решающий матч не потребовался</div>';
     } else {
-        $html .= $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted);
-        $html .= $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted);
+        $html .= $renderTeam($m->teamHome, $homeWin, $isCompleted ? $m->sets_home : null, $isCompleted, 'home');
+        $html .= $renderTeam($m->teamAway, $awayWin, $isCompleted ? $m->sets_away : null, $isCompleted, 'away');
+
+        // лента победителя: финал — «Чемпион», матч за 3-е место — «Бронза»
+        if ($isCompleted && ($homeWin || $awayWin)) {
+            $winTeam = $homeWin ? $m->teamHome : $m->teamAway;
+            $winName = $winTeam?->name ?: '';
+            if ($isThirdPlaceMatch($m)) {
+                $html .= '<div class="bk-ribbon bk-ribbon--bronze">' . ico_svg('medal-bronze', '1.15em') . '<span>' . e(__('tournaments.bk_bronze')) . ' · ' . e($winName) . '</span></div>';
+            } elseif ($m->next_match_id === null && (int) $m->round === (int) $totalRounds) {
+                $html .= '<div class="bk-ribbon bk-ribbon--champ">' . ico_svg('trophy', '1.15em') . '<span>' . e(__('tournaments.bk_champion')) . ' · ' . e($winName) . '</span></div>';
+            }
+        }
     }
 
     $html .= '</div>'; // .bk-match
@@ -354,7 +407,8 @@ $renderColumn = function ($roundMatches, string $label, int $relR) use ($stepH, 
     $gap    = $relR === 1 ? $baseGap : (int) round($stepH * pow(2, $relR) - $cardH);
 
     $html  = '<div class="bk-col">';
-    $html .= '<div class="bk-col-label">' . e($label) . '</div>';
+    $isFinalLabel = ($label === 'Финал');
+    $html .= '<div class="bk-col-label' . ($isFinalLabel ? ' bk-col-label--final' : '') . '">' . ($isFinalLabel ? ico_svg('trophy', '1.1em') : '') . e($label) . '</div>';
     $html .= '<div class="bk-matches" style="gap:' . $gap . 'px;padding-top:' . $padTop . 'px">';
     foreach ($roundMatches as $m) {
         $html .= $renderMatchCard($m);
@@ -493,15 +547,18 @@ if ($isDoubleElim) {
 @endphp
 <div class="bk-third-section">
     <div class="bk-third-section-label"><x-ico name="medal-bronze" size="1.1em" /> Матч за 3-е место</div>
-    <div class="{{ $cls3 }}" style="max-width:244px">
+    <div class="{{ $cls3 }}" style="max-width:264px">
         <div class="bk-header">
             <span>Матч&thinsp;{{ $m3->match_number }}</span>
             @if($m3->court)<span class="bk-court">{{ $courtLabel($m3->court) }}</span>@endif
             @if($m3->scheduled_at)<span class="bk-time">{{ $m3->scheduled_at->setTimezone($tz)->format('H:i') }}</span>@endif
             @if($c3)<span class="bk-check"><x-ico name="check" size="1em" /></span>@endif
         </div>
-        {!! $renderTeam($m3->teamHome, $h3, $c3 ? $m3->sets_home : null, $c3) !!}
-        {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3) !!}
+        {!! $renderTeam($m3->teamHome, $h3, $c3 ? $m3->sets_home : null, $c3, 'home') !!}
+        {!! $renderTeam($m3->teamAway, $a3, $c3 ? $m3->sets_away : null, $c3, 'away') !!}
+        @if($c3 && ($h3 || $a3))
+        <div class="bk-ribbon bk-ribbon--bronze"><x-ico name="medal-bronze" size="1.15em" /><span>{{ __('tournaments.bk_bronze') }} · {{ ($h3 ? $m3->teamHome : $m3->teamAway)?->name }}</span></div>
+        @endif
     </div>
 </div>
 @endif
@@ -559,11 +616,12 @@ if ($isDoubleElim) {
             var x2 = b.left   - iRect.left,  y2 = b.top + b.height/2 - iRect.top;
             var cx = (x2 - x1) * 0.46;
 
+            var done = el.classList.contains('bk-match--completed');
             var p = document.createElementNS('http://www.w3.org/2000/svg','path');
             p.setAttribute('d','M '+x1+' '+y1+' C '+(x1+cx)+' '+y1+' '+(x2-cx)+' '+y2+' '+x2+' '+y2);
             p.setAttribute('fill','none');
-            p.setAttribute('stroke', color);
-            p.setAttribute('stroke-width','2');
+            p.setAttribute('stroke', done ? (dark ? 'rgba(52,211,153,.7)' : 'rgba(16,185,129,.6)') : color);
+            p.setAttribute('stroke-width', done ? '3' : '2');
             p.setAttribute('stroke-linecap','round');
             svg.appendChild(p);
         });

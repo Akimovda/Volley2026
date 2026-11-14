@@ -1146,4 +1146,6 @@ return [
     'rally_howto_title' => 'How to record points',
     'rally_scroll_hint' => 'scroll the table',
     'rally_opp_error_short' => 'Opp. err.',
+    'bk_champion' => 'Champion',
+    'bk_bronze' => 'Bronze',
 ];

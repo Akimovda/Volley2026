@@ -1165,4 +1165,6 @@ return [
     'rally_howto_title' => 'Как вносить очки',
     'rally_scroll_hint' => 'листайте таблицу',
     'rally_opp_error_short' => 'Ошиб. соп.',
+    'bk_champion' => 'Чемпион',
+    'bk_bronze' => 'Бронза',
 ];
