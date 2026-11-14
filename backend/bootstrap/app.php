@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'yookassa/webhook',
             'payments/yoomoney/webhook',
+            'api/widget/rental-timeline/book',
             'auth/biometric-login',
             'auth/apple/callback',
             'auth/apple/native-callback',
