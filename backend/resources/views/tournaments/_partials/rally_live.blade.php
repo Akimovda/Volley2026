@@ -306,7 +306,7 @@
 			$players = $board['players'][$sideKey];
 			$oppPlayers = $board['players'][$sideKey === 'home' ? 'away' : 'home'];
 		@endphp
-		<div class="card mb-2">
+		<div class="card mb-2 rw-tc rw-tc--{{ $sideKey }}">
 			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
 			@include('tournaments._partials.team_sub_lines', ['team' => $side['team']])
 

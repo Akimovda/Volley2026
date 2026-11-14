@@ -28,6 +28,12 @@
 /* названия команд — в цветах сторон; на узком экране — вторым рядом под табло (симметрично), табло крупнее */
 .rw-hteam--home .b-700,.rw-hteam--home a{color:#c92d2d}
 .rw-hteam--away .b-700,.rw-hteam--away a{color:#2368c8}
+/* карточки команд ниже (ввод очков): название — в цвете своей стороны */
+.rw-tc--home>.b-700,.rw-tc--home>.b-700 a{color:#c92d2d}
+.rw-tc--away>.b-700,.rw-tc--away>.b-700 a{color:#2368c8}
+/* тёмная тема: светлее для читаемости */
+body.dark .rw-hteam--home .b-700,body.dark .rw-hteam--home a,body.dark .rw-tc--home>.b-700,body.dark .rw-tc--home>.b-700 a{color:#ff7a7a}
+body.dark .rw-hteam--away .b-700,body.dark .rw-hteam--away a,body.dark .rw-tc--away>.b-700,body.dark .rw-tc--away>.b-700 a{color:#7db4ff}
 @media(max-width:560px){
 	.rw-headrow{display:grid !important;grid-template-columns:1fr 1fr;grid-template-areas:"s s" "h a";row-gap:12px;align-items:start}
 	.rw-headrow .rw-flipscore{font-size:clamp(40px,14vw,58px)}
