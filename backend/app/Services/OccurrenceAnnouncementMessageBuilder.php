@@ -260,6 +260,17 @@ class OccurrenceAnnouncementMessageBuilder
         return $startsRu->translatedFormat('j F') . ' – ' . $endsRu->translatedFormat('j F');
     }
 
+    /** Добавляет комбинирующий символ (зачёркивание/подчёркивание) после каждого не пробельного символа; & < > экранируются, чтобы strip_tags/decode ниже их не тронули. */
+    private function combineMark(string $text, string $mark): string
+    {
+        $out = '';
+        foreach (preg_split('//u', $text, -1, PREG_SPLIT_NO_EMPTY) as $ch) {
+            $out .= $ch . (preg_match('/\s/u', $ch) ? '' : $mark);
+        }
+
+        return str_replace(['&', '<', '>'], ['&amp;', '&lt;', '&gt;'], $out);
+    }
+
     /**
      * HTML описания (Trix) → чистый текст с сохранением переносов строк:
      * <br> и закрывающие блочные теги → \n, <li> → "- ", остальные теги вырезаются.
@@ -269,6 +280,15 @@ class OccurrenceAnnouncementMessageBuilder
         if (trim($html) === '') {
             return '';
         }
+
+        // VK/MAX в обычном тексте разметки не имеют — зачёркивание и подчёркивание передаём символами Юникода
+        // (комбинирующая черта U+0336 / U+0332 после каждой буквы): видны везде, без зависимости от API площадки.
+        $html = preg_replace_callback('/<(del|s|strike)\b[^>]*>(.*?)<\/\1>/is', function ($m) {
+            return $this->combineMark(html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5), "\u{0336}");
+        }, $html);
+        $html = preg_replace_callback('/<(u|ins)\b[^>]*>(.*?)<\/\1>/is', function ($m) {
+            return $this->combineMark(html_entity_decode(strip_tags($m[2]), ENT_QUOTES | ENT_HTML5), "\u{0332}");
+        }, $html);
 
         $text = preg_replace('/<br\s*\/?>/i', "\n", $html);
         $text = preg_replace('/<\/(p|li|div|h[1-6])>/i', "\n", $text);
