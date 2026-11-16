@@ -566,6 +566,9 @@ border:1rem solid #fff;
 		</div>
 		
 		
+        {{-- ===== СКОРО: кемпы, мастер-классы, турниры ===== --}}
+        @include('events._upcoming_special', ['upcoming' => app(\App\Services\UpcomingSpecialService::class)->forUser(auth()->user()), 'cardLinkOnly' => true])
+
         {{-- ===== ДЛЯ КОГО ===== --}}
         <div class="ramka">
             <h2 class="-mt-05">{{ __('welcome.audience_title') }}</h2>
@@ -587,7 +590,7 @@ border:1rem solid #fff;
 						<div>
 							<div class="audience-top">
 								<div class="audience-icon">
-									🏐										
+									<x-ico name="ball" size="1.6em" />										
 								</div>												
 								<div class="audience-title">
 									<div class="f-20 b-600 cd">{{ __('welcome.players_card_title') }}</div>

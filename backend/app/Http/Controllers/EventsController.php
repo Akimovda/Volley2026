@@ -22,8 +22,59 @@
 	{
 		public function index(EventIndexService $service, Request $request)
         {
+            if ($redirect = $this->rememberedFilters($request)) {
+                return $redirect;
+            }
+
             return $service->handle($request);
         }
+
+		/**
+		 * Запомненный фильтр залогиненного пользователя: явный выбор сохраняем, заход без параметров —
+		 * подставляем сохранённый, «Сбросить» (?reset=1) — очищаем. Гостям запоминает браузер (localStorage на странице).
+		 */
+		private function rememberedFilters(Request $request): ?\Illuminate\Http\RedirectResponse
+		{
+			$user = $request->user();
+			if (!$user || !$request->isMethod('get') || $request->ajax() || $request->expectsJson()) {
+				return null;
+			}
+
+			$fields = ['direction', 'format', 'level', 'location', 'city'];
+
+			try {
+				if ($request->query->has('reset')) {
+					DB::table('users')->where('id', $user->id)->update(['events_filters' => null]);
+
+					return redirect()->route('events.index', $request->except('reset'));
+				}
+
+				$saved = (array) ($user->events_filters ?? []);
+
+				if (collect($fields)->contains(fn ($f) => $request->query->has($f))) {
+					$new = [];
+					foreach ($fields as $f) {
+						$v = $request->query($f);
+						if (is_string($v) && $v !== '') {
+							$new[$f] = mb_substr($v, 0, 32);
+						}
+					}
+					if ($new !== $saved) {
+						DB::table('users')->where('id', $user->id)->update(['events_filters' => $new ? json_encode($new) : null]);
+					}
+
+					return null;
+				}
+
+				if ($saved) {
+					return redirect()->route('events.index', array_merge($request->query(), array_intersect_key($saved, array_flip($fields))));
+				}
+			} catch (\Throwable $e) {
+				report($e);
+			}
+
+			return null;
+		}
 		
        public function show(Request $request, Event $event)
         {
@@ -50,10 +101,10 @@
 			if (is_null($level)) return;
 			
 			// защитимся, если колонок уровней нет (иначе SQL упадёт)
-			$hasClassicMin = Schema::hasColumn('events', 'classic_level_min');
-			$hasClassicMax = Schema::hasColumn('events', 'classic_level_max');
-			$hasBeachMin   = Schema::hasColumn('events', 'beach_level_min');
-			$hasBeachMax   = Schema::hasColumn('events', 'beach_level_max');
+			$hasClassicMin = \App\Support\SchemaCache::hasColumn('events', 'classic_level_min');
+			$hasClassicMax = \App\Support\SchemaCache::hasColumn('events', 'classic_level_max');
+			$hasBeachMin   = \App\Support\SchemaCache::hasColumn('events', 'beach_level_min');
+			$hasBeachMax   = \App\Support\SchemaCache::hasColumn('events', 'beach_level_max');
 			
 			// если вообще ничего нет — не фильтруем
 			if (!$hasClassicMin && !$hasClassicMax && !$hasBeachMin && !$hasBeachMax) {
@@ -125,7 +176,7 @@
 			if ($hasStatus) {
 				$q->where($prefix . 'status', 'confirmed');
 			}
-			if (Schema::hasColumn('event_registrations', 'deleted_at')) {
+			if (\App\Support\SchemaCache::hasColumn('event_registrations', 'deleted_at')) {
 				$q->whereNull($prefix . 'deleted_at');
 			}
 		}
@@ -138,7 +189,7 @@
 			$userId = (int) $user->id;
 			
 			$joinedEventIds = [];
-			if (Schema::hasTable('event_registrations') && Schema::hasColumn('event_registrations', 'event_id')) {
+			if (\App\Support\SchemaCache::hasTable('event_registrations') && \App\Support\SchemaCache::hasColumn('event_registrations', 'event_id')) {
 				$q = DB::table('event_registrations')->where('user_id', $userId);
 				$this->applyActiveScope($q, $hasCancelledAt, $hasIsCancelled, $hasStatus);
 				
@@ -150,9 +201,9 @@
 			}
 			
 			$restrictedEventIds = [];
-			if (Schema::hasTable('events')) {
-				$hasIsPrivate  = Schema::hasColumn('events', 'is_private');
-				$hasVisibility = Schema::hasColumn('events', 'visibility');
+			if (\App\Support\SchemaCache::hasTable('events')) {
+				$hasIsPrivate  = \App\Support\SchemaCache::hasColumn('events', 'is_private');
+				$hasVisibility = \App\Support\SchemaCache::hasColumn('events', 'visibility');
 				
 				if ($hasIsPrivate || $hasVisibility) {
 					$restrictedQ = DB::table('events')
@@ -183,7 +234,7 @@
 			$userId = (int) $user->id;
 			
 			$joinedOccurrenceIds = [];
-			if (Schema::hasTable('event_registrations') && Schema::hasColumn('event_registrations', 'occurrence_id')) {
+			if (\App\Support\SchemaCache::hasTable('event_registrations') && \App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
 				$q = DB::table('event_registrations')
                 ->where('user_id', $userId)
                 ->whereNotNull('occurrence_id');
@@ -198,9 +249,9 @@
 			}
 			
 			$restrictedOccurrenceIds = [];
-			if (Schema::hasTable('event_occurrences')) {
-				$hasIsPrivate  = Schema::hasColumn('events', 'is_private');
-				$hasVisibility = Schema::hasColumn('events', 'visibility');
+			if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
+				$hasIsPrivate  = \App\Support\SchemaCache::hasColumn('events', 'is_private');
+				$hasVisibility = \App\Support\SchemaCache::hasColumn('events', 'visibility');
 				
 				if ($hasIsPrivate || $hasVisibility) {
 					$restrictedQ = DB::table('event_occurrences as eo')
@@ -226,7 +277,7 @@
 		
 		private function getOrCreateFirstOccurrenceForEvent(Event $event): ?EventOccurrence
 		{
-			if (!Schema::hasTable('event_occurrences')) return null;
+			if (!\App\Support\SchemaCache::hasTable('event_occurrences')) return null;
 			
 			$occ = EventOccurrence::query()
             ->where('event_id', (int) $event->id)
@@ -344,9 +395,9 @@
             ];
         
             foreach ($candidates as $c) {
-                if (!Schema::hasTable($c['table'])) continue;
-                if (!Schema::hasColumn($c['table'], $c['org'])) continue;
-                if (!Schema::hasColumn($c['table'], $c['staff'])) continue;
+                if (!\App\Support\SchemaCache::hasTable($c['table'])) continue;
+                if (!\App\Support\SchemaCache::hasColumn($c['table'], $c['org'])) continue;
+                if (!\App\Support\SchemaCache::hasColumn($c['table'], $c['staff'])) continue;
         
                 return DB::table($c['table'])
                     ->where($c['staff'], $staffUserId)
@@ -357,7 +408,7 @@
                     ->all();
             }
         
-            if (Schema::hasColumn('users', 'organizer_id')) {
+            if (\App\Support\SchemaCache::hasColumn('users', 'organizer_id')) {
                 $orgId = (int) DB::table('users')
                     ->where('id', $staffUserId)
                     ->value('organizer_id');
@@ -385,7 +436,7 @@
             return response()->json([
                 'ok' => $result->allowed,
                 'allowed' => $result->allowed,
-                'message' => !empty($errors) ? implode(' ', $errors) : null,
+                'message' => !empty($errors) ? $this->primaryAvailabilityMessage($errors) : null,
                 'free_positions' => $freePositions,
                 'meta' => $meta,
         
@@ -395,4 +446,22 @@
             ]);
         }
 		
+        /**
+         * Из нескольких причин отказа показываем ОДНУ, самую важную: «началось/завершено» → «регистрация закрыта» → «нет мест» → первая.
+         * Раньше все причины склеивались в одну строку («Мероприятие уже началось. Регистрация уже завершена. Свободных мест…»).
+         */
+        private function primaryAvailabilityMessage(array $errors): string
+        {
+            $errors = array_values(array_filter(array_map('strval', $errors)));
+            foreach (['началось', 'завершен', 'Регистрац', 'регистрац', 'Свободных мест', 'мест'] as $needle) {
+                foreach ($errors as $e) {
+                    if (mb_stripos($e, $needle) !== false) {
+                        return $e;
+                    }
+                }
+            }
+
+            return $errors[0] ?? '';
+        }
+
 	}

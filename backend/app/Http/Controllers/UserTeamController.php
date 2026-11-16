@@ -48,6 +48,28 @@ class UserTeamController extends Controller
         return view('user.teams.edit', compact('team', 'event', 'validationErrors', 'teamSizeError'));
     }
 
+    /**
+     * Основному игроку (в т.ч. капитану, если он не запасной) в классике обязательно амплуа; запасным — по желанию.
+     * Для пляжа амплуа в форме не выбирается. Возвращает текст ошибки или null.
+     */
+    private function missingPositionsError(array $data, int $ownerId): ?string
+    {
+        if (($data['direction'] ?? '') !== 'classic') {
+            return null;
+        }
+        $missing = [];
+        foreach (($data['members'] ?? []) as $m) {
+            $isOwner = (int) $m['user_id'] === $ownerId;
+            $reserve = $isOwner ? !empty($m['is_reserve']) : (($m['role_code'] ?? 'player') === 'reserve');
+            if (!$reserve && empty($m['position_code'])) {
+                $u = \App\Models\User::find((int) $m['user_id']);
+                $missing[] = trim(($u?->last_name ?? '') . ' ' . ($u?->first_name ?? '')) ?: ($u?->name ?? ('#' . $m['user_id']));
+            }
+        }
+
+        return $missing ? 'Основным игрокам нужно выбрать амплуа: ' . implode(', ', $missing) . '. (Запасным амплуа указывать не обязательно.)' : null;
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();
@@ -60,8 +82,13 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
+            'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
+
+        if ($err = $this->missingPositionsError($data, (int) $user->id)) {
+            return back()->withInput()->withErrors(['positions' => $err]);
+        }
 
         DB::transaction(function () use ($user, $data) {
             $team = UserTeam::create([
@@ -71,12 +98,14 @@ class UserTeamController extends Controller
                 'subtype'   => $data['subtype'] ?? null,
             ]);
 
-            // Captain = owner
+            // Captain = owner (может быть и запасным: статус хранится отдельно от роли)
+            $captainRow = collect($data['members'] ?? [])->first(fn ($m) => (int) $m['user_id'] === (int) $user->id);
             UserTeamMember::create([
                 'user_team_id'  => $team->id,
                 'user_id'       => $user->id,
                 'role_code'     => 'captain',
-                'position_code' => null,
+                'position_code' => $captainRow['position_code'] ?? null,
+                'is_reserve'    => (bool) ($captainRow['is_reserve'] ?? false),
             ]);
 
             foreach (($data['members'] ?? []) as $m) {
@@ -86,12 +115,13 @@ class UserTeamController extends Controller
                     [
                         'role_code'     => $m['role_code'] ?? 'player',
                         'position_code' => $m['position_code'] ?? null,
+                        'is_reserve'    => ($m['role_code'] ?? 'player') === 'reserve',
                     ]
                 );
             }
         });
 
-        return redirect()->route('profile.show')->with('status', 'Команда сохранена');
+        return redirect()->route('profile.show')->with('status', __('Команда сохранена'));
     }
 
     public function update(Request $request, UserTeam $team)
@@ -107,8 +137,13 @@ class UserTeamController extends Controller
             'members'   => ['nullable', 'array', 'max:30'],
             'members.*.user_id'       => ['required', 'integer', 'exists:users,id'],
             'members.*.role_code'     => ['nullable', 'string', 'in:captain,player,reserve'],
+            'members.*.is_reserve'    => ['nullable', 'boolean'],
             'members.*.position_code' => ['nullable', 'string', 'in:setter,outside,opposite,middle,libero,blocker,defender'],
         ]);
+
+        if ($err = $this->missingPositionsError($data, (int) $user->id)) {
+            return back()->withInput()->withErrors(['positions' => $err]);
+        }
 
         DB::transaction(function () use ($user, $team, $data) {
             $team->update([
@@ -129,17 +164,22 @@ class UserTeamController extends Controller
                     [
                         'role_code'     => $m['role_code'] ?? 'player',
                         'position_code' => $m['position_code'] ?? null,
+                        'is_reserve'    => ($m['role_code'] ?? 'player') === 'reserve',
                     ]
                 );
             }
 
-            // Update captain position if provided
+            // Капитан: позиция (если указана) и статус «основной / запасной»
             if (!empty($data['members'])) {
                 foreach ($data['members'] as $m) {
-                    if ((int)$m['user_id'] === (int)$user->id && !empty($m['position_code'])) {
+                    if ((int)$m['user_id'] === (int)$user->id) {
+                        $upd = ['is_reserve' => (bool) ($m['is_reserve'] ?? false)];
+                        if (!empty($m['position_code'])) {
+                            $upd['position_code'] = $m['position_code'];
+                        }
                         UserTeamMember::where('user_team_id', $team->id)
                             ->where('user_id', $user->id)
-                            ->update(['position_code' => $m['position_code']]);
+                            ->update($upd);
                     }
                 }
             }
@@ -147,9 +187,9 @@ class UserTeamController extends Controller
 
         $returnTo = $request->input('return_to');
         if ($returnTo && str_starts_with($returnTo, '/')) {
-            return redirect($returnTo)->with('status', 'Команда обновлена');
+            return redirect($returnTo)->with('status', __('Команда обновлена'));
         }
-        return redirect()->route('profile.show')->with('status', 'Команда обновлена');
+        return redirect()->route('profile.show')->with('status', __('Команда обновлена'));
     }
 
     public function destroy(Request $request, UserTeam $team)
@@ -158,6 +198,6 @@ class UserTeamController extends Controller
         if (!$user) return redirect()->route('login');
         if ((int)$team->user_id !== (int)$user->id) abort(403);
         $team->delete();
-        return back()->with('status', 'Команда удалена');
+        return back()->with('status', __('Команда удалена'));
     }
 }

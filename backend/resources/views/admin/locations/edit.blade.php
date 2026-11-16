@@ -25,17 +25,19 @@
 	</x-slot>
 	
     <x-slot name="breadcrumbs">
+        @if(auth()->user()?->isAdmin())
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <a href="{{ route('admin.dashboard') }}" itemprop="item"><span itemprop="name">{{ __('admin.breadcrumb_dashboard') }}</span></a>
             <meta itemprop="position" content="1">
 		</li>
+        @endif
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
-            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ __('admin.loc_breadcrumb') }}</span></a>
-            <meta itemprop="position" content="2">
+            <a href="{{ route('admin.locations.index') }}" itemprop="item"><span itemprop="name">{{ auth()->user()?->isAdmin() ? __('admin.loc_breadcrumb') : __('club.my_locations') }}</span></a>
+            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 2 : 1 }}">
 		</li>
         <li itemprop="itemListElement" itemscope itemtype="http://schema.org/ListItem">
             <span itemprop="name">{{ $location->name }}</span>
-            <meta itemprop="position" content="3">
+            <meta itemprop="position" content="{{ auth()->user()?->isAdmin() ? 3 : 2 }}">
 		</li>
 	</x-slot>
 	
@@ -47,6 +49,7 @@
     <x-slot name="script">
     <script src="@asset_v('assets/trix.js')"></script>
 		<script src="/assets/city.js"></script>  
+		@include('partials.city-add')
 		<script src="/assets/org.js?v=2"></script>     
         <script>
             (function () {
@@ -66,48 +69,21 @@
                     }
                 });
 				
-                // --- photos reorder
+                // --- photos reorder: порядок уходит вместе с формой (одна кнопка «Сохранить»), отдельного сохранения порядка нет
                 const grid = document.getElementById('photos_grid');
                 if (grid) {
-                    const hint = document.getElementById('photos_hint');
-                    const saveBtn = document.getElementById('photos_save_btn');
-                    const reorderUrl = @json(route('admin.locations.photos.reorder', $location));
-                    const csrf = @json(csrf_token());
-					
-                    function currentOrderIds() {
-                        return Array.from(grid.querySelectorAll('[data-photo-id]'))
-						.map(el => Number(el.getAttribute('data-photo-id')))
-						.filter(n => Number.isFinite(n));
-					}
-					
-                    async function saveOrder() {
-                        const photo_ids = currentOrderIds();
-                        if (!photo_ids.length) return;
-						
-                        if (hint) hint.textContent = @json(__('admin.loc_photos_save_progress'));
-                        try {
-                            const res = await fetch(reorderUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Accept': 'application/json',
-                                    'X-CSRF-TOKEN': csrf,
-								},
-                                body: JSON.stringify({ photo_ids }),
-							});
-							
-                            if (!res.ok) {
-                                if (hint) hint.textContent = @json(__('admin.loc_photos_save_http_err')).replace(':status', res.status);
-                                return;
-							}
-                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_done'));
-							} catch (e) {
-                            if (hint) hint.textContent = @json(__('admin.loc_photos_save_net_err'));
-						}
-					}
-					
-                    new Sortable(grid, { animation: 150, ghostClass: 'opacity-50' });
-                    saveBtn?.addEventListener('click', saveOrder);
+                    const form = grid.closest('form');
+                    function syncOrderInputs() {
+                        if (!form) return;
+                        form.querySelectorAll('input[name="photo_order[]"]').forEach(function (el) { el.remove(); });
+                        grid.querySelectorAll('[data-photo-id]').forEach(function (el) {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden'; inp.name = 'photo_order[]'; inp.value = el.getAttribute('data-photo-id');
+                            form.appendChild(inp);
+                        });
+                    }
+                    new Sortable(grid, { animation: 150, ghostClass: 'opacity-50', onEnd: syncOrderInputs });
+                    if (form) form.addEventListener('submit', syncOrderInputs);
 				}
 			})();
 
@@ -499,7 +475,7 @@
 		
         <div class="ramka">
 		<h2 class="-mt-05">{{ __('admin.loc_form_title') }}</h2>
-            <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form">
+            <form method="POST" action="{{ route('admin.locations.update', $location) }}" enctype="multipart/form-data" class="form" id="locationMainForm">
                 @csrf
                 @method('PUT')
 				
@@ -534,6 +510,7 @@
 								placeholder="{{ __('admin.loc_search_city_ph') }}"
 								value="{{ old('city_label', $selectedCityLabel) }}"
 								autocomplete="off"
+								@disabled(!auth()->user()?->isAdmin())
 								@error('city_id') class="error" @enderror>
 								
 								{{-- dropdown --}}
@@ -541,6 +518,7 @@
 									<div id="city_results"></div>
 								</div>
 							</div>
+							@unless(auth()->user()?->isAdmin())<div class="f-13 cd mt-05">{{ __('admin.loc_admin_only_hint') }}</div>@endunless
 							@error('city_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
 						</div>
 					</div>
@@ -637,6 +615,39 @@
                     <div class="col-12">
 						@include('admin.locations._photo_picker', ['label' => __('admin.loc_label_photos_new_5'), 'max' => 5])
 					</div>
+
+                    {{-- PHOTOS (загруженные, D&D порядок): сразу под «Добавить новые фото» --}}
+                    <div class="col-12" id="location-photos">
+                        <div class="card">
+                            <label class="h2-ico"><x-ico name="image" size="1.2em" /> {{ __('admin.loc_uploaded_section') }} ({{ $photos->count() }})</label>
+                            @if($photos->isEmpty())
+                            <div class="f-16 b-500">Фотографий пока нет. Добавьте их кнопкой «+» выше и нажмите «Сохранить».</div>
+                            @else
+                            <div class="f-16 b-500">{{ __('admin.loc_drag_hint') }}</div>
+                            <div id="photos_grid" class="row mt-2">
+                                @foreach($photos as $m)
+                                <div class="col-md-3 col-6">
+                                    <div class="card loc-photo-card cursor-move" data-photo-id="{{ $m->id }}">
+                                        @php
+                                        $u = $m->getUrl('thumb');
+                                        if (empty($u)) $u = $m->getUrl();
+                                        @endphp
+                                        <img src="{{ $u }}" class="loc-photo-img" alt="">
+                                        <div class="mt-1 d-flex between fvc">
+                                            <span class="b-600 cd">#{{ $m->id }}</span>
+                                            <button type="button" class="btn btn-small btn-danger"
+                                                onclick="if (confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})) document.getElementById('loc-photo-del-{{ $m->id }}').submit()">
+                                                {{ __('admin.btn_delete') }}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            <div class="f-14 mt-1" style="opacity:.65">Порядок и новые фото сохраняются общей кнопкой «Сохранить» внизу формы.</div>
+                            @endif
+                        </div>
+                    </div>
 					
                     {{-- NOTE --}}
                     <div class="col-12">
@@ -703,9 +714,6 @@
                     </div>
 				</div>
 				
-				<div class="mt-2 text-center">
-					<button type="submit" class="btn btn-primary">{{ __('admin.btn_save_changes') }}</button>
-				</div>
 			</form>
 			{{-- 
 			<div class="row">
@@ -724,6 +732,14 @@
 			</div>
 			--}}
 		</div>
+
+        {{-- Формы удаления фото: вне основной формы (вложенные формы недопустимы); кнопки в блоке «Загруженные фотографии» вызывают их по id --}}
+        @foreach($photos as $m)
+        <form id="loc-photo-del-{{ $m->id }}" method="POST" action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}" style="display:none">
+            @csrf
+            @method('DELETE')
+        </form>
+        @endforeach
 
         {{-- НАПРАВЛЕНИЯ И КОРТЫ --}}
         <div class="ramka">
@@ -835,9 +851,6 @@
                 </div>
                 @endforeach
 
-                <div class="mt-2 text-center">
-                    <button type="submit" class="btn btn-primary">{{ __('club.save_directions') }}</button>
-                </div>
             </form>
         </div>
 
@@ -901,9 +914,6 @@
                 </div>
                 @endforeach
 
-                <div class="mt-2 text-center">
-                    <button type="submit" class="btn btn-primary">{{ __('club.save_price_rules') }}</button>
-                </div>
             </form>
         </div>
 
@@ -949,58 +959,41 @@
             </div>
         </div>
 
-        {{-- PHOTOS (D&D SORT) --}}
-        @if(!$photos->isEmpty())
-        <div class="ramka">
-			<h2 class="-mt-05">{{ __('admin.loc_uploaded_section') }}</h2>
-			<div class="f-16 b-500"> {{ __('admin.loc_drag_hint') }}</div>
-			
-			
-			
-			
-			
-			
-            <div id="photos_grid" class="row mt-2">
-                @foreach($photos as $m)
-				<div class="col-md-3 col-6">
-					<div class="card cursor-move"
-					data-photo-id="{{ $m->id }}">
-						@php
-						$u = $m->getUrl('thumb');
-						if (empty($u)) $u = $m->getUrl();
-						@endphp
-						<img src="{{ $u }}"
-						class="w-full h-32 object-cover rounded-lg"
-						alt="">
-						<div class="mt-1 d-flex between fvc">
-							<span class="b-600 cd">#{{ $m->id }}</span>
-							<form method="POST"
-							action="{{ route('admin.locations.photos.destroy', [$location, $m]) }}"
-							onsubmit="return confirm({!! json_encode(__('admin.loc_confirm_delete_photo')) !!})">
-								@csrf
-								@method('DELETE')
-								<button type="submit" 
-								class="btn btn-small btn-danger btn-alert"
-								data-title="{{ __('admin.loc_confirm_delete_photo') }}"
-								data-icon="warning"
-								data-confirm-text="{{ __('admin.btn_delete') }}"
-								data-cancel-text="{{ __('admin.btn_cancel') }}">
-									{{ __('admin.btn_delete') }}
-								</button>								
-								
-							</form>
-						</div>
-					</div>
-				</div>
-                @endforeach
-			</div>
-			<div class="mt-2 text-center">
-				<button type="button" id="photos_save_btn" class="btn">
-					{{ __('admin.loc_photos_save_order') }}
-				</button>
-			</div>
-			
-		</div>
-        @endif
+
+        @include('admin.locations._audit', ['locationAudit' => $locationAudit])
+
+        {{-- ЕДИНАЯ кнопка «Сохранить»: форма локации + направления и корты + прайс аренды (блок доверенных организаторов — отдельные действия) --}}
+        <div class="loc-savebar">
+            <button type="button" class="btn btn-primary" id="saveAllBtn"><x-ico name="check" /> {{ __('admin.btn_save_changes') }}</button>
+        </div>
+        <script>
+        (function () {
+            var btn = document.getElementById('saveAllBtn'), main = document.getElementById('locationMainForm');
+            if (!btn || !main) return;
+            var label = btn.innerHTML;
+            async function saveAll() {
+                if (!main.reportValidity()) return;                         // сначала проверка основной формы — чтобы не сохранить часть
+                btn.disabled = true; btn.textContent = @json(__('admin.loc_photos_save_progress'));
+                var subs = ['directionsForm', 'priceRulesForm'].map(function (id) { return document.getElementById(id); }).filter(Boolean);
+                for (var k = 0; k < subs.length; k++) {
+                    var f = subs[k];
+                    f.dispatchEvent(new Event('submit', { cancelable: true })); // собрать скрытые поля (например, правила цен)
+                    try {
+                        var res = await fetch(f.action, { method: 'POST', body: new FormData(f), credentials: 'same-origin',
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                        if (!res.ok) {
+                            var msg = @json(__('Ошибка сохранения')), j = null;
+                            try { j = await res.json(); } catch (e) {}
+                            if (j && j.message) msg = j.message;
+                            if (j && j.errors) msg += '\n' + Object.keys(j.errors).map(function (key) { return j.errors[key].join(' '); }).join('\n');
+                            alert(msg); btn.disabled = false; btn.innerHTML = label; return;
+                        }
+                    } catch (e) { alert(@json(__('Ошибка соединения'))); btn.disabled = false; btn.innerHTML = label; return; }
+                }
+                main.requestSubmit();                                        // основная форма (фото, порядок, поля) — обычной отправкой с перезагрузкой
+            }
+            btn.addEventListener('click', saveAll);
+        })();
+        </script>
 	</div>
 </x-voll-layout>

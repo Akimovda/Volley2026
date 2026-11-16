@@ -149,6 +149,19 @@ Route::get('/logout', fn () => redirect('/'));
 	*/
 	
 	Route::get('/events', [EventsController::class, 'index'])->name('events.index');
+
+	// Текущее состояние входа для страниц, отрисованных гостем (после VK ID / «назад» страница могла остаться «гостевой»)
+	Route::get('/auth/state', fn () => response()->json(['auth' => auth()->check()])->header('Cache-Control', 'no-store'))->name('auth.state');
+
+	// Блок «Скоро»: скрытие и счётчики
+	Route::post('/events/upcoming/track', [\App\Http\Controllers\UpcomingBlockController::class, 'track'])->middleware('throttle:60,1')->name('upcoming.track');
+	Route::middleware(['auth'])->group(function () {
+		Route::post('/events/upcoming/dismiss', [\App\Http\Controllers\UpcomingBlockController::class, 'dismiss'])->middleware('throttle:60,1')->name('upcoming.dismiss');
+		Route::delete('/events/upcoming/dismiss/{event}', [\App\Http\Controllers\UpcomingBlockController::class, 'undo'])->whereNumber('event')->name('upcoming.undo');
+		Route::post('/events/upcoming/hide-block', [\App\Http\Controllers\UpcomingBlockController::class, 'hideBlock'])->name('upcoming.hide');
+		Route::post('/events/upcoming/visible', [\App\Http\Controllers\UpcomingBlockController::class, 'setVisible'])->name('upcoming.visible');
+		Route::post('/events/upcoming/reset', [\App\Http\Controllers\UpcomingBlockController::class, 'reset'])->name('upcoming.reset');
+	});
 	
 	Route::get('/events/{event}', [EventsController::class, 'show'])
     ->middleware('track.view:event,event')
@@ -204,8 +217,19 @@ Route::get('/logout', fn () => redirect('/'));
 		Route::post('/club/bookings/{booking}/cancel', [\App\Http\Controllers\ClubBookingController::class, 'cancel'])
 			->name('club.bookings.cancel');
 
+		Route::get('/club/clients', [\App\Http\Controllers\ClubClientsController::class, 'index'])->name('club.clients.index');
+		Route::put('/club/clients/{client}', [\App\Http\Controllers\ClubClientsController::class, 'update'])->name('club.clients.update');
+		Route::delete('/club/clients/{client}', [\App\Http\Controllers\ClubClientsController::class, 'destroy'])->name('club.clients.destroy');
+
 		Route::get('/club/analytics', [\App\Http\Controllers\ClubAnalyticsController::class, 'index'])
 			->name('club.analytics.index');
+		Route::post('/club/analytics/report-toggle', [\App\Http\Controllers\ClubAnalyticsController::class, 'toggleReport'])
+			->middleware('organizer.pro')->name('club.analytics.report_toggle');
+		// Выгрузка аналитики — только Организатор Pro (админ — всегда)
+		Route::get('/club/analytics/export/pdf', [\App\Http\Controllers\ClubAnalyticsController::class, 'exportPdf'])
+			->middleware('organizer.pro')->name('club.analytics.export_pdf');
+		Route::get('/club/analytics/export/xlsx', [\App\Http\Controllers\ClubAnalyticsController::class, 'exportXlsx'])
+			->middleware('organizer.pro')->name('club.analytics.export_xlsx');
 
 		// Фаза 5 — прямая бронь корта игроком
 		// URL /my/bookings отдан под личные записи на мероприятия (см. задачу 1 обмена /my/events <-> /my/bookings),
@@ -237,6 +261,11 @@ Route::get('/logout', fn () => redirect('/'));
 
 		Route::post('/user/profile/notification-channels/settings', [ProfileNotificationChannelController::class, 'updateSettings'])
         ->name('profile.notification_channels.settings');
+
+		Route::post('/user/profile/notification-channels/{channel}/check', [ProfileNotificationChannelController::class, 'check'])
+        ->whereNumber('channel')
+        ->middleware('throttle:20,1')
+        ->name('profile.notification_channels.check');
 	});
 
 	Route::middleware(['auth'])->group(function () {
@@ -299,6 +328,14 @@ Route::get('/logout', fn () => redirect('/'));
 	
 	Route::get('/cities/search', [CitySearchController::class, 'search'])
     ->name('cities.search');
+
+	// «+ Добавить город» (Админ/Организатор/Staff): поиск в GeoNames и создание города
+	Route::middleware(['auth'])->group(function () {
+		Route::get('/cities/suggest', [\App\Http\Controllers\CityAddController::class, 'suggest'])
+			->middleware('throttle:30,1')->name('cities.suggest');
+		Route::post('/cities', [\App\Http\Controllers\CityAddController::class, 'store'])
+			->middleware('throttle:10,1')->name('cities.store');
+	});
     
     Route::get('/ajax/locations/with-events', LocationsByCityController::class)
     ->name('ajax.locations.withEvents');
@@ -377,21 +414,24 @@ Route::middleware(['auth:sanctum', config('jetstream.auth_session'), 'verified']
     ->name('league.reserve.confirm');
 
 Route::get('/auth/telegram/redirect', [TelegramAuthController::class, 'redirect'])->name('auth.telegram.redirect');
-Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.telegram.callback');
+Route::get('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.telegram.callback');
 Route::post('/auth/telegram/webapp', [TelegramAuthController::class, 'webapp'])->middleware('no-store-html')->name('auth.telegram.webapp');
 Route::post('/auth/telegram/miniapp', [TelegramAuthController::class, 'miniapp'])->name('auth.telegram.miniapp');
 Route::get('/auth/tma-status', [TmaAuthController::class, 'status'])->name('auth.tma.status');
 Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name('auth.tma.exchange');
 	Route::get('/auth/vk/redirect', [VkAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.vk.redirect');
-	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.vk.callback');
+	// block(): параллельные callback одной сессии (пачка нажатий «Разрешить») выполняются по очереди — второй увидит уже созданный вход
+	Route::get('/auth/vk/callback', [VkAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.vk.callback');
 	Route::get('/auth/yandex/redirect', [YandexAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.yandex.redirect');
-	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.yandex.callback');
+	Route::get('/auth/yandex/callback', [YandexAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.yandex.callback');
+	Route::get('/auth/max', [\App\Http\Controllers\Auth\MaxAuthController::class, 'page'])->middleware('no-store-html')->name('auth.max.page');
+	Route::get('/auth/max/status/{id}', [\App\Http\Controllers\Auth\MaxAuthController::class, 'status'])->where('id', '[A-Za-z0-9]{40}')->middleware(['no-store-html', 'throttle:150,10'])->name('auth.max.status');
 	Route::get('/auth/apple/redirect', [\App\Http\Controllers\Auth\AppleAuthController::class, 'redirect'])->name('auth.apple.redirect');
-	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->name('auth.apple.callback');
+	Route::post('/auth/apple/callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'callback'])->block(10, 10)->name('auth.apple.callback');
 	Route::post('/auth/apple/native-callback', [\App\Http\Controllers\Auth\AppleAuthController::class, 'nativeCallback'])->name('auth.apple.native_callback');
 	Route::get('/auth/google/redirect', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'redirect'])->middleware('no-store-html')->name('auth.google.redirect');
-	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->name('auth.google.callback');
-	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->name('auth.biometric.login');
+	Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\GoogleAuthController::class, 'callback'])->middleware('no-store-html')->block(10, 10)->name('auth.google.callback');
+	Route::post('/auth/biometric-login', [\App\Http\Controllers\Api\BiometricController::class, 'webLogin'])->middleware('throttle:20,1')->name('auth.biometric.login');
 	Route::get('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'show'])->name('auth.review.show');
 	Route::post('/auth/review-login', [\App\Http\Controllers\Auth\ReviewLoginController::class, 'login'])->middleware('throttle:5,1')->name('auth.review.login');
 
@@ -466,6 +506,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Перевод игрока между основным составом и запасными в рамках команды
 		Route::patch('/events/{event}/teams/{team}/members/{member}/team-role', [TournamentTeamController::class, 'updateMemberTeamRole'])
         ->name('tournamentTeams.members.updateTeamRole');
+
+		// Замена: запасной выходит в основу вместо выбранного игрока основного состава
+		Route::patch('/events/{event}/teams/{team}/members/{member}/swap', [TournamentTeamController::class, 'swapMembers'])
+        ->name('tournamentTeams.members.swap');
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');
@@ -618,6 +662,7 @@ Route::post('/events/{event}/invite', [EventRegistrationInviteController::class,
     'verified',
 	])->group(function () {
 Route::get('/user/photos', [UserPhotoController::class, 'index'])->name('user.photos');
+Route::get('/user/event-photos', [UserPhotoController::class, 'eventList'])->name('user.photos.eventList');
 Route::post('/user/photos', [UserPhotoController::class, 'store'])->name('user.photos.store');
 Route::post('/user/photos/{media}/set-avatar', [UserPhotoController::class, 'setAvatar'])->name('user.photos.setAvatar');
     Route::post('/user/photos/{media}/set-main-cover', [UserPhotoController::class, 'setMainCover'])->name('user.photos.setMainCover');
@@ -631,6 +676,7 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::post('/account/unlink/yandex', [AccountUnlinkController::class, 'yandex'])->name('account.unlink.yandex')->middleware('block.impersonation');
 		Route::post('/account/unlink/apple', [AccountUnlinkController::class, 'apple'])->name('account.unlink.apple')->middleware('block.impersonation');
 		Route::post('/account/unlink/google', [AccountUnlinkController::class, 'google'])->name('account.unlink.google')->middleware('block.impersonation');
+		Route::post('/account/unlink/max', [AccountUnlinkController::class, 'max'])->name('account.unlink.max')->middleware('block.impersonation');
 
 		Route::post('/account/delete-request', [AccountDeleteRequestController::class, 'store'])->name('account.delete.request')->middleware('block.impersonation');
 		
@@ -663,14 +709,20 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		Route::get('/events/create', [EventCreateController::class, 'choose'])
         ->middleware('no-store-html')
         ->name('events.create');
+
+		// охват рассылки о новом мероприятии (счётчик в форме создания)
+		Route::get('/events/create/notify-reach', [EventCreateController::class, 'notifyReach'])
+        ->name('events.create.notify_reach');
 		
-		// черновик мастера создания (один на пользователя)
+		// черновики мастера создания (несколько на пользователя)
 		Route::post('/events/create/draft', [EventDraftController::class, 'save'])
         ->middleware('throttle:60,1')
         ->name('events.draft.save');
-		Route::get('/events/create/draft/restore', [EventDraftController::class, 'restore'])
+		Route::get('/events/create/draft/restore/{draft?}', [EventDraftController::class, 'restore'])
+        ->whereNumber('draft')
         ->name('events.draft.restore');
-		Route::delete('/events/create/draft', [EventDraftController::class, 'destroy'])
+		Route::delete('/events/create/draft/{draft?}', [EventDraftController::class, 'destroy'])
+        ->whereNumber('draft')
         ->name('events.draft.destroy');
 
 		// store event
@@ -893,6 +945,14 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	    Route::post('/profile/widget/preview',
 	        [\App\Http\Controllers\OrganizerWidgetController::class, 'preview'])
 	        ->name('profile.widget.preview');
+
+	    // Виджет аренды кортов и площадок (Организатор Pro + управляющий клубом)
+	    Route::get('/profile/rental-widget', [\App\Http\Controllers\RentalWidgetController::class, 'index'])->name('profile.rental_widget');
+	    Route::post('/profile/rental-widget', [\App\Http\Controllers\RentalWidgetController::class, 'store'])->name('profile.rental_widget.store');
+	    Route::post('/profile/rental-widget/regenerate-key', [\App\Http\Controllers\RentalWidgetController::class, 'regenerateKey'])->name('profile.rental_widget.regenerate_key');
+	    Route::post('/profile/rental-widget/toggle', [\App\Http\Controllers\RentalWidgetController::class, 'toggle'])->name('profile.rental_widget.toggle');
+	    Route::post('/profile/rental-widget/preview', [\App\Http\Controllers\RentalWidgetController::class, 'preview'])->name('profile.rental_widget.preview');
+	    Route::get('/profile/rental-widget/timeline-data', [\App\Http\Controllers\RentalWidgetController::class, 'timelineData'])->name('profile.rental_widget.timeline_data');
 	});
 
 	// Публичные роуты виджета (без auth, без CSRF)
@@ -907,6 +967,23 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 	Route::get('/widget/events.js',
 	    [\App\Http\Controllers\WidgetPublicController::class, 'script'])
 	    ->name('widget.script');
+
+	// Виджет аренды кортов: публичные адреса (iframe / JSON / JS)
+	Route::get('/widget/rental/{userId}', [\App\Http\Controllers\RentalWidgetPublicController::class, 'iframe'])->whereNumber('userId')->name('rental_widget.iframe');
+	Route::get('/api/widget/rental', [\App\Http\Controllers\RentalWidgetPublicController::class, 'json'])->name('rental_widget.json');
+	Route::get('/widget/rental.js', [\App\Http\Controllers\RentalWidgetPublicController::class, 'script'])->name('rental_widget.script');
+
+	// Бронирование гостем из таймлайна (форма в виджете): POST с CORS, страница статуса заказа по токену
+	Route::options('/api/widget/rental-timeline/book', [\App\Http\Controllers\RentalBookingPublicController::class, 'preflight']);
+	Route::post('/api/widget/rental-timeline/book', [\App\Http\Controllers\RentalBookingPublicController::class, 'store'])
+		->middleware('throttle:30,1')->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])->name('rental_booking.store');
+	Route::get('/widget/rental-booking/{token}', [\App\Http\Controllers\RentalBookingPublicController::class, 'status'])->where('token', '[A-Za-z0-9]{40}')->name('rental_booking.status');
+	Route::post('/widget/rental-booking/{token}/pay', [\App\Http\Controllers\RentalBookingPublicController::class, 'pay'])->where('token', '[A-Za-z0-9]{40}')->name('rental_booking.pay');
+
+	// Виджет «Таймлайн бронирования»: публичные адреса (iframe / JSON / JS)
+	Route::get('/widget/rental-timeline/{userId}', [\App\Http\Controllers\RentalTimelinePublicController::class, 'iframe'])->whereNumber('userId')->name('rental_timeline.iframe');
+	Route::get('/api/widget/rental-timeline', [\App\Http\Controllers\RentalTimelinePublicController::class, 'data'])->middleware('throttle:120,1')->name('rental_timeline.data');
+	Route::get('/widget/rental-timeline.js', [\App\Http\Controllers\RentalTimelinePublicController::class, 'script'])->name('rental_timeline.script');
 
 	/*
 	|--------------------------------------------------------------------------
@@ -949,6 +1026,36 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		| ADMIN
 		|--------------------------------------------------------------------------
 	*/
+	
+	// Список локаций: администратор — все, владелец площадки — только свои (проверка и фильтр в контроллере)
+	Route::middleware(['auth'])->get('/admin/locations', [AdminLocationController::class, 'index'])->name('admin.locations.index');
+
+	// Настройки локации: администратор или владелец площадки (с журналом изменений)
+	Route::middleware(['auth', 'location.manage'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/locations/{location}/edit', [AdminLocationController::class, 'edit'])->name('locations.edit');
+        Route::put('/locations/{location}', [AdminLocationController::class, 'update'])->name('locations.update');
+        Route::post('/locations/{location}/photos/reorder', [AdminLocationPhotoController::class, 'reorder'])
+		->name('locations.photos.reorder');
+		
+        Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
+		->name('locations.photos.destroy');
+
+        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
+            ->name('locations.directions.save');
+
+        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
+            ->name('locations.price_rules.save');
+
+        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
+            ->name('locations.trust.save');
+        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
+            ->name('locations.trust.destroy');
+
+    });
+
 	
 	Route::middleware(['auth', 'can:is-admin'])
     ->prefix('admin')
@@ -1043,36 +1150,16 @@ Route::delete('/user/photos/{media}', [UserPhotoController::class, 'destroy'])->
 		->name('organizer_requests.reject');
 		
         // Locations CRUD
-        Route::get('/locations', [AdminLocationController::class, 'index'])->name('locations.index');
         Route::get('/locations/create', [AdminLocationController::class, 'create'])->name('locations.create');
         Route::post('/locations', [AdminLocationController::class, 'store'])->name('locations.store');
-        Route::get('/locations/{location}/edit', [AdminLocationController::class, 'edit'])->name('locations.edit');
 
         // Platform payment settings (Premium + ads)
         Route::get('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'edit'])
             ->name('platform_payment_settings');
         Route::post('/platform-payment', [\App\Http\Controllers\Admin\AdminPlatformPaymentController::class, 'update'])
             ->name('platform_payment_settings.update');
-        Route::put('/locations/{location}', [AdminLocationController::class, 'update'])->name('locations.update');
         Route::delete('/locations/{location}', [AdminLocationController::class, 'destroy'])->name('locations.destroy');
 		
-        Route::post('/locations/{location}/photos/reorder', [AdminLocationPhotoController::class, 'reorder'])
-		->name('locations.photos.reorder');
-		
-        Route::delete('/locations/{location}/photos/{media}', [AdminLocationPhotoController::class, 'destroy'])
-		->name('locations.photos.destroy');
-
-        Route::post('/locations/{location}/directions', [AdminLocationController::class, 'saveDirections'])
-            ->name('locations.directions.save');
-
-        Route::post('/locations/{location}/price-rules', [AdminLocationController::class, 'savePriceRules'])
-            ->name('locations.price_rules.save');
-
-        Route::post('/locations/{location}/trust', [AdminLocationController::class, 'saveTrust'])
-            ->name('locations.trust.save');
-        Route::delete('/locations/{location}/trust/{trust}', [AdminLocationController::class, 'destroyTrust'])
-            ->name('locations.trust.destroy');
-
         Route::get('/impersonate', [ImpersonationController::class, 'index'])->name('impersonate.index');
         Route::post('/impersonate/start/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
         Route::get('/impersonate/search', [ImpersonationController::class, 'search'])->name('impersonate.search');
@@ -1124,6 +1211,8 @@ Route::get('/organizer/{organizer}/tournaments', [TournamentPublicController::cl
 
 Route::get('/events/{event}/tournament/tv', [TournamentTvController::class, 'tv'])
     ->name('tournament.tv');
+Route::get('/events/{event}/tournament/tv/live', [TournamentTvController::class, 'tvLive'])
+    ->middleware('throttle:120,1')->name('tournament.tv.live');
 
 Route::get('/events/{event}/tournament/pdf/schedule', [TournamentTvController::class, 'pdfSchedule'])
     ->name('tournament.pdf.schedule');

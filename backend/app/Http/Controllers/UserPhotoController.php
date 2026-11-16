@@ -48,6 +48,19 @@ class UserPhotoController extends Controller
         ]);
     }
 
+    /**
+     * Фото мероприятий текущего пользователя (новые сверху) — для обновления списка выбора на формах создания/редактирования
+     * без перезагрузки страницы (например, после загрузки фото в шторке приложения).
+     */
+    public function eventList(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $photos = $request->user()->getMedia('event_photos')->sortByDesc('created_at')->values();
+
+        return response()->json([
+            'photos' => $photos->map(fn ($p) => ['id' => (int) $p->id, 'thumb' => $p->getUrl('event_thumb')])->all(),
+        ]);
+    }
+
     public function store(Request $request)
     {
         try {
@@ -55,7 +68,7 @@ class UserPhotoController extends Controller
             if (!$request->hasFile('photo_original') || !$request->hasFile('photo_cropped')) {
                 return response()->json([
                     'success' => false,
-                    'error'   => 'Не переданы оба файла (оригинал и квадрат)',
+                    'error'   => __('Не переданы оба файла (оригинал и квадрат)'),
                 ], 422);
             }
 
@@ -66,14 +79,14 @@ class UserPhotoController extends Controller
             if ($originalFile->getSize() > 15 * 1024 * 1024) {
                 return response()->json([
                     'success' => false,
-                    'error'   => 'Оригинальный файл слишком большой. Максимум 15 МБ',
+                    'error'   => __('Оригинальный файл слишком большой. Максимум 15 МБ'),
                 ], 422);
             }
 
             if ($croppedFile->getSize() > 5 * 1024 * 1024) {
                 return response()->json([
                     'success' => false,
-                    'error'   => 'Квадрат слишком большой. Максимум 5 МБ',
+                    'error'   => __('Квадрат слишком большой. Максимум 5 МБ'),
                 ], 422);
             }
 
@@ -82,7 +95,7 @@ class UserPhotoController extends Controller
             if (!in_array($originalFile->getMimeType(), $allowedMimes)) {
                 return response()->json([
                     'success' => false,
-                    'error'   => 'Оригинал должен быть в формате JPEG, PNG или WEBP',
+                    'error'   => __('Оригинал должен быть в формате JPEG, PNG или WEBP'),
                 ], 422);
             }
 
@@ -91,7 +104,7 @@ class UserPhotoController extends Controller
             if ($userId && auth()->user()?->isAdmin()) {
                 $user = User::find($userId);
                 if (!$user) {
-                    return response()->json(['success' => false, 'error' => 'Пользователь не найден'], 404);
+                    return response()->json(['success' => false, 'error' => __('Пользователь не найден')], 404);
                 }
             } else {
                 $user = $request->user();
@@ -108,12 +121,12 @@ class UserPhotoController extends Controller
                 && auth()->user()->staffAssignment()->exists();
 
             if (in_array($photoType, ['event_photos', 'tournament_photos', 'school_logo', 'school_cover']) && !$orgOrAdmin && !$isStaffHelper) {
-                return response()->json(['success' => false, 'error' => 'Нет прав для загрузки этого типа фото'], 403);
+                return response()->json(['success' => false, 'error' => __('Нет прав для загрузки этого типа фото')], 403);
             }
 
             $allowedTypes = ['photos', 'event_photos', 'tournament_photos', 'school_logo', 'school_cover'];
             if (!in_array($photoType, $allowedTypes)) {
-                return response()->json(['success' => false, 'error' => 'Неверный тип фото'], 422);
+                return response()->json(['success' => false, 'error' => __('Неверный тип фото')], 422);
             }
 
             $collection = $photoType;
@@ -124,7 +137,7 @@ class UserPhotoController extends Controller
                 if ($existingLogos->count() >= 10) {
                     return response()->json([
                         'success' => false,
-                        'error'   => 'Максимум 10 логотипов. Удалите один перед загрузкой нового.',
+                        'error'   => __('Максимум 10 логотипов. Удалите один перед загрузкой нового.'),
                     ], 422);
                 }
             }
@@ -149,7 +162,7 @@ class UserPhotoController extends Controller
                 $media->delete();
                 return response()->json([
                     'success' => false,
-                    'error'   => 'Не удалось получить путь к thumb',
+                    'error'   => __('Не удалось получить путь к thumb'),
                 ], 500);
             }
 
@@ -169,7 +182,7 @@ class UserPhotoController extends Controller
 
             return response()->json([
                 'success'   => true,
-                'message'   => 'Фото добавлено',
+                'message'   => __('Фото добавлено'),
                 'media_id'  => $media->id,
                 'thumb_url' => $media->getUrl($thumbConversion),
             ]);
@@ -178,7 +191,7 @@ class UserPhotoController extends Controller
             Log::error('Upload error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error'   => 'Ошибка: ' . $e->getMessage(),
+                'error'   => __('Ошибка: :msg', ['msg' => $e->getMessage()]),
             ], 500);
         }
     }
@@ -191,15 +204,15 @@ class UserPhotoController extends Controller
         if (!$isOwner && !$isAdmin) abort(403);
 
         if ($media->collection_name !== 'school_cover') {
-            return back()->with('error', 'Только фотографии школы можно сделать основными ❌');
+            return back()->with('error', __('Только фотографии школы можно сделать основными ❌'));
         }
 
         $school = \App\Models\VolleyballSchool::where('organizer_id', $media->model_id)->first();
-        if (!$school) return back()->with('error', 'Школа не найдена');
+        if (!$school) return back()->with('error', __('Школа не найдена'));
 
         $school->update(['cover_media_id' => $media->id]);
 
-        return back()->with('status', 'Основная фотография обновлена ✅');
+        return back()->with('status', __('Основная фотография обновлена ✅'));
     }
 
     public function setMainLogo(Request $request, Media $media)
@@ -210,15 +223,15 @@ class UserPhotoController extends Controller
         if (!$isOwner && !$isAdmin) abort(403);
 
         if ($media->collection_name !== 'school_logo') {
-            return back()->with('error', 'Только логотипы школы можно сделать основными ❌');
+            return back()->with('error', __('Только логотипы школы можно сделать основными ❌'));
         }
 
         $school = \App\Models\VolleyballSchool::where('organizer_id', $media->model_id)->first();
-        if (!$school) return back()->with('error', 'Школа не найдена');
+        if (!$school) return back()->with('error', __('Школа не найдена'));
 
         $school->update(['logo_media_id' => $media->id]);
 
-        return back()->with('status', 'Основной логотип обновлён ✅');
+        return back()->with('status', __('Основной логотип обновлён ✅'));
     }
 
     public function setAvatar(Request $request, Media $media)
@@ -231,13 +244,13 @@ class UserPhotoController extends Controller
         }
 
         if ($media->collection_name !== 'photos') {
-            return back()->with('error', 'Только фото из галереи можно сделать аватаром ❌');
+            return back()->with('error', __('Только фото из галереи можно сделать аватаром ❌'));
         }
 
         $user = User::find($media->model_id);
         $user->update(['avatar_media_id' => $media->id]);
 
-        return back()->with('status', 'Аватар обновлён ✅');
+        return back()->with('status', __('Аватар обновлён ✅'));
     }
 
     public function destroy(Request $request, Media $media)
@@ -264,7 +277,7 @@ class UserPhotoController extends Controller
             ? route('user.photos') . '?user_id=' . $user->id
             : back()->getTargetUrl();
 
-        return redirect($redirectUrl)->with('status', 'Фото удалено ✅');
+        return redirect($redirectUrl)->with('status', __('Фото удалено ✅'));
     }
 
     public function destroyTournamentPhoto(Request $request, Media $media)
@@ -277,7 +290,7 @@ class UserPhotoController extends Controller
         }
 
         if ($media->collection_name !== 'tournament_photos') {
-            return back()->with('error', 'Это не турнирное фото ❌');
+            return back()->with('error', __('Это не турнирное фото ❌'));
         }
 
         $user = User::find($media->model_id);
@@ -287,7 +300,7 @@ class UserPhotoController extends Controller
             ? route('user.photos') . '?user_id=' . $user->id
             : back()->getTargetUrl();
 
-        return redirect($redirectUrl)->with('status', 'Турнирное фото удалено ✅');
+        return redirect($redirectUrl)->with('status', __('Турнирное фото удалено ✅'));
     }
 
     public function destroyEventPhoto(Request $request, Media $media)
@@ -300,7 +313,7 @@ class UserPhotoController extends Controller
         }
 
         if ($media->collection_name !== 'event_photos') {
-            return back()->with('error', 'Это не фото мероприятия ❌');
+            return back()->with('error', __('Это не фото мероприятия ❌'));
         }
 
         $user = User::find($media->model_id);
@@ -310,6 +323,6 @@ class UserPhotoController extends Controller
             ? route('user.photos') . '?user_id=' . $user->id
             : back()->getTargetUrl();
 
-        return redirect($redirectUrl)->with('status', 'Фото мероприятия удалено ✅');
+        return redirect($redirectUrl)->with('status', __('Фото мероприятия удалено ✅'));
     }
 }

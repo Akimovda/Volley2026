@@ -26,7 +26,7 @@ final class RegistrationEventLogger
         ?int $registrationId = null,
         array $meta = []
     ): void {
-        if (!Schema::hasTable('event_registration_logs')) {
+        if (!\App\Support\SchemaCache::hasTable('event_registration_logs')) {
             return;
         }
 

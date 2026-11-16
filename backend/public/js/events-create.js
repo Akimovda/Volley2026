@@ -600,6 +600,14 @@ document.addEventListener("trix-file-accept", function (event) {
 			];
 		}
 		
+		// Восстановление черновика/копии: сервер рисует список только для классики, а сохранённое значение (например, пляжное 2x2)
+		// в нём отсутствует и подменяется первым вариантом — берём исходное значение, если оно есть в списке для текущего направления
+		var initialSubtype = gameSubtype.getAttribute('data-initial') || '';
+		if (initialSubtype) {
+			gameSubtype.removeAttribute('data-initial');
+			for (var k = 0; k < opts.length; k++) { if (opts[k].v === initialSubtype) { current = initialSubtype; break; } }
+		}
+		
 		gameSubtype.innerHTML = '';
 		for (var i = 0; i < opts.length; i++) {
 			var o = document.createElement('option');
@@ -1626,6 +1634,20 @@ document.addEventListener("trix-file-accept", function (event) {
 			if (on) loc.innerHTML = '<option value="">Загрузка локаций…</option>';
 		}
 		
+		// Перерисовка кастомного списка локаций. safeRerenderEl определяется инлайн-скриптом страницы ПОСЛЕ этого файла;
+		// ответ с локациями может прийти раньше (быстрая сеть/кеш, новые синхронные скрипты между ними) — тогда прежний код
+		// молча пропускал перерисовку, и кастомный список оставался пустым при заполненном <select>. Ждём функцию (до ~3 с).
+		function rerenderLocationsSelect() {
+			var tries = 0;
+			(function attempt() {
+				if (typeof window.safeRerenderEl === 'function') {
+					setTimeout(function () { window.safeRerenderEl('#location_id'); }, 50);
+					return;
+				}
+				if (++tries < 60) setTimeout(attempt, 50);
+			})();
+		}
+
 		function fillLocationsSelect(items) {
 			const loc = document.getElementById('location_id');
 			if (!loc) return;
@@ -1637,12 +1659,8 @@ document.addEventListener("trix-file-accept", function (event) {
 				loc.innerHTML = '<option value="">Нет локаций для выбранного города</option>';
 				loc.disabled = false;
 				
-				// Перерисовываем кастомный селект
-				if (typeof window.safeRerenderEl === 'function') {
-					setTimeout(function() {
-						window.safeRerenderEl('#location_id');
-					}, 50);
-				}
+				// Перерисовываем кастомный селект (ждём, пока страница определит safeRerenderEl — см. rerenderLocationsSelect)
+				rerenderLocationsSelect();
 				return;
 			}
 			
@@ -1672,12 +1690,8 @@ document.addEventListener("trix-file-accept", function (event) {
 			loc.disabled = false;
 			loc.value = ''; // Не выбираем локацию автоматически
 			
-			// Перерисовываем кастомный селект
-			if (typeof window.safeRerenderEl === 'function') {
-				setTimeout(function() {
-					window.safeRerenderEl('#location_id');
-				}, 50);
-			}
+			// Перерисовываем кастомный селект (ждём, пока страница определит safeRerenderEl — см. rerenderLocationsSelect)
+			rerenderLocationsSelect();
 			
 			// Если есть функция обновления превью
 			try { if (typeof updatePreview === 'function') updatePreview(); } catch(e) {}
@@ -1746,7 +1760,7 @@ document.addEventListener("trix-file-accept", function (event) {
 				// Формируем подпись под городом (страна и регион)
 				const subParts = [];
 				if (CITY_CONFIG.showCountry && item.country_code) {
-					subParts.push(escapeHtml(item.country_code));
+					subParts.push(escapeHtml(item.country_name || item.country_code));
 				}
 				if (CITY_CONFIG.showRegion && item.region_display) {
 					subParts.push(escapeHtml(item.region_display));
@@ -1763,7 +1777,7 @@ document.addEventListener("trix-file-accept", function (event) {
 					'data-country="' + escapeHtml(item.country_code || '') + '" ' +
 					'data-region="' + escapeHtml(item.region_display || '') + '" ' +
 					'data-timezone="' + escapeHtml(item.timezone || '') + '">' +
-					'<div class="city-item-name">' + escapeHtml(item.name) + '</div>' +
+					'<div class="city-item-name">' + escapeHtml(item.name) + (item.name_alt ? ' <span style="opacity:.6">· ' + escapeHtml(item.name_alt) + '</span>' : '') + '</div>' +
 					(subText ? '<div class="city-item-sub">' + subText + tzText + '</div>' : '') +
 					'</button>'
 				);
@@ -2216,6 +2230,12 @@ document.addEventListener("trix-file-accept", function (event) {
 				if (!need) return true;
 				
 				var ids = currentIds();
+				// «Тренер — я» — источник истины: если галочка стоит, а чип по какой-то причине не создался, добавляем его здесь
+				var selfCb = document.getElementById('trainer-self-cb');
+				if (!ids.length && selfCb && selfCb.checked && selfCb.getAttribute('data-user-id')) {
+					addChip(selfCb.getAttribute('data-user-id'), selfCb.getAttribute('data-label') || '');
+					ids = currentIds();
+				}
 				if (!ids.length) {
 					e.preventDefault();
 					alert('Выбери минимум одного тренера из выпадающего списка.');

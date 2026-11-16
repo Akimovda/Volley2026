@@ -52,7 +52,7 @@ final class GuardResult
     public function authorize(): void
     {
         if (!$this->allowed) {
-            abort(403, $this->errors[0] ?? 'Доступ запрещён');
+            abort(403, $this->errors[0] ?? __('Доступ запрещён'));
         }
     }
 

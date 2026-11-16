@@ -17,7 +17,7 @@
 		</li>
 	</x-slot>
 
-	<x-slot name="h2">{{ $league->name }} · {{ $league->direction === 'beach' ? __('seasons.dir_beach') : __('seasons.dir_classic') }}</x-slot>
+	<x-slot name="h2">{{ $league->name }} · {!! ico_text($league->direction === 'beach' ? __('seasons.dir_beach') : __('seasons.dir_classic')) !!}</x-slot>
 
 	<x-slot name="t_description">
 		{{ __('seasons.create_t_description') }}

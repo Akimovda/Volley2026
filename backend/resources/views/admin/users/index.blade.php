@@ -233,6 +233,7 @@ body.dark .btn-count-badge {
 					if ($u->yandex_id) { $providers[] = 'Yandex'; }
 					if ($u->apple_id) { $providers[] = 'Apple'; }
 					if ($u->google_id) { $providers[] = 'Google'; }
+					if ($u->max_user_id) { $providers[] = 'MAX'; }
 					if ($u->phone) { $providers[] = __('admin.col_login_provider_phone'); }
 
 					$eventIds = [];
@@ -285,6 +286,7 @@ body.dark .btn-count-badge {
 						<th>{{ __('admin.col_tg') }}</th>
 						<th>{{ __('admin.col_vk') }}</th>
 						<th>{{ __('admin.col_yandex') }}</th>
+						<th>MAX</th>
 						<th>{{ __('admin.col_apple') }}</th>
 						<th>{{ __('admin.col_google') }}</th>
 						<th>{{ __('admin.col_registration') }}</th>
@@ -313,6 +315,7 @@ body.dark .btn-count-badge {
 						<td data-label="Telegram" class="text-center">{{ $u->telegram_id ? '✅' : '—' }}</td>
 						<td data-label="VK" class="text-center">{{ $u->vk_id ? '✅' : '—' }}</td>
 						<td data-label="{{ __('admin.col_yandex') }}" class="text-center">{{ $u->yandex_id ? '✅' : '—' }}</td>
+						<td data-label="MAX" class="text-center">{{ $u->max_user_id ? '✅' : '—' }}</td>
 						<td data-label="Apple" class="text-center">{{ $u->apple_id ? '✅' : '—' }}</td>
 						<td data-label="Google" class="text-center">{{ $u->google_id ? '✅' : '—' }}</td>
 						<td data-label="{{ __('admin.col_registration') }}" class="text-center">{{ $u->created_at?->format('Y-m-d') }}</td>

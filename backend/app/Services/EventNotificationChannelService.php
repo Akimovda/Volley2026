@@ -39,10 +39,20 @@ class EventNotificationChannelService
         $now = now();
         $threadIds = $request->input('channel_thread_ids', []);
 
+        // повтор анонса — только кемпы, мастер-классы и турниры; допустимы 7 и 14 дней
+        $repeatDays = (int) $request->input('channel_repeat_days', 0);
+        $repeatDays = (in_array((string) $event->format, EventNotificationChannel::REPEAT_FORMATS, true)
+            && in_array($repeatDays, EventNotificationChannel::REPEAT_DAYS, true)) ? $repeatDays : null;
+
+        // чекбокс «Описание» — только кемпы, мастер-классы, турниры; для остальных NULL (поведение по умолчанию)
+        $includeDescription = in_array((string) $event->format, EventNotificationChannel::REPEAT_FORMATS, true)
+            ? $request->boolean('channel_include_description')
+            : null;
+
         $rows = [];
         foreach ($channels as $channel) {
-            $rawThread = $threadIds[$channel->id] ?? null;
-            $threadId = ($rawThread !== null && $rawThread !== '') ? (int) $rawThread : null;
+            // «1» (главная тема форума) не запоминаем: Telegram не принимает message_thread_id=1, анонс и так уходит в главную тему
+            $threadId = \App\Support\TelegramTopic::normalize($threadIds[$channel->id] ?? null);
 
             $rows[] = [
                 'event_id'               => (int) $event->id,
@@ -54,6 +64,8 @@ class EventNotificationChannelService
                 'include_image'          => $request->boolean('channel_include_image', true),
                 'include_registered_list'=> $request->boolean('channel_include_registered', true),
                 'message_thread_id'      => $threadId,
+                'repeat_interval_days'   => $repeatDays,
+                'include_description'    => $includeDescription,
                 'created_at'             => $now,
                 'updated_at'             => $now,
             ];

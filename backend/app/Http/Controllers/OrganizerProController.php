@@ -81,7 +81,7 @@ class OrganizerProController extends Controller
             ->exists();
 
         if ($hadTrial) {
-            return back()->withErrors(['plan' => 'Пробный период уже использовался.']);
+            return back()->withErrors(['plan' => __('Пробный период уже использовался.')]);
         }
 
         $sub = $this->service->activate($user, 'trial');
@@ -101,7 +101,7 @@ class OrganizerProController extends Controller
 
         return redirect()
             ->route('organizer_pro.index')
-            ->with('status', '✅ Организатор Pro активирован до ' . $sub->expires_at->format('d.m.Y') . '!');
+            ->with('status', __('✅ Организатор Pro активирован до :date!', ['date' => $sub->expires_at->format('d.m.Y')]));
     }
 
     /** Заявка на платный тариф: создаём pending-подписку и платёж, дальше — оплата и «Я оплатил». */
@@ -114,14 +114,14 @@ class OrganizerProController extends Controller
         ]);
 
         if (!PlatformPaymentSetting::first()) {
-            return back()->withErrors(['plan' => 'Оплата временно недоступна. Попробуйте позже.']);
+            return back()->withErrors(['plan' => __('Оплата временно недоступна. Попробуйте позже.')]);
         }
 
         [$sub, $payment, $created] = $this->service->createPending($user, $data['plan'], $request->input('payment_method'));
 
         if (!$created) {
             return redirect()->route('organizer_pro.index')
-                ->with('status', 'Ваша оплата уже отправлена на проверку — администратор подтвердит её в ближайшее время.');
+                ->with('status', __('Ваша оплата уже отправлена на проверку — администратор подтвердит её в ближайшее время.'));
         }
 
         if ($payment->method === 'yoomoney') {
@@ -167,6 +167,6 @@ class OrganizerProController extends Controller
         }
 
         return redirect()->route('organizer_pro.index')
-            ->with('status', '✅ Спасибо! Проверим перевод и активируем Организатор Pro — обычно это занимает немного времени.');
+            ->with('status', __('✅ Спасибо! Проверим перевод и активируем Организатор Pro — обычно это занимает немного времени.'));
     }
 }

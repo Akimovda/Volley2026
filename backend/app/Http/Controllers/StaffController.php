@@ -39,14 +39,14 @@ class StaffController extends Controller
             $organizerId = (int) $data['organizer_id_override'];
             $organizer   = User::findOrFail($organizerId);
             if (!$organizer->isOrganizer() && !$organizer->isAdmin()) {
-                return back()->with('error', 'Указанный пользователь не является организатором.');
+                return back()->with('error', __('Указанный пользователь не является организатором.'));
             }
         } else {
             $organizerId = $currentUser->id;
         }
 
         if ((int) $staffUser->id === (int) $organizerId) {
-            return back()->with('error', 'Нельзя назначить помощником самого себя.');
+            return back()->with('error', __('Нельзя назначить помощником самого себя.'));
         }
 
         // Админа помощником назначить нельзя (у него и так полный доступ),
@@ -54,12 +54,12 @@ class StaffController extends Controller
         // на чужих мероприятиях (см. баг "Staff теряет доступ к чужим
         // мероприятиям, став организатором").
         if ($staffUser->isAdmin()) {
-            return back()->with('error', 'Нельзя назначить администратора помощником.');
+            return back()->with('error', __('Нельзя назначить администратора помощником.'));
         }
 
         // Проверяем что у этого пользователя ещё нет назначения
         if (StaffAssignment::where('staff_user_id', $staffUser->id)->exists()) {
-            return back()->with('error', 'Этот пользователь уже является помощником другого организатора.');
+            return back()->with('error', __('Этот пользователь уже является помощником другого организатора.'));
         }
 
         // Роль повышаем до staff только простому пользователю — у organizer
@@ -79,7 +79,7 @@ class StaffController extends Controller
             'organizer_id'  => $organizerId,
         ]);
 
-        return back()->with('status', "✅ {$staffUser->first_name} {$staffUser->last_name} назначен помощником.");
+        return back()->with('status', __('✅ :name назначен помощником.', ['name' => trim($staffUser->first_name . ' ' . $staffUser->last_name)]));
     }
 
     // Включить/выключить права «мастера» (абонементы и купоны) у помощника
@@ -123,7 +123,7 @@ class StaffController extends Controller
             $staffUser->save();
         }
 
-        return back()->with('status', '✅ Помощник снят с должности.');
+        return back()->with('status', __('✅ Помощник снят с должности.'));
     }
 
     // Логи staff для организатора

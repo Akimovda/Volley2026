@@ -29,6 +29,9 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    /** Форматы, о которых оповещаем всех пользователей сервиса (с включённой настройкой), а не только жителей города. */
+    public const BROADCAST_FORMATS = ['camp', 'master_class'];
+
     public int $tries   = 3;
     public int $backoff = 30;
 
@@ -65,11 +68,16 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
 
         $chunkSize = max(1, (int) config('notifications.new_event_city_notify_chunk_size', 75));
 
-        $chunkUsers = User::query()
-            ->where('city_id', $this->cityId)
-            ->where('is_bot', false)
-            ->where('notify_new_events_in_city', true)
-            ->where('id', '!=', $this->organizerId)
+        // Кэмпы и мастер-классы — всем с включённой настройкой, в любом городе (см. BROADCAST_FORMATS);
+        // остальные форматы — только жителям города мероприятия.
+        $isBroadcast = in_array((string) $event->format, self::BROADCAST_FORMATS, true);
+
+        // Точечная рассылка: если у мероприятия задан диапазон уровней — только игрокам, чей уровень (по направлению
+        // мероприятия: классика/пляжка) указан и попадает в диапазон. Без ограничения по уровню — всем, как и раньше.
+        $recipients = self::recipientsQuery($isBroadcast, $this->cityId, $this->organizerId);
+        self::applyLevelFilter($recipients, $event, $occurrence);
+
+        $chunkUsers = $recipients
             ->orderBy('id')
             ->skip($this->offset)
             ->take($chunkSize)
@@ -80,7 +88,8 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
         }
 
         $rateLimitHours = (int) config('notifications.new_event_city_notify_rate_limit_hours', 1);
-        $alreadyNotifiedIds = $this->alreadyNotifiedUserIds($chunkUsers->pluck('id')->all(), $rateLimitHours);
+        $notifType = $isBroadcast ? 'new_event_broadcast' : 'new_event_in_city';
+        $alreadyNotifiedIds = $this->alreadyNotifiedUserIds($chunkUsers->pluck('id')->all(), $rateLimitHours, $notifType);
 
         $address = $this->buildAddress($event);
 
@@ -95,7 +104,11 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
             }
 
             try {
-                $notif->createNewEventInCityNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                if ($isBroadcast) {
+                    $notif->createNewEventBroadcastNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                } else {
+                    $notif->createNewEventInCityNotification($user, $event, $occurrence, $address, $dateTimeStr);
+                }
             } catch (\Throwable $e) {
                 Log::warning('NotifyCityAboutNewEventJob: failed for user', [
                     'user_id'  => $user->id,
@@ -113,15 +126,68 @@ class NotifyCityAboutNewEventJob implements ShouldQueue
     }
 
     /**
+     * Ограничивает получателей диапазоном уровней мероприятия: classic_level для классики, beach_level для пляжки
+     * (уровни тура приоритетнее уровней серии). У игрока уровень должен быть заполнен и лежать в [min; max];
+     * если задана только одна граница — вторая открыта. Диапазон не задан — фильтра нет.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $users запрос к User
+     */
+    public static function applyLevelFilter($users, Event $event, EventOccurrence $occurrence): void
+    {
+        $isBeach = (string) ($event->direction ?? 'classic') === 'beach';
+        $min = $isBeach ? $occurrence->effectiveBeachLevelMin() : $occurrence->effectiveClassicLevelMin();
+        $max = $isBeach ? $occurrence->effectiveBeachLevelMax() : $occurrence->effectiveClassicLevelMax();
+
+        self::applyLevelRange($users, (string) ($event->direction ?? 'classic'), $min, $max, !empty($event->notify_unrated_players));
+    }
+
+    /**
+     * Получатели рассылки до фильтра по уровню. Единая точка для самой рассылки и для счётчика охвата в форме создания.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<User>
+     */
+    public static function recipientsQuery(bool $isBroadcast, ?int $cityId, int $organizerId)
+    {
+        return User::query()
+            ->when(!$isBroadcast, fn ($q) => $q->where('city_id', $cityId))
+            ->where('is_bot', false)
+            ->where('notify_new_events_in_city', true)
+            ->where('id', '!=', $organizerId);
+    }
+
+    /** Диапазон уровней (по направлению); $includeUnrated — добавить игроков, у которых уровень не указан. */
+    public static function applyLevelRange($users, string $direction, ?int $min, ?int $max, bool $includeUnrated): void
+    {
+        if ($min === null && $max === null) {
+            return;
+        }
+
+        $column = $direction === 'beach' ? 'beach_level' : 'classic_level';
+        $inRange = function ($q) use ($column, $min, $max) {
+            $q->whereNotNull($column)
+                ->when($min !== null, fn ($q2) => $q2->where($column, '>=', (int) $min))
+                ->when($max !== null, fn ($q2) => $q2->where($column, '<=', (int) $max));
+        };
+
+        if ($includeUnrated) {
+            // организатор разрешил рассылку и игрокам без указанного уровня
+            $users->where(fn ($q) => $q->whereNull($column)->orWhere($inRange));
+            return;
+        }
+
+        $users->where($inRange);
+    }
+
+    /**
      * user_id тех, кто уже получал new_event_in_city в пределах rate-limit окна
      * И чья occurrence (из payload прошлого уведомления) всё ещё актуальна —
      * не отменена и не удалена физически.
      */
-    private function alreadyNotifiedUserIds(array $userIds, int $rateLimitHours): array
+    private function alreadyNotifiedUserIds(array $userIds, int $rateLimitHours, string $type = 'new_event_in_city'): array
     {
         $recentNotifs = UserNotification::query()
             ->whereIn('user_id', $userIds)
-            ->where('type', 'new_event_in_city')
+            ->where('type', $type)
             ->where('created_at', '>=', now()->subHours($rateLimitHours))
             ->get(['user_id', 'payload']);
 

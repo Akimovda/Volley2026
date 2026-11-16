@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -16,6 +17,8 @@ use Laravel\Socialite\Facades\Socialite;
 
 class YandexAuthController extends Controller
 {
+    use OAuthCallbackSupport;
+
     private array $scopes = ['login:info', 'login:email'];
 
     private function debug(): bool
@@ -27,32 +30,6 @@ class YandexAuthController extends Controller
     {
         if (!$this->debug()) return;
         Log::warning('[YANDEX_OAUTH] ' . $msg, $ctx);
-    }
-
-    private function storeReturnTo(Request $request): void
-    {
-        $returnTo = (string) ($request->query('return') ?: url()->previous() ?: '');
-        $request->session()->put('oauth_return_to', $this->sanitizeReturnTo($returnTo));
-    }
-
-    private function sanitizeReturnTo(string $url): string
-    {
-        $fallback = url('/events');
-        $url = trim($url);
-        if ($url === '') return $fallback;
-
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) return $fallback;
-        if (str_contains($url, '/auth/') || str_contains($url, '/logout')) return $fallback;
-
-        return $url;
-    }
-
-    private function popReturnTo(Request $request): string
-    {
-        return (string) $request->session()->pull('oauth_return_to', url('/events'));
     }
 
     public function redirect(Request $request)
@@ -77,6 +54,10 @@ class YandexAuthController extends Controller
 
     public function callback(Request $request)
     {
+        if ($dup = $this->duplicateCallbackRedirect($request)) {
+            return $dup;
+        }
+
         $returnTo = $this->popReturnTo($request);
 
         if ($request->has('error')) {
@@ -90,7 +71,7 @@ class YandexAuthController extends Controller
             $yaUser = Socialite::driver('yandex')->user();
         } catch (\Throwable $e) {
             $this->logWarn('Socialite user() failed', ['e' => $e->getMessage()]);
-            return redirect()->route('login')->with('error', 'Не удалось войти через Яндекс. Попробуйте ещё раз.');
+            return $this->authFail('yandex', 'Не удалось войти через Яндекс. Попробуйте ещё раз.');
         }
 
         $yandexId = (string) $yaUser->getId();
@@ -107,14 +88,14 @@ class YandexAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Яндекс.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать Яндекс.'));
             }
 
             $current = $request->user();
 
             if (User::where('yandex_id', $yandexId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('yandex', $yandexId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Яндекс уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот Яндекс уже привязан к другому аккаунту.'));
             }
 
             $current->yandex_id = $yandexId;
@@ -125,7 +106,7 @@ class YandexAuthController extends Controller
             $request->session()->put('auth_provider', 'yandex');
             $request->session()->put('auth_provider_id', $yandexId);
 
-            return redirect()->to($returnTo)->with('status', 'Яндекс привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Яндекс привязан ✅'));
         }
 
         /* LOGIN */
@@ -148,9 +129,14 @@ class YandexAuthController extends Controller
         }
 
         if (!$user) {
-            // Попытка найти существующего пользователя по телефону
+            // Попытка найти существующего пользователя по телефону. Только аккаунт с ПОДТВЕРЖДЁННЫМ телефоном
+            // (иначе кто угодно мог вписать в профиль чужой номер) и без другого Яндекса — чужую привязку не перехватываем.
             if ($yandexPhone) {
-                $user = User::where('phone', $yandexPhone)->whereNull('merged_into_user_id')->first();
+                $user = User::where('phone', $yandexPhone)
+                    ->whereNotNull('phone_verified_at')
+                    ->whereNull('yandex_id')
+                    ->whereNull('merged_into_user_id')
+                    ->first();
                 if ($user) {
                     $user->yandex_id    = $yandexId;
                     $user->yandex_phone = $yandexPhone;
@@ -163,18 +149,8 @@ class YandexAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $safeEmail = "yandex_{$yandexId}@yandex.local";
-            if (User::where('email', $safeEmail)->exists()) {
-                $safeEmail = "yandex_{$yandexId}_" . Str::random(6) . "@yandex.local";
-            }
-
-            $user = new User();
-            $user->email     = $safeEmail;
-            $user->password  = Hash::make(Str::random(32));
-            $user->name      = trim(($yaUser->getName() ?: '') ?: 'Пользователь');
-            $user->yandex_id = $yandexId;
-
-            $user->save();
+            $user = $this->createOAuthUser('yandex_id', $yandexId, trim(($yaUser->getName() ?: '') ?: 'Пользователь'), '', "yandex_{$yandexId}@yandex.local");
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         } else {
             // Для существующих — обновляем пол и телефон если отсутствуют
             $changed = false;
@@ -196,6 +172,7 @@ class YandexAuthController extends Controller
 
         $request->session()->put('auth_provider', 'yandex');
         $request->session()->put('auth_provider_id', $yandexId);
+        $this->authSuccess('yandex', $isNewUser);
 
         // TMA: сигнализируем polling-клиенту о завершении авторизации
         $tmaClientId = $request->session()->pull('oauth_tma_client_id');

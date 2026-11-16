@@ -116,24 +116,44 @@
 	] : null];
 @endphp
 
+		@php
+			// какая сторона подаёт (для мяча у названия и компактной полосы счёта): порядок подачи пляжки → расстановка → ручная отметка
+			$servingSide = null;
+			if ($soOn && !empty($serve['serving_side'])) {
+				$servingSide = $serve['serving_side'];
+			} elseif ($luStarted && !empty($srv['team_id'])) {
+				foreach ($sides as $__sk => $__sd) { if ((int) $srv['team_id'] === (int) $__sd['team_id']) { $servingSide = $__sk; } }
+			} elseif (!empty($serveMarkTeamId)) {
+				foreach ($sides as $__sk => $__sd) { if ((int) $serveMarkTeamId === (int) $__sd['team_id']) { $servingSide = $__sk; } }
+			}
+		@endphp
+
+		{{-- Компактная полоса счёта: появляется сверху при прокрутке вниз (скрипт в rally_screen), чтобы счёт был виден при вводе очков --}}
+		<div class="rw-scorebar" id="rw-scorebar" aria-hidden="true">
+			<span class="rw-sb-team rw-sb-team--l">@if($servingSide === 'home')<span class="rw-srv-ball">@include('tournaments._partials.ball_icon')</span>@endif<span class="rw-sb-name">{{ $match->teamHome->name ?? 'TBD' }}</span></span>
+			@include('tournaments._partials.flip_score', ['home' => $board['score']['home'], 'away' => $board['score']['away'], 'mini' => true])
+			<span class="rw-sb-team rw-sb-team--r"><span class="rw-sb-name">{{ $match->teamAway->name ?? 'TBD' }}</span>@if($servingSide === 'away')<span class="rw-srv-ball">@include('tournaments._partials.ball_icon')</span>@endif</span>
+			<span class="rw-sb-set">{{ __('tournaments.rally_set_n', ['n' => $setNumber]) }}</span>
+		</div>
+
 		{{-- Шапка матча + табы сетов --}}
-		<div class="card p-3 mb-2" style="text-align:center">
+		<div class="card p-3 mb-2" id="rw-headcard" style="text-align:center">
 			@php $roundLabel = $stage->roundLabelFor($match); @endphp
 			<div class="mb-2">
 				<span class="score-pill score-pill--blue">{{ __('tournaments.score_pill_match', ['n' => $match->match_number]) }}</span>
 				<span class="score-pill score-pill--green">{{ $roundLabel ?? __('tournaments.score_pill_round', ['r' => $match->round]) }}</span>
 				<span class="score-pill score-pill--orange">{{ strtoupper($format) }}</span>
 			</div>
-			<div class="d-flex between fvc mb-2">
-				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_pair_names', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
+			<div class="d-flex between fvc mb-2 rw-headrow">
+				<div style="flex:1" class="rw-hteam rw-hteam--home">
+					<div class="b-700 f-18">@if($servingSide === 'home')<span class="rw-srv-ball" title="{{ __('tournaments.so_serving') }}">@include('tournaments._partials.ball_icon')</span> @endif @include('tournaments._partials.team_pair_names', ['team' => $match->teamHome, 'fallback' => 'TBD'])</div>
 					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamHome))
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamHome, 'class' => 'f-13', 'style' => 'opacity:.7'])
 					@endunless
 				</div>
-				<div class="f-24 b-800 px-2">{{ $board['score']['home'] }} : {{ $board['score']['away'] }}</div>
-				<div style="flex:1">
-					<div class="b-700 f-18">@include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
+				@include('tournaments._partials.flip_score', ['home' => $board['score']['home'], 'away' => $board['score']['away']])
+				<div style="flex:1" class="rw-hteam rw-hteam--away">
+					<div class="b-700 f-18">@if($servingSide === 'away')<span class="rw-srv-ball" title="{{ __('tournaments.so_serving') }}">@include('tournaments._partials.ball_icon')</span> @endif @include('tournaments._partials.team_pair_names', ['team' => $match->teamAway, 'fallback' => 'TBD'])</div>
 					@unless(app(\App\Services\TeamDisplayNames::class)->pair($match->teamAway))
 					@include('tournaments._partials.team_roster_line', ['team' => $match->teamAway, 'class' => 'f-13', 'style' => 'opacity:.7'])
 					@endunless
@@ -206,15 +226,18 @@
 				@endphp
 				<form method="POST" action="{{ $urls['serve_mark'] }}" class="js-rw-serve-mark" data-set="{{ $setNumber }}" data-team="{{ $sd['team_id'] }}" style="flex:1;min-width:120px">
 					@csrf
-					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">{{ $svSel ? '● ' : '' }}{!! str_replace('/', '/<wbr>', e($sd['team']->name ?? 'TBD')) !!}@unless($isBeachMatch)@include('tournaments._partials.team_sub_lines', ['team' => $sd['team'], 'inline' => true])@endunless</button>
+					<button type="submit" class="btn w-100 rw-serve-btn{{ $svSel ? ' on' : '' }}" style="padding:10px 8px;border:2px solid {{ $svBorder }};@if($svSel)background:{{ $svColor }};color:{{ $svLight ? '#14306B' : '#fff' }};@endif">@if($svSel)<span class="rw-srv-ball" style="color:inherit">@include('tournaments._partials.ball_icon')</span> @endif{!! str_replace('/', '/<wbr>', e($sd['team']->name ?? 'TBD')) !!}@unless($isBeachMatch)@include('tournaments._partials.team_sub_lines', ['team' => $sd['team'], 'inline' => true])@endunless</button>
 				</form>
 				@endforeach
 			</div>
 		</div>
 		@endif
 
-		<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
-		<div class="alert alert-info f-13 mb-2">{{ __($soOn ? 'tournaments.rally_no_attempts_note_attacks' : 'tournaments.rally_no_attempts_note') }}</div>
+		<details class="rw-howto mb-2">
+			<summary>{{ __('tournaments.rally_howto_title') }}</summary>
+			<div class="alert alert-info f-13 mb-1">{{ __('tournaments.rally_hint_two_ways') }}</div>
+			<div class="alert alert-info f-13 mb-1">{{ __($soOn ? 'tournaments.rally_no_attempts_note_attacks' : 'tournaments.rally_no_attempts_note') }}</div>
+		</details>
 
 		@php $maxColumns = max($board['columns']['home'], $board['columns']['away']); @endphp
 
@@ -222,7 +245,7 @@
 		     Разбивка по игрокам — на странице результатов турнира. --}}
 		<div class="card mb-2">
 			<div class="table-scrollable">
-				<table class="table f-13">
+				<table class="table f-13 rw-stats-table">
 					<thead>
 						<tr>
 							<th style="text-align:left">{{ __('tournaments.setup_col_team') }}</th>
@@ -262,6 +285,7 @@
 					</tbody>
 				</table>
 			</div>
+			<div class="rw-scroll-hint">← {{ __('tournaments.rally_scroll_hint') }} →</div>
 		</div>
 
 		@if($luOn && !$board['decided'])
@@ -282,7 +306,7 @@
 			$players = $board['players'][$sideKey];
 			$oppPlayers = $board['players'][$sideKey === 'home' ? 'away' : 'home'];
 		@endphp
-		<div class="card mb-2">
+		<div class="card mb-2 rw-tc rw-tc--{{ $sideKey }}">
 			<div class="b-700 f-16 mb-1">@include('tournaments._partials.team_name_link', ['team' => $side['team'], 'fallback' => 'TBD'])</div>
 			@include('tournaments._partials.team_sub_lines', ['team' => $side['team']])
 
@@ -294,7 +318,7 @@
 				<div class="d-flex gap-1" style="flex-wrap:wrap">
 
 					<button type="button" class="btn btn-primary js-rw-start" data-side="{{ $sideKey }}" data-kind="own" style="flex:1;min-width:16rem"><span class="rw-bi">@include('tournaments._partials.ball_icon')</span> {{ __('tournaments.rally_own_action_btn') }}</button>
-					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">@include('tournaments._partials.ui_icon', ['n' => 'warn', 'size' => 18]) {{ __('tournaments.rally_opp_error_row') }}</button>
+					<button type="button" class="btn btn-secondary js-rw-start" data-side="{{ $sideKey }}" data-kind="opp" style="flex:1;min-width:16rem;background:rgba(220,38,38,.1)">@include('tournaments._partials.ui_icon', ['n' => 'warn', 'size' => 18]) <span class="rw-lbl-full">{{ __('tournaments.rally_opp_error_row') }}</span><span class="rw-lbl-short">{{ __('tournaments.rally_opp_error_short') }}</span></button>
 					@if($luStarted)
 					<button type="button" class="btn btn-secondary js-lu-sub" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.lineup_btn_sub') }}" aria-label="{{ __('tournaments.lineup_btn_sub') }}">@include('tournaments._partials.icon_sub', ['kind' => 'sub', 'size' => 22]) <span>{{ __('tournaments.lineup_btn_sub') }}</span></button>
 					<button type="button" class="btn btn-secondary js-lu-fix" data-side="{{ $sideKey }}" style="min-width:8rem" title="{{ __('tournaments.bx_fix_btn') }}">{{ __('tournaments.bx_fix_btn') }}</button>

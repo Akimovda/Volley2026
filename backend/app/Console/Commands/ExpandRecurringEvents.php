@@ -29,7 +29,7 @@ class ExpandRecurringEvents extends Command
 
     public function handle(OccurrenceExpansionService $svc): int
     {
-        if (!Schema::hasTable('event_occurrences')) {
+        if (!\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $this->error('Table event_occurrences does not exist.');
             return self::FAILURE;
         }
@@ -73,13 +73,13 @@ class ExpandRecurringEvents extends Command
         try {
             $q = Event::query();
 
-            if (!Schema::hasColumn('events', 'is_recurring')) {
+            if (!\App\Support\SchemaCache::hasColumn('events', 'is_recurring')) {
                 $this->warn('Column events.is_recurring not found. Nothing to expand.');
                 return self::SUCCESS;
             }
             $q->where('is_recurring', true);
 
-            if (Schema::hasColumn('events', 'recurrence_rule')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'recurrence_rule')) {
                 $q->whereNotNull('recurrence_rule')->where('recurrence_rule', '!=', '');
             }
 

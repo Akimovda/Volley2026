@@ -51,8 +51,8 @@ class PlatformPaymentController extends Controller
 
         if ($payment->method !== 'yoomoney') {
             return $chosen !== ''
-                ? redirect($back)->with('status', 'Способ оплаты выбран. Выполните перевод и нажмите «Я оплатил».')
-                : redirect($back)->with('error', 'Онлайн-оплата сейчас недоступна.');
+                ? redirect($back)->with('status', __('Способ оплаты выбран. Выполните перевод и нажмите «Я оплатил».'))
+                : redirect($back)->with('error', __('Онлайн-оплата сейчас недоступна.'));
         }
 
         if (\App\Support\PaymentPricing::needsChoice(PlatformPaymentSetting::first(), 'sub_')) {
@@ -70,7 +70,7 @@ class PlatformPaymentController extends Controller
             );
         } catch (\Throwable $e) {
             Log::error('PlatformPaymentController::pay', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
-            return redirect($back)->with('error', 'Не удалось создать платёж. Попробуйте позже.');
+            return redirect($back)->with('error', __('Не удалось создать платёж. Попробуйте позже.'));
         }
 
         return redirect()->away($url);
@@ -85,15 +85,15 @@ class PlatformPaymentController extends Controller
         $back = $type === 'premium' ? route('premium.index') : route('organizer_pro.index');
 
         if ($payment->status === 'paid') {
-            return redirect($back)->with('status', '✅ Оплата получена, подписка активна.');
+            return redirect($back)->with('status', __('✅ Оплата получена, подписка активна.'));
         }
 
         if ($payment->yoomoney_payment_id
             && $this->yookassa->verifyPlatformPayment($payment->yoomoney_payment_id) === 'succeeded'
             && $this->settler->settle($payment)) {
-            return redirect($back)->with('status', '✅ Оплата получена, подписка активирована.');
+            return redirect($back)->with('status', __('✅ Оплата получена, подписка активирована.'));
         }
 
-        return redirect($back)->with('status', 'Платёж обрабатывается. Подписка включится автоматически сразу после подтверждения оплаты.');
+        return redirect($back)->with('status', __('Платёж обрабатывается. Подписка включится автоматически сразу после подтверждения оплаты.'));
     }
 }

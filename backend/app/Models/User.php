@@ -55,6 +55,10 @@
         'beach_universal',
         'allow_user_contact',
         'notify_player_registrations',
+        'registration_notify_channel_id',
+        'registration_notify_also_dm',
+        'registration_notify_thread_id',
+        'max_user_id',
         'notify_new_events_in_city',
         'avatar_media_id',
         'profile_completed_at',
@@ -62,6 +66,7 @@
         'google_id',
         'locale',
         'is_club_manager',
+        'club_report_monthly',
 		];
 		
 		/**
@@ -92,6 +97,7 @@
         'read_at' => 'datetime',
         'avatar_media_id' => 'integer',  // 👈 ДОБАВИТЬ
         'is_club_manager' => 'boolean',
+        'club_report_monthly' => 'boolean',
 		];
 		
 		protected function casts(): array
@@ -103,8 +109,10 @@
             'beach_universal'             => 'boolean',
             'allow_user_contact'          => 'boolean',
             'notify_player_registrations' => 'boolean',
+            'registration_notify_also_dm' => 'boolean',
             'notify_new_events_in_city'   => 'boolean',
             'is_hidden'                   => 'boolean',
+            'events_filters'              => 'array',
             'is_test'                     => 'boolean',
             'is_placeholder'              => 'boolean',
             'max_notifications_enabled'      => 'boolean',

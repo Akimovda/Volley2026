@@ -405,6 +405,9 @@ function initJoinForms() {
         if (!form.matches('form[data-ajax-join]')) return;
         e.preventDefault();
 
+        // Гость: вместо запроса, который закончится ошибкой, открываем окно входа и после входа возвращаем на эту страницу
+        if (window.__vpGuestPage && window.openLoginPopup) { window.openLoginPopup(window.location.href); return; }
+
         // Несколько способов оплаты: сначала спрашиваем способ (до записи — закрыл попап, записи нет)
         if (form.dataset.payChoices && !form.querySelector('input[name="payment_method"]')) {
             let choices = [];

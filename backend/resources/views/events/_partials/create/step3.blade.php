@@ -1,5 +1,5 @@
 						<div class="ramka" style="z-index: 5" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">{{ __('events.access_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="eye" size="1.2em" /> {{ __('events.access_title') }}</h2>		
 							<div class="row">
 								<div class="col-md-4">
 									<div class="card">
@@ -94,15 +94,15 @@
                                                 if (!in_array($pm, $availableMethods)) $pm = 'cash';
                                             @endphp
                                             <select name="payment_method" id="payment_method">
-                                                <option value="cash" @selected($pm === 'cash')>{{ __('events.pay_method_cash') }}</option>
+                                                <option value="cash" @selected($pm === 'cash')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_cash')) }}</option>
                                                 @if(in_array('tbank_link', $availableMethods))
-                                                <option value="tbank_link" @selected($pm === 'tbank_link')>{{ __('events.pay_method_tbank') }}</option>
+                                                <option value="tbank_link" @selected($pm === 'tbank_link')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_tbank')) }}</option>
                                                 @endif
                                                 @if(in_array('sber_link', $availableMethods))
-                                                <option value="sber_link" @selected($pm === 'sber_link')>{{ __('events.pay_method_sber') }}</option>
+                                                <option value="sber_link" @selected($pm === 'sber_link')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_sber')) }}</option>
                                                 @endif
                                                 @if(in_array('yoomoney', $availableMethods))
-                                                <option value="yoomoney" @selected($pm === 'yoomoney')>{{ __('events.pay_method_yoomoney') }}</option>
+                                                <option value="yoomoney" @selected($pm === 'yoomoney')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.pay_method_yoomoney')) }}</option>
                                                 @endif
                                             </select>
 
@@ -144,8 +144,8 @@
                                                 $tpm = old('tournament_payment_mode', $prefill['tournament_payment_mode'] ?? 'team');
                                             @endphp
                                             <select name="tournament_payment_mode" id="tournament_payment_mode">
-                                                <option value="team" @selected($tpm === 'team')>{{ __('events.tournament_pay_team') }}</option>
-                                                <option value="per_player" @selected($tpm === 'per_player')>{{ __('events.tournament_pay_per') }}</option>
+                                                <option value="team" @selected($tpm === 'team')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_team')) }}</option>
+                                                <option value="per_player" @selected($tpm === 'per_player')>{{ preg_replace('/^[^\p{L}\p{N}]+/u', '', __('events.tournament_pay_per')) }}</option>
                                             </select>
 
                                             <ul class="list f-14 mt-1" id="tournament_payment_mode_hints">
@@ -200,7 +200,7 @@
 						{{-- ===== Помощник записи 🤖 =====--}}
 						
                         <div class="ramka" data-show-if="allow_registration=1" data-hide-if="registration_mode=team,team_classic,team_beach|format=tournament" id="bot_assistant_block">
-                            <h2 class="-mt-05">{{ __('events.bot_title') }}</h2>
+                            <h2 class="-mt-05 h2-ico"><x-ico name="robot" size="1.2em" /> {{ __('events.bot_title') }}</h2>
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="card">
@@ -281,7 +281,7 @@
 							</div>
 						</div>
 						<div class="ramka" data-show-if="allow_registration=1">
-							<h2 class="-mt-05">{{ __('events.notify_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="bell" size="1.2em" /> {{ __('events.notify_title') }}</h2>		
 							<div class="row">
 								
 								{{-- ✅ Notifications + participants visibility --}}
@@ -415,6 +415,9 @@
 								$channelUpdateMessage = (bool) old('channel_update_message', true);
 								$channelIncludeImage = (bool) old('channel_include_image', true);
 								$channelIncludeRegistered = (bool) old('channel_include_registered', true);
+								$channelRepeatDays = (int) old('channel_repeat_days', 0);
+								$channelDescHasOld = old('channel_include_description') !== null;
+								$channelIncludeDescription = (bool) old('channel_include_description', false);
                                 
 								$selectedOrganizerId = (int) old('organizer_id', $prefill['organizer_id'] ?? auth()->id());
                                 
@@ -473,6 +476,7 @@
 													   style="width:180px; font-size:13px; padding:3px 6px">
 												<div class="text-muted f-12" style="max-width:420px">{{ __('events.channel_thread_hint') }}</div>
 												<div class="text-muted f-12" style="max-width:420px;opacity:.8">{{ __('events.channel_thread_hint_howto') }}</div>
+												@include('partials.channel-check', ['channel' => $channel, 'threadInput' => 'input[name="channel_thread_ids[' . $channel->id . ']"]'])
 											</div>
 											@endif
 											@endforeach
@@ -516,12 +520,136 @@
 												<div class="custom-checkbox"></div>
 												<span>{{ __('events.channels_with_players') }}</span>
 											</label>
+
+											{{-- Повтор анонса — только кемпы, мастер-классы, турниры --}}
+											<div class="mt-2" data-show-if="format=camp|master_class|tournament|tournament_classic|tournament_beach">
+												<label class="checkbox-item">
+													<input type="hidden" name="channel_include_description" value="0">
+													<input type="checkbox" name="channel_include_description" value="1" @checked($channelIncludeDescription)>
+													<div class="custom-checkbox"></div>
+													<span>{{ __('events.channels_with_description') }}</span>
+												</label>
+												<div class="text-muted f-12 mb-1" style="max-width:420px">{{ __('events.channels_with_description_hint') }}</div>
+												<script>
+												(function(){
+													// по умолчанию: у кемпа описание в анонсе было всегда → включено; у мастер-классов и турниров → выключено.
+													// Пока организатор сам не трогал галочку (и нет возврата формы с ошибкой), следуем выбранному формату.
+													var f = document.getElementById('format');
+													var cb = document.querySelector('input[type="checkbox"][name="channel_include_description"]');
+													if (!f || !cb) return;
+													var touched = @json($channelDescHasOld);
+													cb.addEventListener('change', function(){ touched = true; });
+													function apply(){ if (!touched) cb.checked = (f.value === 'camp'); }
+													f.addEventListener('change', apply);
+													apply();
+												})();
+												</script>
+												<label>{{ __('events.channels_repeat_label') }}</label>
+												@foreach([0 => 'channels_repeat_none', 7 => 'channels_repeat_7', 14 => 'channels_repeat_14', 30 => 'channels_repeat_30'] as $__rd => $__rk)
+												<label class="radio-item">
+													<input type="radio" name="channel_repeat_days" value="{{ $__rd }}" @checked($channelRepeatDays === $__rd)>
+													<div class="custom-radio"></div>
+													<span>{{ __('events.' . $__rk) }}</span>
+												</label>
+												@endforeach
+												<div class="text-muted f-12" style="max-width:420px">{{ __('events.channels_repeat_hint') }}</div>
+											</div>
 										</div>
                                         @endif
 									</div>
 								</div>
 								<div class="col-md-4">
 									<div class="card">
+										<div id="notify-section">
+										<label>{{ __('events.notify_section_title') }}</label>
+										<hr class="mb-1">
+										<input type="hidden" name="notify_unrated_players" value="0">
+										<label class="checkbox-item mt-1">
+											<input type="checkbox" name="notify_unrated_players" value="1" @checked(old('notify_unrated_players', $prefill['notify_unrated_players'] ?? false))>
+											<div class="custom-checkbox"></div>
+											<span>{{ __('events.notify_unrated_label') }}</span>
+										</label>
+										<div style="font-size:1.2rem;line-height:1.35;opacity:.6">{{ __('events.notify_unrated_hint') }}</div>
+										@php
+											$notifyReachT = [
+												'disabled' => __('events.notify_reach_disabled'),
+												'no_city'  => __('events.notify_reach_no_city'),
+												'all'      => __('events.notify_reach_all'),
+												'without'  => __('events.notify_reach_without'),
+												'with'     => __('events.notify_reach_with'),
+												'extra'    => __('events.notify_reach_extra'),
+											];
+										@endphp
+										<div class="f-15 mt-1" id="notify-reach" style="display:none"></div>
+										<script>
+										(function () {
+											var form = document.getElementById('notify-reach') && document.getElementById('notify-reach').closest('form');
+											if (!form) return;
+											var box = document.getElementById('notify-reach');
+											var T = @json($notifyReachT);
+											var URL = @json(route('events.create.notify_reach'));
+											var timer = null, req = null;
+											function val(name) { var el = form.querySelector('[name="' + name + '"]'); return el ? el.value : ''; }
+											function checkedVal(name) { var el = form.querySelector('[name="' + name + '"]:checked'); return el ? el.value : ''; }
+											function num(n) { return Number(n).toLocaleString('ru-RU'); }
+											function fill(tpl, n) { return tpl.replace(':n', num(n)); }
+											function render(r) {
+												var cb = form.querySelector('input[type="checkbox"][name="notify_unrated_players"]');
+												var on = cb && cb.checked, h = '';
+												if (r.state === 'disabled') h = T.disabled;
+												else if (r.state === 'no_city') h = T.no_city;
+												else if (r.state === 'all') h = fill(T.all, r.total);
+												else if (r.state === 'range') {
+													var a = '<span style="' + (on ? 'opacity:.6' : 'font-weight:700') + '">' + fill(T.without, r.base) + '</span>';
+													var b = '<span style="' + (on ? 'font-weight:700' : 'opacity:.6') + '">' + fill(T.with, r.with_unrated) + (r.unrated > 0 ? ' (' + fill(T.extra, r.unrated) + ')' : '') + '</span>';
+													h = a + '<br>' + b;
+												}
+												box.innerHTML = h; box.style.display = h ? '' : 'none';
+											}
+											var last = null;
+											function load() {
+												var dir = val('direction') === 'beach' ? 'beach' : 'classic';
+												var q = [
+													'format=' + encodeURIComponent(val('format')),
+													'direction=' + dir,
+													'location_id=' + encodeURIComponent(val('location_id')),
+													'is_private=' + (form.querySelector('[name="is_private"]:checked') || form.querySelector('input[type="checkbox"][name="is_private"]:checked') ? 1 : 0),
+													'allow_registration=' + (checkedVal('allow_registration') || '1'),
+													dir + '_level_min=' + encodeURIComponent(val(dir + '_level_min')),
+													dir + '_level_max=' + encodeURIComponent(val(dir + '_level_max'))
+												].join('&');
+												if (req) req.abort();
+												req = new XMLHttpRequest();
+												req.open('GET', URL + '?' + q);
+												req.setRequestHeader('Accept', 'application/json');
+												req.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+												req.onload = function () { try { last = JSON.parse(req.responseText); render(last); } catch (e) {} };
+												req.send();
+											}
+											function schedule() { clearTimeout(timer); timer = setTimeout(load, 350); }
+											form.addEventListener('change', function (e) {
+												var n = e.target && e.target.name;
+												if (n === 'notify_unrated_players') { if (last) render(last); return; }
+												if (['format','direction','location_id','is_private','allow_registration','classic_level_min','classic_level_max','beach_level_min','beach_level_max'].indexOf(n) !== -1) schedule();
+											});
+											document.addEventListener('DOMContentLoaded', schedule);
+											if (document.readyState !== 'loading') schedule();
+										})();
+										</script>
+
+										<hr class="mb-1 mt-1">
+										</div>
+										<script>
+										// приватное мероприятие не рассылается — раздел «Рекламная рассылка» скрываем
+										(function () {
+											var cb = document.getElementById('is_private'), box = document.getElementById('notify-section');
+											if (!cb || !box) return;
+											function sync() { box.style.display = cb.checked ? 'none' : ''; }
+											cb.addEventListener('change', sync); cb.addEventListener('click', sync);
+											document.addEventListener('DOMContentLoaded', sync); window.addEventListener('load', sync);
+											sync();
+										})();
+										</script>
 										<label>{{ __('events.show_participants_label') }}</label>
 										<label class="radio-item">
 											<input type="radio" name="show_participants" value="1" @checked($showParts)>
@@ -543,7 +671,7 @@
 							</div>
 						</div>
 						<div class="ramka" style="z-index:6">
-							<h2 class="-mt-05">{{ __('events.photo_desc_title') }}</h2>		
+							<h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> {{ __('events.photo_desc_title') }}</h2>		
 							
 							<div class="row">
 								
@@ -555,6 +683,11 @@
 								<div class="col-md-4">
 									@php
 									$userEventPhotos = auth()->user()->getMedia('event_photos')->sortByDesc('created_at');
+									// old('event_photos') приходит JSON-СТРОКОЙ из скрытого поля (и из черновика) — раскодировать до массива id,
+									// иначе строка кодируется повторно и разваливается на отдельные символы
+									$__selPhotos = old('event_photos', $eventPhotos ?? []);
+									for ($__i = 0; $__i < 3 && is_string($__selPhotos); $__i++) { $__selPhotos = json_decode($__selPhotos, true) ?? []; }
+									$__selPhotos = array_values(array_unique(array_filter(array_map('intval', (array) $__selPhotos), fn ($n) => $n > 0)));
 									@endphp
 
 									<div class="card">
@@ -565,7 +698,7 @@
 										</div>
 
 										<div class="event-photos-selector"
-											data-selected='{{ json_encode(old('event_photos', $eventPhotos ?? [])) }}'
+											data-selected='{{ json_encode($__selPhotos) }}'
 											id="event-photos-swiper-wrap"
 											@if($userEventPhotos->count() === 0) style="display:none" @endif>
 											<div class="swiper eventPhotosSwiper">
@@ -620,8 +753,14 @@
 										@endif
 
 										const selectorEl = document.querySelector('.event-photos-selector');
-										const savedPhotos = JSON.parse(selectorEl ? selectorEl.dataset.selected || '[]' : '[]');
-										let selectedPhotos = [...savedPhotos];
+										// защита от «испорченных» значений (двойное кодирование в старых черновиках): только числовые id существующих фото
+										function normalizePhotoIds(v) {
+											for (let i = 0; i < 3 && typeof v === 'string'; i++) { try { v = JSON.parse(v); } catch (e) { v = []; } }
+											return Array.isArray(v) ? v.map(x => parseInt(x)).filter(n => n > 0) : [];
+										}
+										const availablePhotoIds = new Set(Array.from(document.querySelectorAll('.photo-select')).map(c => parseInt(c.value)));
+										const savedPhotos = normalizePhotoIds(selectorEl ? selectorEl.dataset.selected || '[]' : '[]');
+										let selectedPhotos = Array.from(new Set(savedPhotos.filter(id => availablePhotoIds.has(id)))).slice(0, 10);
 										const photoSelectLabel = @json(__('events.photo_select'));
 										const photoMainLabel   = @json(__('events.photo_main'));
 										const photoPosLabel    = @json(__('events.photo_pos_n', ['n' => '']));
@@ -828,6 +967,20 @@
 											document.getElementById('event-photo-upload').value = '';
 										}
 
+										// Приложение: фото, загруженные в шторке «Ваши фотографии», добавляем в список без перезагрузки формы
+										window.addEventListener('vp-overlay-closed', function () {
+											fetch(@json(route('user.photos.eventList')), { credentials: 'same-origin', headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+												.then(function (r) { return r.json(); })
+												.then(function (d) {
+													var have = {};
+													document.querySelectorAll('.photo-select').forEach(function (c) { have[String(c.value)] = true; });
+													(d.photos || []).slice().reverse().forEach(function (p) {
+														if (!have[String(p.id)]) onEventPhotoUploaded(p.id, p.thumb);
+													});
+												})
+												.catch(function () {});
+										});
+
 										document.getElementById('event-upload-photo-btn').addEventListener('click', () => {
 											document.getElementById('event-photo-upload').click();
 										});
@@ -862,7 +1015,7 @@
 										<label>{{ __('events.desc_label') }}</label>
 										
 										{{-- Важно: hidden input + trix-editor --}}
-										<input id="description_html" type="hidden" name="description_html">
+										<input id="description_html" type="hidden" name="description_html" value="{{ old('description_html', $prefill['description_html'] ?? '') }}">
 										
 										<trix-editor input="description_html" class="trix-content"></trix-editor>
 <script>

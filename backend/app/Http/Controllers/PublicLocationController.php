@@ -41,16 +41,16 @@ class PublicLocationController extends Controller
             $todayUtc          = CarbonImmutable::now('UTC')->startOfDay();
             $activeLocationIds = [];
 
-            if (Schema::hasTable('event_occurrences')) {
+            if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
                 $q = EventOccurrence::query()
                     ->whereNotNull('starts_at')
                     ->where('starts_at', '>=', $todayUtc)
                     ->whereHas('event', function ($e) {
                         $e->where(function ($pub) {
-                            if (Schema::hasColumn('events', 'is_private')) {
+                            if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
                                 $pub->whereNull('is_private')->orWhere('is_private', false);
                             }
-                            if (Schema::hasColumn('events', 'visibility')) {
+                            if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                                 $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
                             }
                         });
@@ -63,15 +63,15 @@ class PublicLocationController extends Controller
 
                 $activeLocationIds = $q->get()->pluck('event.location_id')->filter()->unique()->values()->all();
 
-            } elseif (Schema::hasTable('events')) {
+            } elseif (\App\Support\SchemaCache::hasTable('events')) {
                 $q = Event::query()
                     ->whereNotNull('starts_at')
                     ->where('starts_at', '>=', $todayUtc)
                     ->where(function ($pub) {
-                        if (Schema::hasColumn('events', 'is_private')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
                             $pub->whereNull('is_private')->orWhere('is_private', false);
                         }
-                        if (Schema::hasColumn('events', 'visibility')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                             $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
                         }
                     });
@@ -216,7 +216,7 @@ class PublicLocationController extends Controller
         // -----------------------------
         $occurrences = collect();
 
-        if (Schema::hasTable('event_occurrences')) {
+        if (\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $occQ = EventOccurrence::query()
                 ->whereHas('event', function ($q) use ($loc, $userId, $isAdmin) {
                     $q->where('location_id', (int)$loc->id);
@@ -227,26 +227,26 @@ class PublicLocationController extends Controller
                         $q->where(function ($w) use ($userId) {
                             // public
                             $w->where(function ($pub) {
-                                if (Schema::hasColumn('events', 'is_private')) {
+                                if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
                                     $pub->whereNull('is_private')->orWhere('is_private', false);
                                 }
-                                if (Schema::hasColumn('events', 'visibility')) {
+                                if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                                     $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
                                 }
                             });
 
                             // или своё (organizer)
-                            if ($userId > 0 && Schema::hasColumn('events', 'organizer_id')) {
+                            if ($userId > 0 && \App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                                 $w->orWhere('organizer_id', $userId);
                             }
                         });
                     }
                 });
 
-            if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                 $occQ->whereNull('cancelled_at');
             }
-            if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                 $occQ->where(function ($w) {
                     $w->whereNull('is_cancelled')->orWhere('is_cancelled', false);
                 });
@@ -287,16 +287,16 @@ $occQ->whereNotNull('starts_at')
                 $eventsQ->where(function ($w) use ($userId) {
                     // public
                     $w->where(function ($pub) {
-                        if (Schema::hasColumn('events', 'is_private')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'is_private')) {
                             $pub->whereNull('is_private')->orWhere('is_private', false);
                         }
-                        if (Schema::hasColumn('events', 'visibility')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                             $pub->whereNull('visibility')->orWhere('visibility', '!=', 'private');
                         }
                     });
 
                     // или своё (organizer)
-                    if ($userId > 0 && Schema::hasColumn('events', 'organizer_id')) {
+                    if ($userId > 0 && \App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                         $w->orWhere('organizer_id', $userId);
                     }
                 });
@@ -341,7 +341,7 @@ $eventsQ->whereNotNull('starts_at')
      */
     private function eventLikesData(array $occurrenceIds, int $userId): array
     {
-        if (empty($occurrenceIds) || !Schema::hasTable('event_likes')) {
+        if (empty($occurrenceIds) || !\App\Support\SchemaCache::hasTable('event_likes')) {
             return [[], []];
         }
 

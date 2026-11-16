@@ -25,22 +25,22 @@ class EventIndexService
     {
         $this->visibility = $visibility;
 
-        $this->hasOccurrences   = Schema::hasTable('event_occurrences');
-        $this->hasRegistrations = Schema::hasTable('event_registrations');
+        $this->hasOccurrences   = \App\Support\SchemaCache::hasTable('event_occurrences');
+        $this->hasRegistrations = \App\Support\SchemaCache::hasTable('event_registrations');
 
-        $this->hasCancelledAt = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'cancelled_at');
-        $this->hasIsCancelled = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'is_cancelled');
-        $this->hasStatus      = $this->hasRegistrations && Schema::hasColumn('event_registrations', 'status');
+        $this->hasCancelledAt = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at');
+        $this->hasIsCancelled = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled');
+        $this->hasStatus      = $this->hasRegistrations && \App\Support\SchemaCache::hasColumn('event_registrations', 'status');
 
         $this->locationColumns = $this->detectLocationColumns();
     }
     private function applyActiveOccurrenceScope($query): void
     {
-        if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
             $query->whereNull('cancelled_at');
         }
     
-        if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
             $query->where(function ($q) {
                 $q->whereNull('is_cancelled')
                   ->orWhere('is_cancelled', false);
@@ -85,7 +85,12 @@ class EventIndexService
     |--------------------------------------------------------------------------
     */
 
-    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '')
+    /**
+     * Базовый запрос туров ленты: активные туры + фильтр города/региона (кэмпы и многодневные — всем) + правила видимости
+     * (приватность, направление, формат, уровень, локация, бренд). Окно дат и сортировка — снаружи.
+     * $cityFilter=false — без фильтра города (блок «Скоро» применяет свой: кэмпы и мастер-классы всем, турниры по региону).
+     */
+    public function buildOccurrenceQuery($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '', bool $cityFilter = true)
     {
         $occQ = EventOccurrence::query()
             ->with([
@@ -96,30 +101,37 @@ class EventIndexService
             ]);
         
         $this->applyActiveOccurrenceScope($occQ);
-        $this->applyDateFilter($occQ);
+        // applyDateFilter() (скрыть уже завершившиеся) применяется ниже — только к окнам «с сегодняшнего дня»;
+        // окна в прошлом (архив дат, стрелка ‹) показывают и завершённые мероприятия.
         
         $occQ->orderBy('starts_at', 'asc');
 
         // Фильтр по городу пользователя (по умолчанию)
         $cityParam = trim((string) request('city', ''));
-        if ($cityParam !== 'all' && $user && $user->city_id) {
+        if ($cityFilter && $cityParam !== 'all' && $user && $user->city_id) {
             $userCityId = (int) $user->city_id;
             // Житель города видит мероприятия всего своего региона
             // (Москва ↔ Московская область, СПб ↔ Ленинградская область, остальные — регион города)
             $scope = \App\Models\City::feedRegionScope($userCityId);
-            $occQ->whereHas('event', function ($eq) use ($userCityId, $scope) {
-                $eq->whereHas('location', function ($lq) use ($userCityId, $scope) {
-                    $lq->where(function ($w) use ($userCityId, $scope) {
-                        $w->where('city_id', $userCityId);
-                        if ($scope) {
-                            [$country, $regions] = $scope;
-                            $w->orWhereIn('city_id', \DB::table('cities')
-                                ->whereIn('region', $regions)
-                                ->when($country !== '', fn ($c) => $c->where('country_code', $country))
-                                ->select('id'));
-                        }
+            // Кэмпы и другие многодневные мероприятия (длительность ≥ 24 ч) показываем всем регионам: на них едут из
+            // других городов. Фильтр города к ним не применяется; остальные фильтры (приватность, направление, уровень…) действуют.
+            $occQ->where(function ($cityOrMultiDay) use ($userCityId, $scope) {
+                $cityOrMultiDay->whereHas('event', function ($eq) use ($userCityId, $scope) {
+                    $eq->whereHas('location', function ($lq) use ($userCityId, $scope) {
+                        $lq->where(function ($w) use ($userCityId, $scope) {
+                            $w->where('city_id', $userCityId);
+                            if ($scope) {
+                                [$country, $regions] = $scope;
+                                $w->orWhereIn('city_id', \DB::table('cities')
+                                    ->whereIn('region', $regions)
+                                    ->when($country !== '', fn ($c) => $c->where('country_code', $country))
+                                    ->select('id'));
+                            }
+                        });
                     });
-                });
+                })
+                ->orWhere('event_occurrences.duration_sec', '>=', 86400)
+                ->orWhereHas('event', fn ($eq) => $eq->where('format', 'camp'));
             });
         }
 
@@ -170,7 +182,7 @@ class EventIndexService
 
                     // 2b. White-label: мероприятия бренда текущего приложения (в т.ч. приватные)
                     $brandId = $this->visibility->currentBrandId();
-                    if ($brandId !== null && \Schema::hasColumn('events', 'brand_id')) {
+                    if ($brandId !== null && \App\Support\SchemaCache::hasColumn('events', 'brand_id')) {
                         $outer->orWhere(function ($w) use ($brandId) {
                             $w->where('brand_id', $brandId)->where('allow_registration', true);
                         });
@@ -183,18 +195,18 @@ class EventIndexService
 
                     // 4. Свои события (Organizer/Staff) — все включая приватные и неоплаченные
                     if ($userId > 0) {
-                        if (\Schema::hasColumn('events', 'organizer_id')) {
+                        if (\App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                             $outer->orWhere('organizer_id', $userId);
                         }
                         foreach (['created_by', 'creator_user_id', 'created_user_id'] as $col) {
-                            if (\Schema::hasColumn('events', $col)) {
+                            if (\App\Support\SchemaCache::hasColumn('events', $col)) {
                                 $outer->orWhere($col, $userId);
                             }
                         }
                     }
 
                     // 5. Staff видит все события своего Organizer
-                    if (!empty($staffOrganizerIds) && \Schema::hasColumn('events', 'organizer_id')) {
+                    if (!empty($staffOrganizerIds) && \App\Support\SchemaCache::hasColumn('events', 'organizer_id')) {
                         $outer->orWhereIn('organizer_id', $staffOrganizerIds);
                     }
                 });
@@ -215,7 +227,7 @@ class EventIndexService
             // White-label: приложение видит только мероприятия организаторов
             // своего бренда; основное приложение (is_default) видит все бренды
             // (приватность уже отфильтрована выше, это ортогональная ось).
-            if (\Schema::hasColumn('events', 'brand_id')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'brand_id')) {
                 $currentBrand = app(\App\Models\Brand::class);
                 if (!$currentBrand->is_default) {
                     $q->where('brand_id', $currentBrand->id);
@@ -233,6 +245,13 @@ class EventIndexService
             }
         });
 
+        return $occQ;
+    }
+
+    private function occurrenceIndex($user, int $userId, bool $isAdmin, string $direction, string $format, ?int $level, string $location = '')
+    {
+        $occQ = $this->buildOccurrenceQuery($user, $userId, $isAdmin, $direction, $format, $level, $location);
+
         // Окно — 10 календарных дней подряд, а НЕ 10 ближайших дат где реально
         // есть события — иначе чипы дней показывали бы только дни с событиями,
         // и зелёная точка "есть события" была бы бессмысленна (у всех показанных
@@ -247,6 +266,14 @@ class EventIndexService
         $windowTz = \App\Support\DateTime::effectiveUserTz($user);
         $today    = Carbon::now($windowTz)->startOfDay();
 
+        $archiveFloorUtc = (clone $occQ)->reorder()->min('starts_at');
+        $archiveFloor    = $archiveFloorUtc
+            ? Carbon::parse($archiveFloorUtc, 'UTC')->setTimezone($windowTz)->startOfDay()
+            : (clone $today);
+        if ($archiveFloor->gt($today)) {
+            $archiveFloor = clone $today;
+        }
+
         $dateParam    = trim((string) request('date', ''));
         $explicitDate = null;
         if ($dateParam !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateParam)) {
@@ -258,25 +285,25 @@ class EventIndexService
         }
 
         if ($explicitDate) {
-            // Не даём старой/битой ссылке с прошедшей датой открыть заведомо
-            // пустое окно — прошедшие occurrences и так исключены applyDateFilter().
-            $windowStart = $explicitDate->lt($today) ? $today : $explicitDate;
+            // Прошедшая дата открывает архив; раньше границы архива (самая ранняя запись) не уходим —
+            // пустое окно из далёкого прошлого бессмысленно.
+            $windowStart = $explicitDate->lt($archiveFloor) ? clone $archiveFloor : $explicitDate;
         } else {
             $offset = max(0, (int) request('offset', 0));
             if ($offset > 0) {
                 $windowStart = (clone $today)->addDays($offset * 10);
             } else {
-                $nearestStartsAtUtc = (clone $occQ)->orderBy('starts_at')->value('starts_at');
-                if ($nearestStartsAtUtc) {
-                    $nearestLocalDay = Carbon::parse($nearestStartsAtUtc, 'UTC')->setTimezone($windowTz)->startOfDay();
-                    $windowStart = $nearestLocalDay->lt($today) ? $today : $nearestLocalDay;
-                } else {
-                    $windowStart = $today;
-                }
+                // Без явной даты лента ВСЕГДА открывается с сегодняшнего дня (даже если сегодня событий нет —
+                // тогда у дня будет плашка «нет мероприятий»); раньше окно прыгало на ближайший день с событиями.
+                $windowStart = clone $today;
             }
         }
 
         $windowEnd = (clone $windowStart)->addDays(9)->endOfDay();
+
+        if (!$windowStart->lt($today)) {
+            $this->applyDateFilter($occQ);
+        }
 
         $occurrences = $occQ
             ->where('starts_at', '>=', $windowStart->clone()->setTimezone('UTC'))
@@ -329,7 +356,7 @@ class EventIndexService
             $occ->join = !$quick->allowed
                 ? (object)['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
                 : (object)['allowed' => !$isJoined, 'code' => null,
-                'message' => $isJoined ? 'Вы уже записаны.' : null];
+                'message' => $isJoined ? __('Вы уже записаны.') : null];
 
             $occ->cancel = (object)[
                 'allowed' => $isJoined,
@@ -358,7 +385,14 @@ class EventIndexService
             ->orderBy('l.name')
             ->pluck('l.name');
 
+        // Блок «Скоро: кемпы, мастер-классы, турниры» — только на обычной ленте (без фильтров формата/направления/уровня/локации);
+        // показывает события позже первых FEED_SKIP_DAYS (4) дней окна (раньше — позже всего окна в 10 дней), порядок случайный
+        $upcomingSpecial = ($format === '' && $direction === '' && $level === null && $location === '')
+            ? app(\App\Services\UpcomingSpecialService::class)->forUser($user, $windowStart->clone()->addDays(\App\Services\UpcomingSpecialService::FEED_SKIP_DAYS)->setTimezone('UTC'))
+            : ['occurrences' => collect(), 'card' => []];
+
         return view('events.index',[
+            'upcomingSpecial' => $upcomingSpecial,
             'occurrences' => $occurrences,
             'joinedOccurrenceIds' => $joinedIds,
             'restrictedOccurrenceIds' => $restrictedIds,
@@ -367,9 +401,50 @@ class EventIndexService
             'restrictedEventIds' => [],
             'activeLocationNames' => $activeLocationNames,
             'windowStartDate' => $windowStart->format('Y-m-d'),
+            'archiveFloorDate' => $archiveFloor->format('Y-m-d'),
             'eventLikeCounts' => $eventLikeCounts,
             'likedEventIds' => $likedEventIds,
         ]);
+    }
+
+    /**
+     * Данные для events/_card.blade.php вне ленты (блок «Скоро»): обогащает туры (availability/join/cancel — как в occurrenceIndex)
+     * и отдаёт массивы для карточки (записи пользователя, лайки). Саму ленту не затрагивает.
+     *
+     * @param \Illuminate\Support\Collection $occurrences коллекция EventOccurrence
+     */
+    public function cardData($user, \Illuminate\Support\Collection $occurrences): array
+    {
+        $userId        = (int) ($user?->id ?? 0);
+        $occurrenceIds = $occurrences->pluck('id')->all();
+        $registered    = $this->registrationSnapshot($occurrenceIds);
+        $userRegs      = $this->userRegistrations($user, $occurrenceIds);
+
+        foreach ($occurrences as $occ) {
+            $reg = $registered[$occ->id] ?? 0;
+            $max = $occ->max_players ?? ($occ->event->gameSettings->max_players ?? 0);
+
+            $occ->availability = ['registered' => $reg, 'remaining' => max(0, $max - $reg), 'max' => $max];
+
+            $isJoined = in_array((int) $occ->id, $userRegs, true);
+            $quick    = app(\App\Services\EventRegistrationGuard::class)->quickCheck($user, $occ);
+
+            $occ->join = !$quick->allowed
+                ? (object) ['allowed' => false, 'code' => $quick->code, 'message' => $quick->message]
+                : (object) ['allowed' => !$isJoined, 'code' => null, 'message' => $isJoined ? __('Вы уже записаны.') : null];
+
+            $occ->cancel = (object) ['allowed' => $isJoined, 'message' => null];
+        }
+
+        [$joinedIds, $restrictedIds] = $this->joinedIds('occurrence_id');
+        [$likeCounts, $likedIds]     = $this->eventLikesData($occurrenceIds, $userId);
+
+        return [
+            'joinedOccurrenceIds'     => $joinedIds,
+            'restrictedOccurrenceIds' => $restrictedIds,
+            'eventLikeCounts'         => $likeCounts,
+            'likedEventIds'           => $likedIds,
+        ];
     }
 
     /*
@@ -382,7 +457,7 @@ class EventIndexService
 
     private function eventLikesData(array $occurrenceIds, int $userId): array
     {
-        if (empty($occurrenceIds) || !Schema::hasTable('event_likes')) {
+        if (empty($occurrenceIds) || !\App\Support\SchemaCache::hasTable('event_likes')) {
             return [[], []];
         }
 
@@ -558,7 +633,7 @@ class EventIndexService
     */
     private function applyDateFilter($query): void
     {
-        if (!Schema::hasColumn('event_occurrences','starts_at')) {
+        if (!\App\Support\SchemaCache::hasColumn('event_occurrences','starts_at')) {
             return;
         }
     
@@ -570,7 +645,7 @@ class EventIndexService
         |--------------------------------------------------------------------------
         */
     
-        if (Schema::hasColumn('event_occurrences','ends_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences','ends_at')) {
     
             $query->where(function($q) use ($now){
     
@@ -595,10 +670,11 @@ class EventIndexService
         |--------------------------------------------------------------------------
         */
     
-        if (Schema::hasColumn('event_occurrences','duration_sec')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences','duration_sec')) {
     
             $query->whereRaw(
-                "starts_at + ((duration_sec) * interval '1 second') > ?",
+                // COALESCE: у тура без записанной длительности (NULL) конец = начало — иначе выражение даёт NULL и тур пропадает из ленты
+                "starts_at + (COALESCE(duration_sec, 0) * interval '1 second') > ?",
                 [$now]
             );
     
@@ -627,10 +703,10 @@ class EventIndexService
     {
         if (is_null($level)) return;
 
-        $hasClassicMin = Schema::hasColumn('events','classic_level_min');
-        $hasClassicMax = Schema::hasColumn('events','classic_level_max');
-        $hasBeachMin   = Schema::hasColumn('events','beach_level_min');
-        $hasBeachMax   = Schema::hasColumn('events','beach_level_max');
+        $hasClassicMin = \App\Support\SchemaCache::hasColumn('events','classic_level_min');
+        $hasClassicMax = \App\Support\SchemaCache::hasColumn('events','classic_level_max');
+        $hasBeachMin   = \App\Support\SchemaCache::hasColumn('events','beach_level_min');
+        $hasBeachMax   = \App\Support\SchemaCache::hasColumn('events','beach_level_max');
 
         if (!$hasClassicMin && !$hasClassicMax && !$hasBeachMin && !$hasBeachMax) {
             return;
@@ -667,6 +743,12 @@ class EventIndexService
     | JOINED IDS
     |--------------------------------------------------------------------------
     */
+
+    /** Туры и события, на которые пользователь уже записан (для блока «Скоро»: рекламировать их не нужно). @return array{0: array, 1: array} */
+    public function joinedForUpcoming(): array
+    {
+        return [$this->joinedIds('occurrence_id')[0], $this->joinedIds('event_id')[0]];
+    }
 
     private function joinedIds(string $column): array
     {
@@ -720,7 +802,7 @@ class EventIndexService
         $cols = ['id','name','address','city_id'];
 
         foreach (['lat','lng','latitude','longitude'] as $c) {
-            if (Schema::hasColumn('locations',$c)) {
+            if (\App\Support\SchemaCache::hasColumn('locations',$c)) {
                 $cols[] = $c;
             }
         }

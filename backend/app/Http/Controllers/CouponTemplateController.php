@@ -97,7 +97,7 @@ class CouponTemplateController extends Controller
         $this->logForOther($user, (int) $organizerId, 'create_coupon_template', $created->id, "Создал шаблон купона: {$created->name}");
 
         return redirect()->route('coupon_templates.index')
-            ->with('status', '✅ Шаблон купона создан!');
+            ->with('status', __('✅ Шаблон купона создан!'));
     }
 
     public function edit(CouponTemplate $couponTemplate)
@@ -134,7 +134,7 @@ class CouponTemplateController extends Controller
         ]));
 
         return redirect()->route('coupon_templates.index')
-            ->with('status', '✅ Шаблон купона обновлён!');
+            ->with('status', __('✅ Шаблон купона обновлён!'));
     }
 
     // Выдать купон пользователю
@@ -155,7 +155,7 @@ class CouponTemplateController extends Controller
 
         $this->logForOther(auth()->user(), (int) $couponTemplate->organizer_id, 'issue_coupon', $coupon->id, "Выдал купон {$coupon->code} пользователю #{$data['user_id']}");
 
-        return back()->with('status', "✅ Купон {$coupon->code} выдан пользователю #{$data['user_id']}");
+        return back()->with('status', __('✅ Купон :code выдан пользователю #:uid', ['code' => $coupon->code, 'uid' => $data['user_id']]));
     }
 
     private function authorize(CouponTemplate $template): void
@@ -181,7 +181,7 @@ class CouponTemplateController extends Controller
         );
 
         if (empty($userIds)) {
-            return back()->with('error', 'Не указаны пользователи');
+            return back()->with('error', __('Не указаны пользователи'));
         }
 
         $issued  = 0;
@@ -275,7 +275,7 @@ class CouponTemplateController extends Controller
             ];
         }
 
-        return back()->with('status', "✅ Создано " . count($links) . " ссылок")
+        return back()->with('status', __('✅ Создано ссылок: :n', ['n' => count($links)]))
                      ->with('coupon_links', $links);
     }
 }

@@ -22,8 +22,32 @@ class PublishOccurrenceAnnouncementService
      * @param bool $refreshOnly  true = только обновить существующий анонс,
      *                           не отправлять новое сообщение если записи нет.
      *                           Используется при записи/отписке игрока.
+     * @param int|null $repostChannelId  повтор анонса (кемпы/мастер-классы/турниры): отправить НОВОЕ сообщение только в этот
+     *                           канал; запись переходит на новое сообщение, чтобы дальше обновлялось оно. Прежнее остаётся в канале.
      */
-    public function publish(EventOccurrence $occurrence, bool $refreshOnly = false): void
+    /**
+     * Публикация/обновление анонса тура. Выполняется под блокировкой по туру: два одновременных задания (например, при создании
+     * мероприятия и его правке) раньше оба видели «записи ещё нет» и оба отправляли пост — второй пост оставался без записи в базе
+     * (нарушение уникальности) и больше не обновлялся. Теперь второе задание ждёт первое, видит запись и просто обновляет/пропускает.
+     */
+    public function publish(EventOccurrence $occurrence, bool $refreshOnly = false, ?int $repostChannelId = null): void
+    {
+        $lock = \Illuminate\Support\Facades\Cache::lock('announce-publish:' . $occurrence->id, 120);
+        try {
+            $lock->block(90);
+        } catch (\Illuminate\Contracts\Cache\LockTimeoutException $e) {
+            Log::warning('PublishOccurrenceAnnouncement: lock timeout', ['occurrence_id' => $occurrence->id]);
+            return;
+        }
+
+        try {
+            $this->publishLocked($occurrence, $refreshOnly, $repostChannelId);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function publishLocked(EventOccurrence $occurrence, bool $refreshOnly = false, ?int $repostChannelId = null): void
     {
         $event = $occurrence->event()
             ->with([
@@ -36,6 +60,9 @@ class PublishOccurrenceAnnouncementService
             ->firstOrFail();
 
         foreach ($event->notificationChannels as $link) {
+            if ($repostChannelId !== null && (int) $link->channel_id !== $repostChannelId) {
+                continue;
+            }
             $channel = $link->channel;
 
             if (!$channel || !$channel->is_verified) {
@@ -55,7 +82,7 @@ class PublishOccurrenceAnnouncementService
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
 
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             $message = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,
@@ -65,6 +92,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => (bool) ($link->include_description ?? ((string) $event->format === 'camp')),
             ]);
 
             $isRich = count($message->imageUrls ?? []) > 1 || !empty($message->listText);
@@ -102,6 +130,49 @@ class PublishOccurrenceAnnouncementService
                     continue;
                 }
 
+                // ── Повтор анонса: новое сообщение в канал, запись переезжает на него ──
+                if ($repostChannelId !== null) {
+                    try {
+                        $result = $publisher->send((string) $channel->chat_id, $message);
+                        $fellBackFrom = (int) ($result['meta']['thread_fallback_from'] ?? 0);
+                        $prevMeta = (array) ($record->meta ?? []);
+
+                        $record->update([
+                            'external_chat_id'    => $result['external_chat_id'] ?? (string) $channel->chat_id,
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'last_payload_hash'   => $hash,
+                            'last_synced_at'      => now(),
+                            'meta'                => array_merge(
+                                $prevMeta,
+                                ['message_kind' => $messageKind],
+                                (array) ($result['meta'] ?? []),
+                                [
+                                    'message_thread_id' => ($threadId && !$fellBackFrom) ? (int) $threadId : null,
+                                    'raw'               => $result['raw'] ?? [],
+                                    'reposts'           => (int) ($prevMeta['reposts'] ?? 0) + 1,
+                                    'last_repost_at'    => now('UTC')->toIso8601String(),
+                                ],
+                            ),
+                        ]);
+
+                        if ($fellBackFrom) {
+                            $this->notifyTopicFallback($channel, $event, $occurrence, $fellBackFrom);
+                        }
+
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'repost', [
+                            'external_message_id' => $result['external_message_id'] ?? null,
+                            'reposts'             => (int) ($prevMeta['reposts'] ?? 0) + 1,
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::warning('PublishOccurrenceAnnouncement: repost failed', ['channel' => $channel->platform, 'error' => $e->getMessage()]);
+                        $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'fail', [
+                            'action' => 'repost',
+                            'error'  => $e->getMessage(),
+                        ]);
+                    }
+                    continue;
+                }
+
                 // Тема (message_thread_id) изменилась с момента отправки → редактирование не
                 // переносит сообщение между темами (Bot API не умеет), поэтому удаляем старое
                 // и отправляем заново в актуальную тему. Для старых записей без сохранённой
@@ -111,6 +182,8 @@ class PublishOccurrenceAnnouncementService
                     $channel->platform === 'telegram'
                     && array_key_exists('message_thread_id', $recMeta)
                     && (int) ($recMeta['message_thread_id'] ?? 0) !== (int) ($threadId ?: 0)
+                    // анонс уже ушёл в главную из-за этой же недоступной темы — не пересылаем при каждом обновлении
+                    && (int) ($recMeta['thread_fallback_from'] ?? 0) !== (int) ($threadId ?: 0)
                 ) {
                     try {
                         if (!empty($record->external_message_id) && $publisher->supportsDelete()) {
@@ -125,6 +198,7 @@ class PublishOccurrenceAnnouncementService
                         }
 
                         $result = $publisher->send((string) $channel->chat_id, $message);
+                        $resendFellBack = (int) ($result['meta']['thread_fallback_from'] ?? 0);
 
                         $record->update([
                             'external_chat_id'    => $result['external_chat_id'] ?? (string) $channel->chat_id,
@@ -135,9 +209,13 @@ class PublishOccurrenceAnnouncementService
                             'meta'                => array_merge(
                                 ['message_kind' => $messageKind],
                                 (array) ($result['meta'] ?? []),
-                                ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
+                                ['message_thread_id' => ($threadId && !$resendFellBack) ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
                             ),
                         ]);
+
+                        if ($resendFellBack) {
+                            $this->notifyTopicFallback($channel, $event, $occurrence, $resendFellBack);
+                        }
 
                         $this->log($event->id, $occurrence->id, $channel->id, $channel->platform, 'send', [
                             'external_message_id' => $result['external_message_id'] ?? null,
@@ -233,11 +311,19 @@ class PublishOccurrenceAnnouncementService
             try {
                 $result = $publisher->send((string) $channel->chat_id, $message);
 
+                // тема оказалась недоступна — анонс ушёл в главную: запоминаем это (message_thread_id = null), чтобы после
+                // исправления номера темы сработал пересыл в нужную тему, и предупреждаем организатора
+                $fellBackFrom = (int) ($result['meta']['thread_fallback_from'] ?? 0);
+
                 $newMeta = array_merge(
                     ['message_kind' => $messageKind],
                     (array) ($result['meta'] ?? []),
-                    ['message_thread_id' => $threadId ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
+                    ['message_thread_id' => ($threadId && !$fellBackFrom) ? (int) $threadId : null, 'raw' => $result['raw'] ?? []],
                 );
+
+                if ($fellBackFrom) {
+                    $this->notifyTopicFallback($channel, $event, $occurrence, $fellBackFrom);
+                }
 
                 $record->fill([
                     'platform'            => (string) $channel->platform,
@@ -318,7 +404,7 @@ class PublishOccurrenceAnnouncementService
             if ($link->use_private_link || $event->is_private) {
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             // Пересобираем текст заново (актуальные дата/место/список и т.п.),
             // затем приклеиваем баннер отмены сверху — не трогаем сам builder.
@@ -330,6 +416,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => false, // у баннера отмены свой текст — описание не добавляем
             ]);
 
             $banner = __('events.channel_announcement_cancelled_banner', [], 'ru');
@@ -448,7 +535,7 @@ class PublishOccurrenceAnnouncementService
             if ($link->use_private_link || $event->is_private) {
                 $privateLink = $this->resolvePrivateLink($event, $occurrence) ?: $fallbackUrl;
             }
-            $threadId = $link->message_thread_id ?? data_get($channel->meta, 'message_thread_id');
+            $threadId = \App\Support\TelegramTopic::normalize($link->message_thread_id ?? data_get($channel->meta, 'message_thread_id'));
 
             $finalMessage = $this->builder->build($occurrence, [
                 'platform'                => $channel->platform,
@@ -458,6 +545,7 @@ class PublishOccurrenceAnnouncementService
                 'include_image'           => (bool) $link->include_image,
                 'include_registered_list' => (bool) $link->include_registered_list,
                 'message_thread_id'       => $threadId ? (int) $threadId : null,
+                'include_description'     => (bool) ($link->include_description ?? ((string) $event->format === 'camp')),
                 'finalized'               => true,
             ]);
 
@@ -589,8 +677,74 @@ class PublishOccurrenceAnnouncementService
         }
     }
 
+    /** Постоянные ошибки Telegram: повторять отправку бессмысленно, пока организатор не исправит чат. (Нехватку прав, лимиты и тему не считаем: это лечится.) */
+    private const PERMANENT_TELEGRAM_ERRORS = [
+        'chat not found',
+        'bot was kicked',
+        'bot is not a member',
+        'bot was blocked',
+        'group chat was deleted',
+        'chat was deleted',
+        'group chat was upgraded to a supergroup',
+    ];
+
+    /**
+     * Постоянная ошибка отправки: канал снимаем с подтверждения (публикация пропускает неподтверждённые — повторы прекращаются)
+     * и один раз сообщаем организатору. Раньше такая ошибка повторялась каждую минуту до начала мероприятия.
+     */
+    private function disableChannelOnPermanentError(int $channelId, int $eventId, string $platform, string $error): void
+    {
+        if ($platform !== 'telegram' || $error === '') {
+            return;
+        }
+        $matched = null;
+        foreach (self::PERMANENT_TELEGRAM_ERRORS as $needle) {
+            if (stripos($error, $needle) !== false) {
+                $matched = $needle;
+                break;
+            }
+        }
+        if ($matched === null) {
+            return;
+        }
+        try {
+            $channel = \App\Models\UserNotificationChannel::find($channelId);
+            if (!$channel || !$channel->is_verified) {
+                return;
+            }
+            $meta = (array) ($channel->meta ?? []);
+            $meta['disabled_reason'] = $matched;
+            $meta['disabled_at'] = now()->toIso8601String();
+            $channel->forceFill(['is_verified' => false, 'meta' => $meta])->save();
+
+            $ownerId = (int) ($channel->user_id ?? 0);
+            if ($ownerId > 0 && \Illuminate\Support\Facades\Cache::add("tg_channel_disabled_{$channelId}", 1, now()->addHours(24))) {
+                $title = (string) (DB::table('events')->where('id', $eventId)->value('title') ?? '');
+                $channelTitle = trim((string) ($channel->title ?? '')) ?: (string) $channel->chat_id;
+                app(\App\Services\UserNotificationService::class)->create(
+                    userId:  $ownerId,
+                    type:    'channel_unavailable',
+                    title:   __('channel_check.unavailable_title'),
+                    body:    __('channel_check.unavailable_body', ['title' => $title, 'channel' => $channelTitle]),
+                    payload: [
+                        'event_id'    => $eventId,
+                        'button_text' => __('channel_check.unavailable_button'),
+                        'button_url'  => route('profile.notification_channels'),
+                    ],
+                    channels: ['in_app', 'telegram', 'vk', 'max'],
+                );
+            }
+            Log::warning('PublishOccurrenceAnnouncement: channel disabled after permanent error', ['channel_id' => $channelId, 'reason' => $matched]);
+        } catch (\Throwable $e) {
+            Log::warning('PublishOccurrenceAnnouncement: disabling channel failed', ['error' => $e->getMessage()]);
+        }
+    }
+
     private function log(int $eventId, int $occurrenceId, int $channelId, string $platform, string $action, array $meta = []): void
     {
+        if ($action === 'fail') {
+            $this->disableChannelOnPermanentError($channelId, $eventId, $platform, (string) ($meta['error'] ?? ''));
+        }
         try {
             DB::table('channel_publish_logs')->insert([
                 'event_id'          => $eventId,
@@ -614,5 +768,35 @@ class PublishOccurrenceAnnouncementService
             return route('events.public', ['token' => $event->public_token]);
         }
         return null;
+    }
+
+    /**
+     * Организатору: указанная тема Telegram недоступна, анонс ушёл в главную тему. Не чаще раза в 12 часов на тему канала.
+     */
+    private function notifyTopicFallback($channel, $event, $occurrence, int $thread): void
+    {
+        $ownerId = (int) ($channel->user_id ?? 0);
+        if ($ownerId <= 0 || !\Illuminate\Support\Facades\Cache::add("tg_topic_fallback_{$channel->id}_{$thread}", 1, now()->addHours(12))) {
+            return;
+        }
+        try {
+            $title = (string) ($event->title ?? '');
+            $channelTitle = trim((string) ($channel->title ?? '')) ?: (string) $channel->chat_id;
+            app(\App\Services\UserNotificationService::class)->create(
+                userId:  $ownerId,
+                type:    'channel_topic_invalid',
+                title:   __('channel_check.fallback_title'),
+                body:    __('channel_check.fallback_body', ['title' => $title, 'channel' => $channelTitle, 'n' => $thread]),
+                payload: [
+                    'event_id'      => (int) $event->id,
+                    'occurrence_id' => (int) $occurrence->id,
+                    'button_text'   => __('channel_check.fallback_button'),
+                    'button_url'    => route('profile.notification_channels'),
+                ],
+                channels: ['in_app', 'telegram', 'vk', 'max'],
+            );
+        } catch (\Throwable $e) {
+            Log::warning('PublishOccurrenceAnnouncement: topic fallback notice failed', ['error' => $e->getMessage()]);
+        }
     }
 }

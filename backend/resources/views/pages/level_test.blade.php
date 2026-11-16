@@ -45,8 +45,8 @@
 				<p data-i18n="intro"></p>
 				<h3 class="mt-2" data-i18n="choose_discipline"></h3>
 				<div class="lt-disc">
-					<button type="button" class="btn" data-disc="classic">🏐 <span data-i18n="classic"></span></button>
-					<button type="button" class="btn" data-disc="beach">🏖 <span data-i18n="beach"></span></button>
+					<button type="button" class="btn" data-disc="classic"><x-ico name="ball" /> <span data-i18n="classic"></span></button>
+					<button type="button" class="btn" data-disc="beach"><x-ico name="beach" size="1.35em" /> <span data-i18n="beach"></span></button>
 				</div>
 			</div>
 

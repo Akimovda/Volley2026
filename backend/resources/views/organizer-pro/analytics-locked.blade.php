@@ -1,6 +1,6 @@
 <x-voll-layout body_class="organizer-pro-page">
     <x-slot name="title">{{ __('ui.pro_analytics_locked_title') }}</x-slot>
-    <x-slot name="h1">⭐ {{ __('ui.pro_analytics_locked_title') }}</x-slot>
+    <x-slot name="h1"><x-ico name="star" /> {{ __('ui.pro_analytics_locked_title') }}</x-slot>
 
     <div class="container">
         <div class="ramka text-center">

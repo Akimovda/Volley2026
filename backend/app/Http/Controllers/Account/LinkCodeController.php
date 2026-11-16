@@ -53,6 +53,6 @@ class LinkCodeController extends Controller
         $request->session()->flash('link_code_expires_at', $expiresAt->format('Y-m-d H:i:s'));
         $request->session()->flash('link_code_target', $data['target_provider'] ?? '');
 
-        return back()->with('status', 'Код для привязки создан.');
+        return back()->with('status', __('Код для привязки создан.'));
     }
 }

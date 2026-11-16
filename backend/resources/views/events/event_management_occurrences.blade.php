@@ -111,7 +111,7 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 				<button type="button" id="toggle-archive" class="btn btn-secondary btn-small"
 					data-label-show="{{ __('events.occ_archive_btn', ['n' => $archived->count()]) }}"
 					data-label-hide="{{ __('events.occ_archive_hide') }}">
-					{{ __('events.occ_archive_btn', ['n' => $archived->count()]) }}
+					<x-ico name="archive" /> <span id="toggle-archive-label">{{ __('events.occ_archive_btn', ['n' => $archived->count()]) }}</span>
 				</button>
 			</div>
 			@endif
@@ -130,7 +130,7 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 			{{-- Архивные --}}
 			@if($archived->isNotEmpty())
 			<div id="archive-section" class="ramka mt-2" style="display:none;">
-				<div class="f-15 b-600 mb-2" style="color:#6b7280;">{{ __('events.occ_archive_section') }}</div>
+				<div class="f-15 b-600 mb-2 h2-ico" style="color:#6b7280;"><x-ico name="archive" /> {{ __('events.occ_archive_section') }}</div>
 				@include('events._partials.occurrences_table', ['occurrences' => $archived, 'event' => $event, 'isAdmin' => $isAdmin, 'tz' => $tz, 'seatMeta' => $seatMeta, 'fmtOccurrenceDt' => $fmtOccurrenceDt, 'isArchived' => true])
 			</div>
 			@endif
@@ -146,7 +146,7 @@ return ['label' => __('events.seats_dash'), 'registered' => $registered];
 						var section = $('#archive-section');
 						var hidden = section.css('display') === 'none';
 						section.css('display', hidden ? 'block' : 'none');
-						btn.text(hidden ? btn.data('label-hide') : btn.data('label-show'));
+						btn.find('#toggle-archive-label').text(hidden ? btn.data('label-hide') : btn.data('label-show'));
 					});
 
 					$(document).on('click', '.occ-bot-toggle', function() {

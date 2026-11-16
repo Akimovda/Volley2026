@@ -246,7 +246,8 @@ $locationsJs = $locations->map(function ($loc) {
         const dir = loc.directions.find(d => d.id === dirId) || loc.directions[0];
         if (!dir) return;
         dir.courts.forEach(c => {
-            const label = (c.is_indoor ? '🏠 ' : '☀️ ') + c.name;
+            // <option> не вмещает SVG — подпись словами: «(в помещении)» / «(на улице)»
+            const label = c.name + ' (' + (c.is_indoor ? @json(__('club.indoor')) : @json(__('club.outdoor'))) + ')';
 
             const opt = document.createElement('option');
             opt.value = c.id;

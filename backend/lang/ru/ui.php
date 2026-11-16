@@ -78,13 +78,14 @@ return [
     'admin_notification_templates' => 'Шаблоны уведомлений',
     'admin_new_broadcast'        => 'Новая рассылка',
     'admin_broadcasts'           => 'Рассылки',
-    'admin_impersonate'          => '👁 Войти как...',
-    'admin_apps'                 => '📱 Настройка App',
+    'admin_impersonate'          => 'Войти как...',
+    'admin_apps'                 => 'Настройка App',
 
     // OAuth кнопки
     'auth_apple'    => 'Войти через Apple',
     'auth_vk'       => 'Войти через ВКонтакте',
     'auth_yandex'   => 'Войти с Яндекс ID',
+    'auth_max'      => 'Войти через MAX',
     'auth_telegram' => 'Войти через Telegram',
     'auth_google'   => 'Войти через Google',
 
@@ -99,6 +100,7 @@ return [
     'footer_personal_data'  => 'Согласие на обработку персональных данных',
     'footer_user_agreement' => 'Пользовательское соглашение',
     'footer_apps_title'     => 'Приложения',
+    'footer_gplay_test'     => 'Google Play — тестирование',
     'footer_apk_download'   => 'Скачать для Android',
     'footer_copyright'      => '© VolleyPlay :year. Все права защищены.',
 
@@ -113,13 +115,14 @@ return [
 
     // Face ID / биометрия
     'biometric_login_reason' => 'Войти в VolleyPlay',
-    'biometric_login_title'  => 'Вход по Face ID',
+    'biometric_login_title'  => 'Вход по Face ID / Touch ID',
     'biometric_setup_title'  => 'Быстрый вход',
-    'biometric_setup_text'   => 'Хотите входить по Face ID?',
+    'biometric_setup_text'   => 'Хотите входить по Face ID / Touch ID?',
     'biometric_setup_later'  => 'Позже',
+    'biometric_setup_never'  => 'Больше не спрашивать',
     'biometric_setup_enable' => 'Включить',
     'biometric_done_title'   => 'Готово!',
-    'biometric_done_text'    => 'Face ID включён. В следующий раз вы войдёте мгновенно.',
+    'biometric_done_text'    => 'Face ID / Touch ID включён. В следующий раз вы войдёте мгновенно.',
 
     // Пагинация
     'pagination_jump_back'    => 'Назад на :n',
@@ -131,4 +134,5 @@ return [
     'pro_analytics_locked_text'  => 'Детальная аналитика игроков и турниров (аудитория, топы, отток, экспорт в CSV/PDF) входит в подписку Организатор Pro.',
     'pro_analytics_locked_btn'   => 'Подключить Организатор Pro',
     'pro_analytics_locked_back'  => 'К панели организатора',
+    'org_rental_widget' => 'Виджет аренды кортов',
 ];

@@ -118,6 +118,7 @@
     $hasYa = !empty($u?->yandex_id);
     $hasApple = !empty($u?->apple_id);
     $hasGoogle = !empty($u?->google_id);
+    $hasMaxLogin = !empty($u?->max_user_id); // вход через MAX (max_chat_id — отдельно, личные уведомления)
 	// персональные уведомления
     $hasMaxNotify = !empty($u?->max_chat_id);
     $hasTelegramNotify = !empty($u?->telegram_notify_chat_id);
@@ -138,6 +139,8 @@
 	$provider = 'apple';
 	} elseif ($hasGoogle && (string) $u->google_id === $providerId) {
 	$provider = 'google';
+	} elseif ($hasMaxLogin && (string) $u->max_user_id === $providerId) {
+	$provider = 'max';
 	}
     }
 
@@ -149,6 +152,7 @@
 	'yandex' => $hasYa,
 	'apple' => $hasApple,
 	'google' => $hasGoogle,
+	'max' => $hasMaxLogin,
 	]);
     
 	if (count($linkedProviders) === 1) {
@@ -161,7 +165,7 @@
 	$provider = 'password';
     }
 
-    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple + (int)$hasGoogle;
+    $linkedCount = (int)$hasTg + (int)$hasVk + (int)$hasYa + (int)$hasApple + (int)$hasGoogle + (int)$hasMaxLogin;
     
     // “provider looks off” (после неуспешной привязки мог остаться мусор в сессии)
 	
@@ -171,7 +175,7 @@
     $yandexLinkUrl  = route('auth.yandex.redirect', ['link' => 1]);
     $googleLinkUrl  = route('auth.google.redirect', ['link' => 1]);
 
-    $allLinked = $hasTg && $hasVk && $hasYa && $hasApple && $hasGoogle;
+    $allLinked = $hasTg && $hasVk && $hasYa && $hasApple && $hasGoogle && $hasMaxLogin;
     
     $tgBotUsername = config('services.telegram.bot_username');
     
@@ -202,8 +206,11 @@
 	if ($p === 'google') {
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#4285F4;"></span><span class="'.$txt.'">Google</span></span>';
 	}
+	if ($p === 'max') {
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:linear-gradient(135deg,#007aff,#8a2be2);"></span><span class="'.$txt.'">MAX</span></span>';
+	}
 	if ($p === 'password') {
-	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход 🤝</span></span>';
+	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#6B7280;"></span><span class="'.$txt.'">Успешный вход</span></span>';
 	}
 	return '<span class="'.$base.'"><span class="'.$dot.'" style="background:#9CA3AF;"></span><span class="'.$txt.'">'.e(__('profile.providers_unknown')).'</span></span>';
     };
@@ -222,6 +229,7 @@
     if ($p === 'yandex') return '<span title="Yandex" class="'.$dot.'" style="background:#FF0000;"></span>';
     if ($p === 'apple') return '<span title="Apple" class="'.$dot.'" style="background:#000000;"></span>';
     if ($p === 'google') return '<span title="Google" class="'.$dot.'" style="background:#4285F4;"></span>';
+    if ($p === 'max') return '<span title="MAX" class="'.$dot.'" style="background:linear-gradient(135deg,#007aff,#8a2be2);"></span>';
     return '<span class="'.$dot.'" style="background:#9CA3AF;"></span>';
     };
     @endphp
@@ -241,10 +249,26 @@
 				</div>
 			</div>
 			<div class="col-lg-8 col-xl-9 order-1">
+				@php
+					// Плашка «укажите уровень»: по уровню игрока работает точечная рассылка о новых турнирах/кемпах и допуск на мероприятия
+					$__noClassic = is_null($u->classic_level);
+					$__noBeach   = is_null($u->beach_level);
+				@endphp
+				@if(($__noClassic || $__noBeach) && !$u->is_bot && !$u->is_test)
+				<div class="ramka">
+					<div class="alert alert-info">
+						<div class="alert-title b-700">{{ __('profile.level_notice_title') }}</div>
+						<p class="mt-1 mb-1">
+							{{ __('profile.level_notice_text', ['which' => implode(', ', array_filter([$__noClassic ? __('profile.level_notice_classic') : null, $__noBeach ? __('profile.level_notice_beach') : null]))]) }}
+						</p>
+						<a href="{{ url('/profile/complete#' . ($__noClassic ? 'levels-classic' : 'levels-beach')) }}" class="btn btn-small">{{ __('profile.level_notice_btn') }}</a>
+					</div>
+				</div>
+				@endif
 				<div class="ramka pb-2">  
 					{{-- Анкета игрока --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_personal') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="user" size="1.2em" /> {{ __('profile.sec_personal') }}</h2>
 					<div class="row mb-0">
 						<div class="col-sm-6 pb-0">
 							<ul class="list mb-0">	
@@ -290,7 +314,7 @@
 				
 				
 				<div class="ramka">  	
-					<h2 class="-mt-05">{{ __('profile.sec_skills') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="ball" size="1.2em" /> {{ __('profile.sec_skills') }}</h2>
 					<div class="row">
 						<div class="col-md-6 col-lg-12 col-xl-6">
 							<div class="card">
@@ -361,13 +385,13 @@
 					
 				</div>	
 				@php
-    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id) + (int)!empty($u?->apple_id) + (int)!empty($u?->google_id);
+    $providerCount = (int)!empty($u?->telegram_id) + (int)!empty($u?->vk_id) + (int)!empty($u?->yandex_id) + (int)!empty($u?->apple_id) + (int)!empty($u?->google_id) + (int)!empty($u?->max_user_id);
 @endphp
 
 @if(session('show_providers_hint') || $providerCount < 4)
 <div class="ramka" id="providers-hint">
     <div class="d-flex fvc gap-2">
-        <span style="font-size:2.4rem">🔐</span>
+        <x-ico name="shield-check" size="2.6rem" />
         <div>
             <div class="b-600 mb-05">
                 @if($providerCount === 1)
@@ -389,7 +413,7 @@
 					
                     {{-- Привязка провайдеров --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_providers') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="link" size="1.2em" /> {{ __('profile.sec_providers') }}</h2>
 					<p>{{ __('profile.providers_lead') }}</p>
 					
 					<p>
@@ -400,20 +424,29 @@
 					@if($allLinked)
 					<p>{{ __('profile.providers_all_linked') }}</p>
 					@else
-					<p>{{ __('profile.providers_how') }}</p>
-					<ul class="list">
-						<li>{{ __('profile.providers_step_1') }}</li>
-						<li>{{ __('profile.providers_step_2') }}</li>
-						<li>{{ __('profile.providers_step_3') }}</li>
-					</ul>
+					<details class="providers-how">
+						<summary>{{ __('profile.providers_how') }}</summary>
+						<ul class="list">
+							<li>{{ __('profile.providers_step_1') }}</li>
+							<li>{{ __('profile.providers_step_2') }}</li>
+							<li>{{ __('profile.providers_step_3') }}</li>
+						</ul>
+					</details>
 					@endif					
 					
 					
 					<div class="mt-2"> 
 						
 						<div class="row provider-cards fc">
+							{{-- Группы: сверху уже привязанные входы, ниже ещё не подключённые (порядок задаёт style="order") --}}
+							@if($linkedCount > 0)
+							<div class="provider-group-title" style="order:0">{{ __('profile.providers_group_linked') }} · {{ $linkedCount }}</div>
+							@endif
+							@if($linkedCount < 6)
+							<div class="provider-group-title" style="order:50">{{ __('profile.providers_group_unlinked') }} · {{ 6 - $linkedCount }}</div>
+							@endif
 							{{-- VK card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasVk ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-vk"></span>
@@ -448,7 +481,7 @@
 								</div>
 							</div>
 							{{-- Yandex card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasYa ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-yandex"></span>
@@ -483,7 +516,7 @@
 								</div>
 							</div>
 							{{-- Telegram card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasTg ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-tg"></span>
@@ -531,7 +564,7 @@
 							</div>
 							@unless(str_contains(request()->userAgent() ?? '', 'Android'))
 							{{-- Apple card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasApple ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon icon-apple"></span>
@@ -566,7 +599,7 @@
 							</div>
 							@endunless
 							{{-- Google card --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasGoogle ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
 										<span class="provider-card__icon" style="background: linear-gradient(90deg, #4285F4 0%, #EA4335 30%, #FBBC05 60%, #34A853 100%);">
@@ -606,22 +639,37 @@
 									</div>
 								</div>
 							</div>
-							{{-- MAX card (placeholder) --}}
-							<div class="col-6 col-md-3 col-lg-6 col-xl-4">
+							{{-- MAX card: вход через бота MAX (код подтверждения), привязка и отвязка --}}
+							<div class="col-6 col-md-3 col-lg-6 col-xl-4" style="order:{{ $hasMaxLogin ? 1 : 51 }}">
 								<div class="card">
 									<div class="provider-card__header">
-										<span class="provider-card__icon icon-max"></span>
+										<span class="provider-card__icon icon-max"><img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img"></span>
 										<span class="provider-card__title">MAX</span>
 									</div>
-									
+
 									<div class="provider-card__status">
-										<span class="badge badge-muted"></span>
+										{!! $badge($hasMaxLogin) !!}
 									</div>
-									
+
 									<div class="provider-card__actions">
-										<button class="btn btn-disabled w-100 btn-small" disabled>
-											{{ __('profile.max_in_dev') }}
-										</button>
+										@if($hasMaxLogin)
+										@if($canUnlink)
+										<form method="POST"
+										action="{{ route('account.unlink.max') }}"
+										onsubmit="return confirm('{{ __('profile.unlink_confirm_max') }}');">
+											@csrf
+											<button type="submit" class="btn-alert w-100 btn btn-small btn-secondary"
+											data-title="{{ __('profile.unlink_confirm_max') }}"
+											data-icon="warning"
+											data-confirm-text="{{ __('profile.unlink_confirm_yes') }}"
+											data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.providers_unlink_btn') }}</button>
+										</form>
+										@else
+										<button class="w-100 btn btn-small btn-secondary" disabled>{{ __('profile.providers_cant_unlink') }}</button>
+										@endif
+										@else
+										<a href="{{ route('auth.max.page') }}" class="w-100 btn btn-small">{{ __('profile.providers_link_btn') }}</a>
+										@endif
 									</div>
 								</div>
 							</div>
@@ -637,9 +685,13 @@
 				</div>	
 				
 				<div class="ramka is-app-only" style="display:none">
-					<h2 class="-mt-05">{{ __('profile.sec_quick_login') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="shield-check" size="1.2em" /> {{ __('profile.sec_quick_login') }}</h2>
 					<p>{{ __('profile.quick_login_lead') }}</p>
+					<template id="bio-ico-ok"><x-ico name="check" size="1.5em" /></template>
+					<template id="bio-ico-phone"><x-ico name="smartphone" size="2rem" /></template>
+					<template id="bio-ico-del"><x-ico name="trash" size="2rem" /></template>
 					<div id="biometric-status" class="mb-2"></div>
+					<div id="biometric-devices" class="mb-2"></div>
 					<button id="biometric-disable-btn" class="btn btn-secondary btn-small" style="display:none">
 						{{ __('profile.face_disable_btn') }}
 					</button>
@@ -649,7 +701,7 @@
 				</div>
 
 				<div class="ramka is-app-only" style="display:none">
-					<h2 class="-mt-05">{{ __('profile.sec_app_icon') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="smartphone" size="1.2em" /> {{ __('profile.sec_app_icon') }}</h2>
 					<p class="mb-15">{{ __('profile.app_icon_lead') }}</p>
 					<div id="app-icon-gallery" class="app-icon-gallery">
 						<button type="button" class="app-icon-option" data-icon="default">
@@ -669,7 +721,7 @@
 				</div>
 
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('activity.activity_sensors_settings') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="activity" size="1.2em" /> {{ __('activity.activity_sensors_settings') }}</h2>
 					<p class="f-15 mb-2">{{ __('activity.connect_in_settings_hint') }}</p>
 					<a href="{{ route('profile.athlete') }}" class="btn">
 						{{ __('activity.activity_sensors_settings') }} →
@@ -677,272 +729,87 @@
 				</div>
 
 				<div class="ramka" id="notifications">
-                    <h2 class="-mt-05">{{ __('profile.sec_notifications') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="bell" size="1.2em" /> {{ __('profile.sec_notifications') }}</h2>
 
                     <p class="mb-15">
                         {{ __('profile.notif_lead') }}
 					</p>
+					<p class="mb-15 f-16" style="opacity:.75">{{ __('profile.notif_channels_hint') }}</p>
 
-                    <div class="row provider-cards">
-                        {{-- Telegram --}}
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="provider-card__header">
-                                    <span class="provider-card__icon icon-tg"></span>
-                                    <span class="provider-card__title">{{ __('profile.notif_tg_title') }}</span>
-								</div>
-								
-                                @if($hasTelegramNotify)
-								<div class="provider-card__status">
-									<span class="badge badge-success"></span>
-								</div>
-								
-								<ul class="list">
-									<li>{!! __('profile.notif_tg_on') !!}</li>
-								</ul>
-								
-								<form method="POST" action="{{ route('profile.telegram.disconnect') }}" class="mt-3">
-									@csrf
-									<button
-									type="submit"
-									class="w-100 btn btn-small btn-secondary btn-alert"
-									data-title="{{ __('profile.notif_tg_disconnect_title') }}"
-									data-icon="warning"
-									data-confirm-text="{{ __('profile.notif_disconnect_yes') }}"
-									data-cancel-text="{{ __('profile.unlink_confirm_no') }}"
-									>{{ __('profile.notif_disable_btn') }}</button>
-								</form>
-                                @else
-								<div class="provider-card__status">
-									<span class="badge badge-muted"></span>
-								</div>
-								
-								<ul class="list f-16">
-									<li>{!! __('profile.notif_tg_offer') !!}</li>
-								</ul>
-								
-								<button type="button" id="connect-telegram-btn" class="w-100 btn btn-small">
-									{{ __('profile.notif_tg_connect') }}
-								</button>
-								
-								<div id="connect-telegram-result" class="mt-1 hidden">
-									<ul class="list f-16">
-										<li>{{ __('profile.notif_tg_step_1') }}</li>
-										<li>{{ __('profile.notif_tg_step_2') }}</li>
-										<li>{!! __('profile.notif_tg_step_3') !!}</li>
-										<li>{{ __('profile.notif_tg_step_4') }}</li>
-									</ul>
-									
-									<a
-									style="word-break: break-all"
-									id="connect-telegram-link"
-									href="#"
-									target="_blank"
-									rel="noopener"
-									class="f-16 b-600"
-									></a>
-								</div>
-                                @endif
-							</div>
-						</div>
-						
-						
-                        {{-- MAX --}}
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="provider-card__header">
-                                    <span class="provider-card__icon icon-max"></span>
-                                    <span class="provider-card__title">{{ __('profile.notif_max_title') }}</span>
-								</div>
-								
-                                @if($hasMaxNotify)
-								<div class="provider-card__status">
-									<span class="badge badge-success"></span>
-								</div>
-								
-								<ul class="list">
-									<li>{!! __('profile.notif_max_on') !!}</li>
-								</ul>
-								
-								<form method="POST" action="{{ route('profile.max.disconnect') }}" class="mt-3">
-									@csrf
-									<button type="submit" class="w-100 btn btn-small btn-secondary btn-alert" data-title="{{ __('profile.notif_max_disconnect_title') }}" data-icon="warning" data-confirm-text="{{ __('profile.notif_disconnect_yes') }}" data-cancel-text="{{ __('profile.unlink_confirm_no') }}">{{ __('profile.notif_disable_btn') }}</button>
-								</form>
-                                @else
-								<div class="provider-card__status">
-									<span class="badge badge-muted"></span>
-								</div>
-								
-								<ul class="list f-16">
-									<li>{!! __('profile.notif_max_offer') !!}</li>
-								</ul>
-								
-								<button type="button" id="connect-max-btn" class="w-100 btn btn-small">
-									{{ __('profile.notif_max_connect') }}
-								</button>
-								
-								<div id="connect-max-result" class="mt-1 hidden">
-									<ul class="list f-16">
-										<li>{{ __('profile.notif_max_step_1') }}</li>
-										<li>{{ __('profile.notif_max_step_2') }}</li>
-										<li>{!! __('profile.notif_max_step_3') !!}</li>
-										<li>{{ __('profile.notif_max_step_4') }}</li>
-									</ul>
-									
-									<a
-									style="word-break: break-all"
-									id="connect-max-link"
-									href="#"
-									target="_blank"
-									rel="noopener"
-									class="f-16 b-600"
-									></a>
-								</div>
-                                @endif
-							</div>
-						</div>
-						
-                        {{-- VK --}}
-                        <div class="col-md-4">
-                            <div class="card">
-                                <div class="provider-card__header">
-                                    <span class="provider-card__icon icon-vk"></span>
-                                    <span class="provider-card__title">{{ __('profile.notif_vk_title') }}</span>
-								</div>
-								
-                                @if($hasVkNotify)
-								<div class="provider-card__status">
-									<span class="badge badge-success"></span>
-								</div>
-								
-								<ul class="list">
-									<li>{!! __('profile.notif_vk_on') !!}</li>
-								</ul>
-								
-								<form method="POST" action="{{ route('profile.vk.disconnect') }}" class="mt-1">
-									@csrf
-									<button
-									type="submit"
-									class="w-100 btn btn-small btn-secondary btn-alert"
-									data-title="{{ __('profile.notif_vk_disconnect_title') }}"
-									data-icon="warning"
-									data-confirm-text="{{ __('profile.notif_disconnect_yes') }}"
-									data-cancel-text="{{ __('profile.unlink_confirm_no') }}"
-									>{{ __('profile.notif_disable_btn') }}</button>
-								</form>
-                                @else
-								<div class="provider-card__status">
-									<span class="badge badge-muted"></span>
-								</div>
-                                
-								<ul class="list f-16">
-									<li>{!! __('profile.notif_vk_offer') !!}</li>
-								</ul>
-								
-								<button type="button" id="connect-vk-btn" class="w-100 btn btn-small">
-									{{ __('profile.notif_vk_connect') }}
-								</button>					
-                                
-								<div id="connect-vk-result" class="mt-1 hidden">
-									<ul class="list f-16">
-										<li>{{ __('profile.notif_vk_step_1') }}</li>
-										<li>{{ __('profile.notif_vk_step_2') }}</li>
-										<li>{{ __('profile.notif_vk_step_3') }}</li>
-										<li>{{ __('profile.notif_vk_step_4') }}</li>
-										<li>{{ __('profile.notif_vk_step_5') }}</li>
-									</ul>
-									
-									
-									
-									<a
-									style="word-break: break-all"
-									id="connect-vk-link"
-									href="#"
-									target="_blank"
-									rel="noopener"
-									class="f-16 b-600"
-									></a>
-									
-									<div id="connect-vk-command-box" class="mt-1 hidden">
-										<div class="f-16 text-muted">{{ __('profile.notif_vk_command_label') }}</div>
-										<div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
-										<div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
-									</div>
-								</div>
-                                @endif
-							</div>
-						</div>
-						
-						
-						
-					</div>
+                    <div class="notif-tiles" id="notif-channels">
+                        @php
+                        $__chan = [
+                            ['key' => 'telegram', 'name' => 'Telegram', 'icon' => 'icon-tg',  'on' => $hasTelegramNotify, 'off_url' => route('profile.telegram.disconnect'), 'confirm' => __('profile.notif_tg_disconnect_title')],
+                            ['key' => 'max',      'name' => 'MAX',      'icon' => 'icon-max', 'on' => $hasMaxNotify,      'off_url' => route('profile.max.disconnect'),      'confirm' => __('profile.notif_max_disconnect_title')],
+                            ['key' => 'vk',       'name' => 'VK',       'icon' => 'icon-vk',  'on' => $hasVkNotify,       'off_url' => route('profile.vk.disconnect'),       'confirm' => __('profile.notif_vk_disconnect_title')],
+                        ];
+                        @endphp
+                        @foreach($__chan as $__c)
+                        <div class="notif-tile">
+                            <span class="provider-card__icon {{ $__c['icon'] }}">@if($__c['key'] === 'max')<img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img">@endif</span>
+                            <span class="notif-tile__name">{{ $__c['name'] }}</span>
+                            <button type="button" class="up-switch {{ $__c['on'] ? 'is-on' : '' }}" role="switch" aria-checked="{{ $__c['on'] ? 'true' : 'false' }}"
+                                aria-label="{{ __('profile.notif_channel_aria', ['name' => $__c['name']]) }}"
+                                data-channel="{{ $__c['key'] }}" data-disconnect="{{ $__c['off_url'] }}" data-confirm="{{ $__c['confirm'] }}"><i></i></button>
+                        </div>
+                        @endforeach
+                    </div>
 
-					{{-- Список пользовательских настроек уведомлений — дом для будущих переключателей --}}
-					<div class="notif-settings-list form mt-2 pt-2" style="border-top:1px solid var(--border-color, #e0e0e0)">
+                    {{-- Кнопки подключения скрыты: переключатель «включить» нажимает их (JS подключения ниже), инструкция раскрывается под плитками --}}
+                    <button type="button" id="connect-telegram-btn" hidden></button>
+                    <div id="connect-telegram-result" class="notif-connect hidden">
+                        <ul class="list f-16">
+                            <li>{{ __('profile.notif_tg_step_1') }}</li>
+                            <li>{{ __('profile.notif_tg_step_2') }}</li>
+                            <li>{!! __('profile.notif_tg_step_3') !!}</li>
+                            <li>{{ __('profile.notif_tg_step_4') }}</li>
+                        </ul>
+                        <a style="word-break: break-all" id="connect-telegram-link" href="#" target="_blank" rel="noopener" class="f-16 b-600"></a>
+                    </div>
+
+                    <button type="button" id="connect-max-btn" hidden></button>
+                    <div id="connect-max-result" class="notif-connect hidden">
+                        <ul class="list f-16">
+                            <li>{{ __('profile.notif_max_step_1') }}</li>
+                            <li>{{ __('profile.notif_max_step_2') }}</li>
+                            <li>{!! __('profile.notif_max_step_3') !!}</li>
+                            <li>{{ __('profile.notif_max_step_4') }}</li>
+                        </ul>
+                        <a style="word-break: break-all" id="connect-max-link" href="#" target="_blank" rel="noopener" class="f-16 b-600"></a>
+                    </div>
+
+                    <button type="button" id="connect-vk-btn" hidden></button>
+                    <div id="connect-vk-result" class="notif-connect hidden">
+                        <ul class="list f-16">
+                            <li>{{ __('profile.notif_vk_step_1') }}</li>
+                            <li>{{ __('profile.notif_vk_step_2') }}</li>
+                            <li>{{ __('profile.notif_vk_step_3') }}</li>
+                            <li>{{ __('profile.notif_vk_step_4') }}</li>
+                            <li>{{ __('profile.notif_vk_step_5') }}</li>
+                        </ul>
+                        <a style="word-break: break-all" id="connect-vk-link" href="#" target="_blank" rel="noopener" class="f-16 b-600"></a>
+                        <div id="connect-vk-command-box" class="mt-1 hidden">
+                            <div class="f-16 text-muted">{{ __('profile.notif_vk_command_label') }}</div>
+                            <div style="overflow-wrap:break-word" id="connect-vk-command" class="f-16 b-600"></div>
+                            <div id="connect-vk-copy-hint" class="f-14 text-muted mt-05 hidden"></div>
+                        </div>
+                    </div>
+
+					{{-- Пользовательские настройки уведомлений: переключатели в стиле iOS, сохраняются сразу, без перезагрузки --}}
+					<div class="notif-settings-list mt-2 pt-2" style="border-top:1px solid var(--border-color, #e0e0e0)">
 						<div id="notif-setting-new_event_in_city" style="transition:box-shadow .4s ease; border-radius:8px;">
-							<label class="checkbox-item">
-								<input type="hidden" name="notify_new_events_in_city" value="0">
-								<input type="checkbox"
-									   name="notify_new_events_in_city"
-									   value="1"
-									   id="notif-toggle-new_event_in_city"
-									   data-setting="notify_new_events_in_city"
-									   {{ $u->notify_new_events_in_city ? 'checked' : '' }}
-									   {{ !$u->city_id ? 'disabled' : '' }}>
-								<div class="custom-checkbox"></div>
-								<span>{{ __('profile.notif_new_events_city_label') }}</span>
-							</label>
+							<div class="up-row" style="border-top:0">
+								<span class="up-row-l"><x-ico name="bell" /> <span>{{ __('profile.notif_new_events_city_label') }}</span></span>
+								<button type="button" class="up-switch {{ $u->notify_new_events_in_city ? 'is-on' : '' }}" id="notif-toggle-new_event_in_city" role="switch"
+									aria-checked="{{ $u->notify_new_events_in_city ? 'true' : 'false' }}" data-setting="notify_new_events_in_city"
+									aria-label="{{ __('profile.notif_new_events_city_label') }}" {{ !$u->city_id ? 'disabled' : '' }}><i></i></button>
+							</div>
 							<p class="f-14 text-muted mt-05">
 								{{ $u->city_id ? __('profile.notif_new_events_city_hint') : __('profile.notif_new_events_city_no_city') }}
-								<span id="notif-setting-saved-new_event_in_city" style="color:#28a745; display:none;">✓ {{ __('profile.notif_setting_saved') }}</span>
+								<span id="notif-setting-saved-new_event_in_city" style="color:#28a745; display:none;"><x-ico name="check" /> {{ __('profile.notif_setting_saved') }}</span>
 							</p>
 						</div>
 					</div>
-
-					<script>
-					(function() {
-						var checkbox = document.getElementById('notif-toggle-new_event_in_city');
-						if (!checkbox) return;
-
-						checkbox.addEventListener('change', function() {
-							var setting = this.dataset.setting;
-							var value = this.checked ? 1 : 0;
-							var savedLabel = document.getElementById('notif-setting-saved-' + setting);
-
-							jQuery.ajax({
-								url: '{{ route("profile.notification_settings.update") }}',
-								method: 'POST',
-								data: {
-									_token: document.querySelector('meta[name="csrf-token"]').content,
-									setting: setting,
-									value: value
-								},
-								success: function() {
-									if (savedLabel) {
-										savedLabel.style.display = '';
-										setTimeout(function() { savedLabel.style.display = 'none'; }, 2000);
-									}
-								},
-								error: function() {
-									checkbox.checked = !checkbox.checked;
-								}
-							});
-						});
-
-						// Deep-link из сообщения рассылки: /user/profile?highlight=city_notify
-						var params = new URLSearchParams(window.location.search);
-						if (params.get('highlight') === 'city_notify') {
-							var target = document.getElementById('notif-setting-new_event_in_city');
-							if (target) {
-								setTimeout(function() {
-									target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-									target.style.boxShadow = '0 0 0 3px rgba(40,167,69,.45)';
-									setTimeout(function() { target.style.boxShadow = ''; }, 2200);
-								}, 150);
-							}
-						}
-					})();
-					</script>
 
 					@if(in_array((string)($u->role ?? 'user'), ['admin', 'organizer', 'staff'], true))
 					<div class="mt-2 pt-2 form" style="border-top:1px solid var(--border-color, #e0e0e0)">
@@ -950,16 +817,65 @@
 						<p>
 							{{ __('profile.notif_org_lead') }}
 						</p>
-						<form method="POST" action="{{ route('profile.notification_channels.settings') }}" class="d-flex align-items-center gap-1">
+						@php
+							$__regChannels = \App\Models\UserNotificationChannel::query()
+								->where('user_id', (int) $u->id)->where('is_verified', true)
+								->whereIn('platform', ['telegram', 'max'])->orderBy('platform')->orderBy('title')->get();
+							$__regSelected = (int) ($u->registration_notify_channel_id ?? 0);
+						@endphp
+						<form method="POST" action="{{ route('profile.notification_channels.settings') }}">
 							@csrf
-							<label class="checkbox-item">
-								<input type="hidden" name="notify_player_registrations" value="0">
-								<input type="checkbox" name="notify_player_registrations" value="1"
-									   onchange="this.form.submit()"
-									   {{ $notifyPlayerRegistrations ? 'checked' : '' }}>
-								<div class="custom-checkbox"></div>	   
-								<span>{{ $notifyPlayerRegistrations ? __('profile.notif_org_on') : __('profile.notif_org_off') }}</span>
-							</label>
+							<div class="up-row" style="border-top:0">
+								<span class="up-row-l"><x-ico name="users" /> <span id="notif-reg-label">{{ $notifyPlayerRegistrations ? __('profile.notif_org_on') : __('profile.notif_org_off') }}</span></span>
+								<input type="hidden" name="notify_player_registrations" id="notif-reg-value" value="{{ $notifyPlayerRegistrations ? 1 : 0 }}">
+								<button type="button" class="up-switch {{ $notifyPlayerRegistrations ? 'is-on' : '' }}" id="notif-reg-switch" role="switch"
+									aria-checked="{{ $notifyPlayerRegistrations ? 'true' : 'false' }}" aria-label="{{ __('profile.notif_org_label') }}"><i></i></button>
+							</div>
+
+							<div class="mt-2">
+								<label for="registration_channel_id">{{ __('profile.notif_org_dest_label') }}</label>
+								<select name="registration_channel_id" id="registration_channel_id" onchange="this.form.submit()">
+									<option value="">{{ __('profile.notif_org_dest_dm') }}</option>
+									@foreach($__regChannels as $__rc)
+									@php
+										$__rcThread = $__rc->platform === 'telegram' ? \App\Support\TelegramTopic::normalize(($__rc->meta ?? [])['message_thread_id'] ?? null) : null;
+									@endphp
+									<option value="{{ $__rc->id }}" {{ $__regSelected === (int) $__rc->id ? 'selected' : '' }}>
+										{{ $__rc->title ?: $__rc->chat_id }} · {{ $__rc->platform === 'max' ? 'MAX' : 'Telegram' }}{{ $__rcThread ? ' · ' . __('profile.notif_org_dest_topic', ['n' => $__rcThread]) : '' }} · {{ $__rc->isPersonalBot() && $u->isOrganizerPro() ? __('profile.notif_org_dest_own_bot', ['bot' => '@' . ltrim((string) $__rc->user_bot_username, '@')]) : __('profile.notif_org_dest_sys_bot') }}
+									</option>
+									@endforeach
+								</select>
+								@error('registration_channel_id')<div class="f-14 mt-05" style="color:#d33;">{{ $message }}</div>@enderror
+								<p class="f-14 mt-05" style="opacity:.7;">
+									{{ $__regChannels->isEmpty() ? __('profile.notif_org_dest_none') : __('profile.notif_org_dest_hint') }}
+								</p>
+								{{-- Выбран канал с персональным ботом, а Организатор Pro не активен → отправка идёт через бота VolleyClub, которого в этом канале может не быть --}}
+								@php $__regSel = $__regChannels->firstWhere('id', $__regSelected); @endphp
+								@if($__regSel && $__regSel->isPersonalBot() && !$u->isOrganizerPro())
+								<div class="alert alert-warning mt-1" style="max-width:520px">
+									{{ __('profile.notif_org_pro_warn', ['bot' => '@' . ltrim((string) $__regSel->user_bot_username, '@')]) }}
+									<a href="{{ route('organizer_pro.index') }}" class="b-600">{{ __('profile.notif_org_pro_warn_link') }}</a>
+								</div>
+								@endif
+								{{-- Тема (топик) Telegram-группы для этих уведомлений — можно отдельную ветку, не ту, что у анонсов --}}
+								@if($__regSel && $__regSel->platform === 'telegram')
+								<div class="mt-1" style="max-width:520px">
+									<label for="registration_thread_id">{{ __('profile.notif_org_thread_label') }}</label>
+									<input type="number" min="1" name="registration_thread_id" id="registration_thread_id" value="{{ $u->registration_notify_thread_id }}" placeholder="{{ __('profile.notif_org_thread_ph') }}" style="width:200px" onchange="this.form.submit()">
+									@error('registration_thread_id')<div class="f-14 mt-05" style="color:#d33;">{{ $message }}</div>@enderror
+									<div class="text-muted f-12 mt-05">{{ __('profile.notif_org_thread_hint') }}</div>
+									@include('partials.channel-check', ['channel' => $__regSel, 'threadInput' => '#registration_thread_id'])
+								</div>
+								@endif
+								@if($__regSelected > 0 && $__regChannels->contains('id', $__regSelected))
+								<label class="checkbox-item mt-1">
+									<input type="hidden" name="registration_also_dm" value="0">
+									<input type="checkbox" name="registration_also_dm" value="1" onchange="this.form.submit()" {{ $u->registration_notify_also_dm ? 'checked' : '' }}>
+									<div class="custom-checkbox"></div>
+									<span>{{ __('profile.notif_org_also_dm') }}</span>
+								</label>
+								@endif
+							</div>
 						</form>
 					</div>
 					@endif
@@ -988,10 +904,10 @@
                 @endphp
 				@if($canManageNotificationChannels)
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('profile.sec_channels') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="megaphone" size="1.2em" /> {{ __('profile.sec_channels') }}</h2>
 					
                     @if($notificationChannels->isNotEmpty())
-					<p><b>{{ __('profile.channels_list_label') }}</b></p>
+					<p><b><x-ico name="megaphone" /> {{ __('profile.channels_list_label') }}</b></p>
 					<ol class="list">
 						@foreach($notificationChannels as $channel)
 						<li>
@@ -1024,7 +940,7 @@
 				@if(auth()->check() && (auth()->user()->isOrganizer() || auth()->user()->isAdmin()))
 				@php $paymentSettings = \App\Models\PaymentSetting::where('organizer_id', auth()->id())->first(); @endphp
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('profile.sec_payment') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="card" size="1.2em" /> {{ __('profile.sec_payment') }}</h2>
 					
 					{{-- Выбор назначения --}}
 					<div class="card mb-2">
@@ -1054,10 +970,10 @@
 										<div class="f-15 mt-05 pay-link-value" style="opacity:.6" title="{{ $paymentSettings->sber_link }}">{{ __('profile.pay_sber_label') }} {{ $paymentSettings->sber_link }}</div>
 										@endif
 										@else
-										<div class="f-15" style="opacity:.5">{{ __('profile.pay_not_setup') }}</div>
+										<div class="f-15" style="opacity:.5"><x-ico name="warn" /> {{ __('profile.pay_not_setup') }}</div>
 										@endif
 										<div class="mt-2 pay-setup-btn-row">
-											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary">{{ __('profile.pay_setup_btn') }}</a>
+											<a href="{{ route('profile.payment_settings') }}" class="btn btn-secondary"><x-ico name="sliders" /> {{ __('profile.pay_setup_btn') }}</a>
 										</div>
 									</div>
 								</div>
@@ -1099,7 +1015,7 @@
 				@php $myUserTeams = \App\Models\UserTeam::where('user_id', auth()->id())->withCount('members')->orderByDesc('created_at')->limit(10)->get(); @endphp
 				<div class="ramka">
 					<div class="section-title-row section-title-row--inline">
-						<h2>Мои команды</h2>
+						<h2 class="h2-ico"><x-ico name="users" size="1.2em" /> Мои команды</h2>
 						<a href="{{ route('user.teams.create') }}" class="btn btn-small">{{ __('profile.my_teams_create') }}</a>
 					</div>
 					@if($myUserTeams->isNotEmpty())
@@ -1118,7 +1034,7 @@
 							<form method="POST" action="{{ route('user.teams.destroy', $ut->id) }}"
 								onsubmit="return confirm('Удалить команду «{{ addslashes($ut->name) }}»?')">
 								@csrf @method('DELETE')
-								<button class="btn btn-small btn-danger">✕</button>
+								<button class="btn btn-small btn-danger"><x-ico name="x" /></button>
 							</form>
 						</div>
 					</div>
@@ -1136,7 +1052,7 @@
 				: collect();
 				@endphp
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('profile.sec_schools') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="building" size="1.2em" /> {{ __('profile.sec_schools') }}</h2>
 					
 					@if(auth()->user()->isAdmin() && $allSchools->isNotEmpty())
 					<div class="b-600 mb-1 f-16">{{ __('profile.schools_admin_all') }}</div>
@@ -1147,12 +1063,12 @@
 							@if($sLogo)<img src="{{ $sLogo }}" alt="" style="width:3.2rem;height:3.2rem;border-radius:50%;object-fit:cover">@endif
 							<div>
 								<div class="b-600">{{ $s->name }}</div>
-								<div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · {{ $s->is_published ? '✅' : '⏸' }}</div>
+								<div class="f-14" style="opacity:.6">{{ trim($s->organizer?->first_name . ' ' . $s->organizer?->last_name) }} · <x-ico :name="$s->is_published ? 'check' : 'clock'" /></div>
 							</div>
 						</div>
 						<div class="d-flex gap-1">
-							<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary">👁</a>
-							<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary">✏️</a>
+							<a href="{{ route('volleyball_school.show', $s->slug) }}" class="btn btn-small btn-secondary"><x-ico name="eye" /></a>
+							<a href="{{ route('volleyball_school.edit') }}?id={{ $s->id }}" class="btn btn-small btn-secondary"><x-ico name="pencil" /></a>
 						</div>
 					</div>
 					@endforeach
@@ -1166,7 +1082,7 @@
 						@if($sLogo)<img src="{{ $sLogo }}" alt="logo" style="width:4rem;height:4rem;border-radius:50%;object-fit:cover">@endif
 						<div>
 							<div class="b-600">{{ $s->name }}</div>
-							<div class="f-14 mt-05" style="opacity:.6">{{ $s->is_published ? __('profile.schools_published') : __('profile.schools_hidden') }}</div>
+							<div class="f-14 mt-05" style="opacity:.6"><x-ico :name="$s->is_published ? 'check' : 'clock'" /> {{ $s->is_published ? __('profile.schools_published') : __('profile.schools_hidden') }}</div>
 						</div>
 					</div>
 					<div class="d-flex gap-1">
@@ -1182,7 +1098,7 @@
 				@endif
 				
 				<div class="ramka">
-					<h2 class="-mt-05">{{ __('trainers.profile_section_title') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('trainers.profile_section_title') }}</h2>
 					@php $myTrainerProfile = auth()->user()->trainerProfile; @endphp
 					@php
 						$trMemberships = auth()->user()->schoolMemberships()->with('school:id,name,slug')->get();
@@ -1231,7 +1147,7 @@
 				
 				<div class="ramka">
 					@php $activePremium = auth()->user()->activePremium(); @endphp
-					<h2 class="-mt-05">{{ __('profile.sec_premium') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="crown" size="1.2em" /> {{ __('profile.sec_premium') }}</h2>
 					<div class="card">
 						@if($activePremium)
 						<div class="d-flex between gap-1 fvc card-actions-row">
@@ -1257,16 +1173,16 @@
 							<div class="col-md-8">
 								<div class="f-17 b-600 mb-1">{{ __('profile.premium_offer_title') }}</div>
 								<ul class="list f-15">
-									<li>{{ __('profile.premium_offer_li_1') }}</li>
-									<li>{{ __('profile.premium_offer_li_2') }}</li>
-									<li>{{ __('profile.premium_offer_li_3') }}</li>
-									<li>{{ __('profile.premium_offer_li_4') }}</li>
-									<li>{{ __('profile.premium_offer_li_5') }}</li>
-									<li>{{ __('profile.premium_offer_li_6') }}</li>
+									<li><x-ico name="crown" /> {{ __('profile.premium_offer_li_1') }}</li>
+									<li><x-ico name="medal" /> {{ __('profile.premium_offer_li_2') }}</li>
+									<li><x-ico name="users" /> {{ __('profile.premium_offer_li_3') }}</li>
+									<li><x-ico name="chart" /> {{ __('profile.premium_offer_li_4') }}</li>
+									<li><x-ico name="bell" /> {{ __('profile.premium_offer_li_5') }}</li>
+									<li><x-ico name="zap" /> {{ __('profile.premium_offer_li_6') }}</li>
 								</ul>
 							</div>
 							<div class="col-md-4 text-center" style="display:flex;flex-direction:column;justify-content:center;gap:1rem;">
-								<a href="{{ route('premium.index') }}" class="btn">{{ __('profile.premium_subscribe_btn') }}</a>
+								<a href="{{ route('premium.index') }}" class="btn"><x-ico name="crown" /> {{ __('profile.premium_subscribe_btn') }}</a>
 								<div class="f-14" style="opacity:.5;">{{ __('profile.premium_price_from') }}</div>
 							</div>
 						</div>
@@ -1274,42 +1190,78 @@
 					</div>
 				</div>
 				
+				@php
+					$__upHidden = auth()->user()->upcoming_hidden_until && \Illuminate\Support\Carbon::parse(auth()->user()->upcoming_hidden_until)->isFuture();
+					$__upDismissed = \Illuminate\Support\Facades\DB::table('upcoming_dismissals')->where('user_id', auth()->id())->count();
+				@endphp
+				<div class="ramka">
+					<h2 class="-mt-05 h2-ico"><x-ico name="megaphone" size="1.2em" /> {{ __('profile.upcoming_sec_title') }}</h2>
+					<div class="up-rows">
+						<div class="up-row">
+							<span class="up-row-l"><x-ico name="megaphone" /> <span>{{ __('profile.upcoming_show_label') }}</span></span>
+							<button type="button" class="up-switch {{ !$__upHidden ? 'is-on' : '' }}" id="upcoming-visible" role="switch"
+								aria-checked="{{ !$__upHidden ? 'true' : 'false' }}" aria-label="{{ __('profile.upcoming_show_label') }}"><i></i></button>
+						</div>
+					</div>
+					<div class="mt-1">
+						<button type="button" id="upcoming-reset" class="btn btn-secondary btn-small" @disabled($__upDismissed === 0)>{{ __('profile.upcoming_reset_btn') }} (<span id="upcoming-reset-n">{{ $__upDismissed }}</span>)</button>
+					</div>
+				</div>
+				<script>
+				(function () {
+					var tok = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
+					var post = function (url, body) { return fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': tok() }, body: JSON.stringify(body || {}) }); };
+					var vis = document.getElementById('upcoming-visible'), rst = document.getElementById('upcoming-reset');
+					if (vis) vis.addEventListener('click', function () {
+						var want = !vis.classList.contains('is-on'), set = function (on) { vis.classList.toggle('is-on', on); vis.setAttribute('aria-checked', on ? 'true' : 'false'); };
+						set(want); vis.disabled = true;
+						post(@json(route('upcoming.visible')), { enabled: want ? 1 : 0 })
+							.then(function (res) { if (!res.ok) set(!want); })
+							.catch(function () { set(!want); })
+							.then(function () { vis.disabled = false; });
+					});
+					if (rst) rst.addEventListener('click', function () {
+						rst.disabled = true;
+						post(@json(route('upcoming.reset'))).then(function () { document.getElementById('upcoming-reset-n').textContent = '0'; });
+					});
+					try { localStorage.removeItem('upcoming_dismissed'); } catch (e) {}
+				})();
+				</script>
+
 				<div class="ramka">  	
 					
 					{{-- ✅ Приватность --}}
 					
-					<h2 class="-mt-05">{{ __('profile.sec_privacy') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="eye-off" size="1.2em" /> {{ __('profile.sec_privacy') }}</h2>
 					
-					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}">
+					<form class="form" method="POST" action="{{ route('profile.contact_privacy.update') }}" id="privacyForm">
 						@csrf
-						
-						
-						
-						<label for="allow_user_contact" class="checkbox-item">
-							<input type="hidden" name="allow_user_contact" value="0">
-							<input type="checkbox" 
-							class="form-check-input" 
-							name="allow_user_contact" 
-							value="1"
-							id="allow_user_contact"
-							@checked((bool)($u->allow_user_contact ?? true))>
-							
-							<div class="custom-checkbox"></div>
-							<span>{{ __('profile.privacy_allow_text') }}</span>
-						</label>
-						
-						
-						
-						<p>{{ __('profile.privacy_lead') }}</p>									
-						
-						
-						<div class="mt-2 m-center">
-							<button type="submit" class="btn">
-								{{ __('profile.btn_save') }}
-							</button>
+						<input type="hidden" name="allow_user_contact" id="privacy-value" value="{{ (bool)($u->allow_user_contact ?? true) ? 1 : 0 }}">
+						<div class="up-rows">
+							<div class="up-row">
+								<span class="up-row-l"><x-ico name="message" /> <span>{{ __('profile.privacy_allow_text') }}</span></span>
+								<button type="button" class="up-switch {{ (bool)($u->allow_user_contact ?? true) ? 'is-on' : '' }}" id="privacy-switch" role="switch"
+									aria-checked="{{ (bool)($u->allow_user_contact ?? true) ? 'true' : 'false' }}" aria-label="{{ __('profile.privacy_allow_text') }}"><i></i></button>
+							</div>
 						</div>
-						
+						<p class="mt-1">{{ __('profile.privacy_lead') }}</p>
 					</form>
+					<script>
+					// Приватность: переключатель сохраняется сразу, без перезагрузки страницы
+					(function () {
+						var sw = document.getElementById('privacy-switch'), val = document.getElementById('privacy-value'), form = document.getElementById('privacyForm');
+						if (!sw || !val || !form) return;
+						sw.addEventListener('click', async function () {
+							var want = !sw.classList.contains('is-on'), set = function (on) { sw.classList.toggle('is-on', on); sw.setAttribute('aria-checked', on ? 'true' : 'false'); val.value = on ? 1 : 0; };
+							set(want); sw.disabled = true;
+							try {
+								var res = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+								if (!res.ok) set(!want);
+							} catch (e) { set(!want); }
+							sw.disabled = false;
+						});
+					})();
+					</script>
 				</div>	
 				
 				
@@ -1318,7 +1270,7 @@
 				@auth
 				@if (($user->role ?? 'user') === 'user')
 				<div class="ramka form" id="organizer-request">
-					<h2 class="-mt-05">{{ __('profile.sec_organizer_request') }}</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="clipboard-check" size="1.2em" /> {{ __('profile.sec_organizer_request') }}</h2>
 					
 					<p>{{ __('profile.org_request_lead') }}</p>
 					
@@ -1342,7 +1294,7 @@
 				
 				<div class="ramka" id="delete-account">
 
-					<h2 class="mt-0">{{ __('profile.sec_delete') }}</h2>
+					<h2 class="mt-0 h2-ico"><x-ico name="trash" size="1.2em" /> {{ __('profile.sec_delete') }}</h2>
 
 					<p class="f-15" style="opacity:.8">{!! __('profile.delete_lead_html', ['n' => $deletionDelay]) !!}</p>
 
@@ -1635,6 +1587,74 @@
 	</script>
 
 	<script>
+	// Уведомления: переключатели без перезагрузки страницы
+	(function () {
+		var csrf = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
+		var ON_REG = @json(__('profile.notif_org_on')), OFF_REG = @json(__('profile.notif_org_off'));
+		function setSwitch(sw, on) { sw.classList.toggle('is-on', on); sw.setAttribute('aria-checked', on ? 'true' : 'false'); }
+
+		// Каналы: выключить — подтверждение и отключение в фоне; включить — запускаем подключение (откроется бот, инструкция под плитками)
+		document.querySelectorAll('#notif-channels .up-switch').forEach(function (sw) {
+			sw.addEventListener('click', async function () {
+				var ch = sw.dataset.channel;
+				if (sw.classList.contains('is-on')) {
+					if (!confirm(sw.dataset.confirm)) return;
+					sw.disabled = true;
+					try {
+						var r = await fetch(sw.dataset.disconnect, { method: 'POST', credentials: 'same-origin',
+							headers: { 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest' } });
+						if (!r.ok) throw new Error('http ' + r.status);
+						setSwitch(sw, false);
+						var box = document.getElementById('connect-' + ch + '-result'); if (box) box.classList.add('hidden');
+					} catch (e) { alert(@json(__('profile.bind_request_error'))); }
+					sw.disabled = false;
+				} else {
+					var b = document.getElementById('connect-' + ch + '-btn'); if (b) b.click();
+				}
+			});
+		});
+
+		// «Новые мероприятия в моём городе»
+		var city = document.getElementById('notif-toggle-new_event_in_city');
+		if (city) city.addEventListener('click', async function () {
+			var want = !city.classList.contains('is-on'); setSwitch(city, want); city.disabled = true;
+			try {
+				var r = await fetch(@json(route('profile.notification_settings.update')), { method: 'POST', credentials: 'same-origin',
+					headers: { 'X-CSRF-TOKEN': csrf(), 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+					body: new URLSearchParams({ setting: city.dataset.setting, value: want ? 1 : 0 }) });
+				if (!r.ok) throw new Error('http ' + r.status);
+				var lbl = document.getElementById('notif-setting-saved-new_event_in_city');
+				if (lbl) { lbl.style.display = ''; setTimeout(function () { lbl.style.display = 'none'; }, 2000); }
+			} catch (e) { setSwitch(city, !want); }
+			city.disabled = false;
+		});
+
+		// Организатор: «Уведомления о записях игроков»
+		var reg = document.getElementById('notif-reg-switch');
+		if (reg) reg.addEventListener('click', async function () {
+			var form = reg.closest('form'), val = document.getElementById('notif-reg-value'), lab = document.getElementById('notif-reg-label');
+			var want = !reg.classList.contains('is-on'); setSwitch(reg, want); val.value = want ? 1 : 0; reg.disabled = true;
+			try {
+				var r = await fetch(form.action, { method: 'POST', body: new FormData(form), credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+				if (!r.ok) throw new Error('http ' + r.status);
+				if (lab) lab.textContent = want ? ON_REG : OFF_REG;
+			} catch (e) { setSwitch(reg, !want); val.value = want ? 0 : 1; }
+			reg.disabled = false;
+		});
+
+		// Deep-link из сообщения рассылки: /user/profile?highlight=city_notify
+		if (new URLSearchParams(window.location.search).get('highlight') === 'city_notify') {
+			var target = document.getElementById('notif-setting-new_event_in_city');
+			if (target) setTimeout(function () {
+				target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+				target.style.boxShadow = '0 0 0 3px rgba(40,167,69,.45)';
+				setTimeout(function () { target.style.boxShadow = ''; }, 2200);
+			}, 150);
+		}
+	})();
+	</script>
+
+	<script>
 	(function() {
 		if (!/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent) || !window.Capacitor) return;
 
@@ -1691,6 +1711,7 @@
 		var enableBtn    = document.getElementById('biometric-enable-btn');
 
 		async function refreshStatus() {
+			if (typeof loadDevices === 'function') loadDevices();
 			try {
 				var avail = await NativeBiometric.isAvailable();
 				if (!avail.isAvailable) {
@@ -1700,7 +1721,12 @@
 				try {
 					var creds = await NativeBiometric.getCredentials({ server: 'volleyplay.club' });
 					if (creds && creds.password) {
-						if (statusEl) statusEl.textContent = @json(__('profile.face_enabled_status'));
+						if (statusEl) {
+							statusEl.innerHTML = '<span class="bio-ok"></span>';
+							var okIco = document.getElementById('bio-ico-ok');
+							if (okIco) statusEl.firstChild.appendChild(okIco.content.cloneNode(true));
+							statusEl.firstChild.appendChild(document.createTextNode(@json(__('profile.face_enabled_status'))));
+						}
 						if (disableBtn) disableBtn.style.display = '';
 						if (enableBtn) enableBtn.style.display = 'none';
 						return;
@@ -1714,17 +1740,74 @@
 			}
 		}
 
+		var devicesEl = document.getElementById('biometric-devices');
+		var csrf = function () { return document.querySelector('meta[name="csrf-token"]')?.content; };
+		async function myBiometricToken() {
+			try { var c = await NativeBiometric.getCredentials({ server: 'volleyplay.club' }); return (c && c.password) || ''; } catch (e) { return ''; }
+		}
+		function fmtDate(iso) { try { return new Date(iso).toLocaleString(document.documentElement.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' }); } catch (e) { return iso; } }
+		async function loadDevices() {
+			if (!devicesEl) return;
+			try {
+				var r = await fetch('/api/biometric/devices', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() },
+					credentials: 'same-origin',
+					body: JSON.stringify({ biometric_token: await myBiometricToken() })
+				});
+				if (!r.ok) return;
+				var list = (await r.json()).devices || [];
+				devicesEl.innerHTML = '';
+				if (!list.length) return;
+				var h = document.createElement('div');
+				h.style.fontWeight = '600';
+				h.textContent = @json(__('profile.face_devices_title'));
+				devicesEl.appendChild(h);
+				list.sort(function (x, y) { return (y.current ? 1 : 0) - (x.current ? 1 : 0); });
+				var tpl = function (id) { var t = document.getElementById(id); return t ? t.content.cloneNode(true) : document.createDocumentFragment(); };
+				list.forEach(function (d) {
+					var row = document.createElement('div'); row.className = 'bio-dev';
+					var ico = document.createElement('div'); ico.className = 'bio-dev-ico'; ico.appendChild(tpl('bio-ico-phone'));
+					var main = document.createElement('div'); main.className = 'bio-dev-main';
+					var name = document.createElement('div'); name.className = 'bio-dev-name';
+					name.textContent = (d.label && d.label !== 'Other') ? d.label : @json(__('profile.face_device_other'));
+					if (d.current) { var cur = document.createElement('span'); cur.className = 'bio-dev-cur'; cur.textContent = @json(__('profile.face_device_current')); name.appendChild(cur); }
+					var meta = document.createElement('div'); meta.className = 'bio-dev-meta';
+					meta.textContent = d.last_used_at ? @json(__('profile.face_device_last')) + ' ' + fmtDate(d.last_used_at) : @json(__('profile.face_device_never_used'));
+					main.appendChild(name); main.appendChild(meta);
+					var b = document.createElement('button');
+					b.type = 'button'; b.className = 'bio-dev-del';
+					b.title = @json(__('profile.face_device_remove')); b.setAttribute('aria-label', @json(__('profile.face_device_remove')));
+					b.appendChild(tpl('bio-ico-del'));
+					b.addEventListener('click', async function () {
+						b.disabled = true;
+						try {
+							await fetch('/api/biometric/devices/' + d.id, { method: 'DELETE', headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrf() }, credentials: 'same-origin' });
+							if (d.current) { await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' }); }
+							await refreshStatus();
+						} catch (e) { b.disabled = false; }
+					});
+					row.appendChild(ico); row.appendChild(main); row.appendChild(b);
+					devicesEl.appendChild(row);
+				});
+			} catch (e) { /* список — вспомогательный */ }
+		}
+
 		if (disableBtn) {
 			disableBtn.addEventListener('click', async function() {
 				disableBtn.disabled = true;
 				try {
+					var myToken = '';
+					try { var c = await NativeBiometric.getCredentials({ server: 'volleyplay.club' }); myToken = (c && c.password) || ''; } catch (e) { /* нет credentials */ }
 					await fetch('/api/biometric/revoke', {
 						method: 'DELETE',
 						headers: {
+							'Content-Type': 'application/json',
 							'Accept': 'application/json',
 							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
 						},
-						credentials: 'same-origin'
+						credentials: 'same-origin',
+						body: JSON.stringify({ biometric_token: myToken })
 					});
 					await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 					await refreshStatus();

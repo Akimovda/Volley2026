@@ -40,13 +40,14 @@ class UserMergeService
             // report/account_links_audit_2026-09-25.md), а сохраняется как псевдоним в
             // account_links (user_id=primary, source='merge') — при повторном входе тем же
             // провайдером старый secondary-аккаунт корректно резолвится в primary.
-            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id'];
+            $uniqueProviderFields = ['telegram_id', 'vk_id', 'yandex_id', 'apple_id', 'google_id', 'max_user_id'];
             $providerNames = [
                 'telegram_id' => 'telegram',
                 'vk_id'       => 'vk',
                 'yandex_id'   => 'yandex',
                 'apple_id'    => 'apple',
                 'google_id'   => 'google',
+                'max_user_id' => 'max',
             ];
             $toNull = [];
             $transferredToPrimary = [];
@@ -294,6 +295,9 @@ class UserMergeService
                 ->update(['user_id' => $primary->id]);
 
             DB::table('friendships')->where('user_id', $secondary->id)->delete();
+
+            // 13a. Face ID / Touch ID: устройства вторичного аккаунта продолжают входить в основной
+            DB::table('biometric_devices')->where('user_id', $secondary->id)->update(['user_id' => $primary->id]);
 
             // 14. Статистика — таблицы с UNIQUE(user_id, ...): наивный UPDATE падает,
             // если у primary уже есть строка с тем же ключом (см. report/merge_users_bug_2026-08-15.md).

@@ -21,7 +21,7 @@ class SubscriptionAutoBookingController extends Controller
 
         $subscription->loadMissing('template');
         if (!$subscription->isActive() || !$subscription->template?->auto_booking_enabled) {
-            return back()->with('error', __('subscriptions.ab_not_available'));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_not_available'));
         }
 
         $data = $request->validate([
@@ -30,13 +30,13 @@ class SubscriptionAutoBookingController extends Controller
         ]);
 
         if ($subscription->autoBookings()->count() >= self::MAX_PER_SUBSCRIPTION) {
-            return back()->with('error', __('subscriptions.ab_limit', ['max' => self::MAX_PER_SUBSCRIPTION]));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_limit', ['max' => self::MAX_PER_SUBSCRIPTION]));
         }
 
         $event = Event::with('gameSettings')->findOrFail($data['event_id']);
 
         if (!$subscription->template->appliesToEvent($event->id)) {
-            return back()->with('error', __('subscriptions.ab_event_not_applicable'));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_event_not_applicable'));
         }
 
         $visibility = app(EventVisibilityService::class);
@@ -45,7 +45,7 @@ class SubscriptionAutoBookingController extends Controller
         }
 
         if (in_array($event->registration_mode, ['team_classic', 'team_beach'], true)) {
-            return back()->with('error', __('subscriptions.ab_team_not_supported'));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_team_not_supported'));
         }
 
         $slotService = app(EventRoleSlotService::class);
@@ -55,10 +55,10 @@ class SubscriptionAutoBookingController extends Controller
         if ($slotService->requiresPositionChoice($event)) {
             // Классика с амплуа: позиция ОБЯЗАТЕЛЬНА — без неё автозапись не сработает.
             if (!$position) {
-                return back()->with('error', __('subscriptions.ab_position_required'));
+                return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_position_required'));
             }
             if (!in_array($position, $mainRoles, true)) {
-                return back()->with('error', __('subscriptions.ab_position_unavailable'));
+                return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_position_unavailable'));
             }
         } else {
             $position = $mainRoles[0] ?? null;
@@ -72,13 +72,13 @@ class SubscriptionAutoBookingController extends Controller
             ->first();
 
         if (!$occurrence) {
-            return back()->with('error', __('subscriptions.ab_no_future_occurrences'));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_no_future_occurrences'));
         }
 
         $guardResult = app(EventRegistrationGuard::class)
             ->checkStaticEligibility($user, $occurrence, $position);
         if (!$guardResult->allowed) {
-            return back()->with('error', implode(' ', $guardResult->errors));
+            return $this->toPopup((int) $subscription->id)->with('error', implode(' ', $guardResult->errors));
         }
 
         try {
@@ -89,10 +89,10 @@ class SubscriptionAutoBookingController extends Controller
                 'position'        => $position,
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
-            return back()->with('error', __('subscriptions.ab_already_exists'));
+            return $this->toPopup((int) $subscription->id)->with('error', __('subscriptions.ab_already_exists'));
         }
 
-        return back()->with('status', __('subscriptions.ab_created'));
+        return $this->toPopup((int) $subscription->id)->with('status', __('subscriptions.ab_created'));
     }
 
     public function destroy(Request $request, SubscriptionAutoBooking $autoBooking)
@@ -101,6 +101,12 @@ class SubscriptionAutoBookingController extends Controller
 
         $autoBooking->delete();
 
-        return back()->with('status', __('subscriptions.ab_deleted'));
+        return $this->toPopup((int) $autoBooking->subscription_id)->with('status', __('subscriptions.ab_deleted'));
+    }
+
+    /** Возврат на «Мои абонементы» с автоматическим открытием окна автозаписи этого абонемента. */
+    private function toPopup(int $subscriptionId): \Illuminate\Http\RedirectResponse
+    {
+        return redirect(route('subscriptions.my') . '#sab-' . $subscriptionId);
     }
 }

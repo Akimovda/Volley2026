@@ -62,7 +62,7 @@ class TournamentSeasonController extends Controller
 
         return redirect()
             ->route('seasons.edit', $season)
-            ->with('success', 'Сезон создан. Добавьте дивизионы.');
+            ->with('success', __('Сезон создан. Добавьте дивизионы.'));
     }
 
     /* ================================================================
@@ -178,7 +178,7 @@ class TournamentSeasonController extends Controller
             }
         }
 
-        return back()->with('success', 'Сезон обновлён.');
+        return back()->with('success', __('Сезон обновлён.'));
     }
 
     /* ================================================================
@@ -191,7 +191,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $this->seasonService->activate($season);
-            return back()->with('success', 'Сезон активирован.');
+            return back()->with('success', __('Сезон активирован.'));
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -202,7 +202,7 @@ class TournamentSeasonController extends Controller
         $this->authorizeSeason($request, $season);
 
         $this->seasonService->complete($season);
-        return back()->with('success', 'Сезон завершён.');
+        return back()->with('success', __('Сезон завершён.'));
     }
 
     /* ================================================================
@@ -226,7 +226,7 @@ class TournamentSeasonController extends Controller
 
         $this->leagueService->createLeague($season, $validated);
 
-        return back()->with('success', "Лига «{$validated['name']}» создана.");
+        return back()->with('success', __('Лига «:name» создана.', ['name' => $validated['name']]));
     }
 
     public function updateLeague(Request $request, TournamentLeague $league)
@@ -241,7 +241,7 @@ class TournamentSeasonController extends Controller
 
         $this->leagueService->updateLeague($league, $validated);
 
-        return back()->with('success', 'Лига обновлена.');
+        return back()->with('success', __('Лига обновлена.'));
     }
 
     public function destroyLeague(Request $request, TournamentLeague $league)
@@ -250,7 +250,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $this->leagueService->deleteLeague($league);
-            return back()->with('success', 'Лига удалена.');
+            return back()->with('success', __('Лига удалена.'));
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -310,7 +310,7 @@ class TournamentSeasonController extends Controller
         $event = $seasonEvent ? \App\Models\Event::find($seasonEvent->event_id) : null;
 
         if (!$event) {
-            return back()->with('error', 'Событие не найдено.');
+            return back()->with('error', __('Событие не найдено.'));
         }
 
         $captain = \App\Models\User::findOrFail($validated['captain_user_id']);
@@ -383,7 +383,7 @@ class TournamentSeasonController extends Controller
 
         $this->leagueService->removeTeam($leagueTeam);
 
-        return back()->with('success', 'Команда убрана из лиги.');
+        return back()->with('success', __('Команда убрана из лиги.'));
     }
 
     /* ================================================================
@@ -401,7 +401,7 @@ class TournamentSeasonController extends Controller
             'reserve_position' => $nextPos,
         ]);
 
-        return back()->with('success', 'Команда переведена в резерв.');
+        return back()->with('success', __('Команда переведена в резерв.'));
     }
 
     public function moveReserve(Request $request, TournamentLeagueTeam $leagueTeam)
@@ -448,7 +448,7 @@ class TournamentSeasonController extends Controller
             $this->ensureEventTeamForOccurrence($leagueTeam, $occurrenceId);
         }
 
-        return back()->with('success', 'Команда активирована.');
+        return back()->with('success', __('Команда активирована.'));
     }
 
     private function ensureEventTeamForOccurrence(TournamentLeagueTeam $leagueTeam, int $occurrenceId): void
@@ -525,7 +525,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $this->seasonService->attachEvent($season, $league, $event, $validated['round_number'] ?? null);
-            return back()->with('success', 'Турнир привязан к сезону.');
+            return back()->with('success', __('Турнир привязан к сезону.'));
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -536,7 +536,7 @@ class TournamentSeasonController extends Controller
         $this->authorizeSeason($request, $season);
 
         $this->seasonService->detachEvent($season, $event);
-        return back()->with('success', 'Турнир отвязан от сезона.');
+        return back()->with('success', __('Турнир отвязан от сезона.'));
     }
 
     /* ================================================================
@@ -592,7 +592,7 @@ class TournamentSeasonController extends Controller
 
         try {
             $this->seasonService->deleteSeason($season);
-            return redirect()->route('leagues.index')->with('success', 'Сезон удалён.');
+            return redirect()->route('leagues.index')->with('success', __('Сезон удалён.'));
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -756,7 +756,7 @@ class TournamentSeasonController extends Controller
         // указывает на создателя, а не на владельца лиги.
         $isLeagueOwner = (int) ($season->league?->organizer_id ?? 0) === (int) $user->id;
         if (!$isSeasonOwner && !$isLeagueOwner && !$user->isAdmin()) {
-            abort(403, 'Вы не являетесь организатором этого сезона.');
+            abort(403, __('Вы не являетесь организатором этого сезона.'));
         }
     }
 
@@ -764,7 +764,7 @@ class TournamentSeasonController extends Controller
     {
         $user = $request->user();
         if ($league->organizer_id !== $user->id && !$user->isAdmin()) {
-            abort(403, 'Вы не являетесь владельцем этой лиги.');
+            abort(403, __('Вы не являетесь владельцем этой лиги.'));
         }
     }
 }

@@ -19,11 +19,19 @@ class AdminAuditController extends Controller
         'impersonate.start' => 'Вход от имени пользователя',
         'impersonate.leave' => 'Выход из режима имперсонации',
         'user.delete.purge' => 'Полное удаление пользователя',
+        'location.update' => 'Локация: изменены данные',
+        'location.directions.update' => 'Локация: направления и корты',
+        'location.prices.update' => 'Локация: стоимость аренды',
+        'location.trust.save' => 'Локация: доверенный организатор',
+        'location.trust.destroy' => 'Локация: доверенный организатор удалён',
+        'location.photos.reorder' => 'Локация: порядок фото',
+        'location.photos.delete' => 'Локация: удалено фото',
     ];
 
     /** Человекочитаемые названия типов цели (target_type -> label) */
     private const TARGET_TYPE_LABELS = [
         'user' => 'Пользователь',
+        'location' => 'Локация',
     ];
 
     public function index(Request $request)

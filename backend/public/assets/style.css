@@ -2628,7 +2628,8 @@ body.dark .fix-header {
 }
 .fix-header-logo,
 .fix-header-logo {
-	margin-left: 2rem;
+	/* слева = справа: у кнопок margin-right 1.2rem + внутренний отступ 0.4rem = 1.6rem (было 2rem — левый зазор был больше правого) */
+	margin-left: 1.6rem;
 	line-height: 1;
 	display: inline;
 }
@@ -3043,6 +3044,11 @@ body.dark .theme-icon {
 	width: 100%;
 	margin: auto;
 }
+/* Вне России VK и Яндекс часто недоступны (зарубежные адреса, VPN) — показываем их ниже остальных способов */
+.social-auth--foreign .auth-btn-vk,
+.social-auth--foreign .auth-btn-yandex {
+	order: 10;
+}
 .social-auth .row {
 	margin: 0 -1rem -2rem; 
 }
@@ -3182,6 +3188,20 @@ body.dark .theme-icon {
 }
 .auth-btn-yandex .auth-icon-circle {
     background-color: #fc3f1d;
+}
+
+/* MAX */
+.auth-btn-max {
+    border-color: rgba(0, 122, 255, 0.2);
+    color: #5a3df0;
+    background-color: #f5f3ff;
+}
+.auth-btn-max:hover {
+    border-color: #6a4cf5;
+    background-color: #ece8ff;
+}
+.auth-btn-max .auth-icon-circle {
+    background: linear-gradient(135deg, #007aff, #8a2be2);
 }
 
 /* Telegram */
@@ -4216,6 +4236,22 @@ body.dark .footer-menu a:hover {
 .app-link.apk-dl {
 	background-image: url(/img/apk-android.svg);
 }
+/* Google Play (тестирование): текстовая кнопка вместо картинки */
+.footer .app-link.google-test {
+	justify-content: center;
+	gap: 1rem;
+	height: auto;
+	min-height: 4.8rem;
+	padding: 0.8rem 1.4rem;
+	background-image: none;
+	color: #2967BA;
+	font-size: 1.5rem;
+	text-decoration: none;
+}
+.footer .app-link.google-test svg {
+	fill: #2967BA;
+	flex: none;
+}
 body.dark .footer .app-link {
 	filter: invert(94%);
 }
@@ -4369,6 +4405,14 @@ body.dark .card-image svg {
 	will-change: transform;
 	}
 */
+/* Карточки, лежащие в колонке по несколько штук (турнир: состав команды, «минимум команд/игроков», King of the Beach),
+   не должны тянуться на 100% высоты колонки — иначе каждая занимает всю колонку и они налезают друг на друга */
+#king_beach_players_wrap,
+#tournament_squad_setup_card,
+#tournament_min_teams_card,
+#tournament_min_players_card {
+	height: auto;
+}
 .card:hover {
 	box-shadow: 0 0.4rem 1.2rem rgba(0,0,0,0.08);
 	/*transform: translateY(-0.2rem);*/
@@ -5593,8 +5637,8 @@ body.dark .btn-outline-primary:hover {
 
 /* Карточка чипов дней — на широких экранах топбар (фильтр/направление/фото/
    гео) слева, лента дат по центру (скроллится сама, топбар и кнопки next/prev
-   не скроллятся), кнопки "следующие/предыдущие 10 дней" справа — вынесены из
-   ленты в свой блок (day-nav-buttons), не уезжают вместе с чипами. На узких —
+   не скроллятся), стрелки ‹ › «предыдущие/следующие 10 дней» по бокам ленты
+   (.days-nav-row), не уезжают вместе с чипами. На узких —
    всё в столбик. Раньше overflow-x был на самой .event-dates-ramka (скроллилась
    целиком вместе с топбаром) — перенесено на #daysStrip, см. ниже. */
 .event-dates-ramka {
@@ -5679,19 +5723,66 @@ body.dark .btn-outline-primary:hover {
 	scroll-snap-type: x mandatory;
 	scroll-padding: 0 1rem;
 }
-.event-dates-ramka .day-nav-buttons {
+/* Лента дат: [‹] чипы [›] — стрелки-иконки по бокам (вместо больших кнопок «Предыдущие/Следующие 10 дней»),
+   на всех ширинах; сама лента (#daysStrip) скроллится между ними. Вид — как у круглых иконок топбара. */
+.event-dates-ramka .days-nav-row {
+	/* группа [‹ чипы ›] по центру карточки, стрелки вплотную к первой/последней дате;
+	   при нехватке места лента между стрелками скроллится (min-width:0) */
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 100%;
+	margin: 0 auto;
 	display: flex;
-	gap: 0.4rem;
+	align-items: center;
+	gap: 0.6rem;
+}
+.event-dates-ramka .days-nav-row #daysStrip {
+	flex: 0 1 auto;
+	width: auto;
+	max-width: 100%;
+	min-width: 0;
+}
+.event-dates-ramka .day-nav-arrow {
 	flex: 0 0 auto;
+	width: 4.2rem;
+	height: 4.2rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	border: 0.2rem solid rgba(41, 103, 186, 0.25);
+	background: rgba(255, 255, 255, 0.7);
+	color: #2967BA;
+	text-decoration: none;
+	cursor: pointer;
+	transition: all .2s ease;
 }
-/* Кнопки prev/next рендерятся дважды (см. events/index.blade.php) — на узком
-   экране едут вместе с чипами внутри скролла (inline), на широком стоят особым
-   блоком справа и не скроллятся (pinned). Показываем только подходящую копию. */
-.event-dates-ramka .day-nav-buttons--inline {
-	margin-left: 0.4rem;
+.event-dates-ramka a.day-nav-arrow:hover,
+.event-dates-ramka a.day-nav-arrow:focus-visible {
+	background: #2967BA;
+	color: #fff;
+	border-color: #2967BA;
 }
-.event-dates-ramka .day-nav-buttons--pinned {
-	display: none;
+.event-dates-ramka .day-nav-arrow.is-disabled {
+	opacity: .3;
+	cursor: default;
+	pointer-events: none;
+}
+body.dark .event-dates-ramka .day-nav-arrow {
+	background: rgba(255, 255, 255, 0.06);
+	color: #E7612F;
+	border-color: rgba(231, 97, 45, 0.35);
+}
+body.dark .event-dates-ramka a.day-nav-arrow:hover,
+body.dark .event-dates-ramka a.day-nav-arrow:focus-visible {
+	background: #E7612F;
+	color: #fff;
+	border-color: #E7612F;
+}
+@media (max-width: 480px) {
+	.event-dates-ramka .days-nav-row { gap: 0.4rem; }
+	.event-dates-ramka .day-nav-arrow { width: 3.6rem; height: 3.6rem; }
+	.event-dates-ramka .day-nav-arrow svg { width: 18px; height: 18px; }
 }
 @media (max-width: 767px) {
 	.event-dates-ramka {
@@ -5703,12 +5794,6 @@ body.dark .btn-outline-primary:hover {
 	}
 }
 @media (min-width: 768px) {
-	.event-dates-ramka .day-nav-buttons--inline {
-		display: none;
-	}
-	.event-dates-ramka .day-nav-buttons--pinned {
-		display: flex;
-	}
 }
 .events-page .mob-sticky {
 	position: sticky;
@@ -6420,6 +6505,44 @@ body.dark .progress .progress-bar.bg-full { background: #6b7280 !important; }
 }
 /* Скрыть на стартовом экране /events (history.length в WKWebView ненадёжен) */
 .is-app .events-page #app-back-btn { display: none; }
+
+/* Шторка поверх страницы в приложении (нативный OverlayWebViewController добавляет html.is-overlay):
+   шапку, подвал, название страницы и кнопку «назад» показывает нативная панель — на странице остаётся только содержимое */
+.is-overlay header,
+.is-overlay footer,
+.is-overlay .top-section,
+.is-overlay .top-section-img,
+.is-overlay #app-back-btn,
+.is-overlay .fix-header {
+	display: none !important;
+}
+.is-overlay body {
+	padding-top: 1.6rem;
+}
+
+/* Заголовки блоков форм с цветной SVG-иконкой (<x-ico>) */
+.h2-ico {
+	display: flex;
+	align-items: center;
+	gap: .7rem;
+}
+/* Нижние кнопки форм («Отмена» / «Сохранить») — в один ряд, с промежутком */
+.form-actions-row {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 1.2rem;
+	justify-content: center;
+	align-items: stretch;
+}
+.form-actions-row .btn {
+	flex: 1 1 0;
+	max-width: 26rem;
+	margin: 0 !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+}
 
 /* Хлебные крошки не нужны в приложении — экран маленький, навигация своя (2026-09-26) */
 .is-app .breadcrumbs {
@@ -7928,3 +8051,298 @@ input[type="range"]::-moz-range-thumb {
 }
 input[type="range"]:active::-moz-range-thumb { transform: scale(1.1); }
 input[type="range"]:disabled:active::-moz-range-thumb { transform: none; }
+
+/* MAX: настоящий значок (квадрат со скруглением) вместо кружка с градиентом */
+.auth-btn-max .auth-icon-circle,
+body.dark .auth-btn-max .auth-icon-circle,
+.provider-card__icon.icon-max {
+	background: none;
+}
+.auth-btn-max .auth-icon-circle img.auth-icon-img,
+.provider-card__icon.icon-max img.auth-icon-img {
+	display: block;
+	flex: none;
+	width: 4rem !important;
+	height: 4rem !important;
+	min-width: 4rem;
+	max-width: none !important;
+	object-fit: contain;
+	aspect-ratio: 1 / 1;
+	border-radius: 22%;
+}
+
+/* Белые кнопки внутри белых карточек профиля — тонкий контур, чтобы их было видно */
+.ramka .btn-secondary:not(.btn-alert) {
+	border: 0.15rem solid rgba(41, 103, 186, 0.35);
+}
+.ramka .btn-secondary:not(.btn-alert):hover {
+	border-color: #2967BA;
+}
+body.dark .ramka .btn-secondary:not(.btn-alert) {
+	border-color: rgba(255, 255, 255, 0.22);
+}
+body.dark .ramka .btn-secondary:not(.btn-alert):hover {
+	border-color: #E7612F;
+}
+
+/* Профиль игрока: строки-переключатели (лайк, друг, слежка) */
+.up-rows{display:flex;flex-direction:column;gap:.4rem;margin-top:1.2rem;max-width:52rem}
+.up-row{display:flex;align-items:center;justify-content:space-between;gap:1.2rem;margin:0;padding:.9rem 0;border-top:.1rem solid rgba(128,128,128,.2)}
+.up-row:first-child{border-top:0}
+.up-row-l{display:inline-flex;align-items:center;gap:.8rem;font-size:1.6rem;font-weight:600}
+.up-switch{position:relative;flex:0 0 auto;width:5.2rem;height:3rem;padding:0;border:0;border-radius:1.5rem;background:#cbd5e1;cursor:pointer;transition:background .2s}
+.up-switch i{position:absolute;top:.3rem;left:.3rem;width:2.4rem;height:2.4rem;border-radius:50%;background:#fff;box-shadow:0 .1rem .3rem rgba(0,0,0,.3);transition:transform .2s}
+.up-switch.is-on{background:#2967BA}
+.up-switch.is-on i{transform:translateX(2.2rem)}
+body.dark .up-switch{background:#475569}
+
+/* Профиль: блок «Быстрый вход» (Face ID) — список устройств */
+.bio-ok{display:inline-flex;align-items:center;gap:.6rem;font-weight:600;color:#16a34a}
+.bio-dev{display:flex;align-items:center;gap:1.2rem;padding:1rem 0;border-top:.1rem solid rgba(128,128,128,.2)}
+.bio-dev:first-of-type{border-top:0}
+.bio-dev-ico{flex:0 0 auto;width:4.4rem;height:4.4rem;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(128,128,128,.14)}
+.bio-dev-main{flex:1 1 auto;min-width:0}
+.bio-dev-name{font-weight:600;font-size:1.5rem;line-height:1.3}
+.bio-dev-meta{font-size:1.3rem;opacity:.65;line-height:1.3;margin-top:.2rem}
+.bio-dev-cur{display:inline-block;margin-left:.8rem;padding:.1rem .9rem;border-radius:1rem;font-size:1.2rem;font-weight:600;background:rgba(22,163,74,.16);color:#16a34a;vertical-align:.1rem}
+.bio-dev-del{flex:0 0 auto;width:4.4rem;height:4.4rem;border-radius:50%;border:.1rem solid rgba(220,38,38,.45);background:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.bio-dev-del:disabled{opacity:.4}
+
+/* Привязка входов: инструкция сворачивается, на узких экранах провайдеры — квадратные плитки по 2 в ряд */
+.providers-how{margin:0 0 1rem}
+.providers-how summary{cursor:pointer;font-weight:600;list-style:none;display:inline-flex;align-items:center;gap:.6rem}
+.providers-how summary::-webkit-details-marker{display:none}
+.providers-how summary::after{content:'▾';opacity:.6}
+.providers-how[open] summary::after{content:'▴'}
+@media (max-width: 600px) {
+	.provider-cards.fc > .col-6 { width: 50%; }
+	.provider-cards.fc .card { padding: 1.2rem 0.8rem; text-align: center; height: 100%; }
+	.provider-cards.fc .provider-card__header { flex-direction: column; gap: 0.6rem; margin-bottom: 0.9rem; }
+	.provider-cards.fc .provider-card__title { padding-left: 0; font-size: 1.4rem; text-align: center; flex: 0 0 auto; }
+	.provider-cards.fc .provider-card__icon { width: 4.6rem; height: 4.6rem; }
+	.provider-cards.fc .provider-card__icon svg { width: 2.4rem; height: 2.4rem; }
+	.provider-cards.fc .btn { padding: 0.7rem 0.4rem; font-size: 1.2rem; }
+}
+
+.provider-group-title{flex:0 0 100%;max-width:100%;padding:0 1rem;margin:.4rem 0 .8rem;font-size:1.3rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.65}
+.provider-cards.fc{align-items:stretch}
+
+/* Админка локаций: сетка загруженных фото */
+.loc-photo-card{padding:.8rem}
+.loc-photo-img{display:block;width:100%;height:12rem;object-fit:cover;border-radius:.8rem}
+
+/* Админка локаций: единая панель «Сохранить» внизу экрана */
+.loc-savebar{position:sticky;bottom:0;z-index:40;display:flex;justify-content:center;padding:1rem 1rem calc(1rem + env(safe-area-inset-bottom));margin-top:1.6rem;background:linear-gradient(to top,rgba(0,0,0,.18),transparent)}
+.loc-savebar .btn{min-width:24rem;box-shadow:0 .4rem 1.6rem rgba(0,0,0,.28)}
+
+/* Профиль: каналы личных уведомлений — плитки с переключателями */
+.notif-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem;max-width:62rem;margin-top:1rem}
+.notif-tile{display:flex;flex-direction:column;align-items:center;gap:.8rem;padding:1.4rem .6rem;border:.1rem solid rgba(128,128,128,.3);border-radius:1.2rem;text-align:center}
+.notif-tile .provider-card__icon{width:4.6rem;height:4.6rem;margin:0}
+.notif-tile__name{font-weight:600;font-size:1.4rem}
+.notif-connect{margin-top:1.2rem;padding:1.2rem 1.4rem;border-radius:1rem;background:rgba(128,128,128,.1)}
+.up-switch:disabled{opacity:.45;cursor:default}
+
+/* Профиль, «Уведомления»: логотип MAX — без градиентной подложки, того же размера, что круглые иконки соседних каналов */
+.notif-tile .provider-card__icon.icon-max { background: none !important; width: 4.6rem; height: 4.6rem; }
+.notif-tile .provider-card__icon.icon-max img.auth-icon-img { width: 4.6rem !important; height: 4.6rem !important; min-width: 4.6rem; border-radius: 22%; }
+body.dark .up-switch.is-on { background: #2967BA; }
+
+/* Логотипы MAX (SVG): круглый значок везде вместо PNG/глифа; вордмарк «MAX» на странице входа */
+.icon-max img.auth-icon-img { display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; border-radius: 50%; }
+.auth-icon-circle .icon-max { width: 4rem; height: 4rem; }
+.provider-card__icon.icon-max { background: none !important; }
+.provider-card__icon.icon-max img.auth-icon-img, .auth-btn-max .auth-icon-circle img.auth-icon-img { border-radius: 50%; }
+.max-brand { display: flex; justify-content: center; margin: 0 0 2rem; }
+.max-brand img { display: block; height: 4.2rem; width: auto; padding: 1rem 2.4rem; box-sizing: content-box; border-radius: 1.6rem; background: linear-gradient(135deg, #44CCFF 0%, #5533EE 66%, #9933DD 100%); }
+
+/* Цветные SVG-значки Telegram / VK / Яндекс в кружках провайдеров и кнопках входа (как у MAX) */
+.icon-tg img.auth-icon-img, .icon-vk img.auth-icon-img, .icon-yandex img.auth-icon-img { display: block; width: 100%; height: 100%; max-width: none; object-fit: contain; border-radius: 50%; }
+.provider-card__icon.icon-tg:has(img), .provider-card__icon.icon-vk:has(img), .provider-card__icon.icon-yandex:has(img) { background: none !important; }
+.auth-btn-telegram .auth-icon-circle:has(img), .auth-btn-vk .auth-icon-circle:has(img), .auth-btn-yandex .auth-icon-circle:has(img) { background: none; }
+.auth-icon-circle .icon-tg:has(img), .auth-icon-circle .icon-vk:has(img), .auth-icon-circle .icon-yandex:has(img) { width: 4rem; height: 4rem; }
+
+/* Карточка мероприятия: кнопка «Уже идёт» с зелёной «живой» точкой */
+.btn-live::before{content:'';display:inline-block;width:.9rem;height:.9rem;margin-right:.8rem;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:btn-live-pulse 1.6s infinite;vertical-align:.1rem}
+@keyframes btn-live-pulse{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6)}70%{box-shadow:0 0 0 .8rem rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+
+/* «Мои абонементы»: карточка в стиле членской карты (цвета и логотип бренда организатора или VolleyClub) */
+.sub-card{position:relative;overflow:hidden;border-radius:2rem;padding:2rem 2rem 1.8rem;color:#fff;background:linear-gradient(135deg,var(--sc-from),var(--sc-to));box-shadow:0 1rem 3rem rgba(0,0,0,.25)}
+.sub-card__wm{position:absolute;right:-2.4rem;bottom:-2.6rem;height:17rem;width:auto;max-width:60%;opacity:.16;pointer-events:none;object-fit:contain}
+.sub-card__top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;position:relative}
+.sub-card__kind{font-size:1.2rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;opacity:.85;line-height:1.35}
+.sub-card__state{flex:0 0 auto;font-size:1.2rem;font-weight:700;padding:.3rem 1.1rem;border-radius:2rem;background:rgba(255,255,255,.18);white-space:nowrap}
+.sub-card__big{position:relative;margin-top:1.2rem;font-size:3.4rem;font-weight:800;line-height:1.1}
+.sub-card__segs{position:relative;display:flex;gap:.5rem;margin-top:1.6rem}
+.sub-card__seg{flex:1 1 0;min-width:.4rem;height:.8rem;border-radius:.4rem;background:rgba(255,255,255,.22)}
+.sub-card__seg.is-left{background:var(--sc-accent)}
+.sub-card__bar{position:relative;height:.8rem;margin-top:1.6rem;border-radius:.4rem;background:rgba(255,255,255,.22);overflow:hidden}
+.sub-card__bar span{display:block;height:100%;border-radius:.4rem;background:var(--sc-accent)}
+.sub-card__foot{position:relative;display:flex;justify-content:space-between;gap:1rem;margin-top:1.2rem;font-size:1.4rem;font-weight:600}
+.sub-card__foot b{color:var(--sc-accent);font-size:1.5rem}
+.sub-card.is-dim{filter:grayscale(.75);opacity:.8}
+.sub-card--frozen{box-shadow:0 1rem 3rem rgba(0,0,0,.25),inset 0 0 0 .2rem rgba(147,197,253,.55)}
+.sub-card--ending .sub-card__state{background:var(--sc-accent);color:#111}
+.sub-actions{display:flex;flex-wrap:wrap;gap:.8rem}
+.sub-actions .btn{display:inline-flex;align-items:center;gap:.6rem}
+.sub-last__title{font-size:1.2rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.55;margin-bottom:.8rem}
+.sub-last__row{display:flex;justify-content:space-between;gap:1rem;padding:.9rem 1.2rem;margin-bottom:.5rem;border-radius:1rem;background:rgba(128,128,128,.1);font-size:1.4rem}
+.sub-last__minus{opacity:.6}
+@media (max-width:480px){.sub-card{padding:1.6rem 1.4rem}.sub-card__big{font-size:2.8rem}.sub-card__kind{font-size:1.1rem}}
+
+/* «Мои абонементы» v2: карточка размером с банковскую (ID-1, 85,6×54 мм), цветные статусы, единая полоса использования, ровные кнопки */
+.sub-card{aspect-ratio:1.586/1;max-width:40rem;width:100%;padding:1.7rem 1.9rem;display:flex;flex-direction:column;justify-content:space-between;border-radius:1.8rem}
+.sub-card__top{align-items:center}
+.sub-card__kind{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:1.1rem}
+.sub-card__big{margin-top:0;font-size:2.7rem}
+.sub-card__bar{height:.9rem;margin-top:0;background:rgba(255,255,255,.2)}
+.sub-card__bar span{min-width:.9rem}
+.sub-card__foot{margin-top:0;font-size:1.3rem}
+.sub-card__wm{right:-1.8rem;bottom:-1.6rem;height:78%;max-width:52%}
+.sub-card__state{display:inline-flex;align-items:center;gap:.6rem;padding:.35rem 1.1rem;font-size:1.15rem;letter-spacing:.02em;background:rgba(255,255,255,.18);color:#fff}
+.sub-card__state::before{content:'';width:.8rem;height:.8rem;border-radius:50%;background:currentColor}
+.sub-card--active .sub-card__state{background:rgba(34,197,94,.22);color:#86efac;box-shadow:inset 0 0 0 .1rem rgba(34,197,94,.6)}
+.sub-card--ending .sub-card__state{background:rgba(245,158,11,.24);color:#fcd34d;box-shadow:inset 0 0 0 .1rem rgba(245,158,11,.65)}
+.sub-card--frozen .sub-card__state{background:rgba(56,189,248,.22);color:#bae6fd;box-shadow:inset 0 0 0 .1rem rgba(56,189,248,.6)}
+.sub-card--expired .sub-card__state{background:rgba(248,113,113,.22);color:#fecaca;box-shadow:inset 0 0 0 .1rem rgba(248,113,113,.6)}
+.sub-card--exhausted .sub-card__state{background:rgba(156,163,175,.24);color:#e5e7eb;box-shadow:inset 0 0 0 .1rem rgba(156,163,175,.6)}
+.sub-card--cancelled .sub-card__state{background:rgba(239,68,68,.24);color:#fecaca;box-shadow:inset 0 0 0 .1rem rgba(239,68,68,.6)}
+.sub-card.is-dim{filter:grayscale(.55);opacity:.88}
+.sub-actions{gap:.8rem}
+.sub-actions .btn,.sub-actions button.btn{display:inline-flex;align-items:center;justify-content:center;gap:.7rem;height:4rem;padding:0 1.4rem;font-family:inherit;font-size:1.3rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;line-height:1;white-space:nowrap}
+.sub-actions .btn .ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;vertical-align:0}
+.sub-actions .btn .ico svg{display:block}
+@media (max-width:480px){.sub-card{padding:1.4rem 1.5rem}.sub-card__big{font-size:2.3rem}.sub-card__foot{font-size:1.2rem}}
+
+/* «Мои абонементы»: на широком экране информация и кнопки — справа от карточки; на узком всё друг под другом как раньше */
+@media (min-width: 900px) {
+	.sub-layout{display:grid;grid-template-columns:40rem minmax(0,1fr);gap:3rem;align-items:center}
+	.sub-layout__info > :first-child{margin-top:0}
+	.sub-layout__info .sub-actions{margin-top:1.6rem}
+}
+
+/* Абонемент: цвет полосы по остатку, имя держателя как на банковской карте, пилюли возможностей */
+.sub-card__bar--green span{background:#22c55e}
+.sub-card__bar--yellow span{background:#facc15}
+.sub-card__bar--red span{background:#ef4444}
+.sub-card__holder{position:relative;font-family:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,"Courier New",monospace;font-size:1.5rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;text-shadow:0 .1rem 0 rgba(255,255,255,.28),0 -.1rem .1rem rgba(0,0,0,.5)}
+.sub-feats{display:flex;flex-wrap:wrap;gap:.7rem}
+.sub-feat{display:inline-flex;align-items:center;gap:.6rem;padding:.5rem 1.2rem .5rem 1rem;border-radius:2rem;font-size:1.25rem;font-weight:600;line-height:1.2}
+.sub-feat--transfer{background:rgba(20,184,166,.14);color:#0f766e;box-shadow:inset 0 0 0 .1rem rgba(20,184,166,.4)}
+.sub-feat--freeze{background:rgba(14,165,233,.14);color:#0369a1;box-shadow:inset 0 0 0 .1rem rgba(14,165,233,.4)}
+.sub-feat--auto{background:rgba(124,58,237,.14);color:#6d28d9;box-shadow:inset 0 0 0 .1rem rgba(124,58,237,.4)}
+body.dark .sub-feat--transfer{color:#5eead4}body.dark .sub-feat--freeze{color:#7dd3fc}body.dark .sub-feat--auto{color:#c4b5fd}
+@media (max-width:480px){.sub-card__holder{font-size:1.3rem}}
+
+/* Имя держателя на карточке абонемента: шрифт «как на банковских картах» (Share Tech Mono, OFL) и серебристое выпуклое тиснение */
+@font-face{font-family:'Share Tech Mono';src:url('/assets/fonts/ShareTechMono-Regular.ttf') format('truetype');font-weight:400;font-style:normal;font-display:swap}
+.sub-card__holder{font-family:'Share Tech Mono',ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:1.8rem;font-weight:400;letter-spacing:.12em;
+	background:linear-gradient(180deg,#ffffff 0%,#e6e9ee 38%,#9aa3ae 52%,#d9dde3 70%,#f7f8fa 100%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;text-shadow:none;
+	filter:drop-shadow(0 .1rem 0 rgba(255,255,255,.55)) drop-shadow(0 -.1rem 0 rgba(0,0,0,.55)) drop-shadow(0 .2rem .2rem rgba(0,0,0,.35))}
+@media (max-width:480px){.sub-card__holder{font-size:1.5rem}}
+
+/* Карточка абонемента: пилюли возможностей на самой карточке (после количества занятий), полоса убывает справа налево */
+.sub-card__feats{position:relative;display:flex;flex-wrap:nowrap;gap:.6rem;margin-top:-.2rem}
+.sub-card__feat{display:inline-flex;align-items:center;gap:.5rem;padding:.3rem .9rem .3rem .7rem;border-radius:2rem;font-size:1.1rem;font-weight:600;line-height:1.2;white-space:nowrap;background:rgba(255,255,255,.14);box-shadow:inset 0 0 0 .1rem rgba(255,255,255,.26)}
+.sub-card__feat .ico{flex:0 0 auto}
+.sub-card__bar span{transition:width .4s ease}
+@media (max-width:360px){.sub-card__feat > span:not(.ico){display:none}.sub-card__feat{padding:.4rem .7rem}}
+
+/* История посещений абонемента: действия цветными пилюлями со значками */
+.usage-pill{display:inline-flex;align-items:center;gap:.6rem;padding:.4rem 1.2rem .4rem 1rem;border-radius:2rem;font-size:1.3rem;font-weight:600;line-height:1.2;white-space:nowrap}
+.usage-pill--used{background:rgba(34,197,94,.14);color:#15803d;box-shadow:inset 0 0 0 .1rem rgba(34,197,94,.4)}
+.usage-pill--returned{background:rgba(37,99,235,.12);color:#1d4ed8;box-shadow:inset 0 0 0 .1rem rgba(37,99,235,.38)}
+.usage-pill--burned{background:rgba(234,88,12,.13);color:#c2410c;box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.4)}
+body.dark .usage-pill--used{color:#86efac}body.dark .usage-pill--returned{color:#93c5fd}body.dark .usage-pill--burned{color:#fdba74}
+
+/* Значки x-ico внутри кнопок: отступ от текста (inline-flex схлопывает пробел); у кнопок только со значком gap ни на что не влияет */
+.btn:has(> .ico){gap:.6rem}
+
+/* Рейтинг игроков: схемы игры пилюлями */
+.scheme-pills{display:flex;flex-wrap:wrap;gap:.7rem}
+.scheme-pill{display:inline-flex;align-items:center;padding:.45rem 1.4rem;border-radius:2rem;font-size:1.35rem;font-weight:700;letter-spacing:.02em;line-height:1.2;white-space:nowrap}
+.scheme-pill--classic{background:rgba(41,103,186,.12);color:#2967BA;box-shadow:inset 0 0 0 .1rem rgba(41,103,186,.32)}
+.scheme-pill--beach{background:rgba(234,88,12,.12);color:#c2410c;box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.34)}
+body.dark .scheme-pill--classic{color:#93c5fd}
+body.dark .scheme-pill--beach{color:#fdba74}
+
+/* Страница «Как работает рейтинг» */
+.ri-hero{padding:2.2rem 2rem}
+.ri-formula{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:1.2rem 1.4rem}
+.ri-chip{display:flex;flex-direction:column;align-items:center;min-width:12rem;padding:1.1rem 1.8rem;border-radius:1.6rem;line-height:1.2;text-align:center}
+.ri-chip b{font-size:2.6rem;font-weight:800}
+.ri-chip small{margin-top:.3rem;font-size:1.2rem;font-weight:600;opacity:.8}
+.ri-chip--mu{background:rgba(231,97,47,.12);color:#c2410c;box-shadow:inset 0 0 0 .15rem rgba(231,97,47,.32)}
+.ri-chip--sigma{background:rgba(99,102,241,.12);color:#4f46e5;box-shadow:inset 0 0 0 .15rem rgba(99,102,241,.34)}
+.ri-op{font-size:2.6rem;font-weight:800;opacity:.55}
+.ri-card{display:flex;flex-direction:column}
+.ri-badge{display:inline-flex;align-items:center;justify-content:center;width:5.2rem;height:5.2rem;margin-bottom:1.2rem;border-radius:1.6rem;font-size:3rem;font-weight:800;color:#fff}
+.ri-badge--mu{background:linear-gradient(135deg,#FFB171,#E7612F)}
+.ri-badge--sigma{background:linear-gradient(135deg,#818cf8,#4f46e5)}
+.ri-badge--cr{background:linear-gradient(135deg,#34d399,#059669)}
+.ri-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:auto;padding-top:1.4rem}
+.ri-stat{display:flex;flex-direction:column;align-items:center;padding:1rem .6rem;border-radius:1.2rem;background:rgba(128,128,128,.09);text-align:center;line-height:1.25}
+.ri-stat b{font-size:1.7rem;font-weight:700}
+.ri-stat span{margin-top:.3rem;font-size:1.15rem;opacity:.6}
+.ri-formula-mini{margin-top:auto;padding:1.4rem;border-radius:1.2rem;background:rgba(5,150,105,.1);color:#047857;font-weight:700;text-align:center}
+body.dark .ri-formula-mini{color:#6ee7b7}
+body.dark .ri-chip--mu{color:#fdba74}body.dark .ri-chip--sigma{color:#a5b4fc}
+.ri-bar{height:.7rem;margin-top:.5rem;border-radius:.4rem;background:rgba(128,128,128,.18);overflow:hidden;min-width:9rem}
+.ri-bar span{display:block;height:100%;border-radius:.4rem;background:linear-gradient(90deg,#FFB171,#E7612F)}
+.ri-tip{display:flex;align-items:center;gap:1.4rem;padding:1.4rem 1.6rem;border-radius:1.4rem;background:rgba(245,158,11,.12);box-shadow:inset 0 0 0 .1rem rgba(245,158,11,.35)}
+.ri-tip__ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:4.2rem;height:4.2rem;border-radius:50%;background:rgba(245,158,11,.22)}
+.ri-compare{padding:1.8rem;border-radius:1.6rem}
+.ri-compare__head{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;font-size:1.5rem;font-weight:700}
+.ri-compare--bad{background:rgba(220,38,38,.07);box-shadow:inset 0 0 0 .1rem rgba(220,38,38,.28)}
+.ri-compare--bad .ri-compare__head{color:#dc2626}
+.ri-compare--good{background:rgba(22,163,74,.08);box-shadow:inset 0 0 0 .1rem rgba(22,163,74,.3)}
+.ri-compare--good .ri-compare__head{color:#16a34a}
+.ri-feature{display:flex;gap:1.4rem;align-items:flex-start;padding:1.6rem;border-radius:1.6rem;background:rgba(128,128,128,.07)}
+.ri-feature__ico{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;width:5rem;height:5rem;border-radius:1.4rem}
+.ri-format{padding:1.8rem;border-radius:1.6rem}
+.ri-format__head{display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;font-size:1.7rem;font-weight:700}
+.ri-format--beach{background:rgba(234,88,12,.07);box-shadow:inset 0 0 0 .1rem rgba(234,88,12,.25)}
+.ri-format--classic{background:rgba(41,103,186,.07);box-shadow:inset 0 0 0 .1rem rgba(41,103,186,.25)}
+@media (max-width:600px){.ri-chip{min-width:0;padding:.9rem 1.2rem}.ri-chip b{font-size:2.2rem}.ri-op{font-size:2.2rem}}
+
+/* «Как работает рейтинг»: блоки в ряд одной высоты (сетка вместо колонок) */
+.ri-grid{display:grid;gap:2rem}
+.ri-grid--3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.ri-grid--2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ri-cell{display:flex;min-width:0}
+.ri-cell > *{flex:1 1 auto;min-width:0;margin-bottom:0}
+@media (max-width:768px){.ri-grid--3,.ri-grid--2{grid-template-columns:minmax(0,1fr)}}
+
+/* «Помощь»: отступ значка от текста в пунктах меню */
+.menu-item .menu-ico{margin-right:.9rem}
+
+/* ===== Club analytics: тулбар, KPI-карточки, легенда, значки ===== */
+.ca-toolbar { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px; margin-bottom: 1rem; }
+.ca-toolbar__export { display: flex; gap: 8px; flex-wrap: wrap; }
+.ca-export-lock { opacity: .75; }
+.ca-h { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.ca-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 1rem; }
+.ca-kpi { border-radius: 1rem; border: .2rem solid rgba(0, 0, 0, .1); padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 6px; }
+.ca-kpi__label { font-size: 1.3rem; opacity: .75; display: flex; align-items: center; gap: .4rem; }
+.ca-kpi__value { font-size: 2.4rem; font-weight: 700; line-height: 1.1; }
+.ca-kpi__sub { font-size: 1.3rem; opacity: .65; }
+body.dark .ca-kpi { border-color: rgba(255, 255, 255, .1); }
+.ca-legend { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; font-size: 1.3rem; margin-bottom: 1.5rem; }
+.ca-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+.ca-dot--low { background: #9E9E9E; } .ca-dot--mid { background: #E7612F; } .ca-dot--high { background: #34C759; }
+.ca-pill { font-size: 1.3rem; font-weight: 600; padding: .15rem .7rem; border-radius: 99px; background: rgba(231, 97, 47, .12); color: #E7612F; }
+.ca-pill--money { background: rgba(52, 199, 89, .14); color: #1f9d46; }
+.ca-pill--muted { background: rgba(17, 24, 39, .08); color: inherit; opacity: .8; font-weight: 500; }
+.club-occ-row__hours { flex: 0 0 110px; text-align: right; }
+@media (max-width: 640px) { .club-occ-row__hours { flex: 1 1 100%; text-align: left; } }
+
+/* ===== Club analytics: изменения к прошлому периоду, тепловая карта ===== */
+.ca-delta { display: inline-flex; align-items: center; gap: .25rem; font-size: 1.2rem; font-weight: 600; }
+.ca-delta--up { color: #16a34a; } .ca-delta--down { color: #dc2626; } .ca-delta--flat { color: inherit; opacity: .6; font-weight: 400; }
+.ca-heat-wrap { overflow-x: auto; margin-bottom: 1rem; }
+.ca-heat { border-collapse: separate; border-spacing: 2px; width: 100%; min-width: 520px; table-layout: fixed; }
+.ca-heat th { font-size: 1.1rem; font-weight: 600; opacity: .7; padding: 2px 0; text-align: center; }
+.ca-heat tbody th { text-align: left; width: 3.2rem; }
+.ca-heat td { height: 2.8rem; text-align: center; font-size: 1rem; border-radius: 4px; color: rgba(0,0,0,.65); }
+body.dark .ca-heat td { color: rgba(255,255,255,.8); }
+.ca-hotcold { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }

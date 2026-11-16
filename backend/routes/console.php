@@ -21,7 +21,7 @@ Schedule::call(function () {
     }
 
     try {
-        Http::timeout(5)->get($url);
+        Http::timeout(5)->retry(2, 1000, throw: false)->get($url);
     } catch (\Throwable $e) {
         // Мониторинг не должен ронять scheduler — любые сетевые ошибки глотаем.
     }
@@ -38,6 +38,11 @@ Schedule::command('premium:expire')->hourly();
 // Уведомление «закончился» шлёт сам premium:expire (см. PremiumService::expireAll).
 Schedule::command('premium:notify-expiring')
     ->dailyAt('09:05')
+    ->withoutOverlapping();
+
+// Ежемесячный отчёт по аналитике клуба (Организатор Pro, по согласию владельца): 1-го числа за прошлый месяц
+Schedule::command('club:send-monthly-report')
+    ->monthlyOn(1, '09:30')
     ->withoutOverlapping();
 
 // Прогноз погоды для мероприятий на улице (OpenWeather, кеш по локации, TTL 6ч)
@@ -157,6 +162,21 @@ Schedule::command('sitemap:generate')
 // находит occurrences с открытой регистрацией без отправленного анонса и публикует.
 Schedule::command('events:publish-pending-announcements --limit=100')
     ->everyMinute()
+    ->withoutOverlapping();
+
+// Метрики сервера (диск, память, нагрузка, очередь) → Uptime Kuma, каждые 5 минут
+Schedule::command('ops:report-metrics')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
+// Плановая чистка разрастающихся служебных таблиц (записи старше 45 дней), раз в сутки ночью
+Schedule::command('maintenance:prune-old-records --days=45')
+    ->dailyAt('03:40')
+    ->withoutOverlapping();
+
+// Повтор анонсов в каналы для кемпов, мастер-классов и турниров (настройка «Повторять анонс»: раз в 7 / 14 дней) — каждые 15 минут.
+Schedule::command('events:repeat-announcements --limit=50')
+    ->everyFifteenMinutes()
     ->withoutOverlapping();
 
 // Финализация анонсов в каналах (каждые 5 минут):

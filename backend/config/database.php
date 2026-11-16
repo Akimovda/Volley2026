@@ -96,6 +96,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            // Сессия БД всегда в UTC: Laravel пишет время в UTC-строках, а часовой пояс сервера PostgreSQL
+            // (на новом сервере Europe/Moscow) сдвигал значения timestamptz на 3 часа (дубли occurrences, даты).
+            'timezone' => 'UTC',
         ],
 
         'sqlsrv' => [

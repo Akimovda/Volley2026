@@ -42,7 +42,7 @@ class OrganizerWidgetController extends Controller
 
         if (!$user->isOrganizerPro()) {
             return redirect()->route('profile.widget')
-                ->with('error', 'Требуется подписка Организатор Pro.');
+                ->with('error', __('Требуется подписка Организатор Pro.'));
         }
 
         $data = $request->validate([
@@ -90,7 +90,7 @@ class OrganizerWidgetController extends Controller
 
         return redirect()
             ->route('profile.widget')
-            ->with('status', '✅ Виджет сохранён.');
+            ->with('status', __('✅ Виджет сохранён.'));
     }
 
     /** Пересгенерировать API ключ */
@@ -101,7 +101,7 @@ class OrganizerWidgetController extends Controller
 
         return redirect()
             ->route('profile.widget')
-            ->with('status', '🔑 API-ключ пересоздан. Обновите код на вашем сайте.');
+            ->with('status', __('🔑 API-ключ пересоздан. Обновите код на вашем сайте.'));
     }
 
     /** Включить / выключить виджет */

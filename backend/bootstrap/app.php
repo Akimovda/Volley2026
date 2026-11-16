@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             'yookassa/webhook',
             'payments/yoomoney/webhook',
+            'api/widget/rental-timeline/book',
             'auth/biometric-login',
             'auth/apple/callback',
             'auth/apple/native-callback',
@@ -34,6 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'organizer.pro'       => \App\Http\Middleware\EnsureOrganizerPro::class,
             'broadcast.link'      => \App\Http\Middleware\BroadcastLinkAccess::class,
             'scorer.link'         => \App\Http\Middleware\ScorerLinkAccess::class,
+            'location.manage'     => \App\Http\Middleware\EnsureCanManageLocation::class,
         ]);
         $middleware->append(\App\Http\Middleware\DetectBrand::class);
         $middleware->prependToGroup('web', \App\Http\Middleware\SkipSessionForBots::class);

@@ -90,6 +90,7 @@
 	
     <x-slot name="style">
         <style>
+
 /* Базовые классы для индикатора */
 .gradient-indicator {
 	position: relative;
@@ -149,6 +150,45 @@ body.dark .gradient-marker-line,
 	
     <x-slot name="script">
         <script src="/assets/fas.js"></script>   	
+        <script>
+            // === Переключатели «нравится / друг / слежка» без перезагрузки страницы ===
+            document.addEventListener('submit', function (e) {
+                var form = e.target;
+                if (!form.classList || !form.classList.contains('up-row')) return;
+                e.preventDefault();
+                var sw = form.querySelector('.up-switch');
+                if (sw.disabled) return;
+                sw.disabled = true;
+                sw.classList.toggle('is-on');            // мгновенный отклик
+                fetch(form.action, {
+                    method: 'POST',
+                    body: new FormData(form),
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function (r) {
+                    if (!r.ok) throw new Error('http ' + r.status);
+                    return r.text();
+                }).then(function (html) {
+                    var fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('up-social');
+                    var cur = document.getElementById('up-social');
+                    if (!fresh || !cur) throw new Error('no block');
+                    cur.innerHTML = fresh.innerHTML;     // обновляем блок целиком (счётчик, аватары, соседние переключатели)
+                }).catch(function () {
+                    sw.classList.toggle('is-on');         // откат и обычная отправка формы
+                    sw.disabled = false;
+                    try { sessionStorage.setItem('upScroll', '1'); } catch (err) {}
+                    form.submit();
+                });
+            });
+            // если всё же была перезагрузка — возвращаемся к этому блоку
+            try {
+                if (sessionStorage.getItem('upScroll')) {
+                    sessionStorage.removeItem('upScroll');
+                    var blk = document.getElementById('up-social');
+                    if (blk) blk.scrollIntoView({ block: 'center' });
+                }
+            } catch (err) {}
+        </script>
         <script>
             // === Карусель отзывов о тренере ===
             if (document.querySelector('.trainer-comments-swiper')) {
@@ -326,7 +366,7 @@ body.dark .gradient-marker-line,
 				
                 {{-- Skills --}}
 				<div class="ramka">  	
-					<h2 class="-mt-05">Навыки в волейболе</h2>
+					<h2 class="-mt-05 h2-ico"><x-ico name="ball" size="1.2em" /> Навыки в волейболе</h2>
 					<div class="row">
 						<div class="col-md-6 col-lg-12 col-xl-6">
 							<div class="card">
@@ -408,7 +448,7 @@ body.dark .gradient-marker-line,
                     $trainerColor = $trainerScoreColor($trainerAvg);
                 @endphp
                 <div class="ramka">
-                    <h2 class="-mt-05">{{ __('trainers.block_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="medal" size="1.2em" /> {{ __('trainers.block_title') }}</h2>
                     <div class="card">
                         <div class="d-flex fvc" style="gap:16px;flex-wrap:wrap;">
                             <div style="position:relative;flex:0 0 auto;">
@@ -427,7 +467,7 @@ body.dark .gradient-marker-line,
                                             stroke-dasharray="140 201" stroke-linecap="round" transform="rotate(-90 36 36)"/>
                                     <text x="36" y="41" text-anchor="middle" font-size="20" font-weight="600" fill="#9e9e9e">?</text>
                                 </svg>
-                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;">🔒</div>
+                                <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px;"><x-ico name="lock" size="2.2rem" /></div>
                                 @endif
                             </div>
                             <div style="flex:1 1 240px;min-width:200px;">
@@ -457,7 +497,7 @@ body.dark .gradient-marker-line,
 
                     @if(($trainerComments ?? collect())->isNotEmpty())
                     <div class="card mt-2" style="height:auto;">
-                        <h3 class="-mt-05">{{ __('trainers.comments_title') }}</h3>
+                        <h3 class="-mt-05 h2-ico"><x-ico name="message" size="1.2em" /> {{ __('trainers.comments_title') }}</h3>
                         <div class="f-13 mb-1" style="opacity:.6;">{{ __('trainers.comments_hint') }}</div>
                         <div class="swiper trainer-comments-swiper" style="padding-bottom:3rem;">
                             <div class="swiper-wrapper">
@@ -487,7 +527,7 @@ body.dark .gradient-marker-line,
                 @endphp
 				
                 <div class="ramka">
-                    <h2 class="-mt-05">Оценка уровня игроками</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="chart" size="1.2em" /> Оценка уровня игроками</h2>
                     <div class="row">
 						
                         {{-- КЛАССИКА --}}
@@ -681,18 +721,17 @@ body.dark .gradient-marker-line,
                     $tStatsClassic = $tStats->filter(fn($s) => $s->event?->direction === 'classic');
                     $hasBeach   = $tStatsBeach->isNotEmpty() || ($careerBeach   && $careerBeach->total_matches   > 0);
                     $hasClassic = $tStatsClassic->isNotEmpty() || ($careerClassic && $careerClassic->total_matches > 0);
-                    $medals = [1 => '🥇', 2 => '🥈', 3 => '🥉'];
                 @endphp
 
                 @if($hasTournaments)
                 <div class="ramka">
-                    <h2 class="-mt-05">Турнирная статистика</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> Турнирная статистика</h2>
 
                     {{-- Вкладки (только если есть оба направления) --}}
                     @if($hasBeach && $hasClassic)
                     <div class="d-flex mb-3 gap-1" id="ts-tabs">
-                        <button class="btn ts-tab-btn" data-tab="beach">🏖 Пляжка</button>
-                        <button class="btn btn-secondary ts-tab-btn" data-tab="classic">🏐 Классика</button>
+                        <button class="btn ts-tab-btn" data-tab="beach"><x-ico name="sun" /> Пляжка</button>
+                        <button class="btn btn-secondary ts-tab-btn" data-tab="classic"><x-ico name="ball" /> Классика</button>
                     </div>
                     @endif
 
@@ -701,7 +740,7 @@ body.dark .gradient-marker-line,
                     <div class="ts-tab-pane" id="ts-pane-beach">
                         @if($careerBeach && $careerBeach->total_matches > 0)
                         <div class="card p-3 mb-3">
-                            <div class="f-13 b-600 mb-2" style="opacity:.6">🏖 Итого</div>
+                            <div class="f-13 b-600 mb-2" style="opacity:.6"><x-ico name="sun" /> Итого</div>
                             <div class="stat-grid">
                                 @php $crBeach = max(0, ($careerBeach->mu ?? 25) - 3 * ($careerBeach->sigma ?? 8.333)); @endphp
                                 @if($careerBeach->total_matches >= 3)
@@ -724,7 +763,7 @@ body.dark .gradient-marker-line,
                                 </div>
                                 @if($careerBeach->best_placement)
                                 <div style="text-align:center">
-                                    <div class="f-18 b-700">🏆 {{ $careerBeach->best_placement }}</div>
+                                    <div class="f-18 b-700"><x-ico name="trophy" /> {{ $careerBeach->best_placement }}</div>
                                     <div class="f-11" style="opacity:.5">Лучшее место</div>
                                 </div>
                                 @endif
@@ -750,7 +789,7 @@ body.dark .gradient-marker-line,
                             @endphp
                             <div class="stat-row stat-row--tourney f-13">
                                 <a href="{{ $url }}" class="blink b-600 sr-name">{{ $s->event->title ?? 'Турнир' }}</a>
-                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>{{ $rank ? ($medals[$rank] ?? $rank.'.') : '' }}</span>
+                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>@if($rank && $rank <= 3)<x-ico name="medal" size="1.6rem" :color="[1 => '#f59e0b', 2 => '#9ca3af', 3 => '#b45309'][$rank]" />@else{{ $rank ? $rank.'.' : '' }}@endif</span>
                                 <span class="sr-pct b-700">{{ $s->match_win_rate }}%</span>
                                 <span class="sr-rec">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
                             </div>
@@ -795,7 +834,7 @@ body.dark .gradient-marker-line,
                     <div class="ts-tab-pane" id="ts-pane-classic"@if($hasBeach) style="display:none"@endif>
                         @if($careerClassic && $careerClassic->total_matches > 0)
                         <div class="card p-3 mb-3">
-                            <div class="f-13 b-600 mb-2" style="opacity:.6">🏐 Итого</div>
+                            <div class="f-13 b-600 mb-2" style="opacity:.6"><x-ico name="ball" /> Итого</div>
                             <div class="stat-grid">
                                 @php $crClassic = max(0, ($careerClassic->mu ?? 25) - 3 * ($careerClassic->sigma ?? 8.333)); @endphp
                                 @if($careerClassic->total_matches >= 3)
@@ -818,7 +857,7 @@ body.dark .gradient-marker-line,
                                 </div>
                                 @if($careerClassic->best_placement)
                                 <div style="text-align:center">
-                                    <div class="f-18 b-700">🏆 {{ $careerClassic->best_placement }}</div>
+                                    <div class="f-18 b-700"><x-ico name="trophy" /> {{ $careerClassic->best_placement }}</div>
                                     <div class="f-11" style="opacity:.5">Лучшее место</div>
                                 </div>
                                 @endif
@@ -844,7 +883,7 @@ body.dark .gradient-marker-line,
                             @endphp
                             <div class="stat-row stat-row--tourney f-13">
                                 <a href="{{ $url }}" class="blink b-600 sr-name">{{ $s->event->title ?? 'Турнир' }}</a>
-                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>{{ $rank ? ($medals[$rank] ?? $rank.'.') : '' }}</span>
+                                <span class="sr-medal b-700" @if($rank && $rank <= 3) style="font-size:16px" @endif>@if($rank && $rank <= 3)<x-ico name="medal" size="1.6rem" :color="[1 => '#f59e0b', 2 => '#9ca3af', 3 => '#b45309'][$rank]" />@else{{ $rank ? $rank.'.' : '' }}@endif</span>
                                 <span class="sr-pct b-700">{{ $s->match_win_rate }}%</span>
                                 <span class="sr-rec">{{ $s->matches_won }}В&nbsp;{{ $s->matches_played - $s->matches_won }}П</span>
                             </div>
@@ -884,7 +923,7 @@ body.dark .gradient-marker-line,
                 {{-- ===== Матчи игрока: ссылки на расширенную статистику матча ===== --}}
                 @if(isset($playerMatches) && $playerMatches->total() > 0)
                 <div class="ramka" id="player-matches">
-                    <h2 class="-mt-05">{{ $isSelf ? __('match_stats.profile_title_self') : __('match_stats.profile_title') }}</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="activity" size="1.2em" /> {{ $isSelf ? __('match_stats.profile_title_self') : __('match_stats.profile_title') }}</h2>
                     <div class="card">
                         @foreach($playerMatches as $pm)
                         <a href="{{ route('match.stats', ['match' => $pm->id, 'player' => $user->id]) }}" class="stat-row f-13" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;text-decoration:none;color:inherit">
@@ -916,14 +955,14 @@ body.dark .gradient-marker-line,
 
                 @if($hasRatingHistory || $hasRatingPartners || $hasRatingOpponents)
                 <div class="ramka">
-                    <h2 class="-mt-05">📈 Рейтинговая статистика</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="trend" size="1.2em" /> Рейтинговая статистика</h2>
 
                     {{-- Позиции в рейтинге --}}
                     @if(isset($ratingPositions) && count($ratingPositions) > 0)
                     <div class="d-flex gap-2 mb-3 flex-wrap">
                         @foreach($ratingPositions as $dir => $pos)
                         <div class="card text-center" style="min-width:120px;padding:10px 16px">
-                            <div class="f-11" style="opacity:.5">{{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</div>
+                            <div class="f-11" style="opacity:.5">@if($dir === 'beach')<x-ico name="sun" /> Пляж@else<x-ico name="ball" /> Классика@endif</div>
                             <div class="f-22 b-800" style="color:#E7612F">#{{ $pos['pos'] }}</div>
                             <div class="f-11" style="opacity:.5">из {{ $pos['total'] }}</div>
                         </div>
@@ -952,7 +991,7 @@ body.dark .gradient-marker-line,
                         $f10 = $dirStats?->last_10_form ?? '';
                     @endphp
                     @if($dirStats && $dirStats->total_matches > 0 && ($f5 || $f10))
-                    <div class="f-13 b-600 mb-1" style="opacity:.6">{{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }}</div>
+                    <div class="f-13 b-600 mb-1" style="opacity:.6">@if($dir === 'beach')<x-ico name="sun" /> Пляж@else<x-ico name="ball" /> Классика@endif</div>
                     <div class="form-cards mb-3">
                         @if($f5)
                         <div class="card form-card">
@@ -992,7 +1031,7 @@ body.dark .gradient-marker-line,
                     @foreach(['beach','classic'] as $dir)
                     @php $dirPairs = collect($ratingPartners[$dir] ?? []); @endphp
                     @if($dirPairs->isNotEmpty())
-                    <div class="f-14 b-600 mb-1">{{ __('players.teammates') }} ({{ $dir === 'beach' ? '🏖 Пляж' : '🏐 Классика' }})</div>
+                    <div class="f-14 b-600 mb-1">{{ __('players.teammates') }} (@if($dir === 'beach')<x-ico name="sun" /> Пляж@else<x-ico name="ball" /> Классика@endif)</div>
                     <div class="card mb-3">
                         @foreach($dirPairs->take(5) as $i => $pair)
                         @php $wr = $pair->matches_together > 0 ? round($pair->wins_together / $pair->matches_together * 100) : 0; @endphp
@@ -1028,9 +1067,9 @@ body.dark .gradient-marker-line,
                 @endif
 
                 {{-- ===== С ВАМИ УДОБНО ИГРАТЬ ===== --}}
-                <div class="ramka">
+                <div class="ramka" id="up-social">
                     <div class="d-flex between">
-                        <h2 class="-mt-05">С 
+                        <h2 class="-mt-05 h2-ico"><x-ico name="heart" size="1.2em" /> С 
 							@if($user->gender === 'm') ним
 							@elseif($user->gender === 'f') ней
 							@else ним(ней) @endif	
@@ -1059,63 +1098,48 @@ body.dark .gradient-marker-line,
                     @else
                     <div class="alert alert-info">Пока никто не отметил</div>
                     @endif
-					 <div class="d-flex flex-wrap gap-1 text-center">
-                    {{-- Кнопка лайка --}}
+					 <div class="up-rows">
                     @if(auth()->check() && !$isSelf)
-                    <form class="d-inline-block mt-1" method="POST" action="{{ route('user.like', $user->id) }}">
+                    {{-- Нравится играть вместе --}}
+                    <form class="up-row" method="POST" action="{{ route('user.like', $user->id) }}">
                         @csrf
-                        <button type="submit" class="btn {{ $iLiked ? '' : 'btn-secondary' }}">
-                            {{ $iLiked ? '✅ Нравится играть вместе' : 'Нравится играть вместе' }}
-						</button>
-					</form>
-                    @elseif(!auth()->check())
-                    <a href="{{ route('login') }}" class="btn btn-secondary">Войдите чтобы отметить</a>
-                    @endif
-					
-                    {{-- Кнопка друга --}}
-                    @if(auth()->check() && !$isSelf)
-                        @if(auth()->user()->isFriendWith($user->id))
-                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.destroy', $user->id) }}">
-                            @csrf
-                            @method('DELETE')
-                            <button class="btn">✅ В друзьях</button>
-						</form>
-                        @else
-                        <form class="d-inline-block mt-1" method="POST" action="{{ route('friends.store', $user->id) }}">
-                            @csrf
-                            <button class="btn btn-secondary">Добавить в друзья</button>
-						</form>
-                        @endif
+                        <span class="up-row-l"><x-ico name="heart" /> <span>Нравится играть вместе</span></span>
+                        <button type="submit" class="up-switch {{ $iLiked ? 'is-on' : '' }}" role="switch" aria-checked="{{ $iLiked ? 'true' : 'false' }}" aria-label="Нравится играть вместе"><i></i></button>
+                    </form>
 
-                        {{-- Кнопка слежки за записями (только Premium + друг) --}}
-                        @if($canFollow)
-                            @if($isFollowing)
-                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.destroy', $user->id) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-small" style="font-size:13px" title="Вы следите за записями этого игрока">⭐ Слежу за записями</button>
-                            </form>
-                            @else
-                            <form class="d-inline-block mt-1" method="POST" action="{{ route('premium.follows.store', $user->id) }}">
-                                @csrf
-                                <button class="btn btn-secondary btn-small" style="font-size:13px">⭐ Следить за записями</button>
-                            </form>
-                            @endif
-                        @endif
+                    {{-- Друг --}}
+                    @php $isFriend = auth()->user()->isFriendWith($user->id); @endphp
+                    <form class="up-row" method="POST" action="{{ $isFriend ? route('friends.destroy', $user->id) : route('friends.store', $user->id) }}">
+                        @csrf
+                        @if($isFriend) @method('DELETE') @endif
+                        <span class="up-row-l"><x-ico name="user-check" /> <span>В друзьях</span></span>
+                        <button type="submit" class="up-switch {{ $isFriend ? 'is-on' : '' }}" role="switch" aria-checked="{{ $isFriend ? 'true' : 'false' }}" aria-label="В друзьях"><i></i></button>
+                    </form>
+
+                    {{-- Слежка за записями (только Premium + друг) --}}
+                    @if($isFriend && $canFollow)
+                    <form class="up-row" method="POST" action="{{ $isFollowing ? route('premium.follows.destroy', $user->id) : route('premium.follows.store', $user->id) }}">
+                        @csrf
+                        @if($isFollowing) @method('DELETE') @endif
+                        <span class="up-row-l"><x-ico name="star" /> <span>Следить за записями</span></span>
+                        <button type="submit" class="up-switch {{ $isFollowing ? 'is-on' : '' }}" role="switch" aria-checked="{{ $isFollowing ? 'true' : 'false' }}" aria-label="Следить за записями"><i></i></button>
+                    </form>
+                    @endif
+                    @elseif(!auth()->check())
+                    <a href="{{ route('login') }}" class="btn btn-secondary"><x-ico name="heart" /> <span>Войдите, чтобы отметить</span></a>
                     @endif
 				</div>
 				</div>
                 {{-- Contacts --}}
                 <div class="ramka">
                     <div class="card-body">
-						<h2 class="-mt-05">Контакты</h2>
+						<h2 class="-mt-05 h2-ico"><x-ico name="message" size="1.2em" /> Контакты</h2>
 
 						@auth
 						@if((auth()->user()->isAdmin() || auth()->user()->isOrganizer() || auth()->user()->isStaff()) && $user->phone)
-						<div class="d-flex flex-wrap gap-1 fc mb-1">
-							<a class="btn" href="tel:{{ $user->phone }}">
-								{{ $user->formatted_phone }}
-							</a>
+						<div class="mb-1 d-flex fvc" style="gap:.6rem">
+							<x-ico name="phone" size="1.6em" />
+							<a class="b-600" href="tel:{{ $user->phone }}">{{ $user->formatted_phone }}</a>
 						</div>
 						@endif
 						@endauth
@@ -1133,20 +1157,14 @@ body.dark .gradient-marker-line,
 							Чтобы написать пользователю в Telegram/VK, нужно войти в аккаунт.
 						</div>
                         @elseif($canShowContactButtons)
-						<div class="d-flex flex-wrap gap-1 fc">
-
+						<div class="d-flex flex-wrap fvc" style="gap:1.2rem">
 							@if($tgUrl)
-							<a class="btn"
-							href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer">
-								Написать в Telegram
-							</a>
+							<a href="{{ $tgUrl }}" target="_blank" rel="noopener noreferrer"
+							   title="Написать в Telegram" aria-label="Написать в Telegram"><x-ico name="telegram" size="4.4rem" /></a>
 							@endif
-							
 							@if($vkUrl)
-							<a class="btn"
-							href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer">
-								Написать в VK
-							</a>
+							<a href="{{ $vkUrl }}" target="_blank" rel="noopener noreferrer"
+							   title="Написать во ВКонтакте" aria-label="Написать во ВКонтакте"><x-ico name="vk" size="4.4rem" /></a>
 							@endif
 						</div>
                         @endif
@@ -1157,7 +1175,7 @@ body.dark .gradient-marker-line,
 				@auth
                 <div class="ramka">        
                     {{-- Gallery --}}
-                    <h2 class="-mt-05">Фотографии</h2>
+                    <h2 class="-mt-05 h2-ico"><x-ico name="image" size="1.2em" /> Фотографии</h2>
 					
                     <div class="mt-2">
                         @if($photos->isEmpty())

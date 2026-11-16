@@ -55,6 +55,10 @@ $m = $mins % 60;
 $dHr = __('events.dur_hours_short');
 $dMn = __('events.dur_min_short');
 $durationLabel = ($h > 0 ? "{$h}{$dHr} " : '') . ($m > 0 ? "{$m}{$dMn}" : ($h > 0 ? '' : "{$mins}{$dMn}"));
+// длинные мероприятия (кемпы, 24 ч и больше): «5 дней 5 часов» вместо «125ч»
+if ($mins >= 1440) {
+$durationLabel = event_duration_label($mins * 60, 'full');
+}
 }
 
 // =========================
@@ -246,6 +250,7 @@ $hasCoords =
 		<div class="container">
 			
 			{{-- FLASH --}}
+			@include('events._partials.trainer_profile_created_notice')
 			@if(session('status'))
             <div class="ramka">
                 <div class="alert alert-success">
@@ -375,6 +380,11 @@ $hasCoords =
 		</div>
 		<x-slot name="script">
 			@include('events.show.scripts')
+			@guest
+			{{-- Гость нажимает «Записаться» → окно входа (как в ленте), после входа возврат на эту страницу --}}
+			@include('auth._login_popup')
+			<script>window.__vpGuestPage = true;</script>
+			@endguest
 			@php
 				// VolleyCalendarPlugin.swift ожидает строгий ISO8601 в UTC с "Z" на конце
 				// (ISO8601DateFormatter().withInternetDateTime / базовый формат без опций) —

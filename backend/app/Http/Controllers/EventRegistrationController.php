@@ -41,7 +41,7 @@ class EventRegistrationController extends Controller
 
         $occ = null;
 
-        if ($occId > 0 && Schema::hasTable('event_occurrences')) {
+        if ($occId > 0 && \App\Support\SchemaCache::hasTable('event_occurrences')) {
             $occ = EventOccurrence::query()
                 ->where('id', $occId)
                 ->where('event_id', (int) $event->id)
@@ -55,7 +55,7 @@ class EventRegistrationController extends Controller
         if (!$occ) {
             return redirect()
                 ->route('events.show', ['event' => (int) $event->id])
-                ->with('error', 'Не удалось найти occurrence для события.');
+                ->with('error', __('Не удалось найти occurrence для события.'));
         }
 
         return $this->storeOccurrence($request, $occ);
@@ -84,7 +84,7 @@ class EventRegistrationController extends Controller
 
         $occ = null;
 
-        if ($occId > 0 && Schema::hasTable('event_occurrences')) {
+        if ($occId > 0 && \App\Support\SchemaCache::hasTable('event_occurrences')) {
             $occ = EventOccurrence::query()
                 ->where('id', $occId)
                 ->where('event_id', (int) $event->id)
@@ -98,7 +98,7 @@ class EventRegistrationController extends Controller
         if (!$occ) {
             return redirect()
                 ->route('events.show', ['event' => (int) $event->id])
-                ->with('error', 'Не удалось найти occurrence для события.');
+                ->with('error', __('Не удалось найти occurrence для события.'));
         }
 
         return $this->destroyOccurrence($request, $occ);
@@ -127,7 +127,7 @@ class EventRegistrationController extends Controller
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
                     'ok'       => false,
-                    'message'  => 'Для записи на мероприятие необходимо заполнить данные в профиле.',
+                    'message'  => __('Для записи на мероприятие необходимо заполнить данные в профиле.'),
                     'redirect' => $profileUrl,
                 ], 422);
             }
@@ -146,12 +146,12 @@ class EventRegistrationController extends Controller
                 if ($request->ajax() || $request->wantsJson()) {
                     return response()->json([
                         'ok'       => false,
-                        'message'  => 'Для записи на это мероприятие необходимо заполнить личные данные.',
+                        'message'  => __('Для записи на это мероприятие необходимо заполнить личные данные.'),
                         'redirect' => route('profile.complete'),
                     ], 422);
                 }
                 return redirect()->route('profile.complete')
-                    ->with('warning', 'Для записи на «' . ($event->title ?? 'мероприятие') . '» необходимо заполнить личные данные.');
+                    ->with('warning', __('Для записи на «:title» необходимо заполнить личные данные.', ['title' => $event->title ?? __('мероприятие')]));
             }
 
             // Уведомляем пользователя об ошибке записи (inApp + мессенджеры)
@@ -258,7 +258,7 @@ class EventRegistrationController extends Controller
 
         if (!$event) {
             return redirect()->route('events.index')
-                ->with('error', 'Событие не найдено.');
+                ->with('error', __('Событие не найдено.'));
         }
 
         $guard = app(EventCancellationGuard::class);
@@ -300,19 +300,19 @@ class EventRegistrationController extends Controller
                 ->first();
 
             if ($existing) {
-                if (Schema::hasColumn('event_registrations', 'status')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                     $existing->status = 'confirmed';
                 }
 
-                if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                     $existing->is_cancelled = false;
                 }
 
-                if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
                     $existing->cancelled_at = null;
                 }
 
-                if (Schema::hasColumn('event_registrations', 'position')) {
+                if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
                     $existing->position = $position ?: null;
                 }
 
@@ -367,7 +367,13 @@ class EventRegistrationController extends Controller
             } elseif ($occurrence->event->registersByBeachRoles() || ((string) ($occurrence->event->direction ?? 'classic') === 'beach' && app(EventRoleSlotService::class)->requiresPositionChoice($occurrence->event))) {
                 // Пляжка «По амплуа» (или пляжка с несколькими ролями-слотами — страховка от рассинхрона флага и слотов):
                 // без выбранной позиции слоты не посчитать — как у классики, нужно выбрать амплуа
-                throw new \Exception('Выберите амплуа: Блокирующий или Защитник.');
+                // Текст по факту: пара «По амплуа» — Блокирующий/Защитник; иначе перечисляем реальные позиции события
+                $__roles = app(EventRoleSlotService::class)->mainRoles($occurrence->event);
+                throw new \Exception(
+                    $occurrence->event->registersByBeachRoles() || empty($__roles)
+                        ? 'Выберите амплуа: Блокирующий или Защитник.'
+                        : 'Выберите позицию: ' . implode(', ', array_map(fn ($r) => position_name($r), $__roles)) . '.'
+                );
             } elseif ((string) ($occurrence->event->direction ?? 'classic') === 'beach') {
                 // Defensive: реальная веб-форма для пляжки всегда шлёт position='player'
                 // (у пляжки есть event_role_slots.role=player, и она идёт в ветку выше через
@@ -394,23 +400,23 @@ class EventRegistrationController extends Controller
             $reg = new EventRegistration();
             $reg->user_id = $user->id;
 
-            if (Schema::hasColumn('event_registrations', 'event_id')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'event_id')) {
                 $reg->event_id = $occurrence->event_id;
             }
 
-            if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
                 $reg->occurrence_id = $occurrence->id;
             }
 
-            if (Schema::hasColumn('event_registrations', 'status')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                 $reg->status = 'confirmed';
             }
 
-            if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                 $reg->is_cancelled = false;
             }
 
-            if (Schema::hasColumn('event_registrations', 'position')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
                 $reg->position = $position ?: null;
             }
 
@@ -510,7 +516,7 @@ class EventRegistrationController extends Controller
                     'event' => (int) $occurrence->event_id,
                     'occurrence' => (int) $occurrence->id,
                 ])->with('payment_pending', $payment->id)
-                  ->with('status', '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.');
+                  ->with('status', __('⏳ Место зарезервировано! Оплатите в течение :min мин.', ['min' => $eventModel->payment_hold_minutes ?? 15]));
             }
         }
 
@@ -554,7 +560,7 @@ class EventRegistrationController extends Controller
                     ? (in_array($eventModel->payment_method, ['tbank_link', 'sber_link'])
                         ? '✅ Записались! Переведите оплату и нажмите «Я оплатил».'
                         : ($eventModel->payment_method === 'yoomoney'
-                            ? '⏳ Место зарезервировано! Оплатите в течение ' . ($eventModel->payment_hold_minutes ?? 15) . ' минут.'
+                            ? __('⏳ Место зарезервировано! Оплатите в течение :min мин.', ['min' => $eventModel->payment_hold_minutes ?? 15])
                             : 'Записались ✅'))
                     : 'Записались ✅',
                 'payment_status'   => $paymentStatus,
@@ -571,13 +577,13 @@ class EventRegistrationController extends Controller
             return redirect()->route('events.show', [
                 'event' => (int) $occurrence->event_id,
                 'occurrence' => (int) $occurrence->id,
-            ])->with('status', '✅ Записались! Переведите оплату и нажмите «Я оплатил».');
+            ])->with('status', __('✅ Записались! Переведите оплату и нажмите «Я оплатил».'));
         }
 
         return redirect()->route('events.show', [
             'event' => (int) $occurrence->event_id,
             'occurrence' => (int) $occurrence->id,
-        ])->with('status', 'Записались ✅');
+        ])->with('status', __('Записались ✅'));
     }
 
     /**
@@ -679,7 +685,7 @@ class EventRegistrationController extends Controller
                 return $target('status', 'Вы не были записаны.');
             }
 
-            if (Schema::hasColumn('event_registrations', 'group_key') && !empty($reg->group_key)) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'group_key') && !empty($reg->group_key)) {
                 $this->groupService->leaveGroup(
                     (int) $occurrence->event_id,
                     (int) $user->id
@@ -688,15 +694,15 @@ class EventRegistrationController extends Controller
                 $reg->refresh();
             }
 
-            if (Schema::hasColumn('event_registrations', 'status')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
                 $reg->status = 'cancelled';
             }
 
-            if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
                 $reg->is_cancelled = true;
             }
 
-            if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+            if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
                 $reg->cancelled_at = now();
             }
 
@@ -736,7 +742,7 @@ class EventRegistrationController extends Controller
 
             $reg->save();
 
-            if (Schema::hasTable('event_registration_logs')) {
+            if (\App\Support\SchemaCache::hasTable('event_registration_logs')) {
                 DB::table('event_registration_logs')->insert([
                     'registration_id' => $reg->id,
                     'event_id'        => (int) $occurrence->event_id,
@@ -775,7 +781,7 @@ class EventRegistrationController extends Controller
 
     private function getOrCreateFirstOccurrenceForEvent(Event $event): ?EventOccurrence
     {
-        if (!Schema::hasTable('event_occurrences')) {
+        if (!\App\Support\SchemaCache::hasTable('event_occurrences')) {
             return null;
         }
 

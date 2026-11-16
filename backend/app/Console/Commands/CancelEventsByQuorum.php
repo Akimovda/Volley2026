@@ -19,22 +19,22 @@ class CancelEventsByQuorum extends Command
 
     public function handle(): int
     {
-        if (!Schema::hasTable('event_occurrences')) {
+        if (!\App\Support\SchemaCache::hasTable('event_occurrences')) {
             $this->warn('event_occurrences table not found — skip');
             return self::SUCCESS;
         }
 
-        if (!Schema::hasTable('events')) {
+        if (!\App\Support\SchemaCache::hasTable('events')) {
             $this->warn('events table not found — skip');
             return self::SUCCESS;
         }
 
-        if (!Schema::hasTable('event_game_settings')) {
+        if (!\App\Support\SchemaCache::hasTable('event_game_settings')) {
             $this->warn('event_game_settings table not found — skip');
             return self::SUCCESS;
         }
 
-        if (!Schema::hasTable('event_registrations')) {
+        if (!\App\Support\SchemaCache::hasTable('event_registrations')) {
             $this->warn('event_registrations table not found — skip');
             return self::SUCCESS;
         }
@@ -73,11 +73,11 @@ class CancelEventsByQuorum extends Command
                   });
             });
 
-        if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
             $q->whereNull('eo.cancelled_at');
         }
 
-        if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
             $q->where(function ($w) {
                 $w->whereNull('eo.is_cancelled')
                   ->orWhere('eo.is_cancelled', false);
@@ -199,11 +199,11 @@ class CancelEventsByQuorum extends Command
                         'updated_at' => now(),
                     ];
 
-                    if (Schema::hasColumn('event_occurrences', 'cancelled_at')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'cancelled_at')) {
                         $payload['cancelled_at'] = now();
                     }
 
-                    if (Schema::hasColumn('event_occurrences', 'is_cancelled')) {
+                    if (\App\Support\SchemaCache::hasColumn('event_occurrences', 'is_cancelled')) {
                         $payload['is_cancelled'] = true;
                     }
 
@@ -288,7 +288,7 @@ class CancelEventsByQuorum extends Command
 
     private function countApprovedTeams(int $eventId, int $occurrenceId): int
     {
-        if (!Schema::hasTable('event_teams')) {
+        if (!\App\Support\SchemaCache::hasTable('event_teams')) {
             return 0;
         }
 
@@ -302,7 +302,7 @@ class CancelEventsByQuorum extends Command
 
     private function getTeamMemberUserIds(int $eventId, int $occurrenceId): array
     {
-        if (!Schema::hasTable('event_teams')) {
+        if (!\App\Support\SchemaCache::hasTable('event_teams')) {
             return [];
         }
 
@@ -322,7 +322,7 @@ class CancelEventsByQuorum extends Command
             ->pluck('captain_user_id');
 
         $members = collect();
-        if (Schema::hasTable('event_team_members')) {
+        if (\App\Support\SchemaCache::hasTable('event_team_members')) {
             $members = DB::table('event_team_members')
                 ->whereIn('event_team_id', $teamIds)
                 ->pluck('user_id');
@@ -341,28 +341,28 @@ class CancelEventsByQuorum extends Command
         $q = DB::table('event_registrations')
             ->where('event_id', $eventId);
 
-        if ($excludeReserve && Schema::hasColumn('event_registrations', 'position')) {
+        if ($excludeReserve && \App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
             $q->where(function ($w) {
                 $w->whereNull('position')->orWhere('position', '<>', 'reserve');
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
             $q->where('occurrence_id', $occurrenceId);
         }
 
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $q->whereNull('cancelled_at');
         }
 
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $q->where(function ($w) {
                 $w->whereNull('is_cancelled')
                   ->orWhere('is_cancelled', false);
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $q->where(function ($w) {
                 $w->whereNull('status')
                   ->orWhere('status', 'confirmed');
@@ -377,28 +377,28 @@ class CancelEventsByQuorum extends Command
         $q = DB::table('event_registrations')
             ->where('event_id', $eventId);
 
-        if ($excludeReserve && Schema::hasColumn('event_registrations', 'position')) {
+        if ($excludeReserve && \App\Support\SchemaCache::hasColumn('event_registrations', 'position')) {
             $q->where(function ($w) {
                 $w->whereNull('position')->orWhere('position', '<>', 'reserve');
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'occurrence_id')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'occurrence_id')) {
             $q->where('occurrence_id', $occurrenceId);
         }
 
-        if (Schema::hasColumn('event_registrations', 'cancelled_at')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'cancelled_at')) {
             $q->whereNull('cancelled_at');
         }
 
-        if (Schema::hasColumn('event_registrations', 'is_cancelled')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'is_cancelled')) {
             $q->where(function ($w) {
                 $w->whereNull('is_cancelled')
                   ->orWhere('is_cancelled', false);
             });
         }
 
-        if (Schema::hasColumn('event_registrations', 'status')) {
+        if (\App\Support\SchemaCache::hasColumn('event_registrations', 'status')) {
             $q->where(function ($w) {
                 $w->whereNull('status')
                   ->orWhere('status', 'confirmed');

@@ -2,7 +2,7 @@
 						{{-- Admin organizer --}}
 						@if(!empty($canChooseOrganizer))
 						<div class="ramka" style="z-index:10">	
-							<h2 class="-mt-05">{{ __('events.organizer_assign') }}</h2>	
+							<h2 class="-mt-05 h2-ico"><x-ico name="user-check" size="1.2em" /> {{ __('events.organizer_assign') }}</h2>	
 							<div class="row">	
 								<div class="col-md-6">
 									<div class="card">
@@ -59,7 +59,7 @@
 						<div class="row row2">	
 							<div class="col-md-12">
 								<div class="ramka" style="z-index: 9">
-									<h2 class="-mt-05">{{ __('events.event_setup') }}</h2>	
+									<h2 class="-mt-05 h2-ico"><x-ico name="sliders" size="1.2em" /> {{ __('events.event_setup') }}</h2>	
 									<div class="row">
 										
 										<div class="col-md-6">
@@ -209,10 +209,15 @@
 													
 													<div class="ac-box">
 														{{-- chips --}}
+														@php
+															// имена для восстановленных тренеров (черновик / ошибка валидации), а не голые «#id»
+															$__trNames = \App\Models\User::whereIn('id', array_map('intval', (array) $oldTrainerIds))->get()->keyBy('id');
+														@endphp
 														<div id="trainer_chips" class="mb-1">
 															@foreach($oldTrainerIds as $tid)
+															@php $__tu = $__trNames[(int)$tid] ?? null; @endphp
 															<div class="d-flex fvc mb-1 between f-16 pl-1 pr-1">
-																<span>#{{ (int)$tid }}</span>
+																<span>{{ $__tu ? (trim(($__tu->last_name ?? '') . ' ' . ($__tu->first_name ?? '')) ?: ($__tu->name ?? ('#' . (int)$tid))) : ('#' . (int)$tid) }}</span>
 																<button type="button" class="btn btn-small btn-secondary trainer-chip-remove" data-id="{{ (int)$tid }}">×</button>
 															</div>
 															<input type="hidden" name="trainer_user_ids[]" value="{{ (int)$tid }}" data-trainer-hidden="{{ (int)$tid }}">
@@ -254,7 +259,7 @@
 													<div class="col-4">
 														
 														<label>{{ __('events.subtype_label') }}</label>
-														<select name="game_subtype" id="game_subtype" class="w-full rounded-lg border-gray-200">
+														<select name="game_subtype" id="game_subtype" data-initial="{{ old('game_subtype', $prefill['game_subtype'] ?? '') }}" class="w-full rounded-lg border-gray-200">
 															<!-- <option value="">{{ __('events.tournament_choose') }}</option> -->
 															<option value="4x4" @selected(old('game_subtype', $prefill['game_subtype'] ?? '')==='4x4')>4×4</option>
 															<option value="4x2" @selected(old('game_subtype', $prefill['game_subtype'] ?? '4x2')==='4x2')>4-2</option>
@@ -439,7 +444,7 @@
 								</div>
 								
 								<div class="ramka no-highlight" id="tournament_settings_block" data-show-if="format=tournament">
-									<h2 class="-mt-05">{{ __('events.tournament_settings') }}</h2>
+									<h2 class="-mt-05 h2-ico"><x-ico name="trophy" size="1.2em" /> {{ __('events.tournament_settings') }}</h2>
 
 									{{-- Тип регистрации команд — единая radio-группа: обычная командная / King-Queen
 									     of Beach / индивидуальная. Управляет двумя скрытыми чекбоксами
@@ -768,7 +773,7 @@
 							</div>
 							<div class="col-md-12">
 								<div class="ramka" style="z-index: 8">
-									<h2 class="-mt-05">{{ __('events.restrictions_title') }}</h2>
+									<h2 class="-mt-05 h2-ico"><x-ico name="lock" size="1.2em" /> {{ __('events.restrictions_title') }}</h2>
 									<div class="row">
 										
 										<div class="col-md-6" id="age_policy_block">
@@ -1056,7 +1061,6 @@
 										<div class="col-md-6">
 											<div class="card">
 																								<label>{{ __('events.event_kind_title') }}
-													<button type="button" class="btn btn-small btn-secondary" style="font-size:.8rem;padding:.1rem .5rem;margin-left:.5rem;" id="hint-location-btn">❓</button>
 												</label>
 												@php
 												$allowRegVal = old('allow_registration', $prefill['allow_registration'] ?? 1);
@@ -1080,7 +1084,7 @@
 @endphp
 @if($adPrice > 0)
 <div class="alert alert-info mt-1">
-    {{ __('events.ad_price_label') }} <strong>{{ $adPrice }} ₽</strong><br>
+    <x-ico name="wallet" /> {{ __('events.ad_price_label') }} <strong>{{ $adPrice }} ₽</strong><br>
     <span class="f-13" style="opacity:.7">{{ __('events.ad_pay_after') }}</span>
 </div>
 @else
@@ -1102,32 +1106,7 @@
 							</button>
 						</div>
 
-{{-- Модальная подсказка про локации --}}
-<div id="hint-location-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;">
-    <div class="ramka" style="max-width:480px;margin:2rem auto;position:relative;">
-        <button type="button" id="hint-location-close" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.5rem;cursor:pointer;line-height:1;">×</button>
-        <h2 class="-mt-05">{{ __('events.hint_loc_title') }}</h2>
-        <p>{{ __('events.hint_loc_p1_pre') }} <a href="{{ route('locations.index') }}" target="_blank" class="blink">{{ __('events.hint_loc_p1_link') }}</a> {{ __('events.hint_loc_p1_post') }}</p>
-        <p>{{ __('events.hint_loc_p2') }}</p>
-        <div class="text-center mt-2">
-            <button type="button" id="hint-location-close2" class="btn">{{ __('events.hint_loc_ok') }}</button>
-        </div>
-    </div>
-</div>
 <script>
-(function(){
-    var btn = document.getElementById('hint-location-btn');
-    var modal = document.getElementById('hint-location-modal');
-    var close1 = document.getElementById('hint-location-close');
-    var close2 = document.getElementById('hint-location-close2');
-    if (!btn || !modal) return;
-    function show(){ modal.style.display = 'flex'; }
-    function hide(){ modal.style.display = 'none'; }
-    btn.addEventListener('click', show);
-    close1.addEventListener('click', hide);
-    close2.addEventListener('click', hide);
-    modal.addEventListener('click', function(e){ if(e.target === modal) hide(); });
-})();
 (function(){
     var cb = document.getElementById('tournament_individual_reg');
     if (!cb) return;

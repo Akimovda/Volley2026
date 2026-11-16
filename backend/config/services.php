@@ -37,6 +37,14 @@ return [
         'queue' => env('KUMA_PUSH_QUEUE'),
         'retry_failed' => env('KUMA_PUSH_RETRY_FAILED'),
         'expand_recurring' => env('KUMA_PUSH_EXPAND_RECURRING'),
+        // метрики сервера (ops:report-metrics)
+        'disk' => env('KUMA_PUSH_DISK'),
+        'memory' => env('KUMA_PUSH_MEMORY'),
+        'load' => env('KUMA_PUSH_LOAD'),
+        'queue_backlog' => env('KUMA_PUSH_QUEUE_BACKLOG'),
+        'wal' => env('KUMA_PUSH_WAL'),
+        // исходы входа через провайдеров (auth_login_events)
+        'auth' => env('KUMA_PUSH_AUTH'),
     ],
 
     'vk' => [
@@ -68,6 +76,9 @@ return [
         'admin_chat_id'      => env('TELEGRAM_ADMIN_CHAT_ID'),
         'oidc_client_id'     => env('TELEGRAM_OIDC_CLIENT_ID'),
         'oidc_client_secret' => env('TELEGRAM_OIDC_CLIENT_SECRET'),
+        // Вход через Telegram (OIDC): обмен кода на токен и JWKS идут с сервера. Если сервер не достаёт до oauth.telegram.org —
+        // true: ходим через релей (TELEGRAM_API_BASE + /oauth/token и /oauth/.well-known/jwks.json, маршруты есть в воркере tg-relay)
+        'oidc_via_relay'     => (bool) env('TELEGRAM_OIDC_VIA_RELAY', false),
     ],
 
     'vk_wall' => [
@@ -95,7 +106,15 @@ return [
     ],
 
     'apple' => [
+        // Показывать кнопку Apple и для российских IP (по умолчанию скрыта) — на время тестов.
+        'show_in_ru'  => (bool) env('APPLE_SHOW_IN_RU', false),
         'client_id'   => env('APPLE_CLIENT_ID'),
+        // Допустимые aud нативных/web токенов: Services ID, bundle ID приложений (в т.ч. white-label).
+        // Дополнительные — через APPLE_ALLOWED_AUDIENCES (через запятую).
+        'allowed_audiences' => array_values(array_unique(array_filter(array_map('trim', array_merge(
+            [env('APPLE_CLIENT_ID'), env('APN_BUNDLE_ID')],
+            explode(',', (string) env('APPLE_ALLOWED_AUDIENCES', ''))
+        ))))),
         'client_secret' => null,
         'team_id'     => env('APPLE_TEAM_ID'),
         'key_id'      => env('APPLE_KEY_ID'),

@@ -93,24 +93,25 @@
 	<div class="container">
 		<div class="ramka">
 			
+			@include('tournaments._partials.flip_score_css')
 			{{-- TV Mode + PDF --}}
 			<div class="d-flex mb-2 text-center gap-1" style="flex-wrap:wrap">
 				<a href="{{ route('tournament.tv', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" target="_blank" class="btn btn-secondary">
-					📺 TV Mode
+					<x-ico name="tv" size="1.1em" /> TV Mode
 				</a>
 				@php $__courtStreams = app(\App\Services\Broadcast\StreamLinksService::class)->forEvent((int) $event->id, $selectedOccurrence?->id); @endphp
 				@include('broadcast._watch', ['event' => $event, 'occurrenceId' => $selectedOccurrence?->id])
 				<a href="{{ route('tournament.pdf.schedule', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" data-file-download class="btn btn-secondary">
-					📄 {{ __('tournaments.pub_pdf_schedule_short') }}
+					<x-ico name="file-text" size="1.1em" /> {{ __('tournaments.pub_pdf_schedule_short') }}
 				</a>
 				<a href="{{ route('tournament.pdf.results', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}" data-file-download class="btn btn-secondary">
-					📊 {{ __('tournaments.pub_pdf_results_short') }}
+					<x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_pdf_results_short') }}
 				</a>
 				@auth
 				@if(auth()->user()->role === 'admin' || (int)($event->organizer_id ?? 0) === auth()->id())
 				<a href="{{ route('tournament.setup', [$event, 'occurrence_id' => $selectedOccurrence?->id]) }}"
 				class="btn btn-primary f-13" style="padding:6px 12px">
-					⚙️ {{ __('tournaments.pub_setup_btn') }}
+					<x-ico name="settings" size="1.1em" /> {{ __('tournaments.pub_setup_btn') }}
 				</a>
 				@endif
 				@endauth
@@ -194,9 +195,9 @@
 			<div class="mb-2">
 				{{ $stage->type }} · {{ strtoupper($stage->matchFormat()) }} · {{ __('tournaments.score_to_pts') }} {{ $stage->setPoints() }} {{ __('tournaments.pub_pts_label') }}
 				·
-				@if($stage->isCompleted()) ✅ {{ __('tournaments.stages_status_completed') }}
-				@elseif($stage->isInProgress()) 🔄 {{ __('tournaments.stages_status_in_progress') }}
-				@else ⏳ {{ __('tournaments.stages_status_pending') }}
+				@if($stage->isCompleted()) <x-ico name="check" size="1em" /> {{ __('tournaments.stages_status_completed') }}
+				@elseif($stage->isInProgress()) <x-ico name="refresh" size="1em" /> {{ __('tournaments.stages_status_in_progress') }}
+				@else <x-ico name="clock" size="1em" /> {{ __('tournaments.stages_status_pending') }}
 				@endif
 			</div>
 
@@ -269,7 +270,7 @@
 				@if($kocStandings->isEmpty())
 				<div class="f-13" style="opacity:.5">{{ __('tournaments.pub_no_finished_matches') }}</div>
 				@else
-				<div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.koc_lbl_final_standings') }}</div>
+				<div class="b-700 f-16 mb-2"><x-ico name="trophy" size="1.1em" /> {{ __('tournaments.koc_lbl_final_standings') }}</div>
 				<div class="table-scrollable">
 					<table class="table f-14">
 						<tbody>
@@ -386,12 +387,7 @@
 								@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 								@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 							</span>
-							<span class="match-score-cell match-score-cell--sm b-700" style="{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
-								{{ $m->setsScore() ?? 'vs' }}
-								@if($m->isCompleted() && $m->detailedScore())
-								<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
-								@endif
-							</span>
+							<span class="match-score-cell match-score-cell--sm b-700">@include('tournaments._partials.match_score_board', ['m' => $m])</span>
 							<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 								@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
 								@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
@@ -399,7 +395,7 @@
 						</div>
 						@if($m->isCompleted() && !empty($matchStatsByMatchId[$m->id]['has_stats']))
 						<div style="text-align:center;margin:2px 0 8px">
-							<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+							<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})"><x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_match_stats_toggle') }}</button>
 						</div>
 						<div id="match-stats-{{ $m->id }}" class="card mb-2" style="display:none">
 							@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
@@ -429,7 +425,7 @@
 									@foreach($group->standings->sortBy('rank') as $s)
 									@php $inTb = in_array($s->team_id, $pendingTbTeamIds); @endphp
 									<tr>
-										<td>{{ $s->rank }}{{ $inTb ? ' 🎲' : '' }}</td>
+										<td>{{ $s->rank }}@if($inTb) <x-ico name="dice" size="1em" />@endif</td>
 										<td>
 											<div class="cd b-600">@include('tournaments._partials.team_name_link', ['team' => $s->team])</div>
 											@include('tournaments._partials.team_roster_line', ['team' => $s->team, 'class' => 'f-13'])
@@ -447,7 +443,7 @@
 						</div>
 						@if($groupTbs->where('status', 'pending')->isNotEmpty())
 						<div class="alert alert-info">
-							🎲 {{ __('tournaments.pub_tiebreak_pending') }}
+							<x-ico name="dice" size="1.1em" /> {{ __('tournaments.pub_tiebreak_pending') }}
 						</div>
 						@endif
 						@endif
@@ -471,12 +467,7 @@
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => 'TBD'])
 						@include('tournaments._partials.team_roster_line', ['team' => $m->teamHome, 'class' => 'f-11', 'style' => 'color:#6b7280'])
 					</span>
-					<span class="match-score-cell match-score-cell--sm b-700" style="{{ $m->isCompleted() ? '' : 'opacity:.4' }}">
-						{{ $m->setsScore() ?? 'vs' }}
-						@if($m->isCompleted() && $m->detailedScore())
-						<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
-						@endif
-					</span>
+					<span class="match-score-cell match-score-cell--sm b-700">@include('tournaments._partials.match_score_board', ['m' => $m])</span>
 					<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => 'TBD'])
 						@include('tournaments._partials.team_roster_line', ['team' => $m->teamAway, 'class' => 'f-11', 'style' => 'color:#6b7280'])
@@ -484,7 +475,7 @@
 				</div>
 				@if($m->isCompleted() && !empty($matchStatsByMatchId[$m->id]['has_stats']))
 				<div style="text-align:center;margin:2px 0 8px">
-					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})"><x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_match_stats_toggle') }}</button>
 				</div>
 				<div id="match-stats-{{ $m->id }}" class="card mb-2" style="display:none">
 					@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
@@ -504,6 +495,7 @@
 		============================================================ --}}
 		@elseif($tab === 'bracket')
 		<div class="ramka">
+		@include('tournaments.public._bracket_groups', ['stages' => $stages])
 		@foreach($stages as $stage)
 		@if(in_array($stage->type, ['single_elim', 'double_elim']))
 		<div class="mb-3">
@@ -566,7 +558,7 @@
 			@foreach($divisions as $divName => $divTeams)
 			<div class="col-md-{{ (int)(12 / $divisions->count()) }}" style="margin-bottom:16px">
 				<div class="card p-3">
-					<div class="b-700 f-16 mb-2">🏆 Итоги дивизиона {{ $divName }}</div>
+					<div class="b-700 f-16 mb-2"><x-ico name="trophy" size="1.1em" /> Итоги дивизиона {{ $divName }}</div>
 					@include('tournaments._partials.podium', ['items' => $toPodiumItems($divTeams)])
 				</div>
 			</div>
@@ -575,7 +567,7 @@
 		@else
 		{{-- Обычный турнир без дивизионов --}}
 		<div class="card p-3 mb-3">
-			<div class="b-700 f-16 mb-2">🏆 {{ __('tournaments.pub_final_standings') }}</div>
+			<div class="b-700 f-16 mb-2"><x-ico name="trophy" size="1.1em" /> {{ __('tournaments.pub_final_standings') }}</div>
 			@include('tournaments._partials.podium', ['items' => $toPodiumItems($classification)])
 		</div>
 		@endif
@@ -586,7 +578,7 @@
 		@if($mvp)
 		<div class="card p-3 mb-3" style="text-align:center">
 			<div class="f-13 b-600 mb-1" style="opacity:.5">{{ __('tournaments.tv_mvp') }}</div>
-			<div class="f-20 b-800">⭐ {{ $mvp->displayName() }}</div>
+			<div class="f-20 b-800"><x-ico name="star" size="1.1em" /> {{ $mvp->displayName() }}</div>
 		</div>
 		@endif
 		@endif
@@ -627,16 +619,14 @@
 				</span>
 				<span class="match-score-cell b-700">
 					@if($m->isLive())
-					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}">🔴 {{ __('tournaments.pub_match_live') }}</span>
+					<span class="pub-live-badge" data-match-live-badge="{{ $m->id }}"><x-ico name="dot-red" size="1em" /> {{ __('tournaments.pub_match_live') }}</span>
+					@if($m->teamHome && $m->teamAway)@include('tournaments._partials.match_score_live', ['m' => $m])@endif
 					@php $__ls = $m->court_id ? ($__courtStreams[$m->court_id] ?? null) : null; @endphp
-					@if($__ls)<a href="{{ $__ls['links'][0]['url'] }}" target="_blank" rel="noopener nofollow" class="blink b-600 f-12" style="display:block">📡 {{ __('stream.watch') }}</a>@endif
+					@if($__ls)<a href="{{ $__ls['links'][0]['url'] }}" target="_blank" rel="noopener nofollow" class="blink b-600 f-12" style="display:block"><x-ico name="broadcast" size="1.1em" /> {{ __('stream.watch') }}</a>@endif
 					@elseif(!$m->teamHome || !$m->teamAway)
 					—
 					@else
-					{{ $m->setsScore() }}
-					@if($m->detailedScore())
-					<div class="f-11 b-400" style="opacity:.6">{{ $m->detailedScore() }}</div>
-					@endif
+					@include('tournaments._partials.match_score_board', ['m' => $m])
 					@endif
 				</span>
 				<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
@@ -646,14 +636,14 @@
 			</div>
 			@if(!empty($matchStatsByMatchId[$m->id]['has_stats']))
 			<div style="text-align:center;margin:2px 0 8px">
-				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})"><x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_match_stats_toggle') }}</button>
 			</div>
 			<div id="match-stats-r-{{ $m->id }}" class="card mb-2" style="display:none">
 				@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
 			</div>
 			@endif
 			<div style="text-align:center;margin:2px 0 8px">
-				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})">▶ {{ $m->isLive() ? '🔴 ' . __('tournaments.pub_match_progress_toggle_live') : __('tournaments.pub_match_progress_toggle') }}</button>
+				<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchProgress({{ $m->id }})"><x-ico name="play" size="1em" /> @if($m->isLive())<x-ico name="dot-red" size="1em" /> {{ __('tournaments.pub_match_progress_toggle_live') }}@else{{ __('tournaments.pub_match_progress_toggle') }}@endif</button>
 			</div>
 			<div id="match-progress-r-{{ $m->id }}" class="card mb-2" data-match-progress="{{ $m->id }}" data-match-live="{{ $m->isLive() ? '1' : '0' }}" style="display:none">
 				@include('tournaments._partials.match_progress_fragment', ['matchProgress' => $matchProgressByMatchId[$m->id] ?? ['has_progress' => false], 'match' => $m, 'event' => $event])
@@ -676,7 +666,7 @@
 		@include('tournaments._partials.participant_rating_table', ['event' => $event])
 
 		<div class="card p-3 mb-3">
-			<div class="b-700 f-16 mb-2">📊 {{ __('tournaments.pub_match_stats_toggle') }}</div>
+			<div class="b-700 f-16 mb-2"><x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_match_stats_toggle') }}</div>
 			@php $anyCompletedForStatsTab = false; @endphp
 			@foreach($stages as $stage)
 			@php $stageCompletedForStatsTab = $stage->matches->where('status', 'completed')->sortBy(['round', 'match_number']); @endphp
@@ -689,14 +679,14 @@
 					<span class="match-team-cell match-team-cell--right {{ $m->winner_team_id === $m->team_home_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamHome, 'fallback' => '?'])
 					</span>
-					<span class="match-score-cell match-score-cell--sm b-700">{{ $m->setsScore() }}</span>
+					<span class="match-score-cell match-score-cell--sm b-700">@include('tournaments._partials.match_score_board', ['m' => $m])</span>
 					<span class="match-team-cell {{ $m->winner_team_id === $m->team_away_id ? 'b-700' : '' }}">
 						@include('tournaments._partials.team_name_link', ['team' => $m->teamAway, 'fallback' => '?'])
 					</span>
 				</div>
 				@if(!empty($matchStatsByMatchId[$m->id]['has_stats']))
 				<div style="text-align:center;margin:2px 0 8px">
-					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})">📊 {{ __('tournaments.pub_match_stats_toggle') }}</button>
+					<button type="button" class="btn btn-small btn-secondary" onclick="toggleMatchStats({{ $m->id }})"><x-ico name="chart" size="1.1em" /> {{ __('tournaments.pub_match_stats_toggle') }}</button>
 				</div>
 				<div id="match-stats-s-{{ $m->id }}" class="card mb-2" style="display:none">
 					@include('tournaments._partials.match_stats_pretty', ['statsData' => $matchStatsByMatchId[$m->id], 'match' => $m, 'stage' => $stage, 'event' => $event])
@@ -738,7 +728,7 @@
 		$playedRounds = $seasonStats->max('rounds_played');
 		@endphp
 		<div class="card p-3 mb-3">
-			<div class="b-700 f-16 mb-1">🏆 {{ $season->name ?? 'Сезон' }}</div>
+			<div class="b-700 f-16 mb-1"><x-ico name="trophy" size="1.1em" /> {{ $season->name ?? 'Сезон' }}</div>
 			<div class="f-13 mb-3" style="opacity:.5">
 				Сыграно туров: {{ $playedRounds }}
 				· Игроков: {{ $seasonStats->count() }}
@@ -815,6 +805,7 @@
 	
 	{{-- Live polling --}}
 	<x-slot name="script">
+		@include('tournaments._partials.flip_score_js')
 		@php $hasLiveMatch = $stages->flatMap->matches->contains(fn($m) => $m->isLive()); @endphp
 		@if($hasLiveMatch)
 		<script src="/js/pusher.min.js"></script>
@@ -927,6 +918,25 @@
 				}
 			})();
 			@endif
+
+			// Живой счёт идущих матчей в списках: очки переворачиваются без перезагрузки; старт/конец матча — перезагрузка страницы
+			(function () {
+				if (!document.querySelector('[id^="pub-pts-"]')) return;
+				var url = @json(route('tournament.tv.live', array_filter(['event' => $event->id, 'occurrence_id' => $selectedOccurrence?->id])));
+				var setTpl = @json(__('tournaments.rally_set_n', ['n' => '__N__']));
+				var sig = null;
+				setInterval(function () {
+					fetch(url, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+						if (sig === null) sig = d.sig; else if (sig !== d.sig) { location.reload(); return; }
+						d.matches.forEach(function (m) {
+							var b = document.getElementById('pub-pts-' + m.id);
+							if (b && window.FlipScore) FlipScore.update(b, m.pts_home, m.pts_away);
+							var l = document.getElementById('pub-setlbl-' + m.id);
+							if (l) l.textContent = setTpl.replace('__N__', m.set);
+						});
+					}).catch(function () {});
+				}, 6000);
+			})();
 
 			// В приложении файл скачивается/сохраняется через общий обработчик (script.js, [data-file-download])
 			document.querySelectorAll('a[href*="/pdf/"]').forEach(function(link) {

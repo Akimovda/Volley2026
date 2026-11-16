@@ -28,9 +28,10 @@ final class TournamentTeamService
         ?int $occurrenceId = null,
         ?string $teamKind = null,
         ?string $captainPositionCode = null,
-        bool $autoApprove = false
+        bool $autoApprove = false,
+        bool $captainOnBench = false
     ): EventTeam {
-        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove) {
+        return DB::transaction(function () use ($event, $captain, $name, $occurrenceId, $teamKind, $captainPositionCode, $autoApprove, $captainOnBench) {
             $settings = $this->getSettings($event);
 
             $teamKind ??= $this->resolveTeamKindFromSettings($settings, (string) ($event->direction ?? 'classic'));
@@ -112,7 +113,8 @@ final class TournamentTeamService
                 'joined_at' => now(),
                 'responded_at' => now(),
                 'confirmed_at' => now(),
-                'meta' => null,
+                // капитан остаётся капитаном, но может начинать «на скамейке» (запасным) и выйти на замену позже
+                'meta' => $captainOnBench ? ['on_bench' => true] : null,
             ]);
 
             $this->audit(
@@ -293,7 +295,9 @@ final class TournamentTeamService
             }
         }
 
-        $confirmed = $team->members->where('confirmation_status', 'confirmed');
+        // Слоты амплуа занимает только основной состав; у запасных амплуа — лишь пометка
+        $confirmed = $team->members->where('confirmation_status', 'confirmed')
+            ->filter(fn ($m) => $this->isOnField($m));
 
         $result = [];
         foreach ($positions as $code => $max) {
@@ -360,7 +364,8 @@ final class TournamentTeamService
         }
 
         $slot = $capacity[$newPositionCode];
-        if ($slot['current'] >= $slot['max']) {
+        // запасной слот не занимает — лимит проверяем только для игрока основного состава
+        if ($this->isOnField($member) && $slot['current'] >= $slot['max']) {
             throw new DomainException("Позиция «{$slot['label']}» уже занята ({$slot['current']} из {$slot['max']}).");
         }
 
@@ -392,6 +397,137 @@ final class TournamentTeamService
      * здесь речь только про team_role внутри ростера одной команды).
      * Капитана переводить нельзя — для этого есть отдельная передача капитанства.
      */
+    /** Капитан на скамейке (запасной на старте) — роль «капитан» при этом сохраняется. */
+    /** Игрок в основном составе (капитан на скамейке — не в основе). */
+    public function isOnField(EventTeamMember $member): bool
+    {
+        return $member->team_role === 'player'
+            || ($member->team_role === 'captain' && !$this->isCaptainOnBench($member));
+    }
+
+    public function isCaptainOnBench(EventTeamMember $member): bool
+    {
+        return $member->team_role === 'captain' && !empty(($member->meta ?? [])['on_bench']);
+    }
+
+    /** Капитан уходит на скамейку / выходит на замену. Считается как запасной в проверке состава и лимитов. */
+    public function setCaptainBench(EventTeam $team, EventTeamMember $member, bool $onBench, int $performedByUserId): EventTeamMember
+    {
+        if ($member->team_role !== 'captain') {
+            throw new DomainException('Это действие только для капитана.');
+        }
+        if ($this->isCaptainOnBench($member) === $onBench) {
+            return $member;
+        }
+        if ($onBench) {
+            $limits = $this->getTeamLimits($team);
+            $currentReserves = $team->members
+                ->where('confirmation_status', 'confirmed')
+                ->where('team_role', 'reserve')
+                ->count();
+            if ($currentReserves >= (int) $limits['reserve_max']) {
+                throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']}).");
+            }
+        }
+
+        return DB::transaction(function () use ($team, $member, $onBench, $performedByUserId) {
+            $meta = (array) ($member->meta ?? []);
+            if ($onBench) {
+                $meta['on_bench'] = true;
+            } else {
+                unset($meta['on_bench']);
+            }
+            $member->meta = $meta === [] ? null : $meta;
+            $member->save();
+
+            $this->audit(
+                team: $team,
+                action: 'captain_bench_changed',
+                userId: $member->user_id,
+                performedByUserId: $performedByUserId,
+                oldValue: ['on_bench' => !$onBench],
+                newValue: ['on_bench' => $onBench],
+            );
+
+            $this->refreshTeamState($team->fresh());
+
+            return $member->fresh();
+        });
+    }
+
+    /**
+     * Замена: запасной (или капитан на скамейке) выходит в основу вместо выбранного игрока основного состава,
+     * тот уходит на скамейку. Одна операция — лимит запасных не меняется, поэтому и не проверяется.
+     * Игроки меняются и позициями (амплуа), чтобы вышедший играл на месте ушедшего.
+     */
+    public function swapMembers(EventTeam $team, EventTeamMember $in, EventTeamMember $out, int $performedByUserId): void
+    {
+        foreach ([$in, $out] as $m) {
+            if ((int) $m->event_team_id !== (int) $team->id) {
+                throw new DomainException('Игрок не состоит в этой команде.');
+            }
+            if ($m->confirmation_status !== 'confirmed') {
+                throw new DomainException('Заменять можно только подтверждённых игроков.');
+            }
+        }
+        if ((int) $in->id === (int) $out->id) {
+            throw new DomainException('Выберите другого игрока для замены.');
+        }
+
+        $inOnBench  = $in->team_role === 'reserve' || $this->isCaptainOnBench($in);
+        $outOnField = ($out->team_role === 'player' || ($out->team_role === 'captain' && !$this->isCaptainOnBench($out)));
+        if (!$inOnBench) {
+            throw new DomainException('Выйти на замену может только запасной игрок.');
+        }
+        if (!$outOnField) {
+            throw new DomainException('Заменить можно только игрока основного состава.');
+        }
+
+        DB::transaction(function () use ($team, $in, $out, $performedByUserId) {
+            $inPos  = $in->position_code;
+            $outPos = $out->position_code;
+
+            foreach ([[$out, true], [$in, false]] as [$m, $toBench]) {
+                $old = $m->team_role === 'captain' ? ['on_bench' => $this->isCaptainOnBench($m)] : ['team_role' => $m->team_role];
+                if ($m->team_role === 'captain') {
+                    $meta = (array) ($m->meta ?? []);
+                    if ($toBench) {
+                        $meta['on_bench'] = true;
+                    } else {
+                        unset($meta['on_bench']);
+                    }
+                    $m->meta = $meta === [] ? null : $meta;
+                    $action = 'captain_bench_changed';
+                    $new = ['on_bench' => $toBench];
+                } else {
+                    $m->team_role = $toBench ? 'reserve' : 'player';
+                    $action = 'team_role_changed';
+                    $new = ['team_role' => $m->team_role];
+                }
+                $other = $m === $out ? $in : $out;
+                if ($outPos && $inPos !== $outPos) {
+                    // вышедший занимает амплуа заменяемого; тот уходит на скамейку с амплуа вышедшего (или прежним, если у запасного его не было)
+                    $m->position_code = $m === $in ? $outPos : ($inPos ?: $outPos);
+                    if ($m->team_role !== 'captain') {
+                        $m->role_code = $m->position_code;
+                    }
+                }
+                $m->save();
+                $this->audit(
+                    team: $team,
+                    action: $action,
+                    userId: $m->user_id,
+                    performedByUserId: $performedByUserId,
+                    oldValue: $old,
+                    newValue: $new,
+                    meta: ['swap_with_user_id' => $other->user_id],
+                );
+            }
+
+            $this->refreshTeamState($team->fresh());
+        });
+    }
+
     public function changeMemberTeamRole(EventTeam $team, EventTeamMember $member, string $newTeamRole, int $performedByUserId): EventTeamMember
     {
         if ((int) $member->event_team_id !== (int) $team->id) {
@@ -402,12 +538,13 @@ final class TournamentTeamService
             throw new DomainException('Недопустимая роль участника.');
         }
 
-        if ($member->team_role === 'captain') {
-            throw new DomainException('Капитана нельзя перевести в запасные напрямую — сначала передайте капитанство.');
-        }
-
         if ($member->confirmation_status !== 'confirmed') {
             throw new DomainException('Роль можно менять только подтверждённым игрокам.');
+        }
+
+        // Капитан не теряет капитанство: «запасной» для него — это скамейка (флаг on_bench), с которой он может выйти на замену
+        if ($member->team_role === 'captain') {
+            return $this->setCaptainBench($team, $member, $newTeamRole === 'reserve', $performedByUserId);
         }
 
         $oldTeamRole = $member->team_role;
@@ -420,7 +557,7 @@ final class TournamentTeamService
             $currentReserves = $team->members
                 ->where('confirmation_status', 'confirmed')
                 ->where('team_role', 'reserve')
-                ->count();
+                ->count() + ($team->members->contains(fn ($m) => $m->confirmation_status === 'confirmed' && $this->isCaptainOnBench($m)) ? 1 : 0);
 
             if ($currentReserves >= (int) $limits['reserve_max']) {
                 throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']}).");
@@ -429,6 +566,21 @@ final class TournamentTeamService
 
         return DB::transaction(function () use ($team, $member, $newTeamRole, $oldTeamRole, $performedByUserId) {
             $member->team_role = $newTeamRole;
+            if ($newTeamRole === 'player' && $this->teamUsesPositions($team)) {
+                // выход в основу без замены: если его амплуа не задано или слот занят — берём первое свободное
+                $capacity = $this->getPositionCapacity($team);
+                $cur = $member->position_code;
+                $ok = $cur && isset($capacity[$cur]) && $capacity[$cur]['current'] < $capacity[$cur]['max'];
+                if (!$ok) {
+                    foreach ($capacity as $code => $info) {
+                        if ($info['current'] < $info['max']) {
+                            $member->position_code = $code;
+                            $member->role_code = $code;
+                            break;
+                        }
+                    }
+                }
+            }
             $member->save();
 
             $this->audit(
@@ -625,6 +777,10 @@ final class TournamentTeamService
                     ->where('team_role', 'reserve')
                     ->whereIn('confirmation_status', ['invited', 'joined', 'confirmed'])
                     ->count();
+                // капитан на скамейке занимает запасное место
+                $currentReserves += EventTeamMember::query()
+                    ->where('event_team_id', $team->id)->where('team_role', 'captain')->where('confirmation_status', 'confirmed')->get()
+                    ->filter(fn ($m) => $this->isCaptainOnBench($m))->count();
     
                 if ($currentReserves >= (int) $limits['reserve_max']) {
                     throw new DomainException("Достигнут лимит запасных игроков ({$limits['reserve_max']})");
@@ -1143,13 +1299,15 @@ final class TournamentTeamService
         $reserves = $confirmed->where('team_role', 'reserve');
         $players = $confirmed->where('team_role', 'player');
         $captain = $confirmed->firstWhere('team_role', 'captain');
+        $captainOnBench = $captain && $this->isCaptainOnBench($captain);
+        $fieldConfirmed = $confirmed->filter(fn ($m) => $this->isOnField($m));
     
         $issues = [];
     
         if ($this->isRolesPair($team)) {
             // Пара «По амплуа»: ровно Блокирующий + Защитник
             foreach ($this->getPositionCapacity($team) as $position => $info) {
-                $currentCount = $confirmed->where('position_code', $position)->count();
+                $currentCount = $fieldConfirmed->where('position_code', $position)->count();
 
                 if ($currentCount < (int) $info['max']) {
                     $issues[] = "В паре нужен игрок на амплуа «{$info['label']}»";
@@ -1162,7 +1320,7 @@ final class TournamentTeamService
             $requiredPositions = (array) config("volleyball.classic.{$scheme}.positions", []);
     
             foreach ($requiredPositions as $position => $requiredCount) {
-                $currentCount = $confirmed->where('position_code', $position)->count();
+                $currentCount = $fieldConfirmed->where('position_code', $position)->count();
     
                 if ($currentCount < (int) $requiredCount) {
                     $issues[] = "Недостаточно {$this->positionLabel($position)}: {$currentCount} из {$requiredCount}";
@@ -1170,14 +1328,14 @@ final class TournamentTeamService
             }
     
             if ($this->requiresLibero($settings, $scheme)) {
-                $hasLibero = $confirmed->contains('position_code', 'libero');
+                $hasLibero = $fieldConfirmed->contains('position_code', 'libero');
                 if (!$hasLibero) {
                     $issues[] = 'В составе отсутствует либеро';
                 }
             }
         }
     
-        $reserveCount = $reserves->count();
+        $reserveCount = $reserves->count() + ($captainOnBench ? 1 : 0);
         if ($reserveCount > (int) $limits['reserve_max']) {
             $issues[] = "Слишком много запасных: {$reserveCount} из {$limits['reserve_max']}";
         }
@@ -1187,7 +1345,7 @@ final class TournamentTeamService
             $issues[] = "Слишком много игроков: {$totalConfirmed} из {$limits['total_max']}";
         }
     
-        $playersCount = $players->count() + ($captain ? 1 : 0);
+        $playersCount = $players->count() + ($captain && !$captainOnBench ? 1 : 0);
         if ($playersCount < (int) $limits['min_players']) {
             $issues[] = "Недостаточно основных игроков: {$playersCount} из {$limits['min_players']}";
         }

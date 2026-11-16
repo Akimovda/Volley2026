@@ -9,6 +9,8 @@ return [
     'profile_section_lead_create'  => 'Do you run trainings? Fill in your trainer profile — it will show up in your event descriptions, and players will be able to leave reviews — only those who attended your sessions!',
     'profile_section_lead_exists'  => 'Your trainer profile is already filled in.',
     'profile_section_btn_create'   => 'Fill in trainer profile',
+    'profile_auto_created'         => 'We created your trainer profile because you selected “I’m the trainer”. Add your specialization, experience and bio — participants will see it.',
+    'profile_auto_created_link'    => 'Fill in the profile',
     'profile_section_btn_edit'     => 'Edit trainer profile',
 
     'profile_edit_title' => 'Trainer profile',

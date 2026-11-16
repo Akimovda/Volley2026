@@ -37,7 +37,7 @@ class EventRegistrationInviteController extends Controller
             ->first();
 
         if (!$occurrence) {
-            return back()->with('error', 'Occurrence не найден.');
+            return back()->with('error', __('Occurrence не найден.'));
         }
 
         // Уже записанные на это occurrence
@@ -115,7 +115,7 @@ class EventRegistrationInviteController extends Controller
         }
 
         if ($sent === 0 && empty($skipped)) {
-            return back()->with('error', 'Не удалось отправить ни одного приглашения.');
+            return back()->with('error', __('Не удалось отправить ни одного приглашения.'));
         }
 
         return back()->with('status', implode(' ', $parts));

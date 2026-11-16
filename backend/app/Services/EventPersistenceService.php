@@ -73,7 +73,7 @@ class EventPersistenceService
             $event->organizer_id = $organizerId;
             $event->location_id = (int)$location->id;
 
-            if (Schema::hasColumn('events', 'city_id')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'city_id')) {
                 $event->city_id = (int)($location->city_id ?? 0) ?: null;
             }
 
@@ -81,7 +81,7 @@ class EventPersistenceService
 
             $event->starts_at = $startsUtc;
 
-            if (Schema::hasColumn('events', 'duration_sec')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'duration_sec')) {
                 $event->duration_sec = $durationSec;
             }
 
@@ -97,44 +97,44 @@ class EventPersistenceService
 
             $event->classic_level_min = $data['classic_level_min'] ?? null;
 
-            if (Schema::hasColumn('events', 'classic_level_max')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'classic_level_max')) {
                 $event->classic_level_max = $data['classic_level_max'] ?? null;
             }
 
             $event->beach_level_min = $data['beach_level_min'] ?? null;
 
-            if (Schema::hasColumn('events', 'beach_level_max')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'beach_level_max')) {
                 $event->beach_level_max = $data['beach_level_max'] ?? null;
             }
 
-            if (Schema::hasColumn('events', 'age_policy')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'age_policy')) {
                 $event->age_policy = $agePolicy;
             }
-            if (Schema::hasColumn('events', 'child_age_min')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'child_age_min')) {
                 $event->child_age_min = ($agePolicy === 'child')
                     ? (isset($data['child_age_min']) ? (int)$data['child_age_min'] : null)
                     : null;
             }
             
-            if (Schema::hasColumn('events', 'child_age_max')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'child_age_max')) {
                 $event->child_age_max = ($agePolicy === 'child')
                     ? (isset($data['child_age_max']) ? (int)$data['child_age_max'] : null)
                     : null;
             }
 
-            if (Schema::hasColumn('events', 'with_minors')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'with_minors')) {
                 $event->with_minors = ($direction === 'beach') ? $withMinors : false;
             }
 
-            if (Schema::hasColumn('events', 'is_snow')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'is_snow')) {
                 $event->is_snow = ($direction === 'beach' && $format === 'game') ? $isSnow : false;
             }
 
-            if (Schema::hasColumn('events', 'remind_registration_enabled')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'remind_registration_enabled')) {
                 $event->remind_registration_enabled = (bool)($data['remind_registration_enabled'] ?? true);
             }
 
-            if (Schema::hasColumn('events', 'remind_registration_minutes_before')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'remind_registration_minutes_before')) {
 
                 $mins = (int)($data['remind_registration_minutes_before'] ?? 600);
 
@@ -145,53 +145,53 @@ class EventPersistenceService
                 $event->remind_registration_minutes_before = $mins;
             }
 
-            if (Schema::hasColumn('events', 'show_participants')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'show_participants')) {
                 $event->show_participants = (bool)($data['show_participants'] ?? true);
             }
 
-            if (Schema::hasColumn('events', 'description_html')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'description_html')) {
                 $event->description_html = $data['description_html'] ?? null;
             }
 
             $event->is_private = $isPrivate;
 
-            if (Schema::hasColumn('events', 'visibility')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'visibility')) {
                 $event->visibility = $isPrivate ? 'private' : 'public';
             }
 
-            if (Schema::hasColumn('events', 'public_token') && empty($event->public_token)) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'public_token') && empty($event->public_token)) {
                 $event->public_token = (string)Str::uuid();
             }
 
-            if (Schema::hasColumn('events', 'is_recurring')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'is_recurring')) {
                 $event->is_recurring = (bool)$isRecurring;
             }
 
-            if (Schema::hasColumn('events', 'recurrence_rule')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'recurrence_rule')) {
                 $event->recurrence_rule = ($isRecurring && trim($recRule) !== '') ? $recRule : null;
             }
 
-            if (Schema::hasColumn('events', 'registration_starts_at')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'registration_starts_at')) {
                 $event->registration_starts_at = $allowReg ? ($reg['regStartsUtc'] ?? null) : null;
             }
 
-            if (Schema::hasColumn('events', 'registration_ends_at')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'registration_ends_at')) {
                 $event->registration_ends_at = $allowReg ? ($reg['regEndsUtc'] ?? null) : null;
             }
 
-            if (Schema::hasColumn('events', 'cancel_self_until')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'cancel_self_until')) {
                 $event->cancel_self_until = $allowReg ? ($reg['cancelUntilUtc'] ?? null) : null;
             }
 
-            if (Schema::hasColumn('events', 'cancel_self_until_waitlist')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'cancel_self_until_waitlist')) {
                 $event->cancel_self_until_waitlist = $allowReg ? ($reg['cancelUntilWaitlistUtc'] ?? null) : null;
             }
 
             $firstTrainerId = (int)($trainerIds[0] ?? 0);
 
-            if (Schema::hasColumn('events', 'trainer_user_id')) {
+            if (\App\Support\SchemaCache::hasColumn('events', 'trainer_user_id')) {
                 $event->trainer_user_id = $firstTrainerId > 0 ? $firstTrainerId : null;
-            } elseif (Schema::hasColumn('events', 'trainer_id')) {
+            } elseif (\App\Support\SchemaCache::hasColumn('events', 'trainer_id')) {
                 $event->trainer_id = $firstTrainerId > 0 ? $firstTrainerId : null;
             }
 

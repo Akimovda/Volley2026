@@ -10,8 +10,8 @@
     $isNativeApp = preg_match('/VolleyPlayApp|SVSVolleyApp/', $ua) === 1;
     $isAppleUa   = str_contains($ua, 'iPhone') || str_contains($ua, 'iPad') || str_contains($ua, 'Macintosh');
 @endphp
-<div class="social-auth">
-    @if(!$isRussianIp)
+<div class="social-auth{{ !$isRussianIp ? ' social-auth--foreign' : '' }}">
+    @if(!$isRussianIp || config('services.apple.show_in_ru'))
     @unless($isAndroidUa)
     <!-- Кнопка Apple (обязательно первой по требованию Apple) -->
     <a href="{{ route('auth.apple.redirect', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-apple">
@@ -39,6 +39,14 @@
             <span class="icon-yandex"></span>
         </span>
         <span class="auth-text">{{ __('ui.auth_yandex') }}</span>
+    </a>
+
+    <!-- Кнопка MAX: вход через бота (без OAuth), страница внутри приложения/браузера -->
+    <a href="{{ route('auth.max.page', ['return' => $returnUrl]) }}" class="auth-btn auth-btn-max">
+        <span class="auth-icon-circle">
+            <img src="/assets/img/max-icon.svg" alt="" width="40" height="40" class="auth-icon-img">
+        </span>
+        <span class="auth-text">{{ __('ui.auth_max') }}</span>
     </a>
 
     @if(!$isRussianIp)

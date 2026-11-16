@@ -25,17 +25,25 @@ $statusColors = [
     'expired'   => '#8E8E93',
 ];
 
+$statusIcons = [
+    'pending'   => 'clock',
+    'confirmed' => 'check',
+    'paid'      => 'wallet',
+    'cancelled' => 'x',
+    'expired'   => 'dot-gray',
+];
+
 $paymentBadge = function ($booking) {
     if ($booking->payment_mode === 'prepaid' && $booking->status === 'paid') {
-        return ['label' => __('club.payment_mode_online'), 'color' => '#34C759'];
+        return ['label' => __('club.payment_mode_online'), 'color' => '#34C759', 'icon' => 'card'];
     }
     if ($booking->payment_mode === 'prepaid' && $booking->status === 'pending') {
-        return ['label' => __('club.payment_mode_awaiting'), 'color' => '#FF9500'];
+        return ['label' => __('club.payment_mode_awaiting'), 'color' => '#FF9500', 'icon' => 'clock'];
     }
-    return ['label' => __('club.payment_mode_on_site'), 'color' => '#8E8E93'];
+    return ['label' => __('club.payment_mode_on_site'), 'color' => '#8E8E93', 'icon' => 'pin'];
 };
 
-$renderBooking = function ($booking) use ($statusLabels, $statusColors, $paymentBadge) {
+$renderBooking = function ($booking) use ($statusLabels, $statusColors, $statusIcons, $paymentBadge) {
     $court = $booking->court;
     $location = $court?->direction?->location;
     $tz = $location?->effectiveTimezone() ?? 'Europe/Moscow';
@@ -57,6 +65,9 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
         'organizer_id' => $booking->user_id,
         'guest_name' => $booking->guest_name,
         'guest_phone' => $booking->guest_phone,
+        'guest_email' => $booking->guest_email,
+        'guest_comment' => $booking->guest_comment,
+        'order_token' => $booking->order_token,
         'title' => $booking->title,
         'color' => $booking->color,
         'event' => $booking->event,
@@ -64,6 +75,7 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
         'status' => $booking->status,
         'status_label' => $statusLabels[$booking->status] ?? $booking->status,
         'status_color' => $statusColors[$booking->status] ?? '#8E8E93',
+        'status_icon' => $statusIcons[$booking->status] ?? 'dot-gray',
         'payment_badge' => $paymentBadge($booking),
         'is_series' => $booking->parent_booking_id !== null,
         'can_manage' => $booking->event_id === null,
@@ -87,13 +99,29 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
         @include('club._partials.timeline', ['locations' => $locations, 'showAddButton' => false])
         @endif
 
-        <div class="d-flex gap-1 mb-2" style="flex-wrap:wrap">
-            @if($locations->isNotEmpty())
-            <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()">➕ {{ __('club.add_booking') }}</button>
-            @endif
-            <button type="button" class="btn btn-small btn-primary" id="cbTabPending">{{ __('club.tab_pending') }} ({{ $pending->count() }})</button>
-            <button type="button" class="btn btn-small btn-secondary" id="cbTabActive">{{ __('club.tab_active') }} ({{ $active->count() }})</button>
-            <button type="button" class="btn btn-small btn-secondary" id="cbTabHistory">{{ __('club.tab_history') }} ({{ $history->count() }})</button>
+        <style>
+            .cb-actions{display:flex;flex-direction:column;gap:12px;margin-bottom:16px}
+            .cb-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+            .cb-tabs .btn{white-space:normal;line-height:1.2;text-align:center;padding:.9rem .5rem}
+            .cb-top{display:flex;flex-wrap:wrap;gap:8px}
+            @media (min-width:768px){
+                .cb-actions{flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap}
+                .cb-tabs{display:flex;gap:8px}
+                .cb-tabs .btn{white-space:nowrap;padding:1rem}
+            }
+        </style>
+        <div class="cb-actions">
+            <div class="cb-top">
+                @if($locations->isNotEmpty())
+                <button type="button" class="btn btn-small btn-primary" onclick="window.__openAddBookingModal && window.__openAddBookingModal()"><x-ico name="plus" /> {{ __('club.add_booking') }}</button>
+                @endif
+                <a class="btn btn-small btn-secondary" href="{{ route('club.clients.index') }}"><x-ico name="users" /> {{ __('club.clients_title') }}</a>
+            </div>
+            <div class="cb-tabs">
+                <button type="button" class="btn btn-small btn-primary" id="cbTabPending">{{ __('club.tab_pending') }} ({{ $pending->count() }})</button>
+                <button type="button" class="btn btn-small btn-secondary" id="cbTabActive">{{ __('club.tab_active') }} ({{ $active->count() }})</button>
+                <button type="button" class="btn btn-small btn-secondary" id="cbTabHistory">{{ __('club.tab_history') }} ({{ $history->count() }})</button>
+            </div>
         </div>
 
         <div id="cbPanelPending">
@@ -103,21 +131,21 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
                     <div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
                         <div>
                             <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
-                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                             </div>
-                            <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                            <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                            <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
+                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                             @if($row['event'])
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
-                            <div class="f-14">{{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
+                            <div class="f-14"><x-ico name="wallet" /> {{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
                         </div>
                         <div class="d-flex gap-1" style="flex-wrap:wrap">
                             <form method="POST" action="{{ route('club.bookings.confirm', $b) }}">
                                 @csrf
-                                <button type="submit" class="btn btn-small btn-primary">{{ __('club.btn_confirm') }}</button>
+                                <button type="submit" class="btn btn-small btn-primary"><x-ico name="check" /> {{ __('club.btn_confirm') }}</button>
                             </form>
-                            <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('cbRejectForm{{ $b->id }}').style.display='flex'">{{ __('club.btn_reject') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary" onclick="document.getElementById('cbRejectForm{{ $b->id }}').style.display='flex'"><x-ico name="x" /> {{ __('club.btn_reject') }}</button>
                         </div>
                     </div>
                     <form method="POST" action="{{ route('club.bookings.reject', $b) }}" id="cbRejectForm{{ $b->id }}" class="form mt-1" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
@@ -138,21 +166,21 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
                     <div class="d-flex between fvc" style="flex-wrap:wrap;gap:8px">
                         <div>
                             <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
-                                <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
-                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px"><x-ico :name="$row['status_icon']" /> {{ $row['status_label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                             </div>
-                            <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                            <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                            <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
+                            <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                             @if($row['event'])
                             <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                             @endif
-                            <div class="f-14">{{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
+                            <div class="f-14"><x-ico name="wallet" /> {{ __('club.booking_price') }}: {{ $row['price'] !== null ? $row['price'] . ' ₽' : __('club.price_free') }}</div>
                         </div>
                         @if($row['can_manage'])
                         <div class="d-flex gap-1 cb-booking-actions" style="flex-wrap:wrap" data-booking="{{ json_encode($row) }}">
-                            <button type="button" class="btn btn-small btn-secondary cb-edit-btn">{{ __('club.edit_booking') }}</button>
-                            <button type="button" class="btn btn-small btn-secondary cb-copy-btn">{{ __('club.copy_booking') }}</button>
-                            <button type="button" class="btn btn-small btn-secondary cb-cancel-btn">{{ __('club.cancel_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary cb-edit-btn"><x-ico name="pencil" /> {{ __('club.edit_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary cb-copy-btn"><x-ico name="clipboard" /> {{ __('club.copy_booking') }}</button>
+                            <button type="button" class="btn btn-small btn-secondary cb-cancel-btn"><x-ico name="x" /> {{ __('club.cancel_booking') }}</button>
                         </div>
                         @endif
                     </div>
@@ -167,11 +195,11 @@ $renderBooking = function ($booking) use ($statusLabels, $statusColors, $payment
                 @php $row = $renderBooking($b); @endphp
                 <div class="card mb-2">
                     <div class="b-700">{{ $row['location_name'] }} · {{ $row['court_name'] }}
-                        <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px">{{ $row['status_label'] }}</span>
-                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px">{{ $row['payment_badge']['label'] }}</span>
+                        <span class="f-12 p-1 px-2" style="background:{{ $row['status_color'] }}22;color:{{ $row['status_color'] }};border-radius:6px"><x-ico :name="$row['status_icon']" /> {{ $row['status_label'] }}</span>
+                                <span class="f-12 p-1 px-2" style="background:{{ $row['payment_badge']['color'] }}22;color:{{ $row['payment_badge']['color'] }};border-radius:6px"><x-ico :name="$row['payment_badge']['icon']" /> {{ $row['payment_badge']['label'] }}</span>
                     </div>
-                    <div class="f-14">{{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
-                    <div class="f-14">{{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif)</span>@endif</div>
+                    <div class="f-14"><x-ico name="clock" /> {{ $row['starts_at'] }}–{{ $row['ends_at'] }}</div>
+                    <div class="f-14"><x-ico name="user" /> {{ __('club.booking_by') }}: {{ $row['user_name'] }}@if($row['is_guest']) <span class="f-12 cd">({{ __('club.guest') }}@if($row['guest_phone']), {{ $row['guest_phone'] }}@endif @if($row['guest_email']), {{ $row['guest_email'] }}@endif)</span>@endif</div>@if($row['guest_comment'])<div class="f-12 cd">{{ $row['guest_comment'] }}</div>@endif
                     @if($row['event'])
                     <div class="f-14"><a href="{{ route('events.show', $row['event']) }}" class="blink">{{ $row['event']->title }}</a></div>
                     @endif

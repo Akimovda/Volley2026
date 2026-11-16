@@ -5,12 +5,13 @@
 ## Язык и стек
 - Всегда отвечай на русском.
 - Laravel 12, PHP 8.3, PostgreSQL, Blade (частично Vue), jQuery 3.7.1; Telegram/VK/MAX боты.
-- Dev: `/var/www/volley-bot/backend` (volley-bot.store, ветка `main`). Prod: `/var/www/volleyplay/backend` (volleyplay.club, ветка `production`, НЕ `main`). Перед правкой проверять `pwd`/`git branch` — не править прод напрямую.
+- **Окружения (после переезда на новый сервер 141.98.188.140, 2026-11-04):** dev-контура (`/var/www/volley-bot/backend`, volley-bot.store, dev-боты 8091/8092) БОЛЬШЕ НЕТ — остался только prod: `/var/www/volleyplay/backend` (volleyplay.club). Корень git-репозитория на сервере — `/var/www/volleyplay` (`backend/` внутри), `origin` = https://github.com/Akimovda/Volley2026.git (только fetch), локальная ветка `production` отслеживает `origin/main`; ветки `production` на GitHub нет, разработка и пуши — в `main` (с Mac). Деплой: `git fetch origin && git merge origin/main --no-edit` (+ шаги из раздела «Деплой»). На сервере код руками не править (иначе merge упрётся в конфликт); любая правка — коммит в `main` и деплой. Перед деплоем: `git status` (должен быть чистым), свежий бэкап БД. Т.к. dev нет, проверки — на Mac или в откатываемой транзакции на проде. Боты теперь в `/opt/volleybot` (`deploy.sh`) и `/opt/volleyplay-*-bot`, а не в `/home/appuser/volley-bots`. `backend/.env` на проде не в git, права/владелец проверять.
 - Ops (GlitchTip, Uptime Kuma, бэкапы) — в `~/.claude/CLAUDE.md`; при прод-багах сначала issues в GlitchTip.
 
 ## Оглавление docs/ — «перед работой над темой X прочитай docs/X.md»
 - `deploy.md` — протокол деплоя, перенос отдельных коммитов dev→prod
 - `server-ops.md` — серверные особенности, php-fpm/opcache/nginx, инцидент 504, SQL-правила, планировщик, миграция домена
+- `server-recovery.md` — восстановление сервера после сбоя: что где лежит, бэкапы, порядок восстановления, грабли переезда 2026-11 (пароль БД — где лежит, не в доках)
 - `frontend.md` — JS/CSS/Blade, WKWebView, custom select, чекбоксы, Trix, sticky-шапка, скачивание файлов, autocomplete, dark mode
 - `i18n-locale.md` — локализация, автодетект языка
 - `events-registration.md` — окна регистрации, occurrence override, повторяющиеся серии, master_class, схемы игры, «по амплуа», меню организатора, управление регистрациями
@@ -38,6 +39,7 @@
 Прод: `git fetch origin && git merge origin/main --no-edit` → `composer install --no-dev --optimize-autoloader` → `npm install --legacy-peer-deps && npm run build` (`npm ci` не работает) → `migrate --force` → `config/route/view:clear+cache` → `sudo supervisorctl restart volleyplay-queue:* volleyplay-reverb` → `sudo systemctl reload php8.3-fpm` (обязательно при изменении PHP-классов/config/middleware — opcache). Если есть миграция + код, трогающий новую таблицу на каждом запросе — merge→migrate→cache ОДНИМ блоком без пауз. После прод-деплоя — проверить unresolved issues в GlitchTip. Новые файлы в `config/` и добавленные методы в сервисах, вызываемых из очереди, — `config:cache` / `queue:restart`. Перед удалением/переименованием роута — grep по URL И имени (`route('name')`), `php artisan routes:check-usage`.
 
 ## Ключевые правила и ловушки (по одной строке)
+- **ВРЕМЯ:** приложение и БД в UTC; сессия PostgreSQL ОБЯЗАНА быть UTC (`'timezone'=>'UTC'` в `config/database.php` + `ALTER DATABASE … SET timezone TO 'UTC'`), иначе `timestamptz` сдвигаются на −3 ч и при правке организатором плодятся дубли occurrences. Проверять при любом переезде/восстановлении — `docs/server-recovery.md`.
 - `php artisan tinker --execute` не работает → `cat > /tmp/x.php` + bootstrap. `sudo` нужен для root-файлов (часть blade, org.js).
 - Scheduled-задачи — ТОЛЬКО в `routes/console.php` (Kernel.php удалён); сохранять `pingOnSuccessIf`/heartbeat для 4 push-мониторов; проверка `schedule:list`. При `route:cache` файлы `routes/*.php` не исполняются — `RateLimiter::for()` и т.п. держать в провайдере.
 - Laravel 12 CSRF: исключения только `bootstrap/app.php` → `validateCsrfTokens(except:[...])` (`$except` и `withoutMiddleware` не работают). Глобальный middleware, читающий сессию, должен быть в `appendToGroup('web')` (после StartSession).

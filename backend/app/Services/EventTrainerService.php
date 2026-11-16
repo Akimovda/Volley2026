@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Event;
+use App\Models\TrainerProfile;
 use App\Models\User;
 use Illuminate\Support\Facades\Schema;
 
@@ -82,6 +83,31 @@ class EventTrainerService
     }
 
 
+    /**
+     * Организатор отметил «Тренер — я», а анкеты тренера нет — создаём её автоматически (публичную, без текста, возвращает true при создании:
+     * специализацию, опыт и «О себе» можно дополнить в профиле). Без анкеты человек не смог бы быть тренером события.
+     */
+    public function ensureSelfTrainerProfile(array $trainerIds, ?User $user): bool
+    {
+        if (!$user || !in_array((int) $user->id, array_map('intval', $trainerIds), true)) {
+            return false;
+        }
+        if (!\App\Support\SchemaCache::hasTable('trainer_profiles')) {
+            return false;
+        }
+        $profile = TrainerProfile::query()->firstOrCreate(
+            ['user_id' => $user->id],
+            ['is_public' => true]
+        );
+        if ($profile->wasRecentlyCreated) {
+            // подсказка «дополните анкету» на следующей странице (events.show / управление событием)
+            session()->flash('trainer_profile_created', true);
+            return true;
+        }
+        return false;
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | SYNC TRAINERS
@@ -92,7 +118,7 @@ class EventTrainerService
     {
         if (
             method_exists($event, 'trainers') &&
-            Schema::hasTable('event_trainers')
+            \App\Support\SchemaCache::hasTable('event_trainers')
         ) {
             $event->trainers()->sync(
                 $needTrainers ? $trainerIds : []

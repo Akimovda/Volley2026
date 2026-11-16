@@ -63,17 +63,17 @@ class SubscriptionController extends Controller
                 $q->where(function ($w) use ($like, $digits, $f) {
                     $w->whereHas('user', function ($u) use ($like, $digits) {
                         $u->where(function ($x) use ($like, $digits) {
-                            $x->where('first_name', 'ilike', $like)
-                              ->orWhere('last_name', 'ilike', $like)
-                              ->orWhere('patronymic', 'ilike', $like)
+                            $x->whereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike('patronymic'), [\App\Support\NameSearch::text($like)])
                               ->orWhere('email', 'ilike', $like)
-                              ->orWhereRaw("(coalesce(last_name,'') || ' ' || coalesce(first_name,'')) ilike ?", [$like])
-                              ->orWhereRaw("(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) ilike ?", [$like]);
+                              ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(last_name,'') || ' ' || coalesce(first_name,''))"), [\App\Support\NameSearch::text($like)])
+                              ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(first_name,'') || ' ' || coalesce(last_name,''))"), [\App\Support\NameSearch::text($like)]);
                             if (strlen($digits) >= 3) {
                                 $x->orWhereRaw("regexp_replace(coalesce(phone,''), '\\D', '', 'g') like ?", ['%' . $digits . '%']);
                             }
                         });
-                    })->orWhereHas('template', fn($t) => $t->where('name', 'ilike', $like));
+                    })->orWhereHas('template', fn($t) => $t->whereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)]));
                     if (ctype_digit(ltrim($f['q'], '#'))) {
                         $w->orWhere('id', (int) ltrim($f['q'], '#'));
                     }
@@ -195,7 +195,7 @@ class SubscriptionController extends Controller
     // Мои абонементы (для игрока)
     public function my(Request $request)
     {
-        $subs = Subscription::with(['template', 'organizer', 'usages', 'autoBookings.event'])
+        $subs = Subscription::with(['template', 'organizer', 'user', 'usages', 'autoBookings.event'])
             ->where('user_id', $request->user()->id)
             ->orderByDesc('id')
             ->get();
@@ -208,7 +208,61 @@ class SubscriptionController extends Controller
             }
         }
 
-        return view('subscriptions.my', compact('subs', 'autoEvents'));
+        return view('subscriptions.my', [
+            'subs'       => $subs,
+            'autoEvents' => $autoEvents,
+            'cards'      => $this->cardStyles($subs),
+        ]);
+    }
+
+    /**
+     * Оформление карточки абонемента: если у организатора есть своё приложение (бренд white-label) — цвета и логотип бренда,
+     * иначе — цвета и эмблема VolleyClub.
+     */
+    private function cardStyles($subs): array
+    {
+        $brands = \App\Models\Brand::cached()->keyBy('id');
+        $out = [];
+        foreach ($subs as $sub) {
+            $org   = $sub->organizer;
+            $brand = ($org && $org->brand_id) ? $brands->get($org->brand_id) : null;
+            if ($brand && $brand->is_default) {
+                $brand = null;
+            }
+            $theme   = $brand?->theme ?? [];
+            $primary = $theme['day']['primary'] ?? null;
+            $accent  = $theme['night']['primary'] ?? ($theme['day']['secondary'] ?? null);
+            if ($brand && $primary && preg_match('/^#[0-9a-fA-F]{6}$/', $primary)) {
+                $out[$sub->id] = [
+                    'branded' => true,
+                    'name'    => $brand->display_name,
+                    'logo'    => $brand->logo_night_url ?: $brand->logo_day_url,
+                    'from'    => $this->mixHex($primary, '#000000', 0.15),
+                    'to'      => $this->mixHex($primary, '#000000', 0.55),
+                    'accent'  => ($accent && preg_match('/^#[0-9a-fA-F]{6}$/', $accent)) ? $accent : '#C6F135',
+                ];
+            } else {
+                $out[$sub->id] = [
+                    'branded' => false,
+                    'name'    => 'VolleyClub',
+                    'logo'    => asset('icons/favicon.svg'),
+                    'from'    => '#2967BA',
+                    'to'      => '#173a74',
+                    'accent'  => '#FFB171',
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+    private function mixHex(string $hex, string $with, float $ratio): string
+    {
+        [$r1, $g1, $b1] = sscanf($hex, '#%02x%02x%02x');
+        [$r2, $g2, $b2] = sscanf($with, '#%02x%02x%02x');
+        $m = fn ($a, $b) => (int) round($a + ($b - $a) * $ratio);
+
+        return sprintf('#%02x%02x%02x', $m($r1, $r2), $m($g1, $g2), $m($b1, $b2));
     }
 
     // Выдать абонемент вручную
@@ -239,7 +293,7 @@ class SubscriptionController extends Controller
             app(\App\Services\StaffLogService::class)->log($user, (int) $template->organizer_id, 'issue_subscription', 'subscription', $sub->id, "Выдал абонемент #{$sub->id} пользователю #{$data['user_id']}");
         }
 
-        return back()->with('status', "✅ Абонемент #{$sub->id} выдан пользователю #{$data['user_id']}");
+        return back()->with('status', __('Абонемент #:id выдан пользователю #:uid', ['id' => $sub->id, 'uid' => $data['user_id']]));
     }
 
     // Покупка абонемента пользователем (с публичной страницы школы)
@@ -249,17 +303,17 @@ class SubscriptionController extends Controller
 
         // Проверяем что шаблон активен и доступен для продажи
         if (!$template->is_active || !$template->sale_enabled) {
-            return back()->with('error', 'Абонемент недоступен для покупки.');
+            return back()->with('error', __('Абонемент недоступен для покупки.'));
         }
 
         // Проверяем лимит продаж
         if ($template->sale_limit && $template->sold_count >= $template->sale_limit) {
-            return back()->with('error', 'Абонемент распродан.');
+            return back()->with('error', __('Абонемент распродан.'));
         }
 
         // Проверяем срок действия
         if ($template->valid_until && $template->valid_until->isPast()) {
-            return back()->with('error', 'Срок действия абонемента истёк.');
+            return back()->with('error', __('Срок действия абонемента истёк.'));
         }
 
         // Выдаём абонемент пользователю
@@ -273,7 +327,7 @@ class SubscriptionController extends Controller
         // Увеличиваем счётчик продаж
         $template->increment('sold_count');
 
-        return back()->with('status', '✅ Абонемент успешно получен! Он доступен в разделе «Мои абонементы».');
+        return back()->with('status', __('Абонемент успешно получен! Он доступен в разделе «Мои абонементы».'));
     }
 
     // Продлить срок
@@ -292,7 +346,7 @@ class SubscriptionController extends Controller
             app(StaffLogService::class)->log($authUser, (int) $subscription->organizer_id, 'extend_subscription', 'subscription', $subscription->id, "Продлил абонемент #{$subscription->id} на {$data['days']} дней");
         }
 
-        return back()->with('status', "✅ Срок продлён на {$data['days']} дней");
+        return back()->with('status', __('Срок продлён на :days дней', ['days' => $data['days']]));
     }
 
     // Заморозить (пользователь)
@@ -305,7 +359,7 @@ class SubscriptionController extends Controller
         ]);
 
         $this->service->freeze($subscription, Carbon::parse($data['until']));
-        return back()->with('status', "❄️ Абонемент заморожен до {$data['until']}");
+        return back()->with('status', __('Абонемент заморожен до :until', ['until' => $data['until']]));
     }
 
     // Разморозить
@@ -318,7 +372,7 @@ class SubscriptionController extends Controller
         }
 
         $this->service->unfreeze($subscription);
-        return back()->with('status', '✅ Абонемент разморожен');
+        return back()->with('status', __('Абонемент разморожен'));
     }
 
     // Передача (пользователь)
@@ -331,7 +385,7 @@ class SubscriptionController extends Controller
         ]);
 
         $this->service->transfer($subscription, $data['to_user_id']);
-        return back()->with('status', '✅ Абонемент передан');
+        return back()->with('status', __('Абонемент передан'));
     }
 
     // История использований

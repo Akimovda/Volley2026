@@ -35,6 +35,7 @@ class Event extends Model implements HasMedia
         'classic_level_max',
         'beach_level_min',
         'beach_level_max',
+        'notify_unrated_players',
         'trainer_user_id',
         'organizer_id',
         'brand_id',
@@ -102,6 +103,7 @@ class Event extends Model implements HasMedia
         'classic_level_max' => 'integer',
         'beach_level_min' => 'integer',
         'beach_level_max' => 'integer',
+        'notify_unrated_players' => 'boolean',
 
         'starts_at' => 'datetime',
         'duration_sec' => 'integer',

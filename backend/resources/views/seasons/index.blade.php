@@ -56,7 +56,7 @@
                         </div>
 
                         <div class="f-16 mb-1">
-                            {{ $season->direction === 'beach' ? __('seasons.dir_beach') : __('seasons.dir_classic') }}
+                            {!! ico_text($season->direction === 'beach' ? __('seasons.dir_beach') : __('seasons.dir_classic')) !!}
                             @if($season->starts_at)
                                 · {{ $season->starts_at->format('d.m.Y') }}
                                 @if($season->ends_at) — {{ $season->ends_at->format('d.m.Y') }} @endif

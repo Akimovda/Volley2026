@@ -78,13 +78,14 @@ return [
     'admin_notification_templates' => 'Notification templates',
     'admin_new_broadcast'          => 'New broadcast',
     'admin_broadcasts'             => 'Broadcasts',
-    'admin_impersonate'            => '👁 Sign in as...',
-    'admin_apps'                   => '📱 App settings',
+    'admin_impersonate'            => 'Sign in as...',
+    'admin_apps'                   => 'App settings',
 
     // OAuth buttons
     'auth_apple'    => 'Sign in with Apple',
     'auth_vk'       => 'Sign in with VK',
     'auth_yandex'   => 'Sign in with Yandex ID',
+    'auth_max'      => 'Sign in with MAX',
     'auth_telegram' => 'Sign in with Telegram',
     'auth_google'   => 'Sign in with Google',
 
@@ -99,6 +100,7 @@ return [
     'footer_personal_data'  => 'Personal data consent',
     'footer_user_agreement' => 'Terms of service',
     'footer_apps_title'     => 'Apps',
+    'footer_gplay_test'     => 'Google Play — testing',
     'footer_apk_download'   => 'Download for Android',
     'footer_copyright'      => '© VolleyPlay :year. All rights reserved.',
 
@@ -113,13 +115,14 @@ return [
 
     // Face ID / biometrics
     'biometric_login_reason' => 'Sign in to VolleyPlay',
-    'biometric_login_title'  => 'Sign in with Face ID',
+    'biometric_login_title'  => 'Sign in with Face ID / Touch ID',
     'biometric_setup_title'  => 'Quick sign-in',
-    'biometric_setup_text'   => 'Would you like to sign in with Face ID?',
+    'biometric_setup_text'   => 'Would you like to sign in with Face ID / Touch ID?',
     'biometric_setup_later'  => 'Later',
+    'biometric_setup_never'  => 'Don\'t ask again',
     'biometric_setup_enable' => 'Enable',
     'biometric_done_title'   => 'Done!',
-    'biometric_done_text'    => 'Face ID is enabled. Next time you\'ll sign in instantly.',
+    'biometric_done_text'    => 'Face ID / Touch ID is enabled. Next time you\'ll sign in instantly.',
 
     // Pagination
     'pagination_jump_back'    => 'Back :n',
@@ -131,4 +134,5 @@ return [
     'pro_analytics_locked_text'  => 'Detailed player and tournament analytics (audience, top lists, churn, CSV/PDF export) is part of Organizer Pro.',
     'pro_analytics_locked_btn'   => 'Get Organizer Pro',
     'pro_analytics_locked_back'  => 'Back to organizer dashboard',
+    'org_rental_widget' => 'Court rental widget',
 ];

@@ -260,7 +260,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 
 							<div class="col-12 d-flex flex-wrap gap-2 align-items-center mt-1">
 								<button type="submit" class="btn">{{ __('events.filter_apply') }}</button>
-								<a href="{{ route('events.index') }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
+								<a href="{{ route('events.index', ['reset' => 1]) }}" class="btn btn-secondary">{{ __('events.filter_reset') }}</a>
 							</div>
 						</div>
 					</form>
@@ -293,6 +293,35 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 			ВАРИАНТ 1: OCCURRENCES
 			========================= --}}
 			@if ($isOccurrenceMode)
+			@guest
+			<script>
+			// Гость: запоминаем выбранные фильтры в браузере (залогиненным фильтр хранит сервер): при следующем заходе на /events без параметров применяем их, пока пользователь не нажмёт «Сбросить»
+			(function () {
+				var KEY = 'eventsFilters', FIELDS = ['direction', 'format', 'level', 'location', 'city'];
+				try {
+					var q = new URLSearchParams(location.search);
+					if (q.has('reset')) {
+						localStorage.removeItem(KEY);
+						q.delete('reset');
+						history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : ''));
+						return;
+					}
+					var explicit = FIELDS.some(function (f) { return q.has(f); });
+					if (explicit) {
+						var saved = {};
+						FIELDS.forEach(function (f) { if (q.get(f)) saved[f] = q.get(f); });
+						if (Object.keys(saved).length) localStorage.setItem(KEY, JSON.stringify(saved));
+						else localStorage.removeItem(KEY);
+						return;
+					}
+					var st = JSON.parse(localStorage.getItem(KEY) || 'null');
+					if (!st || !Object.keys(st).length) return;
+					FIELDS.forEach(function (f) { if (st[f]) q.set(f, st[f]); });
+					location.replace(location.pathname + '?' + q.toString());
+				} catch (e) {}
+			})();
+			</script>
+			@endguest
 			{{-- Верхняя лента дней --}}
 			<div class="tabs-content">
 				<div id="days"></div>	
@@ -361,15 +390,16 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						$windowStart (который может быть не выровнен по границе "сегодня +
 						N*10", если старт был вычислен как "ближайший день с событиями"),
 						поэтому вперёд/назад считаем от него, не по offset-арифметике.
-						"Предыдущие" — только если окно не упирается в сегодня. Рендерится
-						ДВАЖДЫ: на узком экране — внутри скроллящейся ленты
-						(day-nav-buttons--inline, едет вместе с чипами), на широком —
-						отдельным блоком справа (day-nav-buttons--pinned, не скроллится).
-						Показывается только одна копия через CSS media query. --}}
+						"Предыдущие" — только если окно не упирается в сегодня (иначе стрелка
+						отключена, чтобы ряд не прыгал). Стрелки-иконки стоят по бокам ленты
+						чипов на всех ширинах (.days-nav-row), не скроллятся вместе с чипами. --}}
 						@php
+						$archiveFloor = !empty($archiveFloorDate)
+						? \Illuminate\Support\Carbon::createFromFormat('Y-m-d', $archiveFloorDate, $userTz)->startOfDay()
+						: (clone $today);
 						$prevWindowStart = (clone $windowStart)->subDays(10);
-						if ($prevWindowStart->lt($today)) $prevWindowStart = clone $today;
-						$showPrevNav = $windowStart->gt($today);
+						if ($prevWindowStart->lt($archiveFloor)) $prevWindowStart = clone $archiveFloor;
+						$showPrevNav = $windowStart->gt($archiveFloor);
 						$nextDateParam = (clone $windowStart)->addDays(10)->format('Y-m-d');
 						$prevDateParam = $prevWindowStart->format('Y-m-d');
 						$baseParams    = array_filter([
@@ -381,25 +411,21 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 						], fn($v) => $v !== '' && $v !== null);
 						@endphp
 						@php
-						$dayNavButtonsHtml = '';
-						ob_start();
-						@endphp
-						@if($showPrevNav)
-						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) }}"
-						class="no-highlight day-chip last-tab tab">
-							<div class="dc-dow">{{ __('events.days_prev') }}</div>
-							<div class="dc-date">{{ __('events.days_n_days') }}</div>
-						</a>
-						@endif
-						<a href="{{ route('events.index', array_merge($baseParams, ['date' => $nextDateParam])) }}"
-						class="no-highlight day-chip last-tab tab">
-							<div class="dc-dow">{{ __('events.days_next') }}</div>
-							<div class="dc-date">{{ __('events.days_n_days') }}</div>
-						</a>
-						@php
-						$dayNavButtonsHtml = ob_get_clean();
+						$prevNavHref = $showPrevNav ? route('events.index', array_merge($baseParams, ['date' => $prevDateParam])) : null;
+						$nextNavHref = route('events.index', array_merge($baseParams, ['date' => $nextDateParam]));
 						@endphp
 
+						<div class="days-nav-row">
+						@if($prevNavHref)
+						<a href="{{ $prevNavHref }}" class="day-nav-arrow day-nav-arrow--prev no-highlight"
+						title="{{ __('events.days_prev_title') }}" aria-label="{{ __('events.days_prev_title') }}">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						</a>
+						@else
+						<span class="day-nav-arrow day-nav-arrow--prev is-disabled" aria-hidden="true">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+						</span>
+						@endif
 						<div class="days-strip" id="daysStrip">
 						<div class="tabs mb-0">
                             {{-- Чипы дат --}}
@@ -434,20 +460,19 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 							</a>
                             @endforeach
                             <div class="tab-highlight"></div>
-							{{-- Узкий экран: кнопки едут вместе с чипами --}}
-							<div class="day-nav-buttons day-nav-buttons--inline">
-								{!! $dayNavButtonsHtml !!}
-							</div>
 						</div>
 						</div>
 
-						{{-- Широкий экран: кнопки отдельным блоком справа, не скроллятся --}}
-						<div class="day-nav-buttons day-nav-buttons--pinned">
-							{!! $dayNavButtonsHtml !!}
-						</div>
+						<a href="{{ $nextNavHref }}" class="day-nav-arrow day-nav-arrow--next no-highlight"
+						title="{{ __('events.days_next_title') }}" aria-label="{{ __('events.days_next_title') }}">
+							<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+						</a>
+						</div>{{-- /.days-nav-row --}}
 					</div>
 				</div>
 
+
+				@include('events._upcoming_special', ['upcoming' => $upcomingSpecial ?? ['occurrences' => collect(), 'card' => []]])
 
 				<div class="days-feed" id="daysFeed">
                     @foreach($groupedByDate as $dateKey => $dayData)
@@ -500,7 +525,7 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 				<div id="jmError" class="alert alert-danger" style="display:none"></div>
 				<div id="jmLoading" class="mb-1" style="display:none;">{{ __('events.join_loading') }}</div>
 				<div id="jmPositions"></div>
-				<div class="f-16 mt-2">{{ __('events.join_after_choice') }}</div>
+				<div class="f-16 mt-2" id="jmHint">{{ __('events.join_after_choice') }}</div>
 			</div>
 			
 			<form id="joinForm" method="POST" action="" style="display:none">
@@ -532,11 +557,13 @@ $levelOptions = [1, 2, 3, 4, 5, 6, 7];
 					if (!errBox) return;
 					errBox.textContent = message;
 					errBox.style.display = '';
+					var h = document.getElementById('jmHint'); if (h) h.style.display = 'none';   // при ошибке подсказка про выбор позиции не нужна
 				}
 				function clearError() {
 					if (!errBox) return;
 					errBox.textContent = '';
 					errBox.style.display = 'none';
+					var h = document.getElementById('jmHint'); if (h) h.style.display = '';
 				}
 				function setLoading(isLoading) {
 					if (!loadingEl) return;

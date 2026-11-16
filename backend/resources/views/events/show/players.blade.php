@@ -899,6 +899,19 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 		$subtype         = (string)($gs->subtype ?? '');
 		$isPair          = $subtype === '2x2';
 		$inviteLabel     = $isPair ? __('events.show_pl_invite_mode_pair') : __('events.show_pl_invite_mode_team');
+		// кого текущий пользователь уже пригласил на этот тур (приглашение = уведомление event_invite): показываем пилюлями вместо подсказки
+		$invitedUsers = collect();
+		if (auth()->check()) {
+			$invitedIds = \Illuminate\Support\Facades\DB::table('user_notifications')
+				->where('type', 'event_invite')
+				->whereRaw("(payload->>'occurrence_id') = ?", [(string) $occurrence->id])
+				->whereRaw("(payload->>'from_user_id') = ?", [(string) auth()->id()])
+				->orderByDesc('id')->limit(100)->pluck('user_id')->unique()->values();
+			if ($invitedIds->isNotEmpty()) {
+				$invitedUsers = \App\Models\User::query()->whereIn('id', $invitedIds)->get(['id', 'first_name', 'last_name', 'name'])
+					->sortBy(fn ($u) => $invitedIds->search($u->id))->values();
+			}
+		}
 		@endphp
 	
 		<div class="ramka" id="invite-players-block" style="z-index:5;display:{{ $isRegistered ? '' : 'none' }}">
@@ -922,9 +935,21 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 			
 			{{-- === БЛОК: Пригласить на игру === --}}
 			<div id="invite-game-block">
+				@if($invitedUsers->isNotEmpty())
+				<div class="mb-2" id="invite-sent-pills">
+					<div class="text-muted small mb-1">{{ __('events.show_pl_invite_sent_label') }}</div>
+					<div style="display:flex;flex-wrap:wrap;gap:.6rem">
+						@foreach($invitedUsers as $iu)
+						@php $iuName = trim(($iu->last_name ?? '') . ' ' . ($iu->first_name ?? '')) ?: ($iu->name ?: ('#' . $iu->id)); @endphp
+						<span class="badge badge-sm" style="font-size:1.3rem;padding:.5rem 1.1rem">{{ $iuName }}</span>
+						@endforeach
+					</div>
+				</div>
+				@else
 				<div class="text-muted small mb-2">
 					{{ __('events.show_pl_invite_game_hint') }}
 				</div>
+				@endif
 				<form class="form w-100" method="POST" action="{{ $inviteAction }}" id="invite-player-form">
 					@csrf
 					<input type="hidden" name="occurrence_id" value="{{ $occurrence->id }}">
@@ -935,7 +960,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 							placeholder="{{ __('events.show_pl_invite_search_ph') }}">
 							<div id="invite-ac-dd" class="form-select-dropdown trainer_dd"></div>
 						</div>
-						<button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled>
+						<button type="submit" id="invite-submit-btn" class="btn btn-primary w-100" disabled title="{{ __('events.show_pl_invite_pick_hint') }}">
 							{{ __('events.show_pl_invite_send') }}
 						</button>
 					</div>
@@ -1054,6 +1079,30 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 		
 		<div class="ramka">
 			<h2 class="-mt-05">{{ ($event->format === 'tournament' && !$isIndividualTournament) ? __('events.show_pl_list_h2_tournament') : __('events.show_pl_list_h2') }}</h2>
+			<style>
+				/* команды: первые 4 игрока, остальные раскрываются — при наведении (мышь) или по нажатию (телефон, приложение) */
+				.pl-more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .25s ease}
+				.pl-more-in{overflow:hidden;min-height:0}
+				.pl-team.is-open .pl-more{grid-template-rows:1fr}
+				.pl-more-toggle{margin:.1rem 0 .2rem 0;padding:.3rem 0;font-size:1.3rem;font-weight:600;color:#2563eb;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+				.pl-t-less{display:none}
+				.pl-team.is-open .pl-t-more{display:none}
+				.pl-team.is-open .pl-t-less{display:inline}
+				@media (hover:hover){
+					.pl-team:hover .pl-more{grid-template-rows:1fr}
+					.pl-team:hover:not(.is-open) .pl-more-toggle{display:none}
+				}
+				body.dark .pl-more-toggle{color:#E7612F}
+			</style>
+			<script>
+			(function () {
+				function toggle(t) { var c = t.closest('.pl-team'); if (c) c.classList.toggle('is-open'); }
+				document.addEventListener('click', function (e) { var t = e.target.closest && e.target.closest('.pl-more-toggle'); if (t) toggle(t); });
+				document.addEventListener('keydown', function (e) {
+					if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('pl-more-toggle')) { e.preventDefault(); toggle(e.target); }
+				});
+			})();
+			</script>
 
 			@if(!is_null($player_quality ?? null))
 			<div class="f-14 cd mb-2">{{ __('events.player_quality', ['value' => number_format($player_quality, 2, '.', ''), 'max' => 7]) }}</div>
@@ -1081,7 +1130,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 			$gMembers = $gTeam->members->sortBy(fn($m) => $m->role_code === 'captain' ? 0 : 1);
 			$gStatus  = $teamStatusMap[$gTeam->status] ?? ['label' => $gTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
 			@endphp
-			<div class="card mb-1" style="padding: 0.5rem 0.8rem">
+			<div class="card mb-1 pl-team" style="padding: 0.5rem 0.8rem">
 				<div class="d-flex between fvc mb-05">
 					<div class="d-flex fvc" style="gap:.5rem">
 						<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0">#{{ $loop->iteration }}</span>
@@ -1091,13 +1140,18 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 				</div>
 				<div class="f-14">
 					@foreach($gMembers as $gm)
+					@if($loop->iteration === 5)<div class="pl-more"><div class="pl-more-in">@endif
 					@php $gu = $gm->user; $gn = $gu ? (trim(($gu->last_name ?? '') . ' ' . ($gu->first_name ?? '')) ?: $gu->name) : '?'; @endphp
 					<div>
 						@if($gu)<a href="{{ route('users.show', $gu->id) }}" class="blink">{{ $gn }}</a>@else{{ $gn }}@endif
 						@if($gm->role_code === 'captain') <span style="opacity:.6">· ©</span>@endif
 						@if($gm->position_code) <span style="opacity:.6">· {{ position_name($gm->position_code) }}</span>@endif
 					</div>
+					@if($loop->last && $loop->count > 4)</div></div>@endif
 					@endforeach
+					@if($gMembers->count() > 4)
+					<div class="pl-more-toggle" role="button" tabindex="0"><span class="pl-t-more"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m6 9 6 6 6-6"/></svg> {{ __('events.show_pl_more', ['n' => $gMembers->count() - 4]) }}</span><span class="pl-t-less"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m18 15-6-6-6 6"/></svg> {{ __('events.show_pl_less') }}</span></div>
+					@endif
 				</div>
 			</div>
 			@endforeach
@@ -1159,7 +1213,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 				$canJoin     = $hasVacancy && auth()->check() && !$iMyTeam && !$iAlreadyRequested && !$myTeamIdOnEvent && $joinOpen && !$myInvite;
 				$statusInfo = $teamStatusMap[$tTeam->status] ?? ['label' => $tTeam->status, 'color' => '#6b7280', 'bg' => '#f3f4f6'];
 			@endphp
-			<div class="card mb-1" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
+			<div class="card mb-1 pl-team" style="padding: 0.5rem 0.8rem{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}">
 				<div class="d-flex between fvc mb-05">
 					<div class="d-flex fvc" style="gap:.5rem">
 						<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0;letter-spacing:-.3px">#{{ $loop->iteration }}</span>
@@ -1176,6 +1230,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 					</div>
 				</div>
 				@foreach($confirmedMembers as $m)
+				@if($loop->iteration === 5)<div class="pl-more"><div class="pl-more-in">@endif
 				@php
 					$mUser   = $m->user;
 					$mLevel  = $isBeachPair ? (int)($mUser->beach_level ?? $mUser->classic_level ?? 0) : (int)($mUser->classic_level ?? $mUser->beach_level ?? 0);
@@ -1192,7 +1247,11 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 					<span class="level-dot" style="background:{{ $mColor }}"></span>
 					<a href="{{ route('users.show', $mUser) }}" class="blink f-15">{{ $mName }}</a>
 				</div>
+				@if($loop->last && $loop->count > 4)</div></div>@endif
 				@endforeach
+				@if($confirmedMembers->count() > 4)
+				<div class="pl-more-toggle" role="button" tabindex="0"><span class="pl-t-more"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m6 9 6 6 6-6"/></svg> {{ __('events.show_pl_more', ['n' => $confirmedMembers->count() - 4]) }}</span><span class="pl-t-less"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m18 15-6-6-6 6"/></svg> {{ __('events.show_pl_less') }}</span></div>
+				@endif
 				{{-- Вакантный слот --}}
 				@if($hasVacancy)
 				<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.3rem;">
@@ -1232,7 +1291,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 					$iMyTeam      = (int)$myTeamIdOnEvent === (int)$tTeam->id;
 					$offerPending = $tTeam->isReserveOfferPending();
 				@endphp
-				<div class="card mb-1" style="padding:0.5rem 0.8rem;opacity:.85{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a;opacity:1' : '' }}">
+				<div class="card mb-1 pl-team" style="padding:0.5rem 0.8rem;opacity:.85{{ $iMyTeam ? ';border:1.5px solid #2563eb' : '' }}{{ $offerPending ? ';border:1.5px solid #16a34a;opacity:1' : '' }}">
 					<div class="d-flex between fvc mb-05">
 						<div class="d-flex fvc" style="gap:.5rem">
 							<span style="min-width:26px;height:26px;border-radius:8px;background:var(--bg2,#f0f0f0);display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text-muted,#888);flex-shrink:0;letter-spacing:-.3px">
@@ -1253,6 +1312,7 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 						</div>
 					</div>
 					@foreach($confirmedMembers as $m)
+					@if($loop->iteration === 5)<div class="pl-more"><div class="pl-more-in">@endif
 					@php
 						$mUser  = $m->user;
 						$mLevel = $isBeachPair ? (int)($mUser->beach_level ?? $mUser->classic_level ?? 0) : (int)($mUser->classic_level ?? $mUser->beach_level ?? 0);
@@ -1269,7 +1329,11 @@ $showWaitlistViewer = !$isTournament && !$isTeamGameWl && !$eventStarted && $wai
 						<span class="level-dot level-dot--sm" style="background:{{ $mColor }}"></span>
 						<a href="{{ route('users.show', $mUser) }}" class="blink f-14">{{ $mName }}</a>
 					</div>
+					@if($loop->last && $loop->count > 4)</div></div>@endif
 					@endforeach
+					@if($confirmedMembers->count() > 4)
+					<div class="pl-more-toggle" role="button" tabindex="0"><span class="pl-t-more"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m6 9 6 6 6-6"/></svg> {{ __('events.show_pl_more', ['n' => $confirmedMembers->count() - 4]) }}</span><span class="pl-t-less"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px"><path d="m18 15-6-6-6 6"/></svg> {{ __('events.show_pl_less') }}</span></div>
+					@endif
 					@if($hasVacancy)
 					<div class="d-flex fvc" style="gap:0.5rem;margin-bottom:0.2rem">
 						<span class="f-13 text-muted" style="width:16px;text-align:right;flex-shrink:0">2.</span>

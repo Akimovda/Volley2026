@@ -15,7 +15,7 @@
         </div>
         <div class="col-lg-8 col-xl-9 order-1">
         <div class="ramka">
-            <h2 class="-mt-05">{{ $subscription->template->name }}</h2>
+            <h2 class="-mt-05 h2-ico"><x-ico name="clipboard" size="1.2em" /> {{ $subscription->template->name }}</h2>
             <div class="f-16">{{ __('subscriptions.usages_left') }} <strong>{{ $subscription->visits_remaining }}</strong> / {{ $subscription->visits_total }}</div>
         </div>
         <div class="ramka">
@@ -36,9 +36,9 @@
                             @endif
                         </td>
                         <td>
-                            @if($u->action==='used') <span class="cs">{{ __('subscriptions.usages_action_used') }}</span>
-                            @elseif($u->action==='returned') <span class="cd">{{ __('subscriptions.usages_action_returned') }}</span>
-                            @elseif($u->action==='burned') <span class="red">{{ __('subscriptions.usages_action_burned') }}</span>
+                            @if($u->action==='used') <span class="usage-pill usage-pill--used"><x-ico name="check" size="1.5rem" color="#16a34a" /> {{ __('subscriptions.usages_action_used') }}</span>
+                            @elseif($u->action==='returned') <span class="usage-pill usage-pill--returned"><x-ico name="repeat" size="1.5rem" color="#2563eb" /> {{ __('subscriptions.usages_action_returned') }}</span>
+                            @elseif($u->action==='burned') <span class="usage-pill usage-pill--burned"><x-ico name="flame" size="1.5rem" color="#ea580c" /> {{ __('subscriptions.usages_action_burned') }}</span>
                             @endif
                         </td>
                     </tr>

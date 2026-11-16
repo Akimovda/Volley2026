@@ -36,6 +36,17 @@ class Authenticate
             $request->session()->put('url.intended', $request->fullUrl());
         }
 
+        // POST гостя (например, «Записаться» без JS): запоминаем страницу, с которой он пришёл (только свой хост, не служебная),
+        // чтобы после входа вернуть его туда, а не на общую ленту
+        elseif (!$request->expectsJson() && !$request->ajax()) {
+            $prev = (string) $request->headers->get('referer', '');
+            $host = parse_url($prev, PHP_URL_HOST);
+            if ($prev !== '' && $host && strcasecmp($host, $request->getHost()) === 0
+                && !str_contains($prev, '/login') && !str_contains($prev, '/auth/')) {
+                $request->session()->put('url.intended', $prev);
+            }
+        }
+
         // Если у вас реально нет страницы /login — поменяйте на ваш роут/страницу входа
         return redirect()->to('/login');
     }

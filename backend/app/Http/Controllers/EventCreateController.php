@@ -119,15 +119,17 @@ use App\Services\StaffLogService;
                        . md5($request->input('title', '') . $request->input('starts_at_local', ''));
                    $lock = \Illuminate\Support\Facades\Cache::lock($idempotencyKey, 10);
                    if (!$lock->get()) {
-                       return back()->withInput()->withErrors(['general' => 'Событие уже создаётся, подождите...']);
+                       return back()->withInput()->withErrors(['general' => __('Событие уже создаётся, подождите...')]);
                    }
 
                    $result = $this->storeService->store($request, $user);
                    $lock->release();
                    $event = $result['event'];
 
-                   // событие создано — черновик больше не нужен
-                   \App\Models\EventDraft::where('user_id', $user->id)->delete();
+                   // событие создано — черновик, с которого оно создавалось, больше не нужен (остальные черновики остаются)
+                   if ((int) $request->input('draft_id') > 0) {
+                       \App\Models\EventDraft::where('user_id', $user->id)->where('id', (int) $request->input('draft_id'))->delete();
+                   }
 
                    // Рекламное мероприятие — оплата через ЮKassa
                    if (!(bool)($event->allow_registration ?? true)) {
@@ -143,7 +145,7 @@ use App\Services\StaffLogService;
                            // Несколько способов оплаты: организатор выберет способ на странице мероприятия (попап).
                            if (count($platSettings?->offeredMethods() ?? []) >= 2) {
                                return redirect()->route('events.show', $event)
-                                   ->with('success', '🎉 Ваше рекламное мероприятие создано! Выберите способ оплаты ниже.');
+                                   ->with('success', __('🎉 Ваше рекламное мероприятие создано! Выберите способ оплаты ниже.'));
                            }
 
                            $platMethod = $platSettings?->method ?? 'tbank_link';
@@ -173,7 +175,7 @@ use App\Services\StaffLogService;
 
                            // tbank/sber или fallback — редирект на страницу с инструкцией
                            return redirect()->route('events.show', $event)
-                               ->with('success', '🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉');
+                               ->with('success', __('🎉 Ваше рекламное мероприятие создано! Просьба произвести оплату и нажать кнопку «Я оплатил». Удачного дня! 😉'));
                        } else {
                            // Бесплатно — сразу публикуем
                            $event->ad_payment_status = 'paid';
@@ -280,8 +282,8 @@ use App\Services\StaffLogService;
 				$now = now();
 				
 				if (
-                Schema::hasColumn('events', 'starts_at') &&
-                Schema::hasColumn('events', 'duration_sec')
+                \App\Support\SchemaCache::hasColumn('events', 'starts_at') &&
+                \App\Support\SchemaCache::hasColumn('events', 'duration_sec')
 				) {
 					
 					$q->whereNotNull('events.starts_at')
@@ -291,7 +293,7 @@ use App\Services\StaffLogService;
 					[$now]
 					);
 					
-					} elseif (Schema::hasColumn('events', 'starts_at')) {
+					} elseif (\App\Support\SchemaCache::hasColumn('events', 'starts_at')) {
 					
 					// fallback если duration_sec ещё нет
 					$q->whereNotNull('events.starts_at')
@@ -306,7 +308,7 @@ use App\Services\StaffLogService;
 				$ownerCol = null;
 				
 				foreach (['organizer_id', 'owner_id', 'created_by', 'user_id'] as $c) {
-					if (Schema::hasColumn('events', $c)) {
+					if (\App\Support\SchemaCache::hasColumn('events', $c)) {
 						$ownerCol = $c;
 						break;
 					}
@@ -433,15 +435,17 @@ use App\Services\StaffLogService;
 
             // Несохранённый черновик (баннер «продолжить»): не показываем, если форма уже
             // заполнена (редисплей после ошибки, восстановление черновика, «создать на основе»)
-            $draft = null;
+            $drafts = collect();
             if ($fromId <= 0 && !$request->session()->hasOldInput()) {
-                $draft = \App\Models\EventDraft::where('user_id', $user->id)
+                $drafts = \App\Models\EventDraft::where('user_id', $user->id)
                     ->where('updated_at', '>=', now()->subDays(30))
-                    ->first(['id', 'step', 'payload', 'updated_at']);
+                    ->orderByDesc('updated_at')
+                    ->limit(\App\Http\Controllers\EventDraftController::MAX_DRAFTS)
+                    ->get(['id', 'step', 'payload', 'updated_at']);
             }
 
             return view('events.create', [
-			'draft' => $draft,
+			'drafts' => $drafts,
 			'cityId' => $cityId,
 			'userCityId' => $user->city_id ?? null,
 			
@@ -608,6 +612,51 @@ use App\Services\StaffLogService;
 			return null;
 		}
 		
+		/**
+		 * Охват рассылки «новое мероприятие» для формы создания: сколько игроков получат анонс без галочки
+		 * «и игрокам без уровня» и с ней. Считается тем же запросом, что и сама рассылка.
+		 */
+		public function notifyReach(Request $request): \Illuminate\Http\JsonResponse
+		{
+			$format    = (string) $request->query('format', '');
+			$direction = $request->query('direction') === 'beach' ? 'beach' : 'classic';
+			$isBroadcast = in_array($format, \App\Jobs\NotifyCityAboutNewEventJob::BROADCAST_FORMATS, true);
+
+			$enabled = config('notifications.new_event_city_notify_enabled', true)
+				&& (string) $request->query('allow_registration', '1') === '1'
+				&& !(bool) $request->query('is_private', false);
+			if (!$enabled) {
+				return response()->json(['state' => 'disabled']);
+			}
+
+			$cityId = null;
+			if (!$isBroadcast) {
+				$cityId = \App\Models\Location::query()->whereKey((int) $request->query('location_id'))->value('city_id');
+				if (!$cityId) {
+					return response()->json(['state' => 'no_city']);
+				}
+			}
+
+			$minKey = $direction . '_level_min';
+			$maxKey = $direction . '_level_max';
+			$min = $request->filled($minKey) ? (int) $request->query($minKey) : null;
+			$max = $request->filled($maxKey) ? (int) $request->query($maxKey) : null;
+
+			$count = function (bool $includeUnrated) use ($isBroadcast, $cityId, $direction, $min, $max) {
+				$q = \App\Jobs\NotifyCityAboutNewEventJob::recipientsQuery($isBroadcast, $cityId ? (int) $cityId : null, (int) auth()->id());
+				\App\Jobs\NotifyCityAboutNewEventJob::applyLevelRange($q, $direction, $min, $max, $includeUnrated);
+				return $q->count();
+			};
+
+			if ($min === null && $max === null) {
+				return response()->json(['state' => 'all', 'total' => $count(false)]);
+			}
+
+			$base = $count(false);
+			$with = $count(true);
+			return response()->json(['state' => 'range', 'base' => $base, 'with_unrated' => $with, 'unrated' => $with - $base]);
+		}
+
 		private function getEventPrefillData(Event $src): array
 		{
 			$prefill = Arr::only($src->toArray(), [
@@ -621,6 +670,7 @@ use App\Services\StaffLogService;
             'classic_level_max',
             'beach_level_min',
             'beach_level_max',
+            'notify_unrated_players',
             'is_paid',
             'price_amount',
             'price_currency',

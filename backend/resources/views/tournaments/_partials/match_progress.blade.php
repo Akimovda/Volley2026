@@ -95,7 +95,7 @@ $posFull = [
 									<span class="rp-name-link">{{ $surname }}</span>
 									@endif
 									@if($genderSign)
-									<span class="rp-gender {{ $genderClass }}">{{ $genderSign }}</span>
+									<span class="rp-gender {{ $genderClass }}"><x-ico :name="$player['gender'] === 'f' ? 'female' : 'male'" size="1em" /></span>
 									@endif
 								</div>
 								@if($positionLabel)<div class="rp-position">{{ $positionLabel }}</div>@endif

@@ -71,11 +71,20 @@ class PaymentController extends Controller
 
             if ($payment->court_booking_id) {
                 $booking = $payment->courtBooking()->with('court.direction.location')->first();
-                if ($booking && $booking->court?->direction?->location?->owner_id) {
-                    $this->notificationService->createCourtBookingPaidNotification(
-                        $booking->court->direction->location->owner_id,
-                        $booking
-                    );
+                $group = $booking && $booking->order_token
+                    ? \App\Models\CourtBooking::where('order_token', $booking->order_token)->with('court.direction.location')->get()
+                    : collect([$booking])->filter();
+                if ($booking && $booking->order_token) {
+                    app(\App\Services\RentalOrderMailer::class)->toClient('paid', $booking->order_token);
+                    app(\App\Services\RentalOrderMailer::class)->toOwner('owner_paid', $booking->order_token);
+                }
+                foreach ($group as $gb) {
+                    if ($gb->court?->direction?->location?->owner_id) {
+                        $this->notificationService->createCourtBookingPaidNotification(
+                            $gb->court->direction->location->owner_id,
+                            $gb
+                        );
+                    }
                 }
             } else {
                 $this->sendPaymentNotification($payment, 'paid');
@@ -101,7 +110,7 @@ class PaymentController extends Controller
         }
 
         if (!$payment->isPending()) {
-            return back()->with('error', 'Платёж уже обработан.');
+            return back()->with('error', __('Платёж уже обработан.'));
         }
 
         $this->paymentService->userConfirm($payment);
@@ -121,7 +130,7 @@ class PaymentController extends Controller
             channels: ['in_app', 'telegram', 'vk', 'max'],
         );
 
-        return back()->with('status', '✅ Отметили! Организатор проверит платёж.');
+        return back()->with('status', __('✅ Отметили! Организатор проверит платёж.'));
     }
 
     /**
@@ -140,7 +149,7 @@ class PaymentController extends Controller
         // Уведомление игроку
         $this->sendPaymentNotification($payment, 'paid');
 
-        return back()->with('status', '✅ Оплата подтверждена, игрок добавлен в список.');
+        return back()->with('status', __('✅ Оплата подтверждена, игрок добавлен в список.'));
     }
 
     /**
@@ -176,7 +185,7 @@ class PaymentController extends Controller
             channels: ['in_app', 'telegram', 'vk', 'max'],
         );
 
-        return back()->with('status', 'Оплата отклонена, запись отменена.');
+        return back()->with('status', __('Оплата отклонена, запись отменена.'));
     }
 
     /**
@@ -211,8 +220,8 @@ class PaymentController extends Controller
             if ($request->filled('player_q')) {
                 $playerQ = $request->input('player_q');
                 $q->whereHas('user', fn ($uq) => $uq->whereRaw(
-                    "(first_name || ' ' || last_name) ILIKE ?",
-                    ['%' . $playerQ . '%']
+                    \App\Support\NameSearch::ilike("(first_name || ' ' || last_name)"),
+                    [\App\Support\NameSearch::text('%' . $playerQ . '%')]
                 ));
             }
 
@@ -373,7 +382,7 @@ class PaymentController extends Controller
 
         if (!$event->cash_payment_tracking_enabled) {
             return redirect()->route('profile.transactions')
-                ->with('error', 'Для этого мероприятия не включён «Учёт платежей».');
+                ->with('error', __('Для этого мероприятия не включён «Учёт платежей».'));
         }
 
         $occurrenceId = (int) $request->query('occurrence');
@@ -383,7 +392,7 @@ class PaymentController extends Controller
 
         if (!$occurrence) {
             return redirect()->route('profile.transactions')
-                ->with('error', 'Тур мероприятия не найден.');
+                ->with('error', __('Тур мероприятия не найден.'));
         }
 
         $rows = $this->cashTracking->getTrackingRows($event, $occurrence);
@@ -420,7 +429,7 @@ class PaymentController extends Controller
 
         return redirect()
             ->route('payments.event_control', ['event' => $event->id, 'occurrence' => $occurrence->id])
-            ->with('status', "Сохранено: подтверждено оплат — {$result['confirmed']}, отправлено напоминаний — {$result['reminded']}.");
+            ->with('status', __('Сохранено: подтверждено оплат — :ok, отправлено напоминаний — :rem.', ['ok' => $result['confirmed'], 'rem' => $result['reminded']]));
     }
 
     /**

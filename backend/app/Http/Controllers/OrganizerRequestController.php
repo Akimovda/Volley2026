@@ -17,7 +17,7 @@ class OrganizerRequestController extends Controller
 
         $role = $user->role ?? 'user';
         if (in_array($role, ['admin', 'organizer'], true)) {
-            return back()->with('status', 'У вас уже есть права организатора.');
+            return back()->with('status', __('У вас уже есть права организатора.'));
         }
 
         $data = $request->validate([
@@ -30,7 +30,7 @@ class OrganizerRequestController extends Controller
             ->exists();
 
         if ($hasPending) {
-            return back()->with('status', 'Заявка уже отправлена и ожидает рассмотрения.');
+            return back()->with('status', __('Заявка уже отправлена и ожидает рассмотрения.'));
         }
 
         DB::table('organizer_requests')->insert([
@@ -67,6 +67,6 @@ class OrganizerRequestController extends Controller
             Log::warning('OrganizerRequestController notify failed: ' . $e->getMessage());
         }
 
-        return back()->with('status', '✅ Заявка отправлена администратору.');
+        return back()->with('status', __('✅ Заявка отправлена администратору.'));
     }
 }

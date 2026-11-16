@@ -18,6 +18,8 @@ Route::post(
 );
 Route::post('/integrations/max/bind-info', [MaxBindWebhookController::class, 'bindInfo']);
 Route::post('/integrations/max/complete-personal-bind', [MaxBindWebhookController::class, 'completePersonalBind']);
+Route::post('/integrations/max/login/begin', [\App\Http\Controllers\Api\MaxLoginWebhookController::class, 'begin']);
+Route::post('/integrations/max/login/code', [\App\Http\Controllers\Api\MaxLoginWebhookController::class, 'code']);
 
 Route::get(
     '/occurrences/{occurrence}/participants',
@@ -74,10 +76,12 @@ Route::middleware('auth:sanctum,web')->group(function () {
 });
 
 // Face ID / биометрическая авторизация
-Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login']);
+Route::post('/biometric/login', [\App\Http\Controllers\Api\BiometricController::class, 'login'])->middleware('throttle:20,1');
 Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register']);
-    Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke']);
+    Route::post('/biometric/register', [\App\Http\Controllers\Api\BiometricController::class, 'register'])->middleware('block.impersonation');
+    Route::post('/biometric/devices', [\App\Http\Controllers\Api\BiometricController::class, 'devices']);
+    Route::delete('/biometric/devices/{id}', [\App\Http\Controllers\Api\BiometricController::class, 'destroyDevice'])->whereNumber('id')->middleware('block.impersonation');
+    Route::delete('/biometric/revoke', [\App\Http\Controllers\Api\BiometricController::class, 'revoke'])->middleware('block.impersonation');
 });
 
 // Проверка версии нативного приложения (до логина, статический конфиг, без БД)

@@ -68,7 +68,11 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			
 			$isClassicDirection = ((string)($event?->direction ?? 'classic') === 'classic');
 			$isBeachDirection   = ((string)($event?->direction ?? '') === 'beach');
-			$requiresPositionChoice = $isClassicDirection || (bool) $event?->registersByBeachRoles();
+			// Пляжка с несколькими основными ролями-слотами (например, кемп 4×4 с позициями) тоже требует выбора позиции —
+			// ровно то же правило, что и при записи на сервере (EventRoleSlotService::requiresPositionChoice)
+			$requiresPositionChoice = $isClassicDirection
+				|| (bool) $event?->registersByBeachRoles()
+				|| ($isBeachDirection && $event && app(\App\Services\EventRoleSlotService::class)->requiresPositionChoice($event));
 			
 			$trainerLabel = null;
 			if ($trainerColumn && $event) {
@@ -241,7 +245,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$mins = intdiv((int)$occ->duration_sec, 60);
 			$h = intdiv($mins, 60);
 			$m = $mins % 60;
-			$durLabel = sprintf('%d:%02d', $h, $m);
+			$durLabel = $mins >= 1440 ? event_duration_label((int)$occ->duration_sec, 'compact') : sprintf('%d:%02d', $h, $m);
 			}
 			
 			if ($dir === 'beach') {
@@ -329,7 +333,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 			$joinCode      = $join?->code ?? null;
 			@endphp
 			
-			<div class="col-12 col-xl-4 col-lg-4 col-md-6 col-sm-6">
+			<div class="col-12 col-xl-4 col-lg-4 col-md-6 col-sm-6" @if(!empty($upcomingDismiss)) data-upcoming-event="{{ (int) $event->id }}" @endif>
 				<div
 				class="event-card card-ramka"
 				data-direction="{{ e($dir) }}"
@@ -339,6 +343,9 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 				data-beach-min="{{ e($bMin) }}"
 				data-beach-max="{{ e($bMax) }}"
 				>
+					@if(!empty($upcomingDismiss))
+					<button type="button" class="upcoming-dismiss" data-upcoming-dismiss aria-label="{{ __('events.upcoming_dismiss') }}" title="{{ __('events.upcoming_dismiss') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg></button>
+					@endif
 					{{-- Фото --}}
 					
 					<div class="event-card-body">
@@ -603,13 +610,20 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 					</div>
 					
 					{{-- Кнопки записи --}}
-					<div class="mt-1">
+					<div class="mt-1" @if($regEnabled && empty($cardLinkOnly)) data-join-area data-event-url="{{ $eventPageUrl }}" data-group-mode="{{ $isGroupMode ? 1 : 0 }}" data-starts-ts="{{ $startsAtUtc?->timestamp }}" data-ends-ts="{{ $endsAtUtc?->timestamp }}" @endif>
 						
-						@if (!$regEnabled)
+						@if (!empty($cardLinkOnly))
+						{{-- вне ленты (главная): без окна выбора позиции — ссылка на страницу события --}}
+						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
+						@elseif (!$regEnabled)
 						<a href="{{ $eventPageUrl }}" class="btn w-100">{{ __('events.btn_details') }}</a>
 						@else
 						@if ($eventStarted2)
-                        <div class="alert alert-info">{{ __('events.msg_event_started') }}</div>
+                        @if (!empty($eventFinished))
+                        <div class="alert alert-info">{{ __('events.msg_event_finished') }}</div>
+                        @else
+                        <a href="{{ $eventPageUrl }}" class="btn btn-secondary btn-live w-100">{{ __('events.btn_live_now') }}</a>
+                        @endif
 						
 						@elseif (!auth()->check())
                         <button type="button" class="btn w-100 js-open-login-popup" data-return-url="{{ $eventPageUrl }}">{{ __('events.btn_join') }}</button>
@@ -647,7 +661,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
                             <div class="alert alert-info">
                                 {{ __('events.msg_reg_opens') }}
                                 @if($regStartsLocal)
-                                {{ $regStartsLocal->locale(app()->getLocale())->translatedFormat(__('events.dt_format_date_at_time')) }}
+                                {{ \App\Support\RelativeDay::dateAtTime($regStartsLocal) }}
                                 @endif
 							</div>
 						</div>
@@ -667,7 +681,7 @@ if (!is_null($event?->beach_level_min) && $userLevel < (int)$event->beach_level_
 						
 						@elseif ($join === null)
                         {{-- occurrences не обогащены --}}
-                        @if ($isBeachDirection)
+                        @if ($isBeachDirection && !$requiresPositionChoice)
                         <form class="w-100" method="POST" action="{{ route('occurrences.join', ['occurrence' => $occ->id]) }}">
                             @csrf
                             <button type="submit" class="btn w-100">{{ __('events.btn_join') }}</button>

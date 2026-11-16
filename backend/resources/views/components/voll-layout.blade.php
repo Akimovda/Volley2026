@@ -29,7 +29,54 @@
 		@endif
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+		{{-- Тему выбирает сам сайт (кнопка день/ночь). only light — запрет принудительного затемнения страницы встроенными браузерами (например MAX на Android), иначе дневная тема показывается тёмной --}}
+		<meta name="color-scheme" content="only light">
+		<script>
+			// Встроенный браузер Telegram (ссылка, НЕ Mini App): сверху плавают кнопки «Закрыть» / «⌄ ⋮», страница идёт под системной
+			// панелью, шапка оказывалась под ними. Определяем по User-Agent / TelegramWebviewProxy сразу (SDK Telegram грузится позже,
+			// на него полагаться нельзя). Mini App узнаём по tgWebApp в адресе или сохранённым параметрам запуска — для него отступ даёт сам Telegram.
+			(function () {
+				try {
+					var de = document.documentElement, ua = navigator.userAgent || '';
+					if (de.classList.contains('is-app')) return;
+					if (/tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search) || sessionStorage.getItem('__telegram__initParams')) return;
+					if (/Telegram-Android/i.test(ua)) { de.classList.add('tg-inapp-browser', 'tg-inapp-android'); }
+					else if (/iPhone|iPad|iPod/.test(ua) && (window.TelegramWebviewProxy || window.TelegramWebview)) { de.classList.add('tg-inapp-browser', 'tg-inapp-ios'); }
+				} catch (e) {}
+			})();
+		</script>
+		<script>if(/VPOverlay/.test(navigator.userAgent)){document.documentElement.classList.add('is-overlay');}</script>
 		<script>if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){document.documentElement.classList.add('is-app');window.addEventListener('load',function(){var btn=document.getElementById('app-back-btn');if(!btn)return;var path=window.location.pathname.replace(/\/$/,'')||'/';var roots=['/','/events'];if(roots.indexOf(path)!==-1||window.history.length<=1){btn.style.display='none';}});}</script>
+		<script>
+			// В приложении ссылки target="_blank" на наш сайт открываются внутри приложения (иначе WKWebView/Capacitor
+			// отдаёт их внешнему Safari/Chrome). Внешние сайты и файлы (PDF, картинки…) по-прежнему открываются снаружи.
+			// Отказаться для конкретной ссылки: data-external="1".
+			if (/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)) {
+				document.addEventListener('click', function (e) {
+					if (e.defaultPrevented || e.button > 0 || e.metaKey || e.ctrlKey || e.shiftKey) return;
+					var a = e.target.closest && e.target.closest('a[target="_blank"][href]');
+					if (!a || a.hasAttribute('download') || a.getAttribute('data-external') === '1') return;
+					var u;
+					try { u = new URL(a.href); } catch (err) { return; }
+					if (u.protocol !== 'https:' && u.protocol !== 'http:') return;
+					var h = u.hostname;
+					if (h !== location.hostname && h !== 'volleyplay.club' && !/\.volleyplay\.club$/.test(h)) return;
+					if (/\.(pdf|docx?|xlsx?|pptx?|zip|rar|png|jpe?g|gif|webp|svg|mp4|mov)$/i.test(u.pathname)) return;
+					e.preventDefault();
+					// Новая версия приложения: нативная шторка поверх текущей страницы (форма под ней не теряется).
+					// Внутри самой шторки и в старых версиях приложения — переход в том же окне.
+					if (!document.documentElement.classList.contains('is-overlay')) {
+						if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.openOverlay) {
+							window.webkit.messageHandlers.openOverlay.postMessage({ url: u.href }); return;
+						}
+						if (window.VolleyPlay && typeof window.VolleyPlay.openOverlay === 'function') {
+							window.VolleyPlay.openOverlay(u.href); return;
+						}
+					}
+					location.href = u.href;
+				}, true);
+			}
+		</script>
 		<script>
 			if(/VolleyPlayApp|SVSVolleyApp/.test(navigator.userAgent)){
 				document.addEventListener('click',function(e){
@@ -80,12 +127,23 @@
 		<meta name="twitter:description" content="{{ $ogDescription }}">
 		<meta name="twitter:image" content="{{ $ogImage }}">
 		<script>
-			if (!document.documentElement.classList.contains('is-app')) {
+			// SDK Telegram Mini App нужен только внутри Telegram. Раньше грузился всегда: во внутренних браузерах других
+			// мессенджеров (MAX) и там, где telegram.org недоступен/медленный, зависший запрос держал индикатор загрузки.
+			(function () {
+				if (document.documentElement.classList.contains('is-app')) return;
+				var inTelegram = false;
+				try {
+					inTelegram = !!window.TelegramWebviewProxy || !!window.TelegramWebview ||
+						/tgWebApp/.test(location.hash) || /tgWebApp/.test(location.search) ||
+						/Telegram/i.test(navigator.userAgent || '') ||
+						!!sessionStorage.getItem('__telegram__initParams');
+				} catch (e) {}
+				if (!inTelegram) return;
 				var s = document.createElement('script');
 				s.src = 'https://telegram.org/js/telegram-web-app.js';
 				s.async = true;
 				document.head.appendChild(s);
-			}
+			})();
 		</script>
 		<link href="@asset_v('assets/lib.css')" rel="stylesheet">
 		@livewireStyles
@@ -103,6 +161,21 @@
 			@media (max-width: 767px) {
 			.top-section {
 				padding-top: calc(12rem + env(safe-area-inset-top, 0px));
+			}
+			}
+			/* Встроенный браузер Telegram (не Mini App): шапка и содержимое сдвигаются вместе, чтобы не быть под плавающими кнопками.
+			   iOS сообщает безопасную зону сам (env ≈ 59px) — добавка небольшая; Android не сообщает — добавка больше. Итог сверху ≈ 80px. */
+			.tg-inapp-android { --tg-inapp-extra: 7rem; }
+			.tg-inapp-ios { --tg-inapp-extra: 1.1rem; }
+			.tg-inapp-browser .fix-header {
+			top: calc(env(safe-area-inset-top, 0px) + 1rem + var(--tg-inapp-extra, 0px));
+			}
+			.tg-inapp-browser .top-section {
+			padding-top: calc(11rem + env(safe-area-inset-top, 0px) + var(--tg-inapp-extra, 0px));
+			}
+			@media (max-width: 767px) {
+			.tg-inapp-browser .top-section {
+				padding-top: calc(12rem + env(safe-area-inset-top, 0px) + var(--tg-inapp-extra, 0px));
 			}
 			}
 			/* Telegram Mini App — safe area (fullscreen mode, overrides global above) */
@@ -387,49 +460,49 @@
 							<nav class="menu-nav">
 								
 								<a href="{{ route('notifications.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_notifications') }}</span>
+									<span class="menu-text"><x-ico name="bell" /> {{ __('ui.menu_notifications') }}</span>
 								</a>
 								<a href="{{ route('player.my-bookings') }}" class="menu-item">
-									<span class="menu-text">{{ __('club.my_bookings') }}</span>
+									<span class="menu-text"><x-ico name="calendar" /> {{ __('club.my_bookings') }}</span>
 								</a>
 								<a href="{{ route('subscriptions.my') }}" class="menu-item">
-									<span class="menu-text">{{ __('profile.menu_my_subs') }}</span>
+									<span class="menu-text"><x-ico name="id-card" /> {{ __('profile.menu_my_subs') }}</span>
 								</a>
 								@if(auth()->user()?->courtBookings()->exists())
 								<a href="{{ route('player.my-court-bookings') }}" class="menu-item">
-									<span class="menu-text">{{ __('club.my_court_bookings') }}</span>
+									<span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.my_court_bookings') }}</span>
 								</a>
 								@endif
 								@if(config('activity.recording_open') || auth()->user()?->isAdmin())
 								<a href="{{ route('activity.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('activity.my_activity') }}</span>
+									<span class="menu-text"><x-ico name="heart" /> {{ __('activity.my_activity') }} <x-beta-badge /></span>
 								</a>
 								@endif
 								@if((auth()->user()->role ?? 'user') === 'user')
 								{{-- Обычному пользователю: /events/create отправит на заявку организатора в профиле --}}
 								<a href="/events/create" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+									<span class="menu-text"><x-ico name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
 								</a>
 								@endif
 								<a href="/user/profile" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_profile') }}</span>
+									<span class="menu-text"><x-ico name="user" /> {{ __('ui.menu_my_profile') }}</span>
 								</a>
 								<a href="/profile/complete" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_edit_profile') }}</span>
+									<span class="menu-text"><x-ico name="pencil" /> {{ __('ui.menu_edit_profile') }}</span>
 								</a>
 								<a href="/user/photos" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_photos') }}</span>
+									<span class="menu-text"><x-ico name="image" /> {{ __('ui.menu_my_photos') }}</span>
 								</a>
 								<a href="/wallet" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_wallet') }}</span>
+									<span class="menu-text"><x-ico name="wallet" /> {{ __('ui.menu_my_wallet') }}</span>
 								</a>
 								<a href="/profile/transactions" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_transactions') }}</span>
+									<span class="menu-text"><x-ico name="card" /> {{ __('ui.menu_transactions') }}</span>
 								</a>
 								@include('components._brand_menu_links', ['place' => 'user'])
 								<form method="POST" action="{{ route('logout') }}" class="logout-form" id="logout-form">
 									@csrf
-									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()">{{ __('ui.logout') }}</button>
+									<button type="button" class="menu-item" onclick="document.getElementById('logout-form').submit()"><x-ico name="door" /> {{ __('ui.logout') }}</button>
 								</form>
 							</nav>
 						</div>
@@ -446,80 +519,91 @@
 								</div>
 								@if(!$isStaffHelper) {{-- 1. Панель организатора — не для помощника --}}
 								<a href="/org/dashboard" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_dashboard') }}</span>
+									<span class="menu-text"><x-ico name="chart" /> {{ __('ui.org_dashboard') }}</span>
 								</a>
 								@endif
 								{{-- 2. Панель арендатора — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
 								<a href="{{ route('club.analytics.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('club.analytics') }}</span>
+									<span class="menu-text"><x-ico name="trend" /> {{ __('club.analytics') }}</span>
 								</a>
 								@endif
 								{{-- 3. Управление мероприятиями --}}
 								<a href="/events/create/event_management" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_events_management') }}</span>
+									<span class="menu-text"><x-ico name="sliders" /> {{ __('ui.org_events_management') }}</span>
 								</a>
 								{{-- 4. Управление регистрациями --}}
 								<a href="/events/registrations/manage" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_regs_manage') }}</span>
+									<span class="menu-text"><x-ico name="clipboard-check" /> {{ __('ui.org_regs_manage') }}</span>
 								</a>
 								{{-- 5. Мои мероприятия --}}
 								<a href="{{ route('organizer.my-events') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.menu_my_events') }}</span>
+									<span class="menu-text"><x-ico name="calendar" /> {{ __('ui.menu_my_events') }}</span>
 								</a>
 								{{-- Трансляция (камера в приложении) --}}
 								<a href="{{ route('broadcast.camera') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.org_broadcast') }} <x-beta-badge /></span>
+									<span class="menu-text"><x-ico name="video" /> {{ __('ui.org_broadcast') }} <x-beta-badge /></span>
 								</a>
 								@if(!$isStaffHelper)
 								<a href="{{ route('placeholders.index') }}" class="menu-item">
-									<span class="menu-text">👻 {{ __('placeholders.menu') }}</span>
+									<span class="menu-text"><x-ico name="ghost" /> {{ __('placeholders.menu') }}</span>
 								</a>
 								@endif
 								{{-- 6. Брони кортов — только для арендодателей кортов --}}
 								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
 								<a href="{{ route('club.bookings.index') }}" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="court" /> {{ __('club.bookings_title') }}</span>
+									<span class="menu-text"><x-ico name="calendar-check" /> {{ __('club.bookings_title') }}</span>
+								</a>
+								<a href="{{ route('club.clients.index') }}" class="menu-item">
+									<span class="menu-text"><x-ico name="users" /> {{ __('club.clients_title') }}</span>
+								</a>
+								<a href="{{ route('admin.locations.index') }}" class="menu-item">
+									<span class="menu-text"><x-ico name="building" /> {{ __('club.my_locations') }}</span>
 								</a>
 								@endif
 								{{-- 7. Создать мероприятие --}}
 								<a href="/events/create" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
+									<span class="menu-text"><x-ico name="calendar-plus" /> {{ __('ui.org_create_event') }}</span>
 								</a>
 								@if(!$isStaffHelper || $isStaffMaster) {{-- абонементы и купоны: организатору и помощнику-мастеру --}}
 								{{-- 8. Абонементы --}}
 								<a href="/subscriptions/templates" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
+									<span class="menu-text"><x-ico name="id-card" /> {{ __('ui.org_subscriptions') }}</span>
 								</a>
 								<a href="{{ route('subscriptions.index') }}" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="id-card" /> {{ __('ui.org_subscriptions_issued') }}</span>
+									<span class="menu-text"><x-ico name="clipboard" /> {{ __('ui.org_subscriptions_issued') }}</span>
 								</a>
 								{{-- 9. Купоны --}}
 								<a href="/coupons/templates" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons') }}</span>
+									<span class="menu-text"><x-ico name="tag" /> {{ __('ui.org_coupons') }}</span>
 								</a>
 								<a href="{{ route('coupons.org_index') }}" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="ticket" /> {{ __('ui.org_coupons_issued') }}</span>
+									<span class="menu-text"><x-ico name="ticket" /> {{ __('ui.org_coupons_issued') }}</span>
 								</a>
 								@endif
 								@if(!$isStaffHelper) {{-- лиги и каналы — только организатору --}}
 								{{-- 10. Мои лиги и сезоны --}}
 								<a href="/leagues" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
+									<span class="menu-text"><x-ico name="trophy" /> {{ __('ui.org_my_leagues') }}</span>
 								</a>
 								{{-- 11. Каналы уведомлений --}}
 								<a href="/user/profile/notification-channels" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
+									<span class="menu-text"><x-ico name="megaphone" /> {{ __('ui.org_notif_channels') }}</span>
 								</a>
 								@endif
 								@if(!$isStaffHelper) {{-- помощнику Виджет и Pro не показываем --}}
 								{{-- 12. Виджет на сайт --}}
 								<a href="/profile/widget" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="globe" /> {{ __('ui.org_widget') }}</span>
+									<span class="menu-text"><x-ico name="globe" /> {{ __('ui.org_widget') }}</span>
 								</a>
+								@if(auth()->user()->is_club_manager && auth()->user()->ownedLocations()->exists())
+								<a href="{{ route('profile.rental_widget') }}" class="menu-item">
+									<span class="menu-text"><x-ico name="building" /> {{ __('ui.org_rental_widget') }}</span>
+								</a>
+								@endif
 								{{-- 13. Организатор Pro --}}
 								<a href="/organizer-pro" class="menu-item">
-									<span class="menu-text"><x-menu-icon name="star" /> {{ __('ui.org_pro') }}</span>
+									<span class="menu-text"><x-ico name="star" /> {{ __('ui.org_pro') }}</span>
 								</a>
 								@endif
 							</nav>
@@ -531,31 +615,31 @@
 									<span class="menu-text">{{ __('ui.admin_menu_title') }}</span>
 								</div>
 								<a href="/admin/dashboard" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_dashboard') }}</span>
+									<span class="menu-text"><x-ico name="chart" /> {{ __('ui.admin_dashboard') }}</span>
 								</a>
 								<a href="/admin/users" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_users') }}</span>
+									<span class="menu-text"><x-ico name="users" /> {{ __('ui.admin_users') }}</span>
 								</a>
 								<a href="/admin/locations" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_locations') }}</span>
+									<span class="menu-text"><x-ico name="pin" /> {{ __('ui.admin_locations') }}</span>
 								</a>
 								<a href="/admin/locations/create" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_create_location') }}</span>
+									<span class="menu-text"><x-ico name="plus" /> {{ __('ui.admin_create_location') }}</span>
 								</a>
 								<a href="/admin/notification-templates" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_notification_templates') }}</span>
+									<span class="menu-text"><x-ico name="file-text" /> {{ __('ui.admin_notification_templates') }}</span>
 								</a>
 								<a href="/admin/broadcasts/create" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_new_broadcast') }}</span>
+									<span class="menu-text"><x-ico name="send" /> {{ __('ui.admin_new_broadcast') }}</span>
 								</a>
 								<a href="/admin/broadcasts/" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_broadcasts') }}</span>
+									<span class="menu-text"><x-ico name="layers" /> {{ __('ui.admin_broadcasts') }}</span>
 								</a>
 								<a href="{{ route('admin.impersonate.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_impersonate') }}</span>
+									<span class="menu-text"><x-ico name="eye" /> {{ __('ui.admin_impersonate') }}</span>
 								</a>
 								<a href="{{ route('admin.apps.index') }}" class="menu-item">
-									<span class="menu-text">{{ __('ui.admin_apps') }}</span>
+									<span class="menu-text"><x-ico name="smartphone" /> {{ __('ui.admin_apps') }}</span>
 								</a>
 								
 							</nav>
@@ -609,7 +693,7 @@
 					
 					<nav class="menu-nav mt-1">
 						<a href="{{ route('notifications.index') }}" class="menu-item">
-							<span class="menu-text">{{ __('ui.all_notifications') }}</span>
+							<span class="menu-text"><x-ico name="bell" /> {{ __('ui.all_notifications') }}</span>
 						</a>
 					</nav>				
 					
@@ -629,19 +713,19 @@
 						<div class="menu-column column-first">
 							<nav class="menu-nav">							
 								<a href="/events" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_games_trainings') }}</span>
+									<span class="menu-text"><x-ico name="ball" /> {{ __('ui.nav_games_trainings') }}</span>
 								</a>
 								<a href="/locations" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_locations') }}</span>
+									<span class="menu-text"><x-ico name="pin" /> {{ __('ui.nav_locations') }}</span>
 								</a>
 								<a href="/volleyball_school" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_schools') }}</span>
+									<span class="menu-text"><x-ico name="building" /> {{ __('ui.nav_schools') }}</span>
 								</a>
 								<a href="/leagues/all" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_leagues') }}</span>
+									<span class="menu-text"><x-ico name="trophy" /> {{ __('ui.nav_leagues') }}</span>
 								</a>
 								<a href="/users" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_players') }}</span>
+									<span class="menu-text"><x-ico name="users" /> {{ __('ui.nav_players') }}</span>
 								</a>								
 							</nav>
 						</div>
@@ -649,22 +733,22 @@
 						<div class="menu-column column-two">
 							<nav class="menu-nav">
 								<a href="/help" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_help') }}</span>
+									<span class="menu-text"><x-ico name="help" /> {{ __('ui.nav_help') }}</span>
 								</a>							
 								<a href="/rules" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_rules') }}</span>
+									<span class="menu-text"><x-ico name="file-text" /> {{ __('ui.nav_rules') }}</span>
 								</a>								
 								<a href="/level_players" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_levels') }}</span>
+									<span class="menu-text"><x-ico name="medal" /> {{ __('ui.nav_levels') }}</span>
 								</a>
 								<a href="{{ route('players.rating') }}" class="menu-item">
-									<span class="menu-text">{{ __('players.rating') }}</span>
+									<span class="menu-text"><x-ico name="star" /> {{ __('players.rating') }}</span>
 								</a>
 								<a href="{{ route('players.teams') }}" class="menu-item">
-									<span class="menu-text">{{ __('players.teams_title') }}</span>
+									<span class="menu-text"><x-ico name="link" /> {{ __('players.teams_title') }}</span>
 								</a>
 								<a href="/about" class="menu-item">
-									<span class="menu-text">{{ __('ui.nav_about') }}</span>
+									<span class="menu-text"><x-ico name="info" /> {{ __('ui.nav_about') }}</span>
 								</a>
 								@include('components._brand_menu_links', ['place' => 'site'])
 							</nav>
@@ -775,43 +859,43 @@
 						<div class="col-3">
 							<nav class="footer-menu">                 
 								<a href="/events">
-									<span class="footer-menu-text">{{ __('ui.nav_games_trainings') }}</span>
+									<span class="footer-menu-text"><x-ico name="ball" /> {{ __('ui.nav_games_trainings') }}</span>
 								</a>
 								<a href="{{ route('events.index') }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_find_game') }}</span>
+									<span class="footer-menu-text"><x-ico name="search" /> {{ __('welcome.cta_find_game') }}</span>
 								</a>
 								<a href="{{ route('events.index', ['format' => 'tournament']) }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_tournaments') }}</span>
+									<span class="footer-menu-text"><x-ico name="trophy" /> {{ __('welcome.cta_tournaments') }}</span>
 								</a>
 								<a href="{{ route('events.index', ['direction' => 'beach']) }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_beach') }}</span>
+									<span class="footer-menu-text"><x-ico name="sun" /> {{ __('welcome.cta_beach') }}</span>
 								</a>
 								<a href="{{ route('volleyball_school.index') }}">
-									<span class="footer-menu-text">{{ __('welcome.cta_sections') }}</span>
+									<span class="footer-menu-text"><x-ico name="building" /> {{ __('welcome.cta_sections') }}</span>
 								</a>
 								<a href="/locations">
-									<span class="footer-menu-text">{{ __('ui.nav_locations') }}</span>
+									<span class="footer-menu-text"><x-ico name="pin" /> {{ __('ui.nav_locations') }}</span>
 								</a>
 								<a href="/volleyball_school">
-									<span class="footer-menu-text">{{ __('ui.nav_schools') }}</span>
+									<span class="footer-menu-text"><x-ico name="building" /> {{ __('ui.nav_schools') }}</span>
 								</a>              
 								<a href="/leagues/all">
-									<span class="footer-menu-text">{{ __('ui.nav_leagues') }}</span>
+									<span class="footer-menu-text"><x-ico name="trophy" /> {{ __('ui.nav_leagues') }}</span>
 								</a>
 								<a href="/users">
-									<span class="footer-menu-text">{{ __('ui.nav_players') }}</span>
+									<span class="footer-menu-text"><x-ico name="users" /> {{ __('ui.nav_players') }}</span>
 								</a>  
 								<a href="/help">
-									<span class="footer-menu-text">{{ __('ui.nav_help') }}</span>
+									<span class="footer-menu-text"><x-ico name="help" /> {{ __('ui.nav_help') }}</span>
 								</a>                 
 								<a href="/rules">
-									<span class="footer-menu-text">{{ __('ui.nav_rules') }}</span>
+									<span class="footer-menu-text"><x-ico name="file-text" /> {{ __('ui.nav_rules') }}</span>
 								</a>
 								<a href="/level_players">
-									<span class="footer-menu-text">{{ __('ui.nav_levels') }}</span>
+									<span class="footer-menu-text"><x-ico name="medal" /> {{ __('ui.nav_levels') }}</span>
 								</a>
 								<a href="/about">
-									<span class="footer-menu-text">{{ __('ui.nav_about') }}</span>
+									<span class="footer-menu-text"><x-ico name="info" /> {{ __('ui.nav_about') }}</span>
 								</a>  								
 							</nav>
 						</div>
@@ -840,6 +924,12 @@
 										</div>
 										<div style="flex:0 0 33.333%;max-width:33.333%;padding:0 0.4rem">
 											<a href="{{ config('app.android_apk_url') }}" class="app-link apk-dl" download></a>
+										</div>
+										<div style="flex:0 0 100%;max-width:100%;padding:0.8rem 0.4rem 0">
+											<a href="https://play.google.com/apps/testing/club.volleyplay.app" class="app-link google-test" target="_blank" rel="noopener">
+												<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.4.6-.4 1.1v17.2c0 .5.1.9.4 1.1l9.6-9.7L3.6 2.3zm10.3 8.6 2.6-2.6L5.1 1.9c-.4-.2-.8-.2-1.1 0l9.9 9zm0 2.2-9.9 9c.3.2.7.2 1.1 0l11.4-6.4-2.6-2.6zm3.6-2.9-3 3 3 3 3.1-1.7c.9-.5.9-1.3 0-1.8l-3.1-2.5z"/></svg>
+												<span>{{ __('ui.footer_gplay_test') }}</span>
+											</a>
 										</div>
 									</div>
 								</div>
@@ -1114,7 +1204,7 @@
 							title: @json(__('ui.biometric_login_title')),
 						}),
 						new Promise(function(_, reject) {
-							setTimeout(function() { reject(new Error('timeout')); }, 5000);
+							setTimeout(function() { reject(new Error('timeout')); }, 30000);
 						})
 						]);
 						
@@ -1134,12 +1224,14 @@
 							localStorage.removeItem('biometricFailedAt');
 							window._biometricInProgress = false;
 							window.location.href = data.redirect || '/events';
-							} else if (resp.status === 422) {
+							} else if (resp.status === 422 || resp.status === 401) {
+							// токен на сервере не найден (сброшен/перезаписан/восстановление из бэкапа) — стираем устаревший, чтобы после обычного входа снова предложили включить Face ID
 							await NativeBiometric.deleteCredentials({ server: 'volleyplay.club' });
 						}
 						} catch(e) {
 						console.log('[Biometric] verifyIdentity failed or timeout:', e.message);
-						localStorage.setItem('biometricFailedAt', Date.now().toString());
+						// по таймауту повторять можно сразу; после отмены/ошибки — не раньше чем через минуту
+						if (e.message !== 'timeout') localStorage.setItem('biometricFailedAt', Date.now().toString());
 						window._biometricInProgress = false;
 						// Не делаем redirect — сервер уже перенаправил на /events
 					}
@@ -1180,6 +1272,9 @@
 				if (!NativeBiometric) return;
 				
 				async function offerBiometricSetup() {
+					@if(session()->has('impersonator_id'))
+					return; // под чужим аккаунтом (impersonate) Face ID не предлагаем — иначе телефон админа входил бы в чужой аккаунт
+					@endif
 					try {
 						var avail = await NativeBiometric.isAvailable();
 						if (!avail.isAvailable && avail.biometryType === 0) return;
@@ -1190,18 +1285,34 @@
 						} catch (e) { /* нет credentials — предложить */ }
 						
 						if (sessionStorage.getItem('biometric_offered')) return;
+						if (localStorage.getItem('biometric_never')) return;
+						var laterUntil = parseInt(localStorage.getItem('biometric_later_until') || '0');
+						if (laterUntil && Date.now() < laterUntil) return;
 						sessionStorage.setItem('biometric_offered', 'true');
 						
-						var result = await swal({
+						var neverClicked = false;
+						var dlg = swal({
 							title: @json(__('ui.biometric_setup_title')),
 							text: @json(__('ui.biometric_setup_text')),
 							icon: 'info',
+							className: 'swal-biometric',
 							buttons: {
 								cancel: @json(__('ui.biometric_setup_later')),
 								confirm: @json(__('ui.biometric_setup_enable'))
 							}
 						});
-						if (!result) return;
+						// «Больше не спрашивать» — ссылка под кнопками
+						var footer = document.querySelector('.swal-biometric .swal-footer');
+						if (footer) {
+							var never = document.createElement('a');
+							never.className = 'swal-biometric-never';
+							never.textContent = @json(__('ui.biometric_setup_never'));
+							never.addEventListener('click', function () { neverClicked = true; swal.close(); });
+							footer.appendChild(never);
+						}
+						var result = await dlg;
+						if (neverClicked) { localStorage.setItem('biometric_never', '1'); return; }
+						if (!result) { localStorage.setItem('biometric_later_until', String(Date.now() + 7 * 86400000)); return; }
 						
 						var token = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, function(c) {
 							return (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16);

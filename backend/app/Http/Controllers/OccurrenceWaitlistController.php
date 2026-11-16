@@ -15,13 +15,13 @@ class OccurrenceWaitlistController extends Controller
 
         // Проверяем что мероприятие не началось
         if ($occurrence->starts_at && now('UTC')->gte($occurrence->starts_at)) {
-            return back()->with('error', 'Мероприятие уже началось.');
+            return back()->with('error', __('Мероприятие уже началось.'));
         }
 
         // Турниры не поддерживают резерв
         $regMode = (string)($occurrence->event->registration_mode ?? 'single');
         if (in_array($regMode, ['team_classic', 'team_beach'], true)) {
-            return back()->with('error', 'Резерв недоступен для турниров.');
+            return back()->with('error', __('Резерв недоступен для турниров.'));
         }
 
         // Нельзя встать в резерв если уже записан в состав (включая запасные места)
@@ -30,7 +30,7 @@ class OccurrenceWaitlistController extends Controller
             ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
             ->exists();
         if ($alreadyRegistered) {
-            return back()->with('error', 'Вы уже записаны на это мероприятие. Сначала отмените запись, чтобы встать в резерв.');
+            return back()->with('error', __('Вы уже записаны на это мероприятие. Сначала отмените запись, чтобы встать в резерв.'));
         }
 
         $positions = $request->input('positions', []);
@@ -58,7 +58,7 @@ class OccurrenceWaitlistController extends Controller
             $invalidPos = array_filter($positions, fn($p) => !in_array($p, $allowedPos, true));
             if (!empty($invalidPos)) {
                 $readableAllowed = implode(', ', array_map('position_name', $allowedPos));
-                return back()->with('error', 'Пока регистрация не открылась — доступны только позиции: ' . $readableAllowed . '.');
+                return back()->with('error', __('Пока регистрация не открылась — доступны только позиции: :positions.', ['positions' => $readableAllowed]));
             }
             // Если позиции не выбраны — автоматически ставим разрешённые
             if (empty($positions)) {
@@ -91,7 +91,7 @@ class OccurrenceWaitlistController extends Controller
                 ->where('occurrence_id', $occurrence->id)
                 ->count();
             if ($waitlistCount >= $maxPlayers) {
-                return back()->with('error', 'Резерв заполнен.');
+                return back()->with('error', __('Резерв заполнен.'));
             }
         }
 
@@ -102,7 +102,7 @@ class OccurrenceWaitlistController extends Controller
             \App\Services\RegistrationEventLogger::resolveRealActorId($request),
         );
 
-        return back()->with('status', 'Вы записаны в резерв! Когда освободится подходящее место, мы автоматически переведём вас в основной состав.');
+        return back()->with('status', __('Вы записаны в резерв! Когда освободится подходящее место, мы автоматически переведём вас в основной состав.'));
     }
 
     public function destroy(Request $request, EventOccurrence $occurrence): \Illuminate\Http\RedirectResponse
@@ -115,6 +115,6 @@ class OccurrenceWaitlistController extends Controller
             \App\Services\RegistrationEventLogger::resolveRealActorId($request),
         );
 
-        return back()->with('status', 'Вы покинули резерв.');
+        return back()->with('status', __('Вы покинули резерв.'));
     }
 }

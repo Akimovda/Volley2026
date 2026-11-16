@@ -41,7 +41,7 @@ class TournamentTeamDistributionService
 
         $totalTeamsCount = (int)($event->tournament_teams_count ?? 0);
         if ($totalTeamsCount < 2) {
-            return ['ok' => false, 'message' => 'Не задано количество команд.'];
+            return ['ok' => false, 'message' => __('Не задано количество команд.')];
         }
 
         $existingTeamsCount = EventTeam::where('event_id', $event->id)

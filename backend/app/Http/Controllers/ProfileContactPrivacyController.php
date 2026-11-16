@@ -43,6 +43,6 @@ class ProfileContactPrivacyController extends Controller
             'allow_user_contact' => $allow,
         ])->save();
 
-        return back()->with('status', 'Настройки приватности сохранены ✅');
+        return back()->with('status', __('Настройки приватности сохранены ✅'));
     }
 }

@@ -497,3 +497,55 @@ if (! function_exists('volley_scheme_label')) {
         return ($isLibero && $withLiberoWord) ? $base . ' ' . __('events.libero_word') : $base;
     }
 }
+
+// =========================
+// Иконки вместо эмодзи в готовых строках (lang/БД): 🏖 → пляжный зонт, 🏐 → мяч (остальной текст экранируется)
+// =========================
+if (! function_exists('ico_text')) {
+    function ico_text(?string $text): \Illuminate\Support\HtmlString
+    {
+        static $cache = [];
+        $icon = function (string $name, string $size) use (&$cache): string {
+            return $cache[$name] ??= \Illuminate\Support\Facades\Blade::render('<x-ico name="' . $name . '" size="' . $size . '" />');
+        };
+        $safe = e((string) $text);
+        $safe = preg_replace('/\x{1F3D6}\x{FE0F}?/u', $icon('beach', '1.35em'), $safe);
+        $safe = preg_replace('/\x{1F3D0}\x{FE0F}?/u', $icon('ball', '1.15em'), $safe);
+
+        return new \Illuminate\Support\HtmlString((string) $safe);
+    }
+}
+
+// Готовая SVG-иконка строкой (для JS-вставок: json_encode(ico_svg('sun')))
+if (! function_exists('ico_svg')) {
+    function ico_svg(string $name, string $size = '1.1em'): string
+    {
+        return \Illuminate\Support\Facades\Blade::render('<x-ico name="' . $name . '" size="' . $size . '" />');
+    }
+}
+
+if (!function_exists('event_duration_label')) {
+    /**
+     * Длительность мероприятия в днях/часах/минутах: «5 дней 5 часов» (style=full) или «5 дн. 5 ч» (style=compact).
+     * Нулевые части пропускаются. Для длинных мероприятий (кемпы) вместо «120ч».
+     */
+    function event_duration_label(int $seconds, string $style = 'full'): string
+    {
+        $mins = max(0, intdiv($seconds, 60));
+        $d = intdiv($mins, 1440);
+        $h = intdiv($mins % 1440, 60);
+        $m = $mins % 60;
+        $parts = [];
+        if ($style === 'compact') {
+            if ($d > 0) $parts[] = $d . ' ' . __('events.dur_d_short');
+            if ($h > 0) $parts[] = $h . ' ' . __('events.dur_h_short');
+            if ($m > 0) $parts[] = $m . ' ' . __('events.dur_m_short');
+            return $parts ? implode(' ', $parts) : ('0 ' . __('events.dur_m_short'));
+        }
+        if ($d > 0) $parts[] = trans_choice('events.dur_days_full', $d, ['count' => $d]);
+        if ($h > 0) $parts[] = trans_choice('events.dur_hours_full', $h, ['count' => $h]);
+        if ($m > 0) $parts[] = trans_choice('events.dur_mins_full', $m, ['count' => $m]);
+        return $parts ? implode(' ', $parts) : trans_choice('events.dur_mins_full', 0, ['count' => 0]);
+    }
+}
+

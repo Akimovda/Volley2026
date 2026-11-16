@@ -166,7 +166,7 @@ $awayWonMatch = $match->winner_team_id && (int) $match->winner_team_id === (int)
         <div class="ms-header-meta ms-header-meta--right">{{ $match->scheduled_at->setTimezone($tz)->format('d.m.Y H:i') }}</div>
         @endif
         @if($match->isCompleted())
-        <button type="button" class="ms-share-btn" onclick="msShareMatch({{ $match->id }}, {{ json_encode(($homeTeam->name ?? '?') . ' vs ' . ($awayTeam->name ?? '?')) }})">📤</button>
+        <button type="button" class="ms-share-btn" onclick="msShareMatch({{ $match->id }}, {{ json_encode(($homeTeam->name ?? '?') . ' vs ' . ($awayTeam->name ?? '?')) }})"><x-ico name="share" size="1.2em" /></button>
         @endif
         @if(\App\Models\MatchRallyEvent::where('match_id', $match->id)->exists())
         <a href="{{ route('match.stats', $match) }}" class="ms-stats-link" aria-label="{{ __('match_stats.stats_link_aria') }}" title="{{ __('match_stats.stats_link_aria') }}">

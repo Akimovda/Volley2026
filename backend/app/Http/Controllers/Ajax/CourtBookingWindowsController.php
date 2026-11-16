@@ -24,7 +24,7 @@ class CourtBookingWindowsController extends Controller
         $directionModel = $location->directions()
             ->where('direction', $direction)
             ->where('is_active', true)
-            ->with(['courts' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order')])
+            ->with(['courts' => fn ($q) => $q->where('is_active', true)->orderBy('sort_order'), 'workingHours', 'location.city'])
             ->first();
 
         if (!$directionModel) {
@@ -65,10 +65,21 @@ class CourtBookingWindowsController extends Controller
             $slotsByCourtId[$court->id] = $slots;
         }
 
+        // Ставки ₽/час по времени суток на выбранную дату — для легенды «интервалы и стоимость» в окне брони
+        $wh = $directionModel->workingHours->firstWhere('day_of_week', $date->dayOfWeekIso - 1);
+        $ratesByCourtId = [];
+        if ($wh && !$wh->is_day_off) {
+            foreach ($directionModel->courts as $court) {
+                $segs = $pricingService->ratesForDay($court, $date, $this->timeToMin($wh->opens_at), $this->timeToMin($wh->closes_at));
+                $ratesByCourtId[$court->id] = array_values(array_filter($segs, fn ($x) => $x[2] !== null));
+            }
+        }
+
         return response()->json([
             'ok'     => true,
             'courts' => $courts,
             'slots'  => $slotsByCourtId,
+            'rates'  => $ratesByCourtId,
         ]);
     }
 

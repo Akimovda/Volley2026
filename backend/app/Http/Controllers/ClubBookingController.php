@@ -198,6 +198,10 @@ class ClubBookingController extends Controller
             return back()->with('error', $e->getMessage());
         }
 
+        foreach (collect($result['cancelled'])->pluck('order_token')->filter()->unique() as $tok) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('cancelled', $tok, $data['reason'] ?? null);
+        }
+
         $notificationService = app(\App\Services\UserNotificationService::class);
         $refundedIds = $result['refunded_ids'];
         foreach ($result['cancelled'] as $b) {
@@ -220,8 +224,18 @@ class ClubBookingController extends Controller
 
         try {
             $service->confirm($booking, $user);
+            // Заказ из виджета на несколько кортов подтверждается целиком.
+            if ($booking->order_token) {
+                CourtBooking::where('order_token', $booking->order_token)->where('id', '!=', $booking->id)
+                    ->where('status', CourtBooking::STATUS_PENDING)->get()
+                    ->each(fn ($b) => $service->confirm($b, $user));
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($booking->order_token) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('confirmed', $booking->order_token);
         }
 
         if ($booking->user_id) {
@@ -229,7 +243,7 @@ class ClubBookingController extends Controller
                 ->createCourtBookingConfirmedNotification($booking->user_id, $booking->load('court.direction.location'));
         }
 
-        return back()->with('success', 'Бронь подтверждена.');
+        return back()->with('success', __('Бронь подтверждена.'));
     }
 
     public function reject(Request $request, CourtBooking $booking, CourtBookingService $service)
@@ -246,8 +260,17 @@ class ClubBookingController extends Controller
 
         try {
             $service->reject($booking, $user, $data['reason'] ?? '');
+            if ($booking->order_token) {
+                CourtBooking::where('order_token', $booking->order_token)->where('id', '!=', $booking->id)
+                    ->whereIn('status', [CourtBooking::STATUS_PENDING])->get()
+                    ->each(fn ($b) => $service->reject($b, $user, $data['reason'] ?? ''));
+            }
         } catch (\InvalidArgumentException $e) {
             return back()->with('error', $e->getMessage());
+        }
+
+        if ($booking->order_token) {
+            app(\App\Services\RentalOrderMailer::class)->toClient('rejected', $booking->order_token, $data['reason'] ?? null);
         }
 
         if ($notifyUserId) {
@@ -255,6 +278,6 @@ class ClubBookingController extends Controller
                 ->createCourtBookingRejectedNotification($notifyUserId, $bookingForNotification, $data['reason'] ?? null);
         }
 
-        return back()->with('success', 'Бронь отклонена.');
+        return back()->with('success', __('Бронь отклонена.'));
     }
 }

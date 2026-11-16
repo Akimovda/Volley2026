@@ -15,11 +15,42 @@ class TournamentTvController extends Controller
      */
     public function tv(Request $request, Event $event)
     {
+        [$occurrences, $selectedOccurrence, $stages] = $this->resolveTvContext($request, $event, true);
+
+        $liveUrl = route('tournament.public.live', array_filter([
+            'event' => $event->id,
+            'occurrence_id' => $selectedOccurrence?->id,
+        ]));
+        $scoreUrl = route('tournament.tv.live', array_filter([
+            'event' => $event->id,
+            'occurrence_id' => $selectedOccurrence?->id,
+        ]));
+        $liveCards = $this->liveCards($stages);
+        $tvSig = $this->stateSignature($stages);
+
+        return view('tournaments.tv', compact('event', 'stages', 'liveUrl', 'scoreUrl', 'liveCards', 'tvSig', 'occurrences', 'selectedOccurrence'));
+    }
+
+    /**
+     * JSON для ТВ-режима: текущий счёт идущих матчей (обновляется без перезагрузки страницы, цифры табло переворачиваются)
+     * и сигнатура состояния турнира — при её изменении (старт/завершение матча, смена этапа) страница перезагружается.
+     */
+    public function tvLive(Request $request, Event $event)
+    {
+        [, , $stages] = $this->resolveTvContext($request, $event, false);
+
+        return response()->json([
+            'sig'     => $this->stateSignature($stages),
+            'matches' => $this->liveCards($stages),
+        ])->header('Cache-Control', 'no-store');
+    }
+
+    /** Туры события, выбранный тур и этапы с матчами (общий разбор для tv() и tvLive()). */
+    private function resolveTvContext(Request $request, Event $event, bool $withTeams): array
+    {
         // Occurrence selector — тот же подход, что в TournamentPublicController::
         // show() (29018cdd): для сезонных турниров $occurrences = все туры серии,
-        // для несезонных — только occurrences, где реально есть tournament_stages
-        // (иначе дефолт "последний occurrence события" мог упереться в тур без
-        // единой стадии, см. report/tabs-fix-recon-A.md).
+        // для несезонных — только occurrences, где реально есть tournament_stages.
         $occurrences = collect();
         $selectedOccurrence = null;
         if ($event->season_id) {
@@ -47,20 +78,69 @@ class TournamentTvController extends Controller
 
         $stages = $event->tournamentStages()
             ->when($selectedOccurrence, fn($q) => $q->where('occurrence_id', $selectedOccurrence->id))
-            ->with([
+            ->with($withTeams ? [
                 'groups.standings' => fn($q) => $q->with('team.members.user', 'team.captain')->orderBy('rank'),
-                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'winner'])
+                'matches' => fn($q) => $q->with(['teamHome.members.user', 'teamHome.captain', 'teamAway.members.user', 'teamAway.captain', 'winner', 'group'])
                     ->orderBy('round')->orderBy('match_number'),
+            ] : [
+                'matches' => fn($q) => $q->with(['teamHome', 'teamAway', 'group'])->orderBy('round')->orderBy('match_number'),
             ])
             ->orderBy('sort_order')
             ->get();
 
-        $liveUrl = route('tournament.public.live', array_filter([
-            'event' => $event->id,
-            'occurrence_id' => $selectedOccurrence?->id,
-        ]));
+        return [$occurrences, $selectedOccurrence, $stages];
+    }
 
-        return view('tournaments.tv', compact('event', 'stages', 'liveUrl', 'occurrences', 'selectedOccurrence'));
+    /** Идущие матчи: текущий сет (очки), выигранные сеты, площадка, названия. */
+    private function liveCards($stages): array
+    {
+        $rally = app(\App\Services\MatchRallyService::class);
+        $cards = [];
+        foreach ($stages as $stage) {
+            foreach ($stage->matches as $m) {
+                if (!$m->isLive()) {
+                    continue;
+                }
+                $state = null;
+                try {
+                    $state = $rally->computeMatchState($m);
+                } catch (\Throwable $e) {
+                    $state = null;
+                }
+                $setNo = $state && !empty($state['sets']) ? (int) array_key_last($state['sets']) : 1;
+                $info = $state['sets'][$setNo] ?? null;
+                $cards[] = [
+                    'id'         => (int) $m->id,
+                    'court'      => (string) ($m->court ?? ''),
+                    'stage'      => (string) $stage->name,
+                    'group'      => (string) ($m->group?->name ?? ''),
+                    'home'       => (string) ($m->teamHome?->name ?? 'TBD'),
+                    'away'       => (string) ($m->teamAway?->name ?? 'TBD'),
+                    'set'        => $setNo,
+                    'target'     => (int) ($info['target'] ?? $stage->setPoints()),
+                    'pts_home'   => (int) ($info['home'] ?? 0),
+                    'pts_away'   => (int) ($info['away'] ?? 0),
+                    'sets_home'  => (int) ($state['homeWins'] ?? $m->sets_home ?? 0),
+                    'sets_away'  => (int) ($state['awayWins'] ?? $m->sets_away ?? 0),
+                ];
+            }
+        }
+
+        return $cards;
+    }
+
+    /** Сигнатура структуры состояния (без живых очков): статусы этапов и матчей, счёт по сетам завершённых. */
+    private function stateSignature($stages): string
+    {
+        $parts = [];
+        foreach ($stages as $stage) {
+            $parts[] = 's' . $stage->id . ':' . $stage->status;
+            foreach ($stage->matches as $m) {
+                $parts[] = $m->id . ':' . $m->status . ':' . (int) $m->sets_home . '-' . (int) $m->sets_away . ':' . (int) $m->team_home_id . '-' . (int) $m->team_away_id;
+            }
+        }
+
+        return md5(implode('|', $parts));
     }
 
     /**

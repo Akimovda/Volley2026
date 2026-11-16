@@ -354,9 +354,9 @@ if ($initialStep < 1 || $initialStep > 3) {
 		<div class="container">
     {{-- Детект встроенного браузера MAX/Telegram/VK --}}
     <div id="inapp-browser-warning" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:.75rem;padding:1rem 1.25rem;margin-bottom:1rem;">
-        {!! __('events.create_inapp_warn') !!}
+        <x-ico name="warn" size="1.3em" /> {!! __('events.create_inapp_warn') !!}
         <br><br>
-        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small">{{ __('events.create_open_browser') }}</a>
+        <a href="{{ url()->current() }}" target="_blank" class="btn btn-secondary btn-small"><x-ico name="globe" /> {{ __('events.create_open_browser') }}</a>
     </div>
     <script>
     (function(){
@@ -409,7 +409,7 @@ if ($initialStep < 1 || $initialStep > 3) {
 				<div class="alert alert-error">
 					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
-						@foreach ($errors->all() as $err)
+						@foreach (collect($errors->all())->unique() as $err)
 						<li>{{ $err }}</li>
 						@endforeach
 					</ul>
@@ -421,32 +421,34 @@ if ($initialStep < 1 || $initialStep > 3) {
 				<div class="alert alert-error">
 					<div class="alert-title">{{ __('events.create_check_fields') }}</div>
 					<ul class="list">
-						@foreach (session('wizard_errors') as $field => $messages)
-						@foreach ((array) $messages as $msg)
-						<li><strong>{{ $field }}:</strong> {{ $msg }}</li>
-						@endforeach
+						@foreach (collect(session('wizard_errors'))->flatten()->unique() as $msg)
+						<li>{{ $msg }}</li>
 						@endforeach
 					</ul>
 				</div>
 			</div>
             @endif
-			@if (!empty($draft))
-			@php
-				$draftTitle = trim((string) (($draft->payload['title'] ?? '')));
-				$draftWhen  = $draft->updated_at->copy()->timezone(config('app.timezone'))->format('d.m.Y H:i');
-			@endphp
+			@if (!empty($drafts) && $drafts->isNotEmpty())
 			<div class="ramka">
 				<div class="alert alert-info">
-					<div class="alert-title">{{ __('events.draft_found_title') }}</div>
-					<p>{{ __('events.draft_found_text', ['title' => $draftTitle !== '' ? '«'.$draftTitle.'»' : '', 'when' => $draftWhen]) }}</p>
-					<div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem;">
-						<a href="{{ route('events.draft.restore') }}" class="btn btn-small">{{ __('events.draft_continue') }}</a>
-						<form method="POST" action="{{ route('events.draft.destroy') }}" style="margin:0;">
-							@csrf
-							@method('DELETE')
-							<button type="submit" class="btn btn-outline btn-small">{{ __('events.draft_discard') }}</button>
-						</form>
+					<div class="alert-title">{{ $drafts->count() > 1 ? __('events.drafts_found_title', ['n' => $drafts->count()]) : __('events.draft_found_title') }}</div>
+					@foreach ($drafts as $d)
+					@php
+						$dTitle = trim((string) (($d->payload['title'] ?? '')));
+						$dWhen  = $d->updated_at->copy()->timezone(config('app.timezone'))->format('d.m.Y H:i');
+					@endphp
+					<div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-top:1rem;">
+						<div>{{ $dTitle !== '' ? '«'.$dTitle.'»' : __('events.draft_untitled') }} <span style="opacity:.6;">· {{ __('events.draft_changed', ['when' => $dWhen]) }}</span></div>
+						<div style="display:flex; gap:1rem; flex-wrap:wrap;">
+							<a href="{{ route('events.draft.restore', ['draft' => $d->id]) }}" class="btn btn-small">{{ __('events.draft_continue') }}</a>
+							<form method="POST" action="{{ route('events.draft.destroy', ['draft' => $d->id]) }}" style="margin:0;">
+								@csrf
+								@method('DELETE')
+								<button type="submit" class="btn btn-outline btn-small">{{ __('events.draft_discard') }}</button>
+							</form>
+						</div>
 					</div>
+					@endforeach
 				</div>
 			</div>
 			@elseif (session('draft_restored'))
@@ -470,6 +472,8 @@ if ($initialStep < 1 || $initialStep > 3) {
                 >
 					@csrf
 					<input type="hidden" name="wizard_step" id="wizard_step" value="{{ $initialStep }}">
+					{{-- черновик, с которым работает форма (его обновляет автосохранение; создастся при первом сохранении) --}}
+					<input type="hidden" name="draft_id" id="draft_id" value="{{ old('draft_id', session('draft_id')) }}">
 					{{-- ✅ city-first --}}
 					<input type="hidden" name="city_id" id="event_city_id" value="{{ auth()->user()->city ? auth()->user()->city->id : '' }}">
 					
@@ -507,6 +511,11 @@ if ($initialStep < 1 || $initialStep > 3) {
 	{{-- Page JS --}}
 	<script src="/js/config/volleyball-config.js"></script>
 	<script src="@asset_v('js/events-create.js')"></script>
+	@if (session('draft_restored') || $errors->any())
+	<script>window.__restoreValues = {!! json_encode(old(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE) !!};</script>
+	<script src="@asset_v('js/events-create-restore.js')"></script>
+	@endif
+		@include('partials.city-add')
 	
 	<script>
 		let rerenderTimer = null;
@@ -718,27 +727,30 @@ document.addEventListener('DOMContentLoaded', function() {
     form.addEventListener('submit', function (e) {
         var btn = form.querySelector('button[type="submit"]');
         if (!btn) return;
-        // валидация шага могла отменить отправку — кнопку не блокируем
-        if (e.defaultPrevented) return;
         if (btn.dataset.submitted === 'true') {
             e.preventDefault();
             return;
         }
-        btn.dataset.origText = btn.textContent;
-        btn.dataset.submitted = 'true';
-        btn.disabled = true;
-        btn.textContent = txtSaving;
+        // Валидаторы (тренер, шаги) могут отменить отправку уже ПОСЛЕ этого обработчика (он стоит раньше в очереди),
+        // поэтому блокируем кнопку и заводим таймер только если отправка действительно состоялась.
+        setTimeout(function () {
+            if (e.defaultPrevented) return;
+            btn.dataset.origText = btn.textContent;
+            btn.dataset.submitted = 'true';
+            btn.disabled = true;
+            btn.textContent = txtSaving;
 
-        // Если ответа нет слишком долго (обрыв сети, зависший WebView) — не оставляем
-        // человека с вечным «Сохранение...»: данные формы на странице целы, можно повторить.
-        timer = setTimeout(function () {
-            unlock(btn);
-            if (window.swal) {
-                swal({ text: txtStuck, icon: 'warning' });
-            } else {
-                alert(txtStuck);
-            }
-        }, SAVE_TIMEOUT_MS);
+            // Если ответа нет слишком долго (обрыв сети, зависший WebView) — не оставляем
+            // человека с вечным «Сохранение...»: данные формы на странице целы, можно повторить.
+            timer = setTimeout(function () {
+                unlock(btn);
+                if (window.swal) {
+                    swal({ text: txtStuck, icon: 'warning' });
+                } else {
+                    alert(txtStuck);
+                }
+            }, SAVE_TIMEOUT_MS);
+        }, 0);
     });
 
     // Возврат на страницу из bfcache (кнопка «назад») — иначе кнопка остаётся заблокированной
@@ -749,7 +761,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Автосохранение черновика на сервере ─────────────────────────────────────
     var draftUrl = @json(route('events.draft.save'));
-    var dirty = false, saveTimer = null, lastSent = '';
+    var dirty = false, saveTimer = null, lastSent = '', inflight = false, pending = false;
+    var draftIdEl = document.getElementById('draft_id');
 
     function draftBody() {
         var fd = new FormData(form);
@@ -773,15 +786,28 @@ document.addEventListener('DOMContentLoaded', function() {
         var fd = draftBody();
         var s = sig(fd);
         if (s === lastSent) return;
-        lastSent = s;
-        if (useBeacon && navigator.sendBeacon) {
+        // маячок ответа не отдаёт — без известного draft_id им нельзя (создался бы дубль), шлём fetch с keepalive
+        if (useBeacon && navigator.sendBeacon && draftIdEl && draftIdEl.value) {
+            lastSent = s;
             navigator.sendBeacon(draftUrl, fd);
             return;
         }
+        // пока идёт первое сохранение (id ещё нет) второе не отправляем — иначе создадутся два черновика
+        if (inflight) { pending = true; return; }
+        lastSent = s;
+        inflight = true;
         fetch(draftUrl, {
-            method: 'POST', body: fd, credentials: 'same-origin',
+            method: 'POST', body: fd, credentials: 'same-origin', keepalive: !!useBeacon,
             headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
-        }).catch(function () { lastSent = ''; });
+        }).then(function (r) { return r.json(); }).then(function (j) {
+            if (j && j.draft_id && draftIdEl) {
+                draftIdEl.value = String(j.draft_id);
+                lastSent = sig(draftBody());
+            }
+        }).catch(function () { lastSent = ''; }).then(function () {
+            inflight = false;
+            if (pending) { pending = false; schedule(); }
+        });
     }
     function schedule() {
         clearTimeout(saveTimer);

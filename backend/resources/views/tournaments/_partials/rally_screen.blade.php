@@ -73,6 +73,7 @@
 	<input type="hidden" name="assist_user_id">
 </form>
 
+@include('tournaments._partials.flip_score_css')
 <style>
 .rw-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:none;align-items:flex-end;justify-content:center}
 .rw-overlay.rw-open{display:flex}
@@ -104,6 +105,45 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .rw-toast.rw-toast-on{opacity:1;transform:translateX(-50%) translateY(0)}
 .rw-sidesw{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:#2967BA;color:#fff;padding:12px 20px;border-radius:14px;font-size:17px;font-weight:700;z-index:10003;opacity:0;pointer-events:none;transition:opacity .2s;box-shadow:0 4px 14px rgba(20,48,107,.35);text-align:center;max-width:90vw}
 .rw-sidesw.on{opacity:1}
+/* ===== Улучшения экрана ввода очков (мобильная эргономика) ===== */
+/* картинка-баннер раздела на рабочем экране судьи лишняя */
+.tournament-rally-page .top-section-img{display:none}
+.tournament-rally-page .top-section-txt{width:100%}
+@media(max-width:767px){.tournament-rally-page .top-section{padding-top:9rem}.tournament-rally-page .top-section-txt{padding-bottom:1.5rem}}
+/* плитка «Подаёт»: название команды целиком, подпись (капитан/игроки) отдельной строкой — без разрыва по слогам */
+#rw-live .rw-serve-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow-wrap:break-word;word-break:normal}
+#rw-live .rw-serve-btn span{text-transform:none;letter-spacing:0}
+@media(max-width:560px){
+	/* кнопки «Своё очко / Ошибка соперника» компактнее */
+	#rw-live .js-rw-start{min-width:0 !important;font-size:13px;padding:11px 6px;white-space:nowrap;gap:6px}
+	#rw-live .js-rw-start .rw-bi{display:inline-flex}
+}
+/* мяч у подающей команды */
+.rw-srv-ball{display:inline-flex;color:#E7612F;vertical-align:-.15em}
+.rw-srv-ball .ball-ic{width:1.1em;height:1.1em}
+/* инструкции — раскрывающийся блок */
+.rw-howto{background:rgba(41,103,186,.06);border:1px solid rgba(41,103,186,.2);border-radius:12px;padding:0 12px}
+.rw-howto summary{cursor:pointer;font-weight:700;font-size:14px;padding:11px 0;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.rw-howto summary::-webkit-details-marker{display:none}
+.rw-howto summary::after{content:'▾';opacity:.6;transition:transform .2s}
+.rw-howto[open] summary::after{transform:rotate(180deg)}
+.rw-howto[open]{padding-bottom:6px}
+body.dark .rw-howto{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.14)}
+/* компактная полоса счёта сверху при прокрутке */
+.rw-scorebar{position:fixed;left:8px;right:8px;top:0;z-index:900;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;padding:8px 12px;background:#fff;border:1px solid #B5C3D9;border-radius:14px;box-shadow:0 6px 20px rgba(20,48,107,.22);opacity:0;transform:translateY(-12px);pointer-events:none;transition:opacity .18s,transform .18s}
+.rw-scorebar.on{opacity:1;transform:none}
+.rw-sb-team{display:flex;align-items:center;gap:4px;font-weight:700;font-size:14px;min-width:0}
+.rw-sb-team--l{justify-content:flex-start}.rw-sb-team--r{justify-content:flex-end}
+.rw-sb-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rw-sb-score{font-size:22px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.rw-sb-set{grid-column:1/-1;text-align:center;font-size:11px;opacity:.6;margin-top:-4px}
+body.dark .rw-scorebar{background:#222333;border-color:rgba(181,195,217,.35);color:#cacaca}
+/* таблица статистики: компактнее + подсказка прокрутки на узком экране */
+.rw-stats-table{font-size:12px}
+.rw-stats-table th,.rw-stats-table td{padding:.6rem .5rem}
+.rw-scroll-hint{display:none;text-align:center;font-size:11px;opacity:.55;padding:2px 0 8px}
+@media(max-width:600px){.rw-scroll-hint{display:block}}
+
 
 
 
@@ -193,7 +233,7 @@ body.dark .rw-box .btn-secondary{background:transparent;border-color:rgba(181,19
 .mc-net span{position:absolute;font-size:9px;letter-spacing:.14em;text-transform:uppercase;background:rgba(15,23,42,.7);color:#fff;padding:0 6px;border-radius:6px;top:-5px;line-height:1.5}
 .mc-title{font-weight:800;font-size:13px;text-align:center;margin:2px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mc-ball{opacity:0;margin-right:4px;transition:opacity .2s;display:inline-flex;vertical-align:-.15em}
-.ball-ic{width:1.05em;height:1.05em;display:inline-block;fill:none !important}
+.ball-ic{width:1.05em;height:1.05em;display:inline-flex;vertical-align:-.15em}.ball-ic svg{width:100%;height:100%;fill:currentColor;stroke:none}
 .mc-server-ic{display:inline-flex;vertical-align:-.15em;margin-right:4px}
 .mc-server--warn{color:#dc2626;font-weight:800}
 .ls-bi{display:inline-flex;vertical-align:-.15em}
@@ -747,3 +787,61 @@ window.RallyLive = (function () {
 @include('tournaments._partials.player_card_js')
 @include('tournaments._partials.beach_serve_js')
 @endif
+
+<script>
+/* Полоса счёта: показываем, когда шапка матча ушла за верх экрана; ставим ниже фиксированной шапки сайта. */
+(function () {
+	var live = document.getElementById('rw-live');
+	if (!live) return;
+	function upd() {
+		var bar = document.getElementById('rw-scorebar'), head = document.getElementById('rw-headcard');
+		if (!bar || !head) return;
+		var hdr = document.querySelector('.fix-header');
+		var top = hdr ? Math.max(0, hdr.getBoundingClientRect().bottom) + 6 : 6;
+		bar.style.top = top + 'px';
+		bar.classList.toggle('on', head.getBoundingClientRect().bottom < top);
+	}
+	/* Счёт-часы: при изменении счёта (в т.ч. после перезагрузки страницы — прежний счёт берём из sessionStorage) переворачиваем изменившиеся цифры */
+	function flipDigit(el, od, nd) {
+		if (od === nd) return;
+		var bi = el.querySelector('.rw-fd-b i');
+		if (bi) bi.textContent = od;
+		var ft = document.createElement('span'); ft.className = 'rw-fd-ft'; ft.innerHTML = '<i>' + od + '</i>';
+		var fb = document.createElement('span'); fb.className = 'rw-fd-fb'; fb.innerHTML = '<i>' + nd + '</i>';
+		el.appendChild(ft); el.appendChild(fb);
+		var done = false;
+		function fin() { if (done) return; done = true; if (bi) bi.textContent = nd; if (ft.parentNode) ft.remove(); if (fb.parentNode) fb.remove(); }
+		fb.addEventListener('animationend', fin);
+		setTimeout(fin, 1200);
+	}
+	function flips() {
+		var boxes = document.querySelectorAll('.rw-flipscore');
+		if (!boxes.length) return;
+		var box = boxes[0];
+		var key = 'rwScore:' + location.pathname + ':' + (live.getAttribute('data-set') || '');
+		var cur = { home: box.getAttribute('data-home'), away: box.getAttribute('data-away') };
+		var prev = null;
+		try { prev = JSON.parse(sessionStorage.getItem(key) || 'null'); } catch (e) {}
+		try { sessionStorage.setItem(key, JSON.stringify(cur)); } catch (e) {}
+		if (!prev) return;
+		// одно и то же изменение анимируем на всех табло страницы (шапка матча и компактная полоса)
+		Array.prototype.forEach.call(boxes, function (bx) {
+			['home', 'away'].forEach(function (side) {
+				if (String(prev[side]) === String(cur[side])) return;
+				var grp = bx.querySelector('.rw-flipgroup[data-side="' + side + '"]');
+				if (!grp) return;
+				var ds = grp.querySelectorAll('.rw-fd');
+				var old = String(prev[side]);
+				while (old.length < ds.length) old = '0' + old;
+				if (old.length > ds.length) return;
+				for (var i = 0; i < ds.length; i++) flipDigit(ds[i], old.charAt(i), ds[i].getAttribute('data-d'));
+			});
+		});
+	}
+	window.addEventListener('scroll', upd, { passive: true });
+	window.addEventListener('resize', upd);
+	if (window.MutationObserver) new MutationObserver(function () { upd(); flips(); }).observe(live, { childList: true });
+	upd();
+	flips();
+})();
+</script>

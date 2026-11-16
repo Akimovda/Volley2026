@@ -165,6 +165,7 @@
                     @if($primary->vk_id)<span class="prov">VK #{{ $primary->vk_id }}</span>@endif
                     @if($primary->yandex_id)<span class="prov">YA #{{ $primary->yandex_id }}</span>@endif
                     @if($primary->google_id)<span class="prov">Google</span>@endif
+                    @if($primary->max_user_id)<span class="prov">MAX #{{ $primary->max_user_id }}</span>@endif
                     @if($primary->apple_id)<span class="prov">Apple</span>@endif
                 </div>
                 <div class="dup-stat">
@@ -219,6 +220,7 @@
                     @endif
                     @if($sec->vk_id)<span class="prov">VK #{{ $sec->vk_id }}</span>@endif
                     @if($sec->yandex_id)<span class="prov">YA #{{ $sec->yandex_id }}</span>@endif
+                    @if($sec->max_user_id)<span class="prov">MAX #{{ $sec->max_user_id }}</span>@endif
                     @if($sec->google_id)<span class="prov">Google</span>@endif
                     @if($sec->apple_id)<span class="prov">Apple</span>@endif
                 </div>

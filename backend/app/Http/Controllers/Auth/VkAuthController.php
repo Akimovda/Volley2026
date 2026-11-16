@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -17,35 +18,11 @@ use Laravel\Socialite\Two\InvalidStateException;
 
 class VkAuthController extends Controller
 {
+    use OAuthCallbackSupport;
+
     private function logWarn(string $msg, array $ctx = []): void
     {
         Log::warning('[VK_OAUTH] ' . $msg, $ctx);
-    }
-
-    private function storeReturnTo(Request $request): void
-    {
-        $returnTo = (string) ($request->query('return') ?: url()->previous() ?: '');
-        $request->session()->put('oauth_return_to', $this->sanitizeReturnTo($returnTo));
-    }
-
-    private function sanitizeReturnTo(string $url): string
-    {
-        $fallback = url('/events');
-        $url = trim($url);
-        if ($url === '') return $fallback;
-
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) return $fallback;
-        if (str_contains($url, '/auth/') || str_contains($url, '/logout') || str_contains($url, '/login') || str_contains($url, '/register')) return $fallback;
-
-        return $url;
-    }
-
-    private function popReturnTo(Request $request): string
-    {
-        return (string) $request->session()->pull('oauth_return_to', url('/events'));
     }
 
     public function redirect(Request $request)
@@ -64,24 +41,45 @@ class VkAuthController extends Controller
         // чтобы state гарантированно попал в БД до того как браузер уйдёт на VK.
         $response = Socialite::driver('vkid')->redirect();
         $request->session()->save();
+
+        // Запасное хранилище state (10 мин): WebView/системный браузер иногда теряют сессионную куку при возврате с VK.
+        // Раньше в этом случае проверка state просто отключалась (stateless) — теперь пропускаем только наш собственный,
+        // выданный нами и ещё не использованный state.
+        parse_str((string) parse_url($response->getTargetUrl(), PHP_URL_QUERY), $q);
+        if (!empty($q['state'])) {
+            Cache::put('vk_oauth_state_' . $q['state'], true, now()->addMinutes(10));
+        }
+
         return $response;
     }
 
     public function callback(Request $request)
     {
+        if ($dup = $this->duplicateCallbackRedirect($request)) {
+            return $dup;
+        }
+
         $returnTo = $this->popReturnTo($request);
+
+        // state одноразовый: забираем из запасного хранилища при первом же callback
+        $stateParam = (string) $request->query('state', '');
+        $stateIsOurs = $stateParam !== '' && (bool) Cache::pull('vk_oauth_state_' . $stateParam);
 
         try {
             $vkUser = Socialite::driver('vkid')->user();
         } catch (InvalidStateException $e) {
             // Telegram WebView / iOS WKWebView теряют сессионную куку при cross-domain redirect.
-            // Stateless-fallback: CSRF-токен пропускаем, но VK access_token всё равно валиден.
+            // Без куки допускаем только state, выданный нами (см. redirect()), иначе — отказ (защита от подмены входа).
+            if (!$stateIsOurs) {
+                $this->logWarn('callback rejected: invalid state and not in cache');
+                return $this->authFail('vk', 'VK: сессия авторизации истекла. Попробуйте ещё раз.');
+            }
             try {
                 $vkUser = Socialite::driver('vkid')->stateless()->user();
                 $this->logWarn('stateless fallback used (session cookie lost)');
             } catch (\Throwable $e2) {
                 $this->logWarn('callback failed (stateless also failed)', ['e' => $e2->getMessage()]);
-                return redirect()->route('login')->with('error', 'VK: ошибка авторизации. Попробуйте ещё раз.');
+                return $this->authFail('vk', 'VK: ошибка авторизации. Попробуйте ещё раз.');
             }
         } catch (\Throwable $e) {
             $this->logWarn('callback failed', [
@@ -93,7 +91,7 @@ class VkAuthController extends Controller
                     0, 8
                 ),
             ]);
-            return redirect()->route('login')->with('error', 'VK: сессия авторизации истекла. Попробуйте ещё раз.');
+            return $this->authFail('vk', 'VK: сессия авторизации истекла. Попробуйте ещё раз.');
         }
 
         $vkId  = (string) $vkUser->getId();
@@ -104,14 +102,14 @@ class VkAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать VK.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать VK.'));
             }
 
             $current = $request->user();
 
             if (User::where('vk_id', $vkId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('vk', $vkId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                return redirect('/user/profile')->with('error', __('Этот VK уже привязан к другому аккаунту.'));
             }
 
             $current->vk_id = $vkId;
@@ -119,7 +117,7 @@ class VkAuthController extends Controller
 
             UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
 
-            return redirect()->to($returnTo)->with('status', 'VK привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('VK привязан ✅'));
         }
 
         /* LOGIN */
@@ -129,7 +127,7 @@ class VkAuthController extends Controller
             $user = User::where('vk_notify_user_id', $vkId)->first();
             if ($user) {
                 if (User::where('vk_id', $vkId)->where('id', '!=', $user->id)->exists()) {
-                    return redirect()->route('login')->with('error', 'Этот VK уже привязан к другому аккаунту.');
+                    return redirect()->route('login')->with('error', __('Этот VK уже привязан к другому аккаунту.'));
                 }
                 $user->vk_id = $vkId;
                 $user->save();
@@ -147,23 +145,15 @@ class VkAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $safeEmail = "vk_{$vkId}@vk.local";
-            if (User::where('email', $safeEmail)->exists()) {
-                $safeEmail = "vk_{$vkId}_" . Str::random(6) . "@vk.local";
-            }
-
-            $user = new User();
-            $user->email    = $safeEmail;
-            $user->password = Hash::make(Str::random(32));
-            $user->name     = trim(($vkUser->getName() ?: '') ?: 'Пользователь');
-            $user->vk_id    = $vkId;
-            $user->save();
+            $user = $this->createOAuthUser('vk_id', $vkId, trim(($vkUser->getName() ?: '') ?: 'Пользователь'), '', "vk_{$vkId}@vk.local");
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
         $request->session()->regenerate();
         $request->session()->put('auth_provider', 'vk');
         $request->session()->put('auth_provider_id', $vkId);
+        $this->authSuccess('vk', $isNewUser);
 
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
 

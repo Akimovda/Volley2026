@@ -45,7 +45,7 @@
     @php $user = auth()->user(); @endphp
 
     <x-slot name="title">{{ __('activity.dashboard_title') }} — VolleyPlay</x-slot>
-    <x-slot name="h1">{{ __('activity.dashboard_title') }}</x-slot>
+    <x-slot name="h1">{{ __('activity.dashboard_title') }} <x-beta-badge /></x-slot>
     <x-slot name="h2">
         @if($user->first_name || $user->last_name)
             {{ trim($user->first_name . ' ' . $user->last_name) }}
@@ -88,7 +88,7 @@
                         data-preferred-device-id="{{ $preferredDevice?->id ?? '' }}"
                         data-preferred-ble-id="{{ $preferredDevice?->ble_identifier ?? '' }}"
                         data-record-url="{{ route('activity.record') }}">
-                        {{ __('activity.record_btn') }}
+                        <x-ico name="activity" color="#ffffff" size="1.2em" /> {{ __('activity.record_btn') }}
                     </button>
                 </div>
                 @endif
@@ -97,7 +97,7 @@
                 <div id="healthkit-import-section" style="display:none" class="mb-2">
                     <button id="btn-import-healthkit" class="btn btn-outline-secondary w-100"
                             style="min-height:44px">
-                        📲 {{ __('activity.import_from_health') }}
+                        <x-ico name="download" size="1.2em" /> <span id="btn-import-healthkit-label">{{ __('activity.import_from_health') }}</span>
                     </button>
                     <div id="healthkit-import-status" style="display:none" class="mt-1">
                         <div class="alert mb-0" id="healthkit-import-message">
@@ -204,7 +204,7 @@
                             @endif
                             @if($session->is_ghost)
                                 <div class="mt-05">
-                                    <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit">👻 {{ __('activity.ghost_badge') }}</span>
+                                    <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit"><x-ico name="ghost" size="1.1em" /> {{ __('activity.ghost_badge') }}</span>
                                 </div>
                             @endif
                         </div>
@@ -215,9 +215,9 @@
                                 </span>
                             @endif
                             @if(($session->source ?? 'watch') === 'healthkit_import')
-                                <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit">📲 {{ $session->source_name }}</span>
+                                <span class="badge badge-sm" style="background:rgba(120,120,128,.18);color:inherit"><x-ico name="smartphone" size="1.1em" /> {{ $session->source_name }}</span>
                             @elseif(($session->source ?? 'watch') === 'ble')
-                                <span class="badge badge-sm badge-blue" style="opacity:.75">📡 BLE</span>
+                                <span class="badge badge-sm badge-blue" style="opacity:.75"><x-ico name="bluetooth" size="1.1em" /> BLE</span>
                             @endif
                         </div>
                     </div>
@@ -228,7 +228,7 @@
                             <div class="b-600">{{ $durStr }}</div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="f-13" style="opacity:.6">{{ __('activity.avg_hr') }}</div>
+                            <div class="f-13 d-flex fvc" style="opacity:.6;gap:.4rem"><x-ico name="heart" /> {{ __('activity.avg_hr') }}</div>
                             <div class="b-600">
                                 @if($session->avg_hr)
                                     <span class="act-hr-val" style="color:{{ $hrColorFn($session->avg_hr) }}">{{ $session->avg_hr }}</span>
@@ -239,15 +239,15 @@
                             </div>
                         </div>
                         <div class="col-6 col-md-3">
-                            <div class="f-13" style="opacity:.6">{{ __('activity.load_score') }}</div>
+                            <div class="f-13 d-flex fvc" style="opacity:.6;gap:.4rem"><x-ico name="zap" /> {{ __('activity.load_score') }}</div>
                             <div class="b-600">{{ (float) $session->load_score > 0 ? number_format($session->load_score, 0) : '—' }}</div>
                         </div>
                         <div class="col-6 col-md-3">
                             @if($session->calories_kcal)
-                                <div class="f-13" style="opacity:.6">{{ __('activity.calories') }}</div>
+                                <div class="f-13 d-flex fvc" style="opacity:.6;gap:.4rem"><x-ico name="flame" /> {{ __('activity.calories') }}</div>
                                 <div class="b-600">≈{{ number_format($session->calories_kcal, 0) }} ккал</div>
                             @elseif($hasJumps)
-                                <div class="f-13" style="opacity:.6">{{ __('activity.jumps_count') }}</div>
+                                <div class="f-13 d-flex fvc" style="opacity:.6;gap:.4rem"><x-ico name="ball" /> {{ __('activity.jumps_count') }}</div>
                                 <div class="b-600">{{ $session->jump_count ?? 0 }}</div>
                             @endif
                         </div>
@@ -268,7 +268,7 @@
                                 data-text="{{ __('activity.delete_confirm_text') }}"
                                 data-confirm-text="{{ __('activity.delete_confirm_btn') }}"
                                 data-cancel-text="{{ __('activity.delete_cancel_btn') }}">
-                            🗑️ {{ __('activity.delete_btn') }}
+                            <x-ico name="trash" /> {{ __('activity.delete_btn') }}
                         </button>
                     </form>
                     @endif
@@ -333,7 +333,7 @@ if (window.Capacitor) {
 
     var importBtn = document.getElementById('btn-import-healthkit');
     if (importBtn && Capacitor.getPlatform() === 'android') {
-        importBtn.textContent = '📲 ' + @json(__('activity.import_from_health_connect'));
+        var importLbl = document.getElementById('btn-import-healthkit-label'); if (importLbl) importLbl.textContent = @json(__('activity.import_from_health_connect'));
     }
 }
 

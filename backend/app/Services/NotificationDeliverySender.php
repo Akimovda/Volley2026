@@ -50,6 +50,13 @@ final class NotificationDeliverySender
         try {
             $channel = (string) $delivery->channel;
 
+            // Массовые рассылки о новых мероприятиях: один чат мессенджера — одно сообщение по событию
+            // (чат могут быть привязан к нескольким аккаунтам — иначе человек получает «Новый кемп» дважды)
+            if ($this->isDuplicateChatDelivery($delivery, $user)) {
+                $this->markSkipped($deliveryId, 'duplicate chat: уже отправлено в этот чат другому аккаунту');
+                return;
+            }
+
             if ($channel === 'in_app') {
                 $this->markSent($deliveryId);
                 return;
@@ -79,10 +86,81 @@ final class NotificationDeliverySender
                 return;
             }
 
+            if ($channel === 'group') {
+                $this->sendGroup($user, $payload);
+                $this->markSent($deliveryId);
+                return;
+            }
+
             $this->markFailed($deliveryId, 'Неизвестный канал доставки.', $isRetry);
         } catch (\Throwable $e) {
             $this->markFailed($deliveryId, $e->getMessage(), $isRetry);
         }
+    }
+
+    /**
+     * Уведомление организатору в выбранный им канал/группу (Telegram — с темой форума, MAX — чат).
+     * Канал выбирается в профиле (users.registration_notify_channel_id); если он пропал — это сбой доставки.
+     */
+    private function sendGroup(User $user, array $payload): void
+    {
+        $channel = app(\App\Services\UserNotificationService::class)->registrationChannelFor($user);
+        if (!$channel) {
+            throw new \RuntimeException('Канал для уведомлений о записях не выбран или не подтверждён.');
+        }
+
+        if ($channel->platform === 'telegram') {
+            // своя тема для уведомлений о записях (профиль); не задана — тема канала, как у анонсов; 1 = главная тема группы
+            $custom = $user->registration_notify_thread_id;
+            $thread = \App\Support\TelegramTopic::normalize($custom !== null ? $custom : (($channel->meta ?? [])['message_thread_id'] ?? null));
+            $this->sendTelegram($user, $payload, (string) $channel->chat_id, $thread, $channel->resolveToken());
+            return;
+        }
+
+        if ($channel->platform === 'max') {
+            // бот канала: персональный бот организатора (Организатор Pro), иначе системный — как у анонсов
+            $this->sendMax($user, $payload, (string) $channel->chat_id, $channel->resolveToken());
+            return;
+        }
+
+        throw new \RuntimeException('Платформа канала не поддерживается: ' . $channel->platform);
+    }
+
+    /** Типы массовых рассылок, где в один и тот же чат нельзя слать дубль по одному событию. */
+    private const DEDUPE_BY_CHAT_TYPES = ['new_event_broadcast', 'new_event_in_city'];
+
+    /**
+     * true — в тот же чат этого мессенджера уже ушла доставка того же типа по тому же событию (от другого аккаунта).
+     * Чат берём из профиля получателя: telegram_notify_chat_id / max_chat_id / vk_notify_user_id.
+     */
+    private function isDuplicateChatDelivery(object $delivery, User $user): bool
+    {
+        $channel = (string) $delivery->channel;
+        $type    = (string) $delivery->type;
+        $column  = match ($channel) {
+            'telegram' => 'telegram_notify_chat_id',
+            'max'      => 'max_chat_id',
+            'vk'       => 'vk_notify_user_id',
+            default    => null,
+        };
+        if ($column === null || !in_array($type, self::DEDUPE_BY_CHAT_TYPES, true) || empty($delivery->event_id)) {
+            return false;
+        }
+        $chat = trim((string) ($user->{$column} ?? ''));
+        if ($chat === '') {
+            return false;
+        }
+
+        return DB::table('notification_deliveries as d')
+            ->join('users as u', 'u.id', '=', 'd.user_id')
+            ->where('d.event_id', (int) $delivery->event_id)
+            ->where('d.type', $type)
+            ->where('d.channel', $channel)
+            ->where('d.status', 'sent')
+            ->where('d.id', '<>', (int) $delivery->id)
+            ->where('d.user_id', '<>', (int) $user->id)
+            ->where('u.' . $column, $chat)
+            ->exists();
     }
 
     private function sendPush(User $user, array $payload): void
@@ -124,17 +202,18 @@ final class NotificationDeliverySender
         return trim(implode("\n", $lines));
     }
 
-    private function sendTelegram(User $user, array $payload): void
+    private function sendTelegram(User $user, array $payload, ?string $chatIdOverride = null, ?int $threadId = null, ?string $tokenOverride = null): void
     {
         // telegram_notify_chat_id — реальный chat_id личного диалога с ботом, появляется
         // только после /start notify_<token>. telegram_id (OAuth-логин) НЕ годится как
         // chat_id — Telegram не разрешает боту первым писать пользователю, который
         // никогда не открывал с ним чат: "chat not found"/"bot can't initiate conversation".
-        if (empty($user->telegram_notify_chat_id)) {
+        $chatId = $chatIdOverride ?? (string) $user->telegram_notify_chat_id;
+        if ($chatId === '') {
             throw new \RuntimeException('У пользователя не подключены Telegram-уведомления (telegram_notify_chat_id пуст).');
         }
 
-        $token = (string) config('services.telegram.bot_token');
+        $token = $tokenOverride ?: (string) config('services.telegram.bot_token');
         if ($token === '') {
             throw new \RuntimeException('Не настроен services.telegram.bot_token.');
         }
@@ -156,9 +235,10 @@ final class NotificationDeliverySender
         }
 
         if ($rich['image_url'] !== '') {
-            $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendPhoto'),
+            $resp = $this->postTelegram($token, 'sendPhoto',
                 array_filter([
-                    'chat_id'      => (string) $user->telegram_notify_chat_id,
+                    'chat_id'      => $chatId,
+                    'message_thread_id' => $threadId,
                     'photo'        => $rich['image_url'],
                     'caption'      => $text,
                     'parse_mode'   => $this->telegramParseMode($rich['format']),
@@ -178,9 +258,10 @@ final class NotificationDeliverySender
             return;
         }
 
-        $resp = \App\Services\TelegramApi::http(20)->post(\App\Services\TelegramApi::url($token, 'sendMessage'),
+        $resp = $this->postTelegram($token, 'sendMessage',
             array_filter([
-                'chat_id'                  => (string) $user->telegram_notify_chat_id,
+                'chat_id'                  => $chatId,
+                'message_thread_id'        => $threadId,
                 'text'                     => $text,
                 'parse_mode'               => $this->telegramParseMode($rich['format']),
                 'disable_web_page_preview' => false,
@@ -196,6 +277,29 @@ final class NotificationDeliverySender
         if (!is_array($json) || !($json['ok'] ?? false)) {
             throw new \RuntimeException('Telegram sendMessage API error: ' . $resp->body());
         }
+    }
+
+    /**
+     * POST в Bot API с запасным вариантом для неверной темы: «message thread not found» / TOPIC_ID_INVALID / тема закрыта —
+     * повторяем БЕЗ темы (в главную тему группы), чтобы уведомление не пропало.
+     */
+    private function postTelegram(string $token, string $method, array $params): \Illuminate\Http\Client\Response
+    {
+        $url  = \App\Services\TelegramApi::url($token, $method);
+        $resp = \App\Services\TelegramApi::http(20)->post($url, $params);
+
+        if ($resp->status() === 400 && !empty($params['message_thread_id'])) {
+            $desc = strtolower((string) data_get($resp->json(), 'description', ''));
+            if (str_contains($desc, 'thread not found') || str_contains($desc, 'topic_id_invalid') || str_contains($desc, 'topic_closed') || str_contains($desc, 'topic closed')) {
+                \Illuminate\Support\Facades\Log::warning('NotificationDeliverySender: тема Telegram недоступна, отправляем без темы', [
+                    'thread' => $params['message_thread_id'], 'error' => $desc,
+                ]);
+                unset($params['message_thread_id']);
+                $resp = \App\Services\TelegramApi::http(20)->post($url, $params);
+            }
+        }
+
+        return $resp;
     }
 
     private function sendVk(User $user, array $payload): void
@@ -248,19 +352,19 @@ final class NotificationDeliverySender
         }
     }
 
-    private function sendMax(User $user, array $payload): void
+    private function sendMax(User $user, array $payload, ?string $chatIdOverride = null, ?string $tokenOverride = null): void
     {
-        if (empty($user->max_chat_id)) {
+        if ($chatIdOverride === null && empty($user->max_chat_id)) {
             throw new \RuntimeException('У пользователя нет max_chat_id.');
         }
 
-        $token = (string) config('services.max.bot_token');
+        $token = $tokenOverride ?: (string) config('services.max.bot_token');
         if ($token === '') {
             throw new \RuntimeException('Не настроен services.max.bot_token.');
         }
 
         $rich   = $this->buildRichPayload($payload);
-        $chatId = (string) $user->max_chat_id;
+        $chatId = $chatIdOverride ?? (string) $user->max_chat_id;
 
         if ($rich['image_url'] !== '') {
             $this->sendMaxImageByUrl($token, $chatId, $rich['image_url']);
@@ -354,7 +458,7 @@ final class NotificationDeliverySender
         }
 
         $lines = [];
-        $lines[] = $emoji . ' ' . $rich['title'];
+        $lines[] = $this->withEmoji($emoji, (string) $rich['title']);
 
         // ---- Дата/время ----
         $datetime = trim((string) (
@@ -386,7 +490,23 @@ final class NotificationDeliverySender
     private function buildOrganizerPlayerText(string $emoji, string $title, array $payload, string $type): string
     {
         $eventTitle = trim((string) ($payload['event_title'] ?? ''));
-        $header = $emoji . ' ' . $title;
+
+        // Заголовок шаблона бывает пустым или равным названию мероприятия («{event_title}») — тогда подставляем понятную подпись по типу,
+        // иначе название мероприятия выводилось бы дважды. Эмодзи шаблона («✅ Регистрация подтверждена») не дублируем.
+        $plainTitle = trim((string) preg_replace('/^[\s\p{So}\p{Sk}\x{FE0F}\x{200D}]+/u', '', $title));
+        if ($plainTitle === '' || mb_strtolower($plainTitle) === mb_strtolower($eventTitle)) {
+            $title = match ($type) {
+                'organizer_player_registered'  => 'Регистрация подтверждена',
+                'organizer_player_cancelled'   => 'Бронь отменена',
+                'organizer_player_auto_booked' => 'Авто-запись из листа ожидания',
+                'organizer_registered_player'  => 'Вы записали игрока',
+                'organizer_cancelled_player'   => 'Вы отменили запись игрока',
+                'organizer_deleted_player'     => 'Вы удалили запись игрока',
+                default                        => $title,
+            };
+        }
+
+        $header = $this->withEmoji($emoji, $title);
         if ($eventTitle !== '') {
             $header .= ' 🏐 ' . $eventTitle;
         }
@@ -427,9 +547,20 @@ final class NotificationDeliverySender
 
         $lines[] = '';
         $lines[] = '--';
-        $lines[] = config('app.name', 'Volley Club');
+        $lines[] = config('app.notification_signature', 'VolleyClub');
 
         return implode("\n", $lines);
+    }
+
+    /** «эмодзи + заголовок»; если заголовок уже начинается со своего эмодзи — оставляем как есть (без дубля). */
+    private function withEmoji(string $emoji, string $title): string
+    {
+        $title = trim($title);
+        if ($title !== '' && preg_match('/^[\p{So}\p{Sk}]/u', $title)) {
+            return $title;
+        }
+
+        return trim($emoji . ' ' . $title);
     }
 
     private function buildOrganizerWaitlistText(array $payload): string

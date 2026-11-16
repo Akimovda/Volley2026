@@ -334,22 +334,32 @@ class PlayerMatchStatsService
 
     /**
      * Список игроков обеих команд для UI формы ввода.
+     * $withoutBench — без запасных и капитана на скамейке (для пульта, пока расстановка не ведётся);
+     * валидация и пересчёт статистики берут полный состав (запасной может выйти на замену).
      */
-    public function getMatchPlayers(TournamentMatch $match): array
+    public function getMatchPlayers(TournamentMatch $match, bool $withoutBench = false): array
     {
         $home = DB::table('event_team_members')
             ->join('users', 'users.id', '=', 'event_team_members.user_id')
             ->where('event_team_id', $match->team_home_id)
             ->where('confirmation_status', 'confirmed')
-            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code')
+            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code',
+                'event_team_members.role_code', 'event_team_members.team_role', 'event_team_members.meta')
             ->get();
+        if ($withoutBench) {
+            $home = $home->reject(fn ($u) => $this->isOnBench($u))->values();
+        }
 
         $away = DB::table('event_team_members')
             ->join('users', 'users.id', '=', 'event_team_members.user_id')
             ->where('event_team_id', $match->team_away_id)
             ->where('confirmation_status', 'confirmed')
-            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code')
+            ->select('users.id', 'users.first_name', 'users.last_name', 'event_team_members.position_code',
+                'event_team_members.role_code', 'event_team_members.team_role', 'event_team_members.meta')
             ->get();
+        if ($withoutBench) {
+            $away = $away->reject(fn ($u) => $this->isOnBench($u))->values();
+        }
 
         return [
             'home' => $home->map(fn($u) => [
@@ -365,5 +375,15 @@ class PlayerMatchStatsService
                 'role' => in_array($u->position_code ?? null, ['blocker', 'defender'], true) ? position_short((string) $u->position_code) : null,
             ])->toArray(),
         ];
+    }
+
+    /** Запасной (team_role/role_code = reserve) или капитан на скамейке (meta.on_bench). */
+    private function isOnBench(object $u): bool
+    {
+        $meta = is_string($u->meta ?? null) ? (json_decode($u->meta, true) ?: []) : (array) ($u->meta ?? []);
+        if (!empty($meta['on_bench'])) {
+            return true;
+        }
+        return ($u->team_role ?: $u->role_code) === 'reserve';
     }
 }

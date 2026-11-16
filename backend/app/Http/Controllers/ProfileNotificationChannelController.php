@@ -83,7 +83,7 @@ class ProfileNotificationChannelController extends Controller
 
         return redirect()
             ->to(route('profile.notification_channels') . '#bind-result')
-            ->with('status', 'Ссылка для привязки канала создана. Следуйте инструкции ниже.')
+            ->with('status', __('Ссылка для привязки канала создана. Следуйте инструкции ниже.'))
             ->with('bind_request_id', $bind->id)
             ->with('bind_instruction', $instruction);
     }
@@ -102,11 +102,29 @@ class ProfileNotificationChannelController extends Controller
             abort(403);
         }
 
+        // канал был выбран для уведомлений о записях — возвращаем личные сообщения
+        \App\Models\User::where('registration_notify_channel_id', $channel->id)
+            ->update(['registration_notify_channel_id' => null, 'registration_notify_also_dm' => false, 'registration_notify_thread_id' => null]);
+
         $channel->delete();
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', 'Канал уведомлений удалён.');
+            ->with('status', __('Канал уведомлений удалён.'));
+    }
+
+    /** POST /user/profile/notification-channels/{channel}/check — проверка канала/группы/темы (Telegram). */
+    public function check(Request $request, UserNotificationChannel $channel): \Illuminate\Http\JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user && (int) $channel->user_id === (int) $user->id, 403);
+
+        // номер темы: из формы (поле рядом с кнопкой), иначе — сохранённый у канала
+        // пустое поле темы = тема канала (как при отправке), а не «без темы»
+        $given = $request->input('thread_id');
+        $raw   = ($given !== null && $given !== '') ? $given : (($channel->meta ?? [])['message_thread_id'] ?? null);
+
+        return response()->json(app(\App\Services\TelegramChannelChecker::class)->check($channel, $raw));
     }
 
     public function updateSettings(Request $request): RedirectResponse
@@ -121,15 +139,45 @@ class ProfileNotificationChannelController extends Controller
 
         $data = $request->validate([
             'notify_player_registrations' => ['nullable', 'boolean'],
+            'registration_channel_id'     => ['nullable', 'integer'],
+            'registration_also_dm'        => ['nullable', 'boolean'],
+            'registration_thread_id'      => ['nullable', 'integer', 'min:1', 'max:2147483647'],
         ]);
 
-        $user->update([
+        $update = [
             'notify_player_registrations' => (bool) ($data['notify_player_registrations'] ?? false),
-        ]);
+        ];
+
+        // куда присылать уведомления о записях: пусто — личные сообщения бота; иначе — свой подтверждённый канал/группа
+        if ($request->has('registration_channel_id')) {
+            $channelId = (int) ($data['registration_channel_id'] ?? 0);
+            if ($channelId > 0) {
+                $ok = UserNotificationChannel::query()
+                    ->where('id', $channelId)
+                    ->where('user_id', (int) $user->id)
+                    ->where('is_verified', true)
+                    ->whereIn('platform', ['telegram', 'max'])
+                    ->exists();
+                if (!$ok) {
+                    return redirect()->back()->withErrors(['registration_channel_id' => __('profile.notif_org_channel_invalid')]);
+                }
+            }
+            $update['registration_notify_channel_id'] = $channelId > 0 ? $channelId : null;
+            $update['registration_notify_also_dm']    = $channelId > 0 && (bool) ($data['registration_also_dm'] ?? false);
+
+            // тема (топик) — только для Telegram-канала и только для того канала, к которому она относится:
+            // при смене канала тема сбрасывается (номера тем у разных групп не связаны)
+            $sameChannel = $channelId > 0 && (int) $user->registration_notify_channel_id === $channelId;
+            $isTelegram  = $channelId > 0 && UserNotificationChannel::where('id', $channelId)->value('platform') === 'telegram';
+            $thread      = ($sameChannel && $isTelegram && isset($data['registration_thread_id'])) ? (int) $data['registration_thread_id'] : null;
+            $update['registration_notify_thread_id'] = $thread;
+        }
+
+        $user->update($update);
 
         return redirect()
             ->back()
-            ->with('status', 'Настройки уведомлений сохранены.');
+            ->with('status', __('Настройки уведомлений сохранены.'));
     }
 
     private function ensureCanManageChannels($user): void
@@ -154,7 +202,7 @@ class ProfileNotificationChannelController extends Controller
         return match ($platform) {
             'telegram' => [
                 'platform' => 'telegram',
-                'message' => 'Подключи бота в группу, супергруппу или канал Telegram.',
+                'message' => __('Подключи бота в группу, супергруппу или канал Telegram.'),
                 'button_text' => 'Подключить в группу',
                 'link' => 'https://t.me/' . config('services.telegram.bot_username') . '?startgroup=bind_' . $token,
                 'command' => null,
@@ -170,7 +218,7 @@ class ProfileNotificationChannelController extends Controller
 
             'vk' => [
                 'platform' => 'vk',
-                'message' => 'Привяжи бота к беседе или группе VK для отправки анонсов.',
+                'message' => __('Привяжи бота к беседе или группе VK для отправки анонсов.'),
                 'button_text' => 'Открыть сообщество',
                 'link' => (string) config('services.vk.bot_link', ''),
                 'command' => 'bind_' . $token,
@@ -186,7 +234,7 @@ class ProfileNotificationChannelController extends Controller
 
             'max' => [
                 'platform' => 'max',
-                'message' => 'В MAX нет автоматического выбора группы (как в Telegram), поэтому привязка идёт в два шага: сначала добавь бота в чат, затем выбери чат в личке с ботом.',
+                'message' => __('В MAX нет автоматического выбора группы (как в Telegram), поэтому привязка идёт в два шага: сначала добавь бота в чат, затем выбери чат в личке с ботом.'),
                 'button_text' => 'Открыть MAX',
                 'link' => $maxBotLink !== '' ? ($maxBotLink . '?start=' . $token) : '',
                 'command' => null,
@@ -202,7 +250,7 @@ class ProfileNotificationChannelController extends Controller
 
             default => [
                 'platform' => $platform,
-                'message' => 'Ссылка для привязки создана.',
+                'message' => __('Ссылка для привязки создана.'),
                 'button_text' => 'Открыть',
                 'link' => '',
                 'command' => 'bind_' . $token,

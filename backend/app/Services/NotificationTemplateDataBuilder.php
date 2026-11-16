@@ -179,7 +179,7 @@ final class NotificationTemplateDataBuilder
 
     private function loadGameSettings(?int $eventId): array
     {
-        if (!$eventId || !Schema::hasTable('event_game_settings')) {
+        if (!$eventId || !\App\Support\SchemaCache::hasTable('event_game_settings')) {
             return [];
         }
 

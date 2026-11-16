@@ -20,7 +20,7 @@ class PersonalBotController extends Controller
     {
         if (!$request->user()->isOrganizerPro()) {
             return redirect()->back()
-                ->with('error', 'Требуется подписка Организатор Pro.');
+                ->with('error', __('Требуется подписка Организатор Pro.'));
         }
 
         $data = $request->validate([
@@ -36,7 +36,7 @@ class PersonalBotController extends Controller
         if ($token === '') {
             $token = $this->savedToken($request, 'telegram');
             if ($token === null) {
-                return back()->withErrors(['bot_token' => 'Укажите токен бота.'])->withInput();
+                return back()->withErrors(['bot_token' => __('Укажите токен бота.')])->withInput();
             }
         }
 
@@ -46,11 +46,11 @@ class PersonalBotController extends Controller
                 ->get(\App\Services\TelegramApi::url($token, 'getMe'))
                 ->json();
         } catch (\Throwable $e) {
-            return back()->withErrors(['bot_token' => 'Не удалось подключиться к Telegram API: ' . $e->getMessage()]);
+            return back()->withErrors(['bot_token' => __('Не удалось подключиться к Telegram API: :msg', ['msg' => $e->getMessage()])]);
         }
 
         if (empty($meResp['ok'])) {
-            return back()->withErrors(['bot_token' => 'Неверный токен бота. Проверьте токен от BotFather.']);
+            return back()->withErrors(['bot_token' => __('Неверный токен бота. Проверьте токен от BotFather.')]);
         }
 
         $botUsername = $meResp['result']['username'] ?? '';
@@ -65,17 +65,17 @@ class PersonalBotController extends Controller
                 ])
                 ->json();
         } catch (\Throwable $e) {
-            return back()->withErrors(['chat_id' => 'Не удалось проверить права бота в чате: ' . $e->getMessage()]);
+            return back()->withErrors(['chat_id' => __('Не удалось проверить права бота в чате: :msg', ['msg' => $e->getMessage()])]);
         }
 
         if (empty($memberResp['ok'])) {
             $desc = $memberResp['description'] ?? 'неизвестная ошибка';
-            return back()->withErrors(['chat_id' => "Бот не найден в чате: {$desc}. Убедитесь что бот добавлен в группу/канал."]); 
+            return back()->withErrors(['chat_id' => __('Бот не найден в чате: :desc. Убедитесь, что бот добавлен в группу/канал.', ['desc' => $desc])]); 
         }
 
         $status = $memberResp['result']['status'] ?? '';
         if (!in_array($status, ['administrator', 'creator'], true)) {
-            return back()->withErrors(['chat_id' => "Бот @{$botUsername} есть в чате, но не является администратором (статус: {$status}). Выдайте боту права администратора."]);
+            return back()->withErrors(['chat_id' => __('Бот @:bot есть в чате, но не является администратором (статус: :status). Выдайте боту права администратора.', ['bot' => $botUsername, 'status' => $status])]);
         }
 
         // 3. Получаем название чата если title не задан
@@ -122,7 +122,7 @@ class PersonalBotController extends Controller
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', "✅ Бот @{$botUsername} успешно подключён к каналу «{$title}».");
+            ->with('status', __('✅ Бот @:bot успешно подключён к каналу «:title».', ['bot' => $botUsername, 'title' => $title]));
     }
 
     /**
@@ -132,7 +132,7 @@ class PersonalBotController extends Controller
     {
         if (!$request->user()->isOrganizerPro()) {
             return redirect()->back()
-                ->with('error', 'Требуется подписка Организатор Pro.');
+                ->with('error', __('Требуется подписка Организатор Pro.'));
         }
 
         $data = $request->validate([
@@ -148,7 +148,7 @@ class PersonalBotController extends Controller
         if ($token === '') {
             $token = $this->savedToken($request, 'max');
             if ($token === null) {
-                return back()->withErrors(['bot_token' => 'Укажите токен бота.'])->withInput();
+                return back()->withErrors(['bot_token' => __('Укажите токен бота.')])->withInput();
             }
         }
 
@@ -159,11 +159,11 @@ class PersonalBotController extends Controller
                 ->get(config('services.max.api_base_url') . '/me')
                 ->json();
         } catch (\Throwable $e) {
-            return back()->withErrors(['bot_token' => 'Не удалось подключиться к MAX API: ' . $e->getMessage()]);
+            return back()->withErrors(['bot_token' => __('Не удалось подключиться к MAX API: :msg', ['msg' => $e->getMessage()])]);
         }
 
         if (empty($meResp['user_id'])) {
-            return back()->withErrors(['bot_token' => 'Неверный токен бота MAX. Проверьте токен.']);
+            return back()->withErrors(['bot_token' => __('Неверный токен бота MAX. Проверьте токен.')]);
         }
 
         $botName     = $meResp['name'] ?? 'MAX Bot';
@@ -176,11 +176,11 @@ class PersonalBotController extends Controller
                 ->get(config('services.max.api_base_url') . '/chats/' . urlencode($chatId))
                 ->json();
         } catch (\Throwable $e) {
-            return back()->withErrors(['chat_id' => 'Не удалось проверить чат в MAX: ' . $e->getMessage()]);
+            return back()->withErrors(['chat_id' => __('Не удалось проверить чат в MAX: :msg', ['msg' => $e->getMessage()])]);
         }
 
         if (!empty($chatResp['error'])) {
-            return back()->withErrors(['chat_id' => 'Бот не имеет доступа к этому чату. Убедитесь что бот добавлен в чат и является администратором.']);
+            return back()->withErrors(['chat_id' => __('Бот не имеет доступа к этому чату. Убедитесь что бот добавлен в чат и является администратором.')]);
         }
 
         if ($title === '') {
@@ -216,7 +216,7 @@ class PersonalBotController extends Controller
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', "✅ Бот MAX «{$botName}» успешно подключён к чату «{$title}».");
+            ->with('status', __('✅ Бот MAX «:bot» успешно подключён к чату «:title».', ['bot' => $botName, 'title' => $title]));
     }
 
     /**
@@ -229,7 +229,7 @@ class PersonalBotController extends Controller
         }
 
         if ($channel->bot_type !== 'user') {
-            return back()->withErrors(['error' => 'Это системный канал, токен менять нельзя.']);
+            return back()->withErrors(['error' => __('Это системный канал, токен менять нельзя.')]);
         }
 
         $data  = $request->validate(['bot_token' => ['required', 'string', 'min:10']]);
@@ -242,7 +242,7 @@ class PersonalBotController extends Controller
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', '✅ Токен бота обновлён.');
+            ->with('status', __('✅ Токен бота обновлён.'));
     }
 
     /**
@@ -278,13 +278,13 @@ class PersonalBotController extends Controller
             abort(403);
         }
         if ($channel->bot_type !== 'user' || empty($channel->user_bot_token)) {
-            return back()->with('error', 'Это не персональный бот.');
+            return back()->with('error', __('Это не персональный бот.'));
         }
 
         try {
             $token = Crypt::decryptString($channel->user_bot_token);
         } catch (\Throwable) {
-            return back()->with('error', 'Не удалось прочитать токен бота — обновите токен (🔑).');
+            return back()->with('error', __('Не удалось прочитать токен бота — обновите токен (🔑).'));
         }
 
         $reason = null;
@@ -318,11 +318,11 @@ class PersonalBotController extends Controller
                 }
             }
         } catch (\Throwable $e) {
-            return back()->with('error', 'Не удалось связаться с мессенджером, попробуйте позже.');
+            return back()->with('error', __('Не удалось связаться с мессенджером, попробуйте позже.'));
         }
 
         if ($reason !== null) {
-            return back()->with('error', $reason . ' Выдайте боту права администратора и нажмите «Перепроверить» снова.');
+            return back()->with('error', $reason . ' ' . __('Выдайте боту права администратора и нажмите «Перепроверить» снова.'));
         }
 
         $channel->update([
@@ -333,6 +333,6 @@ class PersonalBotController extends Controller
 
         return redirect()
             ->route('profile.notification_channels')
-            ->with('status', '✅ Бот снова подтверждён в чате «' . ($channel->title ?: $channel->chat_id) . '».');
+            ->with('status', __('✅ Бот снова подтверждён в чате «:title».', ['title' => $channel->title ?: $channel->chat_id]));
     }
 }

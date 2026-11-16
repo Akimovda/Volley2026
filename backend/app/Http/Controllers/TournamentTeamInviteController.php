@@ -112,7 +112,7 @@ class TournamentTeamInviteController extends Controller
 
             return redirect()
                 ->route('tournamentTeams.show', [$team->event_id, $team->id])
-                ->with('success', 'Вы вступили в команду.');
+                ->with('success', __('Вы вступили в команду.'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'invite' => $e->getMessage(),
@@ -158,7 +158,7 @@ class TournamentTeamInviteController extends Controller
         try {
             $service->declineInvite($token, (int) $user->id);
 
-            return back()->with('success', 'Приглашение отклонено.');
+            return back()->with('success', __('Приглашение отклонено.'));
         } catch (DomainException $e) {
             return back()->withErrors([
                 'invite' => $e->getMessage(),

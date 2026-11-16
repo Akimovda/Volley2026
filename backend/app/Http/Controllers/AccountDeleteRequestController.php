@@ -59,6 +59,7 @@ class AccountDeleteRequestController extends Controller
             'vk_email'          => null,
             'vk_phone'          => null,
             'yandex_id'         => null,
+            'max_user_id'       => null,
             'yandex_email'      => null,
             'yandex_phone'      => null,
             'yandex_avatar'     => null,
@@ -74,6 +75,8 @@ class AccountDeleteRequestController extends Controller
             'avatar_media_id'   => null,
             'password'          => bcrypt(Str::random(40)),
         ])->save();
+
+        \Illuminate\Support\Facades\DB::table('biometric_devices')->where('user_id', $userId)->delete();
 
         Log::warning('Account deleted and anonymized', [
             'user_id' => $userId,
@@ -94,6 +97,6 @@ class AccountDeleteRequestController extends Controller
             return response()->json(['success' => true]);
         }
 
-        return redirect('/')->with('success', 'Ваш аккаунт удалён. Спасибо что были с нами.');
+        return redirect('/')->with('success', __('Ваш аккаунт удалён. Спасибо что были с нами.'));
     }
 }

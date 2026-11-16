@@ -57,15 +57,15 @@ class LinkConsumeController extends Controller
             ->first();
 
         if (!$code) {
-            return back()->withErrors(['code' => 'Код не найден или уже использован.'])->withInput();
+            return back()->withErrors(['code' => __('Код не найден или уже использован.')])->withInput();
         }
 
         if (!empty($code->consumed_at)) {
-            return back()->withErrors(['code' => 'Код уже использован.'])->withInput();
+            return back()->withErrors(['code' => __('Код уже использован.')])->withInput();
         }
 
         if (!empty($code->expires_at) && now()->greaterThan($code->expires_at)) {
-            return back()->withErrors(['code' => 'Код истёк. Сгенерируйте новый.'])->withInput();
+            return back()->withErrors(['code' => __('Код истёк. Сгенерируйте новый.')])->withInput();
         }
 
         // Сам себе
@@ -140,7 +140,7 @@ class LinkConsumeController extends Controller
                         || AccountLink::isTaken('telegram', $tgId, (int) $ownerLocked->id);
 
                     if ($busy) {
-                        abort(409, 'Этот Telegram уже привязан к другому аккаунту.');
+                        abort(409, __('Этот Telegram уже привязан к другому аккаунту.'));
                     }
                 }
 
@@ -152,7 +152,7 @@ class LinkConsumeController extends Controller
                         || AccountLink::isTaken('vk', $vkId, (int) $ownerLocked->id);
 
                     if ($busy) {
-                        abort(409, 'Этот VK уже привязан к другому аккаунту.');
+                        abort(409, __('Этот VK уже привязан к другому аккаунту.'));
                     }
                 }
 
@@ -213,9 +213,9 @@ class LinkConsumeController extends Controller
         } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
             throw $e;
         } catch (\Illuminate\Database\UniqueConstraintViolationException $e) {
-            abort(409, 'Этот Telegram/VK уже привязан к другому аккаунту.');
+            abort(409, __('Этот Telegram/VK уже привязан к другому аккаунту.'));
         }
 
-        return redirect('/user/profile')->with('status', 'Аккаунты успешно привязаны ✅');
+        return redirect('/user/profile')->with('status', __('Аккаунты успешно привязаны ✅'));
     }
 }

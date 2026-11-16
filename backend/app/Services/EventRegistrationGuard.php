@@ -109,7 +109,7 @@
 
 				$regStartsAt = $occurrence->effectiveRegistrationStartsAt();
 				if ($regStartsAt && $nowUtc->lessThan($regStartsAt)) {
-					$opens = $regStartsAt->copy()->setTimezone($tz)->locale('ru')->translatedFormat('d F в H:i');
+					$opens = \App\Support\RelativeDay::dateAtTime($regStartsAt->copy()->setTimezone($tz), 'd F в H:i', 'ru');
 					$result->addError('Регистрация ещё не началась — откроется ' . $opens . '.');
 					$result->data['meta'] = $teamsMeta;
 					return $result;
@@ -447,7 +447,7 @@
 
                 // Регистрация открыта — нужна команда
                 return (object)['allowed' => false, 'code' => 'team_only',
-                    'message' => 'Запись только в составе команды'];
+                    'message' => __('Запись только в составе команды')];
             }
 
             // --- Возраст ---
@@ -455,25 +455,25 @@
                 $birthDate = $user->birth_date ?? null;
                 if (!$birthDate) {
                     return (object)['allowed' => false, 'code' => 'age_blocked',
-                        'message' => '🔞 Вы не проходите по возрасту'];
+                        'message' => __('🔞 Вы не проходите по возрасту')];
                 }
                 $age = \Illuminate\Support\Carbon::parse($birthDate)
                          ->diffInYears(\Illuminate\Support\Carbon::parse($occurrence->starts_at, 'UTC'));
                 if ($agePolicy === 'adult') {
                     if ($age < 18) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Это мероприятие только для взрослых (18+)'];
+                            'message' => __('🔞 Это мероприятие только для взрослых (18+)')];
                     }
                 } else {
                     $ageMin = (int)($event?->child_age_min ?? 0);
                     $ageMax = (int)($event?->child_age_max ?? 0);
                     if ($ageMax > 0 && $age > $ageMax) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Вы не проходите по возрасту'];
+                            'message' => __('🔞 Вы не проходите по возрасту')];
                     }
                     if ($ageMin > 0 && $age < $ageMin) {
                         return (object)['allowed' => false, 'code' => 'age_blocked',
-                            'message' => '🔞 Вы не проходите по возрасту'];
+                            'message' => __('🔞 Вы не проходите по возрасту')];
                     }
                 }
             }
@@ -494,11 +494,11 @@
             if ($hasRestriction && !is_null($userLevel)) {
                 if (!is_null($lvMax) && $userLevel > $lvMax) {
                     return (object)['allowed' => false, 'code' => 'level_too_high',
-                        'message' => '😎 Вы слишком крут(а) для этого мероприятия!'];
+                        'message' => __('😎 Вы слишком крут(а) для этого мероприятия!')];
                 }
                if (!is_null($lvMin) && $userLevel < $lvMin) {
                 return (object)['allowed' => false, 'code' => 'level_too_low',
-                    'message' => '😥 Вы ещё не готовы для этого мероприятия!'];
+                    'message' => __('😥 Вы ещё не готовы для этого мероприятия!')];
             }
         }
 
@@ -523,11 +523,11 @@
                 if ($nowUtc->lessThan($restrictedOpensAt)) {
                     $label = $side === 'female' ? 'девушек' : 'мужчин';
                     $tz = $occurrence->event?->timezone ?? 'Europe/Moscow';
-                    $opensFormatted = $restrictedOpensAt->copy()->setTimezone($tz)->format('d.m.Y H:i');
+                    $opensFormatted = \App\Support\RelativeDay::dateAtTime($restrictedOpensAt->copy()->setTimezone($tz), 'd.m.Y H:i', 'ru');
                     return (object)[
                         'allowed' => false,
                         'code'    => 'gender_reg_not_started',
-                        'message' => 'Регистрация для ' . $label . ' ещё не началась — откроется ' . $opensFormatted . '.',
+                        'message' => __('Регистрация для :label ещё не началась — откроется :opens.', ['label' => $label, 'opens' => $opensFormatted]),
                     ];
                 }
             }
@@ -839,8 +839,9 @@
 						if (!$skipGenderWindow) {
 							$label = $side === 'female' ? 'девушек' : 'мужчин';
 							$result->errors[] = 'Регистрация для ' . $label . ' ещё не началась — откроется ' .
-								$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow')
-									->format('d.m.Y H:i') . '.';
+								\App\Support\RelativeDay::dateAtTime(
+									$restrictedOpensAt->copy()->setTimezone($occurrence->event?->timezone ?? 'Europe/Moscow'), 'd.m.Y H:i', 'ru'
+								) . '.';
 						}
 					}
 				}
@@ -880,7 +881,7 @@
 				return;
 			}
 
-			if (!Schema::hasColumn('users', 'birth_date') || !$user->birth_date) {
+			if (!\App\Support\SchemaCache::hasColumn('users', 'birth_date') || !$user->birth_date) {
 				$result->errors[] = $policy === 'adult'
 					? 'Для записи на это мероприятие укажи дату рождения в профиле.'
 					: 'Для записи на детское мероприятие укажи дату рождения в профиле.';
@@ -1273,7 +1274,7 @@
 			
 			$viewerGender = null;
 			
-			if ($user && Schema::hasColumn('users', 'gender')) {
+			if ($user && \App\Support\SchemaCache::hasColumn('users', 'gender')) {
 				
 				$g = strtolower(trim((string)$user->gender));
 				

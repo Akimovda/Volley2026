@@ -41,11 +41,11 @@ class VkCommunityBindController extends Controller
             if ($this->isSecurityOrInvalidError($permResp)) {
                 return back()
                     ->withInput(['group_slug' => $groupSlug])
-                    ->with('error', '❌ Неверный токен или токен не является ключом доступа сообщества. Убедитесь, что скопировали его из раздела «Управление → Работа с API» своего сообщества.');
+                    ->with('error', __('❌ Неверный токен или токен не является ключом доступа сообщества. Убедитесь, что скопировали его из раздела «Управление → Работа с API» своего сообщества.'));
             }
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Ошибка проверки токена VK: ' . $errorStr);
+                ->with('error', __('❌ Ошибка проверки токена VK: :msg', ['msg' => $errorStr]));
         }
 
         // Шаг 2: проверить права токена
@@ -55,13 +55,13 @@ class VkCommunityBindController extends Controller
         if (!in_array('manage', $permNames, true)) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Токен не имеет прав управления сообществом. При создании ключа отметьте «Разрешить приложению доступ к управлению сообществом».');
+                ->with('error', __('❌ Токен не имеет прав управления сообществом. При создании ключа отметьте «Разрешить приложению доступ к управлению сообществом».'));
         }
 
         if (!in_array('wall', $permNames, true)) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Токен не имеет прав на публикацию на стене. При создании ключа отметьте «Разрешить приложению доступ к стене сообщества».');
+                ->with('error', __('❌ Токен не имеет прав на публикацию на стене. При создании ключа отметьте «Разрешить приложению доступ к стене сообщества».'));
         }
 
         // Шаг 3: получить информацию о сообществе по явно указанному адресу
@@ -75,14 +75,14 @@ class VkCommunityBindController extends Controller
         if ($this->isVkError($groupResp)) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес — это должен быть адрес вашего сообщества ВКонтакте (например, club12345678 или msk_volley).');
+                ->with('error', __('❌ Сообщество «:name» не найдено. Проверьте адрес — это должен быть адрес вашего сообщества ВКонтакте (например, club12345678 или msk_volley).', ['name' => e($groupSlug)]));
         }
 
         $groups = $groupResp['response']['groups'] ?? $groupResp['response'] ?? [];
         if (empty($groups) || !is_array($groups)) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Сообщество «' . e($groupSlug) . '» не найдено. Проверьте адрес сообщества.');
+                ->with('error', __('❌ Сообщество «:name» не найдено. Проверьте адрес сообщества.', ['name' => e($groupSlug)]));
         }
 
         $group = $groups[0];
@@ -93,7 +93,7 @@ class VkCommunityBindController extends Controller
         if (!$groupId) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '❌ Не удалось определить ID сообщества. Попробуйте ещё раз.');
+                ->with('error', __('❌ Не удалось определить ID сообщества. Попробуйте ещё раз.'));
         }
 
         // Проверить: не привязано ли уже это сообщество
@@ -105,7 +105,7 @@ class VkCommunityBindController extends Controller
         if ($exists) {
             return back()
                 ->withInput(['group_slug' => $groupSlug])
-                ->with('error', '⚠️ VK-сообщество «' . $groupName . '» уже привязано.');
+                ->with('error', __('⚠️ VK-сообщество «:name» уже привязано.', ['name' => $groupName]));
         }
 
         // Шаг 4: сохранить канал
@@ -127,7 +127,7 @@ class VkCommunityBindController extends Controller
         ]);
 
         return redirect()->route('profile.notification_channels')
-            ->with('status', '✅ VK-сообщество «' . $groupName . '» успешно привязано!');
+            ->with('status', __('✅ VK-сообщество «:name» успешно привязано!', ['name' => $groupName]));
     }
 
     private function isVkError(mixed $resp): bool

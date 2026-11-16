@@ -80,6 +80,7 @@ async function loadSeatLine(el) {
 			// не выдаём число игроков за число команд, честно подписываем юнит "игроков".
 			if (isTournament && unitEl) unitEl.textContent = unitEl.dataset.unitPlayers ?? unitEl.textContent;
 			applySeatProgress(el, registeredTotal, effectiveMax);
+			if (!isTournament && effectiveMax > 0 && registeredTotal >= effectiveMax) markCardFull(el);
 		}
 	} catch (e) {}
 }
@@ -92,3 +93,48 @@ if (seatLines.length) {
 	}
 	for (let k = 0; k < concurrency; k++) worker();
 }
+
+// ===== Состояние кнопки на карточке: «Записаться в резерв» (мест нет) и «Уже идёт» (началось, пока страница открыта) =====
+const VP_RESERVE_LABEL = @json(__('events.btn_join_reserve'));
+const VP_LIVE_LABEL    = @json(__('events.btn_live_now'));
+const VP_FINISHED_LABEL = @json(__('events.msg_event_finished'));
+
+function markCardFull(el) {
+	const card = el.closest('.event-card');
+	const area = card && card.querySelector('[data-join-area]');
+	if (!area || area.dataset.groupMode === '1' || area.dataset.fullApplied === '1' || area.dataset.liveApplied === '1') return;
+	const url = (area.dataset.eventUrl || '') + '#waitlist-section';
+	const loginBtn = area.querySelector('.js-open-login-popup');
+	if (loginBtn) {                       // гость: то же окно входа, но с честной подписью и возвратом в блок резерва
+		loginBtn.textContent = VP_RESERVE_LABEL;
+		loginBtn.setAttribute('data-return-url', url);
+		area.dataset.fullApplied = '1';
+		return;
+	}
+	const target = area.querySelector('.js-open-join') || area.querySelector('form[action*="/join"]');
+	if (target) {                         // вошедший, ещё не записан: ведём на страницу события в блок резерва
+		const a = document.createElement('a');
+		a.href = url; a.className = 'btn btn-secondary w-100'; a.textContent = VP_RESERVE_LABEL;
+		(target.closest('form') || target).replaceWith(a);
+		area.dataset.fullApplied = '1';
+	}
+}
+
+function watchEventStart() {
+	const now = Date.now() / 1000;
+	document.querySelectorAll('[data-join-area][data-starts-ts]').forEach(area => {
+		const s = Number(area.dataset.startsTs) || 0, e = Number(area.dataset.endsTs) || 0;
+		if (!s || now < s || area.dataset.liveApplied === '1') return;
+		area.dataset.liveApplied = '1';
+		if (e && now >= e) {
+			area.innerHTML = '<div class="alert alert-info"></div>';
+			area.firstChild.textContent = VP_FINISHED_LABEL;
+		} else {
+			const a = document.createElement('a');
+			a.href = area.dataset.eventUrl || '#'; a.className = 'btn btn-secondary btn-live w-100'; a.textContent = VP_LIVE_LABEL;
+			area.innerHTML = ''; area.appendChild(a);
+		}
+	});
+}
+watchEventStart();
+setInterval(watchEventStart, 15000);

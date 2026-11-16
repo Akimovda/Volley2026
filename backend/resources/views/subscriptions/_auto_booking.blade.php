@@ -5,7 +5,7 @@
     $abMax = \App\Http\Controllers\SubscriptionAutoBookingController::MAX_PER_SUBSCRIPTION;
 @endphp
 <div class="mt-3" id="sab-block-{{ $sub->id }}">
-    <h3 class="mb-05">{{ __('subscriptions.ab_title') }}</h3>
+    <h3 class="mb-05 h2-ico"><x-ico name="robot" size="1.2em" /> {{ __('subscriptions.ab_title') }}</h3>
     <div class="alert alert-info f-14 mb-2">{!! __('subscriptions.ab_desc') !!}</div>
 
     @if($abRows->isEmpty())

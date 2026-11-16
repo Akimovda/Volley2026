@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AccountLink;
 use App\Models\User;
 use App\Support\UserPhotoFromProviderService;
+use App\Http\Controllers\Auth\Concerns\OAuthCallbackSupport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -15,35 +16,11 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
 {
+    use OAuthCallbackSupport;
+
     private function logWarn(string $msg, array $ctx = []): void
     {
         Log::warning('[GOOGLE_OAUTH] ' . $msg, $ctx);
-    }
-
-    private function storeReturnTo(Request $request): void
-    {
-        $returnTo = (string) ($request->query('return') ?: url()->previous() ?: '');
-        $request->session()->put('oauth_return_to', $this->sanitizeReturnTo($returnTo));
-    }
-
-    private function sanitizeReturnTo(string $url): string
-    {
-        $fallback = url('/events');
-        $url = trim($url);
-        if ($url === '') return $fallback;
-
-        $appHost = parse_url(config('app.url'), PHP_URL_HOST);
-        $urlHost = parse_url($url, PHP_URL_HOST);
-
-        if ($urlHost && $appHost && strcasecmp($urlHost, $appHost) !== 0) return $fallback;
-        if (str_contains($url, '/auth/') || str_contains($url, '/logout') || str_contains($url, '/login') || str_contains($url, '/register')) return $fallback;
-
-        return $url;
-    }
-
-    private function popReturnTo(Request $request): string
-    {
-        return (string) $request->session()->pull('oauth_return_to', url('/events'));
     }
 
     public function redirect(Request $request)
@@ -61,6 +38,10 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request)
     {
+        if ($dup = $this->duplicateCallbackRedirect($request)) {
+            return $dup;
+        }
+
         $returnTo = $this->popReturnTo($request);
 
         try {
@@ -70,7 +51,7 @@ class GoogleAuthController extends Controller
                 'e'     => $e->getMessage(),
                 'class' => get_class($e),
             ]);
-            return redirect()->route('login')->with('error', 'Google: ошибка авторизации. Попробуйте ещё раз.');
+            return $this->authFail('google', 'Google: ошибка авторизации. Попробуйте ещё раз.');
         }
 
         $googleId = (string) $googleUser->getId();
@@ -82,14 +63,14 @@ class GoogleAuthController extends Controller
         /* LINK */
         if ($intent === 'link') {
             if (!Auth::check()) {
-                return redirect()->route('login')->with('error', 'Сначала войдите, чтобы привязать Google.');
+                return redirect()->route('login')->with('error', __('Сначала войдите, чтобы привязать Google.'));
             }
 
             $current = $request->user();
 
             if (User::where('google_id', $googleId)->where('id', '!=', $current->id)->exists()
                 || AccountLink::isTaken('google', $googleId, $current->id)) {
-                return redirect('/user/profile')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
+                return redirect('/user/profile')->with('error', __('Этот Google аккаунт уже привязан к другому пользователю.'));
             }
 
             $current->google_id = $googleId;
@@ -97,20 +78,26 @@ class GoogleAuthController extends Controller
 
             UserPhotoFromProviderService::seedFromProviderIfAllowed($current, $avatar, false);
 
-            return redirect()->to($returnTo)->with('status', 'Google привязан ✅');
+            return redirect()->to($returnTo)->with('status', __('Google привязан ✅'));
         }
 
         /* LOGIN */
         $user = User::where('google_id', $googleId)->first();
 
-        if (!$user && $email) {
-            $user = User::where('email', $email)->first();
-            if ($user) {
-                if (User::where('google_id', $googleId)->where('id', '!=', $user->id)->exists()) {
-                    return redirect()->route('login')->with('error', 'Этот Google аккаунт уже привязан к другому пользователю.');
+        // Привязка к существующему аккаунту по email — только если Google подтвердил этот адрес (email_verified),
+        // и только к аккаунту без другого Google (чужую привязку не перехватываем)
+        $rawGoogle     = (array) ($googleUser->user ?? []);
+        $emailVerified = $email !== '' && filter_var($rawGoogle['email_verified'] ?? ($rawGoogle['verified_email'] ?? false), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$user && $emailVerified) {
+            $candidate = User::where('email', $email)->first();
+            if ($candidate && (empty($candidate->google_id) || (string) $candidate->google_id === $googleId)) {
+                if (User::where('google_id', $googleId)->where('id', '!=', $candidate->id)->exists()) {
+                    return redirect()->route('login')->with('error', __('Этот Google аккаунт уже привязан к другому пользователю.'));
                 }
-                $user->google_id = $googleId;
-                $user->save();
+                $candidate->google_id = $googleId;
+                $candidate->save();
+                $user = $candidate;
             }
         }
 
@@ -125,23 +112,15 @@ class GoogleAuthController extends Controller
         if (!$user) {
             $isNewUser = true;
 
-            $safeEmail = $email ?: "google_{$googleId}@google.local";
-            if (User::where('email', $safeEmail)->exists()) {
-                $safeEmail = "google_{$googleId}_" . Str::random(6) . "@google.local";
-            }
-
-            $user = new User();
-            $user->email    = $safeEmail;
-            $user->password = Hash::make(Str::random(32));
-            $user->name     = trim($googleUser->getName() ?: 'Пользователь');
-            $user->google_id = $googleId;
-            $user->save();
+            $user = $this->createOAuthUser('google_id', $googleId, trim($googleUser->getName() ?: 'Пользователь'), $emailVerified ? $email : '', "google_{$googleId}@google.local");
+            $isNewUser = $user->wasRecentlyCreated; // false — пользователя уже создал параллельный запрос
         }
 
         Auth::login($user, true);
         $request->session()->regenerate();
         $request->session()->put('auth_provider', 'google');
         $request->session()->put('auth_provider_id', $googleId);
+        $this->authSuccess('google', $isNewUser);
 
         UserPhotoFromProviderService::seedFromProviderIfAllowed($user, $avatar, $isNewUser);
 

@@ -63,6 +63,105 @@ class CourtPricingService
         return round($total, 2);
     }
 
+    /**
+     * Ставка (₽/час) по времени суток для корта в дату — сжатая по равным подряд идущим отрезкам:
+     * [[fromMin, toMin, rate|null], ...] с шагом 5 минут в границах [fromMin, toMin). Правила и приоритеты те же,
+     * что в calculate(), поэтому виджет считает цену слота (по получасам) ровно так же, как сервер при брони.
+     */
+    public function ratesForDay(LocationCourt $court, Carbon $localDate, int $fromMin, int $toMin, ?Collection $preloadedRules = null): array
+    {
+        $direction = $court->relationLoaded('direction') ? $court->direction : $court->direction()->first();
+        if (!$direction) {
+            return [];
+        }
+
+        $location = $direction->relationLoaded('location') ? $direction->location : $direction->location()->first();
+        $tz = $location?->effectiveTimezone() ?: 'Europe/Moscow';
+
+        $rules = $preloadedRules !== null
+            ? $preloadedRules->filter(fn ($r) => $r->court_id === null || (int) $r->court_id === (int) $court->id)
+            : CourtPriceRule::where('direction_id', $direction->id)
+                ->where(function ($q) use ($court) {
+                    $q->whereNull('court_id')->orWhere('court_id', $court->id);
+                })
+                ->get();
+        if ($rules->isEmpty()) {
+            return [];
+        }
+
+        $midnight = Carbon::parse($localDate->toDateString() . ' 00:00:00', $tz);
+        $segments = [];
+        for ($m = $fromMin; $m < $toMin; $m += 5) {
+            $rule = $this->bestRuleFor($rules, $court, $midnight->copy()->addMinutes($m));
+            $rate = $rule ? (float) $rule->price_per_hour : null;
+            $last = count($segments) - 1;
+            if ($last >= 0 && $segments[$last][2] === $rate && $segments[$last][1] === $m) {
+                $segments[$last][1] = $m + 5;
+            } else {
+                $segments[] = [$m, $m + 5, $rate];
+            }
+        }
+
+        return $segments;
+    }
+
+    /**
+     * Таблица стоимости аренды направления по дням недели для публичной страницы площадки:
+     * корты с одинаковой сеткой цен объединяются, дни с одинаковыми интервалами — в диапазоны («Пн–Пт»).
+     *
+     * @return array<int, array{courts: string[], rows: array<int, array{days: int[], segments: array<int, array{0:int,1:int,2:float}>|null}>}>
+     */
+    public function weeklyPriceTable(\App\Models\LocationDirection $direction): array
+    {
+        $direction->loadMissing(['location.city', 'workingHours', 'courts']);
+        $courts = $direction->courts->where('is_active', true)->values();
+        if ($courts->isEmpty()) {
+            return [];
+        }
+
+        $rules = CourtPriceRule::where('direction_id', $direction->id)->get();
+        if ($rules->isEmpty()) {
+            return [];
+        }
+
+        $tz = $direction->location?->effectiveTimezone() ?: 'Europe/Moscow';
+        $monday = Carbon::now($tz)->startOfWeek();
+        $hours = $direction->workingHours->keyBy('day_of_week');
+
+        $groups = [];
+        foreach ($courts as $court) {
+            $perDay = [];
+            for ($dow = 0; $dow < 7; $dow++) {
+                $wh = $hours->get($dow);
+                if (!$wh || $wh->is_day_off) {
+                    $perDay[$dow] = null;
+                    continue;
+                }
+                $segs = $this->ratesForDay($court, $monday->copy()->addDays($dow), $this->timeToMin($wh->opens_at), $this->timeToMin($wh->closes_at), $rules);
+                $perDay[$dow] = array_values(array_filter($segs, fn ($x) => $x[2] !== null));
+            }
+            $sig = md5(json_encode($perDay));
+            $groups[$sig]['courts'][] = $court->name;
+            $groups[$sig]['perDay'] = $perDay;
+        }
+
+        $out = [];
+        foreach ($groups as $g) {
+            $rows = [];
+            foreach ($g['perDay'] as $dow => $segs) {
+                $last = count($rows) - 1;
+                if ($last >= 0 && $rows[$last]['segments'] === $segs && end($rows[$last]['days']) === $dow - 1) {
+                    $rows[$last]['days'][] = $dow;
+                } else {
+                    $rows[] = ['days' => [$dow], 'segments' => $segs];
+                }
+            }
+            $out[] = ['courts' => $g['courts'], 'rows' => $rows];
+        }
+
+        return $out;
+    }
+
     private function bestRuleFor(Collection $rules, LocationCourt $court, Carbon $moment): ?CourtPriceRule
     {
         $dayOfWeek = $moment->dayOfWeekIso - 1; // 0=Пн ... 6=Вс

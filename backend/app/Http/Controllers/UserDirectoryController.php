@@ -34,10 +34,10 @@ class UserDirectoryController extends Controller
             })
             ->when($q !== '', function ($query) use ($q, $isTrusted) {
                 $query->where(function ($qq) use ($q, $isTrusted) {
-                    $qq->whereRaw("CONCAT(last_name, ' ', first_name) ILIKE ?", ["%{$q}%"])
-                       ->orWhereRaw("CONCAT(first_name, ' ', last_name) ILIKE ?", ["%{$q}%"])
-                       ->orWhere('first_name', 'ilike', "%{$q}%")
-                       ->orWhere('last_name', 'ilike', "%{$q}%");
+                    $qq->whereRaw(\App\Support\NameSearch::ilike("CONCAT(last_name, ' ', first_name)"), [\App\Support\NameSearch::text("%{$q}%")])
+                       ->orWhereRaw(\App\Support\NameSearch::ilike("CONCAT(first_name, ' ', last_name)"), [\App\Support\NameSearch::text("%{$q}%")])
+                       ->orWhereRaw(\App\Support\NameSearch::ilike('first_name'), [\App\Support\NameSearch::text("%{$q}%")])
+                       ->orWhereRaw(\App\Support\NameSearch::ilike('last_name'), [\App\Support\NameSearch::text("%{$q}%")]);
 
                     if ($isTrusted) {
                         $qq->orWhere('telegram_username', 'ilike', "%{$q}%");

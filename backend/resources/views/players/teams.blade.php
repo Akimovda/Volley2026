@@ -56,9 +56,9 @@
     {{-- Направление --}}
     <div class="filter-tabs mb-2">
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'beach', 'scheme'=>null])) }}"
-           class="filter-tab {{ $direction === 'beach' ? 'active' : '' }}">{{ __('players.beach') }}</a>
+           class="filter-tab {{ $direction === 'beach' ? 'active' : '' }}">{!! ico_text(__('players.beach')) !!}</a>
         <a href="{{ route('players.teams', array_merge(request()->query(), ['direction'=>'classic', 'scheme'=>null])) }}"
-           class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{{ __('players.classic') }}</a>
+           class="filter-tab {{ $direction === 'classic' ? 'active' : '' }}">{!! ico_text(__('players.classic')) !!}</a>
     </div>
 
     {{-- Схема --}}

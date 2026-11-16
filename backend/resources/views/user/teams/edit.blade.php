@@ -6,6 +6,7 @@ $posLabels = ['setter'=>'Связующий','outside'=>'Доигровщик','
 $roleLabels = ['captain'=>'Капитан','player'=>'Основной','reserve'=>'Запасной'];
 $currentMembers = $isNew ? collect() : $team->members->sortBy(fn($m)=>$m->role_code==='captain'?0:1);
 $captainId = $isNew ? auth()->id() : (int)$team->user_id;
+$captainReserve = (bool) ($currentMembers->firstWhere('user_id', $captainId)?->is_reserve ?? false);
 $validationErrors = session('team_validation_errors', []);
 $teamSizeError = session('team_size_error', null);
 $event = null;
@@ -36,6 +37,12 @@ if (request()->has('event_id') || session('return_event_id')) {
         <div class="mt-2 f-15" style="opacity:.7">Исправьте состав команды и попробуйте снова зарегистрироваться на турнир <strong>{{ $event->title }}</strong>.</div>
         @endif
     </div>
+</div>
+@endif
+
+@if($errors->any())
+<div class="ramka">
+    <div class="alert alert-error">⚠️ {{ $errors->first() }}</div>
 </div>
 @endif
 
@@ -104,6 +111,7 @@ if (request()->has('event_id') || session('return_event_id')) {
     {{-- Members --}}
     <div class="ramka">
         <h2 class="-mt-05">Состав команды</h2>
+        <p class="f-14 mb-2" style="opacity:.7">Для каждого игрока, включая капитана, выберите: <b>Основной</b> или <b>Запасной</b>. Запасные приглашаются в турнир как резерв.</p>
 
         <div id="utm-members-list">
             {{-- Captain (always first, non-removable) --}}
@@ -114,7 +122,11 @@ if (request()->has('event_id') || session('return_event_id')) {
                     <span class="b-600">{{ trim(auth()->user()->last_name . ' ' . auth()->user()->first_name) ?: auth()->user()->name }}</span>
                     <span class="f-13 alert-info p-1 pt-05 pb-05">Капитан</span>
                 </div>
-                <div class="d-flex gap-1 utm-pos-wrap">
+                <div class="d-flex gap-1 fvc utm-pos-wrap">
+                    <select name="members[0][is_reserve]" class="utm-role-select" style="width:auto" title="Капитан может играть в основе или быть запасным">
+                        <option value="0" @selected(!$captainReserve)>Основной</option>
+                        <option value="1" @selected($captainReserve)>Запасной</option>
+                    </select>
                     <select name="members[0][position_code]" class="utm-pos-select" style="width:auto">
                         <option value="">Позиция</option>
                         @foreach($posLabels as $k => $v)
@@ -161,6 +173,7 @@ if (request()->has('event_id') || session('return_event_id')) {
     </div>
 
     <div class="ramka text-center">
+        <div id="utm-pos-error" class="alert alert-error mb-2" style="display:none"></div>
         <a href="{{ route('profile.show') }}" class="btn btn-secondary mr-2">Отмена</a>
         <button type="submit" class="btn">{{ $isNew ? 'Создать команду' : 'Сохранить изменения' }}</button>
     </div>
@@ -177,6 +190,26 @@ if (request()->has('event_id') || session('return_event_id')) {
     var posLabels = @json($posLabels);
 
     // Hide position selects for beach
+    // Основному игроку (и капитану, если он не запасной) в классике обязательно амплуа
+    document.getElementById('user-team-form')?.addEventListener('submit', function(e) {
+        if (!isClassic) return;
+        var bad = [];
+        document.querySelectorAll('#utm-members-list .utm-member-row').forEach(function(row) {
+            var roleSel = row.querySelector('select[name$="[role_code]"]');
+            var resSel  = row.querySelector('select[name$="[is_reserve]"]');
+            var reserve = roleSel ? roleSel.value === 'reserve' : (resSel ? resSel.value === '1' : false);
+            var pos = row.querySelector('.utm-pos-select');
+            if (pos) pos.style.outline = '';
+            if (!reserve && pos && pos.value === '') { pos.style.outline = '2px solid #d33'; bad.push(row); }
+        });
+        if (bad.length) {
+            e.preventDefault();
+            var box = document.getElementById('utm-pos-error');
+            if (box) { box.textContent = 'Основным игрокам нужно выбрать амплуа (запасным — не обязательно).'; box.style.display = ''; }
+            bad[0].scrollIntoView({behavior: 'smooth', block: 'center'});
+        }
+    });
+
     function syncDirection() {
         var dir = document.getElementById('utm-direction')?.value;
         isClassic = dir === 'classic';

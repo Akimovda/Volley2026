@@ -35,6 +35,7 @@ $organizers = $isAdmin
     <x-slot name="script">
     <script src="@asset_v('assets/trix.js')"></script>
         <script src="/assets/city.js"></script>
+		@include('partials.city-add')
         <script src="/assets/org.js?v=2"></script>
         <script>
 			document.addEventListener('DOMContentLoaded', function () {

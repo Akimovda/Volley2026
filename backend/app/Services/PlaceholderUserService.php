@@ -125,9 +125,9 @@ final class PlaceholderUserService
 
         return $this->realUsers()
             ->where(function ($w) use ($like, $q) {
-                $w->whereRaw("(coalesce(last_name,'') || ' ' || coalesce(first_name,'')) ILIKE ?", [$like])
-                  ->orWhereRaw("(coalesce(first_name,'') || ' ' || coalesce(last_name,'')) ILIKE ?", [$like])
-                  ->orWhere('name', 'ILIKE', $like);
+                $w->whereRaw(\App\Support\NameSearch::ilike("(coalesce(last_name,'') || ' ' || coalesce(first_name,''))"), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike("(coalesce(first_name,'') || ' ' || coalesce(last_name,''))"), [\App\Support\NameSearch::text($like)])
+                  ->orWhereRaw(\App\Support\NameSearch::ilike('name'), [\App\Support\NameSearch::text($like)]);
                 if (ctype_digit($q)) {
                     $w->orWhere('id', (int) $q)->orWhere('phone', 'ILIKE', '%' . $q . '%');
                 }

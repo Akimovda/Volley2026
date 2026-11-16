@@ -18,7 +18,7 @@ class LeagueReserveController extends Controller
 
         // Только капитан может подтвердить
         if (!$user || !$team || (int) $team->captain_user_id !== (int) $user->id) {
-            abort(403, 'Только капитан команды может подтвердить участие.');
+            abort(403, __('Только капитан команды может подтвердить участие.'));
         }
 
         try {
@@ -27,7 +27,7 @@ class LeagueReserveController extends Controller
             $league = $leagueTeam->league;
             return redirect()
                 ->route('events.index')
-                ->with('success', "Участие команды «{$team->name}» в лиге «{$league->name}» подтверждено ✅");
+                ->with('success', __('Участие команды «:team» в лиге «:league» подтверждено ✅', ['team' => $team->name, 'league' => $league->name]));
         } catch (InvalidArgumentException $e) {
             return redirect()
                 ->route('events.index')

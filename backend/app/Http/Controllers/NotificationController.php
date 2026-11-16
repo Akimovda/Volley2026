@@ -44,13 +44,13 @@
 			try {
 				$this->userNotificationService->markAsRead($notification, (int) $user->id);
 				
-				return back()->with('status', 'Уведомление отмечено как прочитанное.');
+				return back()->with('status', __('Уведомление отмечено как прочитанное.'));
 				} catch (DomainException $e) {
 				return back()->with('error', $e->getMessage());
 				} catch (\Throwable $e) {
 				report($e);
 				
-				return back()->with('error', 'Не удалось отметить уведомление как прочитанное.');
+				return back()->with('error', __('Не удалось отметить уведомление как прочитанное.'));
 			}
 		}
 		
@@ -61,11 +61,11 @@
 			try {
 				$this->userNotificationService->markAllAsRead((int) $user->id);
 				
-				return back()->with('status', 'Все уведомления отмечены как прочитанные.');
+				return back()->with('status', __('Все уведомления отмечены как прочитанные.'));
 				} catch (\Throwable $e) {
 				report($e);
 				
-				return back()->with('error', 'Не удалось отметить уведомления как прочитанные.');
+				return back()->with('error', __('Не удалось отметить уведомления как прочитанные.'));
 			}
 		}
 		
@@ -76,13 +76,13 @@
 			try {
 				$this->userNotificationService->delete($notification, (int) $user->id);
 				
-				return back()->with('status', 'Уведомление удалено.');
+				return back()->with('status', __('Уведомление удалено.'));
 				} catch (DomainException $e) {
 				return back()->with('error', $e->getMessage());
 				} catch (\Throwable $e) {
 				report($e);
 				
-				return back()->with('error', 'Не удалось удалить уведомление.');
+				return back()->with('error', __('Не удалось удалить уведомление.'));
 			}
 		}	
 		

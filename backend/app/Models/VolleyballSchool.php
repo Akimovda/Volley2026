@@ -18,6 +18,24 @@ class VolleyballSchool extends Model implements HasMedia
         'is_published',
     ];
 
+    /**
+     * Фото по умолчанию, пока организатор не загрузил свои: те же картинки, что у мероприятий.
+     * Классика — одно фото, пляж — одно, «и то и другое» — два (классика, пляж). Своё фото организатора заменяет их целиком.
+     *
+     * @return string[]
+     */
+    public function defaultCoverUrls(): array
+    {
+        $classic = asset('img/classic.webp');
+        $beach   = asset('img/beach.webp');
+
+        return match ((string) $this->direction) {
+            'beach' => [$beach],
+            'both'  => [$classic, $beach],
+            default => [$classic],
+        };
+    }
+
     protected $casts = [
         'is_published' => 'boolean',
         'cover_media_ids' => 'array',
