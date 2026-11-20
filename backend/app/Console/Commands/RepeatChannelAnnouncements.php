@@ -102,7 +102,7 @@ class RepeatChannelAnnouncements extends Command
         }
 
         // свободные места: у командных турниров вместимость в игроках не задана — там проверяем только окно регистрации
-        $max = (int) ($occ->max_players ?? ($occ->event?->gameSettings?->max_players ?? 0));
+        $max = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occ); // ёмкость даты
         if ($max > 0) {
             $booked = DB::table('event_registrations')
                 ->where('occurrence_id', $occ->id)

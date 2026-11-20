@@ -53,7 +53,7 @@
 - Кнопка скачивания файла/отчёта ОБЯЗАНА иметь `data-file-download` (иначе ломается в Capacitor).
 - Картинки nginx кеширует 30 дней immutable — при замене менять имя файла. APK в `public/downloads/` не в git.
 - Цифры «на сейчас» (места, очередь) в джобах-уведомлениях считать в конструкторе, не в `handle()`.
-- Новый потребитель матчей для рейтингов — `->ratable()`; подсчёт команд турнира — `TournamentTeamService::countRegisteredTeams()`; позиции классики — `EventRoleSlotService::resolvePositions()`.
+- Новый потребитель матчей для рейтингов — `->ratable()`; подсчёт команд турнира — `TournamentTeamService::countRegisteredTeams()`; позиции классики — `EventRoleSlotService::resolvePositions()`. Ёмкость ДАТЫ (места по ролям, основной состав, команды) — только через `OccurrenceLimitService` (дата может быть расширена авто-кворумом, `docs/auto-quorum.md`), не читать `max_slots`/`max_players` напрямую.
 - Скоуп бренда: «Настройка App»/`/admin/apps` — только white-label (`!$brand->is_default`), основной VolleyClub не трогать; проверять curl с UA `SVSVolleyApp`/`VolleyPlayApp`/браузер.
 - Дедуп повторяющихся команд — отдельной колонкой `notified_*_at`, не бизнес-полем.
 - Бот-код — отдельный репозиторий `/home/appuser/volley-bots` (`./deploy.sh <бот> <env>`), `/opt/*` руками не править.

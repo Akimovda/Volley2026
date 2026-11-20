@@ -53,6 +53,16 @@
 - Нововведение затрагивает анонсы в каналах: после расширения анонс обновляется, а список и «Осталось мест: X из Y» должны авто-расширяться до новой ёмкости даты.
 - Сейчас (этап 1, зафиксировано тестом) `OccurrenceAnnouncementMessageBuilder` берёт `max_players` и `reserve_players_max` из **настроек мероприятия** (`loadGameSettings()`), а не даты — на этапе 2 перевести на ёмкость даты.
 
+## Этап 2 — ёмкость даты (сделано 2026-11-21, ветка `auto-quorum-stage2`)
+- Колонка `event_occurrences.quorum_teams_count smallint NULL` (миграция `2026_11_21_100000_…`). NULL — дата не расширена.
+- Сервис `App\Services\OccurrenceLimitService` (не путать с `OccurrenceCapacityService` — площадка/брони):
+  `isExpanded`, `teamsFor` (quorum ?? override.teams_count ?? event.teams_count), `baseTeams`, `perTeamRoles`/`teamSize` (из `GameCalculator` по схеме даты; «без амплуа» — player = размер команды; пляж — player = размер пары, «По амплуа» — Бл 1 + Защ 1; пляжная 4×4 → ключ `4x4_beach`), `roleLimits`/`roleLimit`, `maxPlayers`, `seriesMaxPlayers`, `reserveMax`.
+- **Инвариант:** не расширенная дата возвращает ровно прежние значения — `max_slots` слотов; `maxPlayers` = `occ.max_players ?? event.max_players` (как `effectiveMaxPlayers()`); `seriesMaxPlayers` = `event.max_players` (для мест, что раньше читали только мероприятие: анонс, пляжная ветка листа ожидания, быстрая запись на пляж, лимит листа ожидания). Новый расчёт — только у расширенной даты. Запасные не масштабируются.
+- Потребители: `EventRoleSlotService::tryTakeSlot/hasFreeSlot` (через `slotLimitForOccurrence`: при NULL — один `SELECT quorum_teams_count`, модель даты не грузится), `EventRegistrationGuard` (maxPlayers + лимиты ролей в `calculatePositions` → свободные позиции, запасные, waitlist-гейт), `EventOccurrence::effectiveMaxPlayers()`, `WaitlistService` (пляж в `autoBookNext`, `isSpotAvailable`), `OccurrenceAnnouncementMessageBuilder` («Осталось мест N из M»), `NotifyOrganizerRegistrationJob`, `EventIndexService` (лента и карточки), `FriendlyGameService::addBotTeam` (лимит команд у расширенной даты игры), а также `EventRegistrationController` (быстрая запись на пляж без позиции), `EventRegistrationsManagementController` (ручное добавление/смена позиции/восстановление организатором, счётчики страницы), `OccurrenceWaitlistController` (лимит листа ожидания), `RepeatChannelAnnouncements`.
+- Не переведены (сознательно): `BotAssistantService` (у расширенной даты боты займут меньше — безопасно), `checkGenderQuotaForUser` (масштаб квот — этап 3), страница события «N–M игроков» (`events/show/description.blade.php`, уровень мероприятия), `TrainerAnalyticsService`, `FriendlyGameService::botTeamComposition` (состав одной команды от даты не зависит).
+- Advisory-локи записи (дата, позиция) не менялись.
+- Тесты: `tests/Unit/OccurrenceLimitServiceTest.php`, `tests/Feature/DateCapacityTest.php`; тесты этапа 1 — без правок, зелёные.
+
 ## Тесты (этап 1)
 
 **Где и на чём.** На Contabo (`185.225.232.210`), локальный PostgreSQL 16 (как на проде — 16.x), отдельная БД `volley_test` и пользователь `volley_test` (только localhost, `scram-sha-256`, сессия в UTC: `ALTER DATABASE volley_test SET timezone TO 'UTC'`). Прод-БД и прод-креды тесты не используют.

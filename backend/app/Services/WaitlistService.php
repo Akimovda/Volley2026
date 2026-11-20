@@ -429,7 +429,8 @@ class WaitlistService
 
                 // Пляжка: проверка по общему лимиту
                 if ($direction === 'beach') {
-                    $maxPlayers = (int) ($event->gameSettings?->max_players ?? 0);
+                    // Ёмкость даты (расширенная дата — по числу пар даты; иначе как раньше — уровень мероприятия)
+                    $maxPlayers = app(OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
                     $registered = DB::table('event_registrations')
                         ->where('occurrence_id', $occurrence->id)
                         ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
@@ -625,10 +626,8 @@ class WaitlistService
         $direction = $event->registrationDirection();
 
         if ($direction === 'beach') {
-            // Для пляжки — проверяем общий лимит
-            $maxPlayers = DB::table('event_game_settings')
-                ->where('event_id', $event->id)
-                ->value('max_players') ?? 0;
+            // Для пляжки — проверяем общий лимит (ёмкость даты; не расширена — уровень мероприятия, как раньше)
+            $maxPlayers = app(OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
 
             $registered = DB::table('event_registrations')
                 ->where('occurrence_id', $occurrence->id)
@@ -673,7 +672,7 @@ class WaitlistService
             })
             ->count();
 
-        return $taken < $slot->max_slots;
+        return $taken < app(OccurrenceLimitService::class)->roleLimit($occurrence, $position, collect($slots));
     }
 
     /*

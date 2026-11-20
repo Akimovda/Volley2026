@@ -15,6 +15,7 @@
         </testsuite>
         <testsuite name="Domain">
             <file>tests/Feature/RegistrationFlowTest.php</file>
+            <file>tests/Feature/DateCapacityTest.php</file>
             <file>tests/Feature/MatchStartTest.php</file>
         </testsuite>
     </testsuites>

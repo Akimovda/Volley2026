@@ -127,7 +127,8 @@ class EventRegistrationsManagementController extends Controller
                     ->toArray();
                 foreach ($eventSlots as $slot) {
                     $taken = (int) ($takenByRole[$slot->role] ?? 0);
-                    $freePositionSlots[$slot->role] = max(0, $slot->max_slots - $taken);
+                    // лимит слота для ДАТЫ (авто увеличение кворума); не расширена — max_slots
+                    $freePositionSlots[$slot->role] = max(0, app(\App\Services\EventRoleSlotService::class)->slotLimitForOccurrence((int) $occurrenceId, $slot, $eventSlots) - $taken);
                 }
             }
         }
@@ -167,7 +168,10 @@ class EventRegistrationsManagementController extends Controller
         }
 
         // max_players: из occurrence если открыта конкретная дата, иначе из event_game_settings
-        if ($occurrence && $occurrence->max_players > 0) {
+        if ($occurrence && app(\App\Services\OccurrenceLimitService::class)->isExpanded($occurrence)) {
+            // расширенная дата (авто увеличение кворума) — ёмкость даты
+            $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occurrence);
+        } elseif ($occurrence && $occurrence->max_players > 0) {
             $maxPlayers = (int) $occurrence->max_players;
         } else {
             $maxPlayers = (int) DB::table('event_game_settings')
@@ -538,7 +542,7 @@ class EventRegistrationsManagementController extends Controller
         if ($pos !== '' && $occurrenceId && $addDirection === 'classic') {
             $checkSlots = $addSlots ?? app(\App\Services\EventRoleSlotService::class)->getSlots($event);
             $slot       = $checkSlots->firstWhere('role', $pos);
-            $maxForPos  = $slot ? (int) $slot->max_slots : ($pos === 'reserve' ? $addReserveMax : 0);
+            $maxForPos  = $slot ? app(\App\Services\EventRoleSlotService::class)->slotLimitForOccurrence($occurrenceId, $slot, $checkSlots) : ($pos === 'reserve' ? $addReserveMax : 0);
 
             if ($maxForPos > 0) {
                 $taken = (int) DB::table('event_registrations')
@@ -739,7 +743,7 @@ class EventRegistrationsManagementController extends Controller
         if ($newPos !== '' && $newPos !== $currentPos && $occId && $updDirection === 'classic') {
             $checkSlots = $updSlots ?? app(\App\Services\EventRoleSlotService::class)->getSlots($event);
             $slot       = $checkSlots->firstWhere('role', $newPos);
-            $maxForPos  = $slot ? (int) $slot->max_slots : ($newPos === 'reserve' ? $updReserveMax : 0);
+            $maxForPos  = $slot ? app(\App\Services\EventRoleSlotService::class)->slotLimitForOccurrence($occId, $slot, $checkSlots) : ($newPos === 'reserve' ? $updReserveMax : 0);
 
             if ($maxForPos > 0) {
                 $taken = (int) DB::table('event_registrations')
@@ -987,7 +991,7 @@ class EventRegistrationsManagementController extends Controller
                                     ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
                                     ->where('position', $requestedPos)
                                     ->count();
-                                if ($taken >= (int) $slot->max_slots) {
+                                if ($taken >= app(\App\Services\EventRoleSlotService::class)->slotLimitForOccurrence((int) $occId, $slot, $slots)) {
                                     return back()->with('error', __('Выбранная позиция заполнена.'));
                                 }
                             }

@@ -177,7 +177,8 @@ class NotifyOrganizerRegistrationJob implements ShouldQueue
         $playerPosition = $positionCode ? (self::POS_LABELS[$positionCode] ?? $positionCode) : '';
 
         $booked = $this->bookedSnapshot ?? self::countBooked((int) $occurrence->id);
-        $maxPlayers = (int) ($occurrence->max_players ?? $event->gameSettings?->max_players ?? 0);
+        // Ёмкость даты (с учётом авто увеличения кворума); не расширена — max_players даты ?? мероприятия, как раньше
+        $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occurrence);
         $reserveMax = (int) ($event->gameSettings?->reserve_players_max ?? 0);
         $totalMax   = $maxPlayers + $reserveMax;
         $available  = $totalMax > 0 ? max(0, $totalMax - $booked) : 0;

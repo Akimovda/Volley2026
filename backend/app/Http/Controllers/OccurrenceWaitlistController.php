@@ -85,7 +85,7 @@ class OccurrenceWaitlistController extends Controller
         }
 
         // Проверяем лимит резерва (не больше max_players)
-        $maxPlayers = (int)($occurrence->event->gameSettings->max_players ?? 0);
+        $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
         if ($maxPlayers > 0) {
             $waitlistCount = \App\Models\OccurrenceWaitlist::query()
                 ->where('occurrence_id', $occurrence->id)

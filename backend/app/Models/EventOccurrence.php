@@ -84,6 +84,8 @@ class EventOccurrence extends Model
         'location_id' => 'integer',
         'allow_registration' => 'boolean',
         'max_players' => 'integer',
+        // Авто увеличение кворума: число команд даты после расширения (NULL — как у мероприятия), docs/auto-quorum.md
+        'quorum_teams_count' => 'integer',
 
         'classic_level_min' => 'integer',
         'classic_level_max' => 'integer',
@@ -246,13 +248,10 @@ class EventOccurrence extends Model
         );
     }
 
+    /** Основной состав даты: с учётом расширения кворума (OccurrenceLimitService); не расширена — max_players ?? мероприятия. */
     public function effectiveMaxPlayers(): int
     {
-        return (int)(
-            $this->max_players
-            ?? $this->event?->gameSettings?->max_players
-            ?? 0
-        );
+        return app(\App\Services\OccurrenceLimitService::class)->maxPlayers($this);
     }
 
     public function effectiveClassicLevelMin(): ?int

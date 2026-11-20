@@ -338,9 +338,8 @@ class EventIndexService
 
             $registered = $registeredCounts[$occ->id] ?? 0;
 
-            $maxPlayers =
-                $occ->max_players
-                ?? ($occ->event->gameSettings->max_players ?? 0);
+            // Ёмкость даты (авто увеличение кворума); не расширена — max_players даты ?? мероприятия, как раньше
+            $maxPlayers = app(OccurrenceLimitService::class)->maxPlayers($occ);
 
             $occ->availability = [
                 'registered' => $registered,
@@ -422,7 +421,7 @@ class EventIndexService
 
         foreach ($occurrences as $occ) {
             $reg = $registered[$occ->id] ?? 0;
-            $max = $occ->max_players ?? ($occ->event->gameSettings->max_players ?? 0);
+            $max = app(OccurrenceLimitService::class)->maxPlayers($occ);
 
             $occ->availability = ['registered' => $reg, 'remaining' => max(0, $max - $reg), 'max' => $max];
 

@@ -131,11 +131,29 @@ class EventRoleSlotService
 
         $taken = $this->countActive($occurrenceId, $role, $this->isSingleMainRole($slots));
 
-        if ($taken >= $slot->max_slots) {
+        if ($taken >= $this->slotLimitForOccurrence($occurrenceId, $slot, $slots)) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Лимит роли для ДАТЫ (авто увеличение кворума, docs/auto-quorum.md). Не расширенная дата
+     * (quorum_teams_count IS NULL) — max_slots мероприятия, без загрузки модели даты (как раньше).
+     */
+    public function slotLimitForOccurrence(int $occurrenceId, EventRoleSlot $slot, ?Collection $slots = null): int
+    {
+        $quorumTeams = \DB::table('event_occurrences')->where('id', $occurrenceId)->value('quorum_teams_count');
+        if ($quorumTeams === null) {
+            return (int) $slot->max_slots;
+        }
+
+        $occ = \App\Models\EventOccurrence::with('event.gameSettings')->find($occurrenceId);
+
+        return $occ
+            ? app(OccurrenceLimitService::class)->roleLimit($occ, (string) $slot->role, $slots ?? EventRoleSlot::where('event_id', $occ->event_id)->get())
+            : (int) $slot->max_slots;
     }
 
     /**
@@ -163,7 +181,7 @@ class EventRoleSlotService
             return false;
         }
 
-        return $this->countActive($occurrenceId, $role, $this->isSingleMainRole($slots)) < $slot->max_slots;
+        return $this->countActive($occurrenceId, $role, $this->isSingleMainRole($slots)) < $this->slotLimitForOccurrence($occurrenceId, $slot, $slots);
     }
 
     public function clear(Event $event): void
