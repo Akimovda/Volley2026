@@ -170,6 +170,16 @@ class EventRegistrationsManagementController extends Controller
         // max_players: из occurrence если открыта конкретная дата, иначе из event_game_settings
         // $occurrence здесь — строка DB::table (stdClass); сервису ёмкости нужна модель даты
         $occModel = $occurrence ? \App\Models\EventOccurrence::with('event.gameSettings')->find((int) $occurrence->id) : null;
+        // Авто увеличение кворума: «Расширено до N команд (дата/время)» у расширенной даты
+        $quorumBadge = null;
+        if ($occModel && $occModel->quorum_teams_count !== null) {
+            $qTz = $occModel->timezone ?: ($event->timezone ?: 'Europe/Moscow');
+            $quorumBadge = __('events.auto_quorum_expanded_badge', [
+                'teams'    => (int) $occModel->quorum_teams_count,
+                'unit'     => ($event->direction ?? 'classic') === 'beach' ? __('events.auto_quorum_unit_pairs') : __('events.auto_quorum_unit_teams'),
+                'datetime' => $occModel->quorum_expanded_at ? $occModel->quorum_expanded_at->copy()->setTimezone($qTz)->format('d.m.Y H:i') : '—',
+            ]);
+        }
         if ($occModel && app(\App\Services\OccurrenceLimitService::class)->isExpanded($occModel)) {
             // расширенная дата (авто увеличение кворума) — ёмкость даты
             $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occModel);
@@ -372,6 +382,7 @@ class EventRegistrationsManagementController extends Controller
                     'hasOrgNote'         => $hasOrgNote,
                     'registrationLogs'   => $registrationLogs,
                     'waitlistEntries'    => $waitlistEntries,
+                    'quorumBadge'        => $quorumBadge,
                 ]);
     }
 

@@ -399,4 +399,45 @@ class AutoQuorumTest extends PgsqlTestCase
         $this->assertArrayHasKey('auto_quorum_max_teams', $svc->validateSettings(['auto_quorum_enabled' => 1, 'teams_count' => 2], 'game', 'classic', 'single'));
         $this->assertSame([], $svc->validateSettings(['auto_quorum_enabled' => 0, 'collect_stats' => 1], 'tournament', 'classic', 'team'));
     }
+
+    // =====================================================================
+    // Страницы: форма создания/редактирования, управление записями
+    // =====================================================================
+
+    public function test_management_page_shows_expanded_badge(): void
+    {
+        $o = $this->aqGame();
+        $this->fillMain($o);
+        for ($i = 0; $i < 3; $i++) {
+            $this->wl($o);
+        }
+        $this->actingAs($this->organizer())->get("/events/{$o->event_id}/registrations?occurrence={$o->id}")
+            ->assertOk()->assertSee('Расширено до 3 команд')->assertSee('3/18', false); // 15 записано из 18
+    }
+
+    public function test_edit_form_shows_iphone_toggle_for_games_only(): void
+    {
+        $o = $this->aqGame();
+        $this->actingAs($this->organizer())->get("/events/create/event_management/{$o->event_id}/edit")
+            ->assertOk()
+            ->assertSee('id="aq_switch"', false)
+            ->assertSee('up-switch is-on', false)
+            ->assertSee('Авто увеличение кворума');
+
+        DB::table('events')->where('id', $o->event_id)->update(['registration_mode' => 'team']);
+        $this->actingAs($this->organizer())->get("/events/create/event_management/{$o->event_id}/edit")
+            ->assertOk()->assertDontSee('id="aq_switch"', false);
+    }
+
+    public function test_create_form_has_toggle_after_registration_mode_hint(): void
+    {
+        $html = $this->actingAs($this->organizer())->get('/events/create')->assertOk()->getContent();
+        $hint = mb_strpos($html, __('events.reg_mode_hint_classic'));
+        $tgl  = mb_strpos($html, 'id="aq_switch"');
+        $this->assertNotFalse($hint);
+        $this->assertNotFalse($tgl);
+        $this->assertGreaterThan($hint, $tgl, 'тумблер — сразу после подсказки о режиме регистрации');
+        $this->assertStringContainsString('data-show-if="format=game|training_game,registration_mode=single"', $html);
+        $this->assertStringContainsString('data-hide-if="collect_stats=1"', $html);
+    }
 }

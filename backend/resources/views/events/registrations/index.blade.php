@@ -180,6 +180,9 @@ $logPositionDetail = function ($log) {
 					<div>{{ __('events.regs_free_seats') }}</div>
 					<div class="f-22 b-600 cd">{{ $capacityLine }}</div>
 					<div>{{ __('events.regs_active_count', ['n' => $activeCount]) }}</div>
+					@if(!empty($quorumBadge))
+					<div class="f-13 mt-05"><x-ico name="trend" size="1.1em" /> {{ $quorumBadge }}</div>
+					@endif
 				</div>
 				<div class="card text-center">
 					<div>{{ __('events.regs_date_section') }}</div>
