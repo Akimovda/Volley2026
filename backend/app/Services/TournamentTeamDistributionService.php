@@ -31,10 +31,20 @@ class TournamentTeamDistributionService
      *  3. Создаём недостающие EventTeam + EventTeamMember (первый игрок в паре/группе = капитан),
      *     N = tournament_teams_count минус уже существующие команды.
      *
+     * Режим 'level' (кнопка «Распределить по уровню»): вместо перемешивания —
+     *  - команды: внутри каждого амплуа игроки по убыванию уровня (равные — случайно),
+     *    каждый уходит в команду с наименьшим числом игроков этого амплуа, при
+     *    равенстве — с наименьшей суммой уровней (жадная балансировка силы);
+     *  - пары: сильнейший + слабейший (смешанные М+Ж — по-прежнему в приоритете).
+     *  Уровень — classic_level/beach_level по направлению события; у кого не указан —
+     *  считается средним по записавшимся.
+     *
      * Возвращает ['ok' => bool, 'message' => string, 'teams_count' => int]
      */
-    public function distributeRandom(Event $event, EventOccurrence $occurrence): array
+    public function distributeRandom(Event $event, EventOccurrence $occurrence, string $mode = 'random'): array
     {
+        $byLevel = $mode === 'level';
+
         if ($event->registration_mode !== 'tournament_individual') {
             return ['ok' => false, 'message' => __('events.tournament_distribute_not_individual')];
         }
@@ -77,12 +87,30 @@ class TournamentTeamDistributionService
 
         $byPosition = $registrations->groupBy('position')->map(fn($group) => $group->pluck('user_id')->values());
 
+        // Уровень игрока для режима 'level' (неизвестный — средний по выборке).
+        $levelField = ($event->direction ?? 'classic') === 'beach' ? 'beach_level' : 'classic_level';
+        $knownLevels = $usersById->map(fn ($u) => $u->{$levelField})
+            ->filter(fn ($l) => $l !== null && $l !== '')
+            ->map(fn ($l) => (float) $l);
+        $avgLevel = $knownLevels->isNotEmpty() ? (float) $knownLevels->avg() : 0.0;
+        $levelOf = function (int $id) use ($usersById, $levelField, $avgLevel): float {
+            $l = $usersById->get($id)?->{$levelField};
+            return ($l === null || $l === '') ? $avgLevel : (float) $l;
+        };
+        // По убыванию уровня, равные — в случайном порядке.
+        $sortByLevelDesc = fn ($ids) => collect($ids)->shuffle()
+            ->sortByDesc(fn ($id) => $levelOf((int) $id))->values();
+        $teamLevelSum = array_fill(0, $teamsCount, 0.0);
+
         // Собираем все назначения: [['user_id' => X, 'position' => Y, 'team_idx' => Z]]
         $assignments = [];
         foreach ($byPosition as $position => $userIds) {
             if ($teamSizeMin === 2) {
                 $groupIdx = 0;
-                foreach ($this->pairByGenderThenRandom($userIds, $usersById) as $pair) {
+                $pairs = $byLevel
+                    ? $this->pairByGenderThenLevel($userIds, $usersById, $levelOf)
+                    : $this->pairByGenderThenRandom($userIds, $usersById);
+                foreach ($pairs as $pair) {
                     $teamIdx = $groupIdx % $teamsCount;
                     foreach ($pair as $userId) {
                         $assignments[] = [
@@ -92,6 +120,26 @@ class TournamentTeamDistributionService
                         ];
                     }
                     $groupIdx++;
+                }
+            } elseif ($byLevel) {
+                $posCount = array_fill(0, $teamsCount, 0);
+                foreach ($sortByLevelDesc($userIds) as $userId) {
+                    $best = null;
+                    foreach (array_keys($posCount) as $t) {
+                        if ($best === null
+                            || $posCount[$t] < $posCount[$best]
+                            || ($posCount[$t] === $posCount[$best] && $teamLevelSum[$t] < $teamLevelSum[$best])
+                        ) {
+                            $best = $t;
+                        }
+                    }
+                    $posCount[$best]++;
+                    $teamLevelSum[$best] += $levelOf((int) $userId);
+                    $assignments[] = [
+                        'user_id'  => $userId,
+                        'position' => $position ?: 'player',
+                        'team_idx' => $best,
+                    ];
                 }
             } else {
                 foreach ($userIds->shuffle()->values() as $i => $userId) {
@@ -181,6 +229,43 @@ class TournamentTeamDistributionService
      * @param \Illuminate\Support\Collection<int, \App\Models\User> $usersById
      * @return array<int, array<int>> список пар (или одиночных остатков) user_id
      */
+    /**
+     * Как pairByGenderThenRandom, но по уровню: в смешанных парах сильнейший М +
+     * слабейшая Ж, остаток — сильнейший + слабейший.
+     *
+     * @return array<int, array<int>>
+     */
+    private function pairByGenderThenLevel($userIds, $usersById, callable $levelOf): array
+    {
+        $gender = fn (int $id) => $usersById->get($id)?->gender;
+        $desc = fn ($c) => $c->shuffle()->sortByDesc(fn ($id) => $levelOf((int) $id))->values();
+
+        $males   = $desc($userIds->filter(fn ($id) => $gender($id) === 'm'));
+        $females = $desc($userIds->filter(fn ($id) => $gender($id) === 'f'));
+        $rest    = $userIds->reject(fn ($id) => in_array($gender($id), ['m', 'f'], true));
+
+        $pairs = [];
+        $mixedCount = min($males->count(), $females->count());
+        // Смешанные пары: i-й по силе М + i-я с конца Ж (сильный + слабая);
+        // лишние игроки многочисленного пола — в остаток.
+        $m = $males->slice(0, $mixedCount)->values();
+        $f = $females->slice(0, $mixedCount)->values();
+        $leftoverGender = $males->slice($mixedCount)->concat($females->slice($mixedCount));
+        for ($i = 0; $i < $mixedCount; $i++) {
+            $pairs[] = [$m[$i], $f[$mixedCount - 1 - $i]];
+        }
+
+        $leftover = $desc($leftoverGender->values()->concat($rest));
+        $n = $leftover->count();
+        for ($i = 0, $j = $n - 1; $i <= $j; $i++, $j--) {
+            $pairs[] = $i === $j ? [$leftover[$i]] : [$leftover[$i], $leftover[$j]];
+        }
+
+        shuffle($pairs);
+
+        return $pairs;
+    }
+
     private function pairByGenderThenRandom($userIds, $usersById): array
     {
         $gender = fn (int $id) => $usersById->get($id)?->gender;

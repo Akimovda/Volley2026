@@ -1308,6 +1308,8 @@ return [
 
     'tournament_distribute_btn'        => 'Сформировать команды',
     'tournament_distribute_random_btn' => 'Распределить случайно',
+    'tournament_distribute_level_btn'  => 'Распределить по уровню',
+    'tournament_distribute_level_confirm' => 'Сформировать :n команд из :p записавшихся игроков по уровню? Внутри каждого амплуа игроки раздаются так, чтобы суммы уровней команд были как можно ближе.',
     'tournament_distribute_confirm'    => 'Сформировать :n команд из :p записавшихся игроков?',
     'tournament_distribute_success'    => 'Команды сформированы.',
     'tournament_distribute_error_no_players'  => 'Нет записавшихся игроков для формирования команд.',

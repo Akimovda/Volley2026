@@ -1140,7 +1140,8 @@ class TournamentTeamController extends Controller
             ? EventOccurrence::where('event_id', $event->id)->findOrFail($occurrenceId)
             : EventOccurrence::where('event_id', $event->id)->orderBy('starts_at')->firstOrFail();
 
-        $result = $service->distributeRandom($event, $occurrence);
+        $mode   = $request->input('mode') === 'level' ? 'level' : 'random';
+        $result = $service->distributeRandom($event, $occurrence, $mode);
 
         return response()->json($result, $result['ok'] ? 200 : 422);
     }

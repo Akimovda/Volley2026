@@ -1353,68 +1353,89 @@ $tourNumber = $seasonData
 				</details>
 			</div>
 			@if($isIndividualTournament)
-			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
+			{{-- Автораспределение игроков по командам (только индивидуальная запись):
+			     «Случайно» и «По уровню» — один эндпоинт, режим в поле mode. --}}
 			@php
 				$remainingTeamsCount = max(0, ($event->tournament_teams_count ?? 0) - ($completeTeams->count() + $incompleteTeams->count()));
 				$distributeConfirmText = __('events.tournament_distribute_confirm', [
 					'n' => $remainingTeamsCount,
 					'p' => $unassignedPlayers->count(),
 				]);
+				$distributeLevelConfirmText = __('events.tournament_distribute_level_confirm', [
+					'n' => $remainingTeamsCount,
+					'p' => $unassignedPlayers->count(),
+				]);
 			@endphp
 			<div class="mt-1">
-				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"
+				<button type="button" id="distribute-teams-btn" class="btn btn-secondary tsu-distribute-btn"
+					data-mode="random"
+					data-title="{{ __('events.tournament_distribute_random_btn') }}"
+					data-confirm="{{ $distributeConfirmText }}"
 					data-event-id="{{ $event->id }}"
 					data-occurrence-id="{{ $selectedOccurrence?->id }}">
 					<x-ico name="dice" /> {{ __('events.tournament_distribute_random_btn') }}
 				</button>
 			</div>
+			<div class="mt-1">
+				<button type="button" id="distribute-teams-level-btn" class="btn btn-secondary tsu-distribute-btn"
+					data-mode="level"
+					data-title="{{ __('events.tournament_distribute_level_btn') }}"
+					data-confirm="{{ $distributeLevelConfirmText }}"
+					data-event-id="{{ $event->id }}"
+					data-occurrence-id="{{ $selectedOccurrence?->id }}">
+					<x-ico name="trend" /> {{ __('events.tournament_distribute_level_btn') }}
+				</button>
+			</div>
 			<script>
 			(function() {
-				var btn = document.getElementById('distribute-teams-btn');
-				if (!btn) return;
-				var defaultText = btn.textContent.trim();
-				btn.addEventListener('click', function() {
-					var eventId = btn.dataset.eventId;
-					var occurrenceId = btn.dataset.occurrenceId;
+				document.querySelectorAll('.tsu-distribute-btn').forEach(function(btn) {
+					var defaultHtml = btn.innerHTML;
+					btn.addEventListener('click', function() {
+						var eventId = btn.dataset.eventId;
+						var occurrenceId = btn.dataset.occurrenceId;
 
-					swal({
-						title: @json(__('events.tournament_distribute_random_btn')),
-						text: @json($distributeConfirmText),
-						icon: 'warning',
-						buttons: {
-							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
-							confirm: { text: @json(__('events.tournament_distribute_btn')), value: true, visible: true, closeModal: true },
-						},
-						dangerMode: true,
-					}).then(function(confirmed) {
-						if (!confirmed) return;
-
-						btn.disabled = true;
-						btn.textContent = '...';
-						fetch('/events/' + eventId + '/distribute-individual', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-								'Accept': 'application/json',
+						swal({
+							title: btn.dataset.title,
+							text: btn.dataset.confirm,
+							icon: 'warning',
+							buttons: {
+								cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
+								confirm: { text: @json(__('events.tournament_distribute_btn')), value: true, visible: true, closeModal: true },
 							},
-							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
-							credentials: 'same-origin',
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) {
-							if (data.ok) {
-								location.reload();
-							} else {
-								swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
+							dangerMode: true,
+						}).then(function(confirmed) {
+							if (!confirmed) return;
+
+							btn.disabled = true;
+							btn.textContent = '...';
+							fetch('/events/' + eventId + '/distribute-individual', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/json',
+									'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+									'Accept': 'application/json',
+								},
+								body: JSON.stringify({
+									occurrence_id: occurrenceId ? parseInt(occurrenceId) : null,
+									mode: btn.dataset.mode,
+								}),
+								credentials: 'same-origin',
+							})
+							.then(function(r) { return r.json(); })
+							.then(function(data) {
+								if (data.ok) {
+									location.reload();
+								} else {
+									swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
+									btn.disabled = false;
+									btn.innerHTML = defaultHtml;
+								}
+							})
+							.catch(function() {
+								swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
 								btn.disabled = false;
-								btn.textContent = defaultText;
-							}
-						})
-						.catch(function() {
-							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
-							btn.disabled = false;
-							btn.textContent = defaultText;
+								btn.innerHTML = defaultHtml;
+							});
 						});
 					});
 				});
