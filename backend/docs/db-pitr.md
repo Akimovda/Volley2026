@@ -8,13 +8,14 @@
   `archive_command='/usr/local/bin/pg_archive_wal.sh %p %f'` (параметры лежат в `postgresql.auto.conf`, попадает в еженедельный бэкап конфигов).
 - `pg_archive_wal.sh` (запускается от пользователя `postgres`): сжимает сегмент gzip и отправляет `rsync`-ом на сервер бэкапов
   185.225.232.210, пользователь **`pgwal`**, каталог `wal/` (ключ `/var/lib/postgresql/.ssh/id_ed25519_wal`).
-  Ключ в `authorized_keys` ограничен: `from="141.98.188.140"`, `command="rrsync -wo /home/pgwal"`, `restrict` — только запись, только с IP прода.
+  Ключ в `authorized_keys` ограничен: `from="91.132.188.90"` (прод FirstVDS с 18.11.2026), `command="rrsync -wo /home/pgwal"`, `restrict` — только запись, только с IP прода.
   Код возврата 0 только если сегмент доставлен (иначе PostgreSQL повторяет попытку).
 - Базовая копия: `/usr/local/bin/pg_basebackup_push.sh`, cron `/etc/cron.d/pg_basebackup` — воскресенье 01:30 МСК;
   `pg_basebackup -Ft -z -X fetch` → `/home/pgwal/base/<ГГГГММДД_ЧЧММСС>/{base.tar.gz, backup_manifest, startwal.txt}`.
-- Чистка на сервере бэкапов (`/opt/pgbackup/wal_retention.sh`, cron 03:50): остаются 3 последние базовые копии; WAL старше `startwal` самой старой — удаляются.
+- Чистка на сервере бэкапов (`/opt/pgbackup/wal_retention.sh`, cron 03:50 CET): остаются 3 последние базовые копии; WAL старше `startwal` самой старой — удаляются.
+  **В `/home/pgwal/base/` должны лежать копии только ТЕКУЩЕГО кластера.** После переезда 18.11 там остались копии сервера 141.98, и чистка 19.11 удалила WAL новой копии (PITR оборвался на 18.11 20:33). С 20.11 скрипт останавливается с тревогой в Telegram, если START самой старой копии больше START самой новой. Восстановлено 20.11: старые копии удалены, сделана базовая копия `20261120_155206`, `pitr_restore_test.sh` — данные совпали с продом (1130 / 106 / 3076).
 - Мониторинг: Kuma-монитор «VolleyPlay server: WAL archive» (метрика `wal` в `php artisan ops:report-metrics`): тревога, если последняя выгрузка > 30 минут назад или есть текущая ошибка.
-  **Если архивация сломалась, `pg_wal` на проде растёт (сегменты не удаляются) — реагировать сразу** (диск 89 ГБ, 1 сегмент = 16 МБ).
+  **Если архивация сломалась, `pg_wal` на проде растёт (сегменты не удаляются) — реагировать сразу** (диск прода 119 ГБ, 1 сегмент = 16 МБ).
 - Включение архивации (однократно, нужен перезапуск PostgreSQL): `/usr/local/sbin/enable-wal-archiving.sh` — при неудаче проверки откатывает настройку сам. Лог `/var/log/enable-wal-archiving.log`.
 
 ## Проверка восстановления (репетиция, ничего не трогает на проде)
@@ -25,7 +26,7 @@
 
 ## Восстановление после аварии (новый сервер)
 1. Поставить `postgresql-16` (Ubuntu 24.04, та же мажорная версия). Остановить кластер: `systemctl stop postgresql`; очистить `/var/lib/postgresql/16/main`.
-2. **Скачать копию и WAL с сервера бэкапов под root-ключом (с Мака)**: пользователь `pgwal` только пишет и читать не может.
+2. **Скачать копию и WAL с сервера бэкапов под root (на самом Contabo или с Мака)**: пользователь `pgwal` только пишет и читать не может.
    Нужно: последний каталог из `/home/pgwal/base/` и все `*.gz` из `/home/pgwal/wal/`. Перенести на новый сервер: базу — в `/root/restore/`, WAL — в `/var/lib/postgresql/wal_restore/` (владелец postgres).
 3. Распаковать базу от имени postgres: `sudo -u postgres tar -xzf /root/restore/base.tar.gz -C /var/lib/postgresql/16/main`.
 4. Конфиги — из `server-config_*.tar.gz`: `etc/postgresql/16/main/postgresql.conf` и `pgcfg/pg_hba.conf` → в `/etc/postgresql/16/main/` (`pg_hba.conf`, `postgresql.auto.conf` и `enable-wal-archiving.sh` читает только root/postgres, поэтому root-скрипт `/usr/local/sbin/pg_config_snapshot.sh` по cron в 02:05 копирует их в `pgcfg/` для ночного бэкапа в 02:10).
@@ -39,4 +40,6 @@
 7. Проверить данные (users/events/event_registrations, последняя запись), дальше — по `server-recovery.md` (код, `.env`, nginx, supervisor, cron, Kuma, домен).
 8. Вернуть архивацию: `ALTER SYSTEM SET archive_mode='on'` и `archive_command`/`archive_timeout` (см. выше) → перезапуск; **новый ключ `pgwal`** (`ssh-keygen` для `postgres` → добавить в `/home/pgwal/.ssh/authorized_keys` на сервере бэкапов с `from="<новый IP>"`; то же `from=` обновить у `pgbackup` и `filesbackup`); сразу сделать базовую копию `sudo -u postgres /usr/local/bin/pg_basebackup_push.sh` и прогнать `pitr_restore_test.sh`.
 - Если в цепочке WAL дыра (потерян сегмент), восстановление дойдёт только до дыры — поэтому следим за метрикой «WAL archive» и по воскресеньям появляется свежая база.
-- Резервный узел (старый сервер, этап 2) и автопереключение — описаны отдельно, когда будут сделаны.
+- После переезда: перенести/удалить базовые копии старого кластера из `base/` и сразу сделать новую (см. `server-recovery.md`, п. 9).
+- Базовые копии и WAL **не шифруются** (в отличие от ночного дампа) — см. «Известные дыры» в `server-recovery.md`.
+- Резервный узел (этап 2) и автопереключение — не сделаны.
