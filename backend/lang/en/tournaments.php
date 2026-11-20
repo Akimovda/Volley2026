@@ -460,6 +460,9 @@ return [
     'setup_btn_create'      => 'Create',
 
     'setup_unassigned_h3'    => 'Not assigned to a team (:n)',
+    'setup_posswap_title' => 'Swap positions',
+    'setup_posswap_h3' => 'Swap positions',
+    'setup_posswap_with' => 'will swap positions with:',
     'setup_unassigned_empty' => 'All registered players are assigned to a team.',
     'setup_unassigned_level' => 'Level',
     'setup_unassigned_position' => 'Position',

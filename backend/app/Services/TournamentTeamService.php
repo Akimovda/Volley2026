@@ -392,6 +392,56 @@ final class TournamentTeamService
     }
 
     /**
+     * Ракировка: два подтверждённых игрока ОДНОЙ команды меняются амплуа
+     * (связующий ↔ доигровщик и т.п.). Число игроков на каждой позиции не меняется,
+     * поэтому лимиты позиций не проверяем. Капитанство и основа/запас не трогаются.
+     */
+    public function swapMemberPositions(EventTeam $team, EventTeamMember $a, EventTeamMember $b, int $performedByUserId): void
+    {
+        if (!$this->teamUsesPositions($team)) {
+            throw new DomainException('Смена позиции доступна только для классических команд и пар «По амплуа».');
+        }
+        foreach ([$a, $b] as $m) {
+            if ((int) $m->event_team_id !== (int) $team->id) {
+                throw new DomainException('Игрок не состоит в этой команде.');
+            }
+            if ($m->confirmation_status !== 'confirmed') {
+                throw new DomainException('Меняться амплуа могут только подтверждённые игроки.');
+            }
+            if (empty($m->position_code)) {
+                throw new DomainException('У игрока не указано амплуа.');
+            }
+        }
+        if ((int) $a->id === (int) $b->id) {
+            throw new DomainException('Выберите другого игрока.');
+        }
+        if ($a->position_code === $b->position_code) {
+            throw new DomainException('У игроков одинаковое амплуа — меняться нечем.');
+        }
+
+        DB::transaction(function () use ($team, $a, $b, $performedByUserId) {
+            $posA = $a->position_code;
+            $posB = $b->position_code;
+            foreach ([[$a, $posA, $posB], [$b, $posB, $posA]] as [$m, $old, $new]) {
+                $m->position_code = $new;
+                if ($m->team_role !== 'captain') {
+                    $m->role_code = $new;
+                }
+                $m->save();
+                $this->audit(
+                    team: $team,
+                    action: 'position_changed',
+                    userId: $m->user_id,
+                    performedByUserId: $performedByUserId,
+                    oldValue: ['position_code' => $old],
+                    newValue: ['position_code' => $new, 'swap' => true],
+                );
+            }
+            $this->refreshTeamState($team->fresh());
+        });
+    }
+
+    /**
      * Перевод подтверждённого игрока между основным составом и запасными в рамках
      * одной команды (не путать с командным резервом/листом ожидания турнира —
      * здесь речь только про team_role внутри ростера одной команды).

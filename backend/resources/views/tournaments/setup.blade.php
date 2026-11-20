@@ -1191,7 +1191,16 @@ $tourNumber = $seasonData
 					$pLevel = ($event->direction === 'beach' ? $p->beach_level : $p->classic_level);
 					$pLevel = !is_null($pLevel) && $pLevel !== '' ? (int) $pLevel : null;
 					$pGenderColor = $p->gender === 'f' ? '#e5395e' : '#2967BA';
-									@endphp
+					// Ракировка: игроки с другим (указанным) амплуа
+					$pSwapCands = $p->reg_position
+						? $unassignedPlayers->filter(fn ($o) => (int) $o->id !== (int) $p->id && $o->reg_position && $o->reg_position !== $p->reg_position)
+							->map(fn ($o) => [
+								'id'   => $o->id,
+								'name' => trim(($o->last_name ?? '') . ' ' . ($o->first_name ?? '')) ?: ($o->name ?? '?'),
+								'pos'  => __('events.positions.' . $o->reg_position),
+							])->values()
+						: collect();
+				@endphp
 				<div class="col-md-6 col-xl-3">
 					<div class="card" style="opacity:.9">
 						<div style="display:flex;align-items:center;gap:10px">
@@ -1211,11 +1220,68 @@ $tourNumber = $seasonData
 								<div class="f-13" style="opacity:.85">{{ __('tournaments.setup_unassigned_position') }}: <span class="b-600">{{ __('events.positions.' . $p->reg_position) }}</span></div>
 								@endif
 							</div>
+							@if($selectedOccurrence && $pSwapCands->isNotEmpty())
+							<button type="button" class="btn btn-small btn-secondary tsu-posswap-btn" style="margin-left:auto;flex-shrink:0;padding:.4rem"
+								title="{{ __('tournaments.setup_posswap_title') }}"
+								data-user="{{ $p->id }}"
+								data-name="{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}"
+								data-pos="{{ __('events.positions.' . $p->reg_position) }}"
+								data-candidates="{{ json_encode($pSwapCands) }}"><x-ico name="swap-vert" size="1.9rem" /></button>
+							@endif
 						</div>
 					</div>
 				</div>
 				@endforeach
 			</div>
+			@if($selectedOccurrence)
+			{{-- Ракировка амплуа записавшихся игроков (до распределения по командам) --}}
+			<div id="tsuPosSwapModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+				<div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
+					<button type="button" class="tsu-posswap-close" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;line-height:1" aria-label="close"><x-ico name="x" size="2rem" /></button>
+					<h3 class="-mt-05 mb-1"><x-ico name="swap-vert" size="1.2em" /> {{ __('tournaments.setup_posswap_h3') }}</h3>
+					<div class="f-16 mb-2" id="tsuPosSwapLabel"></div>
+					<form method="POST" action="{{ route('tournamentTeams.swapRegistrationPositions', $event) }}" id="tsuPosSwapForm">
+						@csrf
+						<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
+						<input type="hidden" name="user_a" id="tsuPosSwapUserA">
+						<div id="tsuPosSwapList"></div>
+					</form>
+				</div>
+			</div>
+			<script>
+			(function(){
+				var modal = document.getElementById('tsuPosSwapModal');
+				if (!modal) return;
+				var list = document.getElementById('tsuPosSwapList');
+				var label = document.getElementById('tsuPosSwapLabel');
+				var userA = document.getElementById('tsuPosSwapUserA');
+				var withText = @json(__('tournaments.setup_posswap_with'));
+				function close() { modal.style.display = 'none'; }
+				document.querySelectorAll('.tsu-posswap-btn').forEach(function(btn) {
+					btn.addEventListener('click', function() {
+						var cands = [];
+						try { cands = JSON.parse(btn.dataset.candidates || '[]'); } catch (e) {}
+						userA.value = btn.dataset.user;
+						label.textContent = btn.dataset.name + ' (' + btn.dataset.pos + ') ' + withText;
+						list.innerHTML = '';
+						cands.forEach(function(c) {
+							var b = document.createElement('button');
+							b.type = 'submit'; b.name = 'user_b'; b.value = c.id;
+							b.className = 'btn btn-secondary w-100 mb-1';
+							b.style.display = 'flex'; b.style.justifyContent = 'space-between';
+							var n = document.createElement('span'); n.textContent = c.name;
+							var p = document.createElement('span'); p.textContent = c.pos; p.style.opacity = '.7';
+							b.appendChild(n); b.appendChild(p);
+							list.appendChild(b);
+						});
+						modal.style.display = 'flex';
+					});
+				});
+				modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+				modal.querySelector('.tsu-posswap-close').addEventListener('click', close);
+			})();
+			</script>
+			@endif
 			@endif
 				
 				{{-- Добавить игрока напрямую в регистрации тура (для распределения по
@@ -1465,8 +1531,14 @@ $tourNumber = $seasonData
 			(function() {
 				var btn = document.getElementById('disband-teams-btn');
 				if (!btn) return;
-				var defaultText = btn.textContent.trim();
-				btn.addEventListener('click', function() {
+				var defaultHtml = btn.innerHTML;
+				// У кнопки класс btn-alert (красный стиль), а глобальный обработчик .btn-alert в script.js
+				// показывает свой попап и ищет форму/ссылку — у этой кнопки их нет, и подтверждение ничего
+				// не делало. Этот обработчик подключён раньше (inline-скрипт до DOMContentLoaded) и
+				// останавливает остальные.
+				btn.addEventListener('click', function(e) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
 					var eventId = btn.dataset.eventId;
 					var occurrenceId = btn.dataset.occurrenceId;
 
@@ -1501,13 +1573,13 @@ $tourNumber = $seasonData
 							} else {
 								swal({ title: 'Ошибка', text: data.message || 'Не удалось разобрать команды.', icon: 'error', button: 'Понятно' });
 								btn.disabled = false;
-								btn.textContent = defaultText;
+								btn.innerHTML = defaultHtml;
 							}
 						})
 						.catch(function() {
 							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
 							btn.disabled = false;
-							btn.textContent = defaultText;
+							btn.innerHTML = defaultHtml;
 						});
 					});
 				});

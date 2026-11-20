@@ -510,6 +510,10 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 		// Замена: запасной выходит в основу вместо выбранного игрока основного состава
 		Route::patch('/events/{event}/teams/{team}/members/{member}/swap', [TournamentTeamController::class, 'swapMembers'])
         ->name('tournamentTeams.members.swap');
+
+		// Ракировка: игрок меняется амплуа с другим игроком своей команды
+		Route::patch('/events/{event}/teams/{team}/members/{member}/swap-position', [TournamentTeamController::class, 'swapMemberPositions'])
+        ->name('tournamentTeams.members.swapPosition');
 		
 		Route::get('/events/{event}/occurrences/manage', [EventManagementController::class, 'occurrences'])
         ->name('events.event_management.occurrences');
@@ -569,6 +573,9 @@ Route::post('/auth/tma-exchange', [TmaAuthController::class, 'exchange'])->name(
 
     Route::post('/events/{event}/distribute-individual', [TournamentTeamController::class, 'distributeIndividual'])
         ->name('tournamentTeams.distributeIndividual');
+    // Ракировка амплуа двух записавшихся (ещё не распределённых) игроков — страница setup
+    Route::post('/events/{event}/registrations/swap-position', [TournamentTeamController::class, 'swapRegistrationPositions'])
+        ->name('tournamentTeams.swapRegistrationPositions');
     Route::post('/events/{event}/disband-all-teams', [TournamentTeamController::class, 'disbandAllTeams'])
         ->name('tournamentTeams.disbandAllTeams');
 	});
