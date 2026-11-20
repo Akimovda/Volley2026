@@ -277,7 +277,7 @@ class TournamentTeamController extends Controller
                         $scheme = collect($capacity)->map(fn ($i) => "{$i['label']} {$i['max']}")->implode(', ');
                         throw new DomainException(
                             'Состав не соответствует схеме (' . $scheme . '): ' . implode('; ', $over)
-                            . '. Снимите отметку с лишних игроков — их можно поставить в другую команду.'
+                            . '. Отметки сохранены: снимите лишних и нажмите «Создать» ещё раз.'
                         );
                     }
                 }
