@@ -15,6 +15,7 @@
 - `frontend.md` — JS/CSS/Blade, WKWebView, custom select, чекбоксы, Trix, sticky-шапка, скачивание файлов, autocomplete, dark mode
 - `i18n-locale.md` — локализация, автодетект языка
 - `events-registration.md` — окна регистрации, occurrence override, повторяющиеся серии, master_class, схемы игры, «по амплуа», меню организатора, управление регистрациями
+- `auto-quorum.md` — авто увеличение кворума: спецификация (источник правды для этапов 2–4) и доменные тесты на локальной pgsql `volley_test` (`tools/test-pgsql.sh`, `phpunit.pgsql.xml`; Jetstream-тесты с RefreshDatabase на pgsql не запускать)
 - `waitlist-teams.md` — лист ожидания, race/advisory lock, команды, сохранённые команды
 - `tournaments.md` — турнирная система, setup, king beach, рейтинги (OpenSkill/Elo), лиги/сезоны/промоушен, игра со статистикой
 - `subscriptions-payments.md` — абонементы/купоны, Premium, Организатор Pro, ЮKassa, кошельки
