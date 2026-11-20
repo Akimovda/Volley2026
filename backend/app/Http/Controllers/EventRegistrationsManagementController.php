@@ -472,12 +472,20 @@ class EventRegistrationsManagementController extends Controller
                     $skipped[] = $nm . ' — ' . $res['msg'];
                 }
             }
+            if ($added > 0) {
+                // Авто увеличение кворума — после записи (safe)
+                app(\App\Services\AutoQuorumService::class)->safeMaybeExpand(\App\Models\EventOccurrence::find((int) $occurrenceId));
+            }
             $msg = "Команда «{$team->name}»: добавлено {$added} из " . count($memberIds) . '.';
             $back = back()->with($added > 0 ? 'status' : 'error', $msg);
             return $skipped ? $back->with('error', $msg . ' ' . __('Не добавлены:') . ' ' . implode('; ', $skipped)) : $back;
         }
 
         $res = $this->addOnePlayer($event, $authUser, (int) $data['user_id'], $pos, (int) $occurrenceId, $addDirection, $addSlots, $addPositions, $addReserveMax);
+        if ($res['ok']) {
+            // Авто увеличение кворума — после записи (safe)
+            app(\App\Services\AutoQuorumService::class)->safeMaybeExpand(\App\Models\EventOccurrence::find((int) $occurrenceId));
+        }
         return back()->with($res['ok'] ? 'status' : 'error', $res['msg']);
     }
 

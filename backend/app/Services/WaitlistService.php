@@ -122,6 +122,11 @@ class WaitlistService
             }
         }
 
+        // Авто увеличение кворума: лист ожидания входит в N (safe: ошибка не ломает вступление в очередь)
+        if ($entry->wasRecentlyCreated) {
+            app(AutoQuorumService::class)->safeMaybeExpand($occurrence);
+        }
+
         return $entry;
     }
 

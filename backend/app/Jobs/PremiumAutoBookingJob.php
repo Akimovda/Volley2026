@@ -217,6 +217,11 @@ class PremiumAutoBookingJob implements ShouldQueue
             }
         });
 
+        // Авто увеличение кворума — после коммита записи (ошибка не ломает автозапись)
+        if ($reg) {
+            app(\App\Services\AutoQuorumService::class)->safeMaybeExpand($occurrence);
+        }
+
         return $reg;
     }
 }

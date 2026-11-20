@@ -218,7 +218,11 @@ class EventRegistrationController extends Controller
         $couponCode     = $request->input('coupon_code');
 
         try {
-            return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+            $response = $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+            // Авто увеличение кворума — после коммита записи (safe: ошибка не ломает запись)
+            app(\App\Services\AutoQuorumService::class)->safeMaybeExpand($occurrence);
+
+            return $response;
         } catch (\Exception $e) {
             $isNoSlots = in_array($e->getMessage(), [
                 'Свободных мест на этой позиции больше нет.',

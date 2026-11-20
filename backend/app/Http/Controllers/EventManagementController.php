@@ -1004,6 +1004,10 @@ if ($role === 'admin') {
             'is_outdoor'               => ['sometimes', 'boolean'],
             'collect_stats'            => ['sometimes', 'boolean'],
             'stats_rated'              => ['sometimes', 'boolean'],
+            // Авто увеличение кворума (docs/auto-quorum.md)
+            'auto_quorum_enabled'          => ['sometimes', 'boolean'],
+            'auto_quorum_players_per_team' => ['nullable', 'integer', 'min:1', 'max:20'],
+            'auto_quorum_max_teams'        => ['nullable', 'integer', 'min:2', 'max:50'],
             'track_lineup'             => ['sometimes', 'boolean'],
             'remind_registration_enabled'         => ['sometimes', 'boolean'],
             'remind_registration_minutes_before'  => ['nullable', 'integer', 'min:0'],
@@ -1088,6 +1092,21 @@ if ($role === 'admin') {
 
         if (($data['format'] ?? $event->format) === 'game' && !empty($data['collect_stats']) && (int) ($data['teams_count'] ?? 2) > 2) {
             throw \Illuminate\Validation\ValidationException::withMessages(['teams_count' => __('events.stats_teams_limit')]);
+        }
+
+        // Авто увеличение кворума: формат/режим/«Статистика»/максимум (не ниже уже расширенных будущих дат)
+        if (array_key_exists('auto_quorum_enabled', $data)) {
+            $event->loadMissing('gameSettings');
+            $aqErrors = app(\App\Services\AutoQuorumService::class)->validateSettings(
+                $data + ['teams_count' => $event->gameSettings?->teams_count],
+                (string) ($data['format'] ?? $event->format),
+                (string) ($data['direction'] ?? $event->direction ?? 'classic'),
+                (string) ($event->registration_mode ?? 'single'),
+                $event
+            );
+            if ($aqErrors) {
+                throw \Illuminate\Validation\ValidationException::withMessages($aqErrors);
+            }
         }
 
         // Тренеры серии — обязательны для форматов, где это уже требуется при создании
@@ -1548,6 +1567,18 @@ if ($role === 'admin') {
                     $gsPayload
                 );
             }
+
+            // Авто увеличение кворума: пишем, только если форма прислала тумблер (старые формы/API не трогают).
+            // Выключение расширенные даты не сворачивает.
+            if (array_key_exists('auto_quorum_enabled', $data) && $event->gameSettings()->exists()) {
+                $aqAllowed = in_array((string) $event->format, \App\Services\AutoQuorumService::FORMATS, true)
+                    && in_array((string) ($event->registration_mode ?? 'single'), ['single', ''], true);
+                $event->gameSettings()->update([
+                    'auto_quorum_enabled'          => $aqAllowed && (bool) $data['auto_quorum_enabled'],
+                    'auto_quorum_players_per_team' => ($data['auto_quorum_players_per_team'] ?? null) !== null && $data['auto_quorum_players_per_team'] !== '' ? (int) $data['auto_quorum_players_per_team'] : null,
+                    'auto_quorum_max_teams'        => ($data['auto_quorum_max_teams'] ?? null) !== null && $data['auto_quorum_max_teams'] !== '' ? (int) $data['auto_quorum_max_teams'] : null,
+                ]);
+            }
     
             $event->load('gameSettings');
 
@@ -1835,6 +1866,11 @@ if ($role === 'admin') {
         });
 
         $event->refresh();
+
+        // Авто увеличение кворума: включили на игре, где уже набрано, — расширяем будущие даты (после коммита)
+        if (!empty($data['auto_quorum_enabled'])) {
+            app(\App\Services\AutoQuorumService::class)->expandEventDates($event);
+        }
 
         // Обновляем анонсы в каналах если событие изменилось
         $hasChannels = DB::table('event_notification_channels')
