@@ -1240,6 +1240,8 @@ return [
 
     'tournament_distribute_btn'        => 'Form teams',
     'tournament_distribute_random_btn' => 'Distribute randomly',
+    'tournament_distribute_level_btn'  => 'Distribute by level',
+    'tournament_distribute_level_confirm' => 'Form :n teams from :p registered players by level? Within each position players are spread so that team level totals are as close as possible.',
     'tournament_distribute_confirm'    => 'Form :n teams from :p registered players?',
     'tournament_distribute_success'    => 'Teams formed.',
     'tournament_distribute_error_no_players'  => 'No registered players to form teams from.',
