@@ -182,7 +182,15 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
             $showSwap = $canToggleTeamRole && $isBenchMember && $swapOutCandidates->isNotEmpty();
             $showSub  = $canManage && $leagueForSubs && !$tourStarted && $member->confirmation_status === 'confirmed' && !$isTeamCaptain;
             $canDelete   = ($isCaptain || $isOrganizer) && !$isTeamCaptain;
-            $showActions = ($isCaptain && !$isTeamCaptain) || $showSub;
+            // Ракировка: поменяться амплуа с игроком своей команды (у кандидата другое амплуа)
+            $posSwapCandidates = ($canManage && $posTeam && $member->confirmation_status === 'confirmed' && $member->position_code)
+                ? $activeMembers->filter(fn ($m) => (int) $m->id !== (int) $member->id
+                    && $m->confirmation_status === 'confirmed'
+                    && $m->position_code
+                    && $m->position_code !== $member->position_code)
+                : collect();
+            $showPosSwap = $posSwapCandidates->isNotEmpty();
+            $showActions = ($isCaptain && !$isTeamCaptain) || $showSub || $showPosSwap;
         @endphp
         <div class="card tm-card @if($canDelete) tm-card--del @endif">
             @if($canDelete)
@@ -296,6 +304,21 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
 
                 @if($showActions)
                 <div class="tm-actions">
+                    @if($showPosSwap)
+                        @php
+                            $posSwapData = $posSwapCandidates->map(fn ($c) => [
+                                'id'  => $c->id,
+                                'name'=> $c->user->name ?? ('#'.$c->user_id),
+                                'pos' => $posLabels[$c->position_code] ?? $c->position_code,
+                            ])->values();
+                        @endphp
+                        <button type="button" class="btn btn-small btn-secondary tm-ibtn tm-posswap-btn"
+                            title="Ракировка: поменяться амплуа"
+                            data-action="{{ route('tournamentTeams.members.swapPosition', [$event, $team, $member]) }}"
+                            data-name="{{ $member->user->name ?? ('#'.$member->user_id) }}"
+                            data-pos="{{ $posLabels[$member->position_code] ?? $member->position_code }}"
+                            data-candidates="{{ json_encode($posSwapData) }}"><x-ico name="swap-vert" size="1.9rem" /></button>
+                    @endif
                     @if($isCaptain && !$isTeamCaptain)
                         @if($member->confirmation_status !== 'confirmed')
                         <form method="POST" action="{{ route('tournamentTeams.members.confirm',[$event,$team,$member]) }}">
@@ -904,6 +927,19 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
 </div>
 </div>
 
+{{-- Ракировка амплуа внутри команды: заполняется из data-* кнопки .tm-posswap-btn --}}
+<div id="tmPosSwapModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+    <div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
+        <button type="button" class="tm-posswap-close" style="position:absolute;top:10px;right:12px;background:none;border:none;cursor:pointer;line-height:1" aria-label="Закрыть"><x-ico name="x" size="2rem" /></button>
+        <h3 class="-mt-05 mb-1"><x-ico name="swap-vert" size="1.2em" /> Ракировка амплуа</h3>
+        <div class="f-16 mb-2" id="tmPosSwapLabel"></div>
+        <form method="POST" id="tmPosSwapForm">
+            @csrf @method('PATCH')
+            <div id="tmPosSwapList"></div>
+        </form>
+    </div>
+</div>
+
 @if($leagueForSubs && $team->occurrence_id && !$tourStarted)
 <div id="subModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
     <div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
@@ -983,6 +1019,37 @@ $appStIcon   = ['pending'=>'clock','approved'=>'check','rejected'=>'x','incomple
             posForm.submit();
         }
     });
+})();
+(function(){
+    var modal = document.getElementById('tmPosSwapModal');
+    if (!modal) return;
+    var form = document.getElementById('tmPosSwapForm');
+    var list = document.getElementById('tmPosSwapList');
+    var label = document.getElementById('tmPosSwapLabel');
+    function close() { modal.style.display = 'none'; }
+    document.querySelectorAll('.tm-posswap-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var cands = [];
+            try { cands = JSON.parse(btn.dataset.candidates || '[]'); } catch (e) {}
+            form.action = btn.dataset.action;
+            label.textContent = btn.dataset.name + ' (' + btn.dataset.pos + ') поменяется амплуа с:';
+            list.innerHTML = '';
+            cands.forEach(function(c) {
+                var b = document.createElement('button');
+                b.type = 'submit'; b.name = 'other_member_id'; b.value = c.id;
+                b.className = 'btn btn-secondary w-100 mb-1';
+                b.style.justifyContent = 'space-between';
+                b.style.display = 'flex';
+                var n = document.createElement('span'); n.textContent = c.name;
+                var p = document.createElement('span'); p.textContent = c.pos; p.style.opacity = '.7';
+                b.appendChild(n); b.appendChild(p);
+                list.appendChild(b);
+            });
+            modal.style.display = 'flex';
+        });
+    });
+    modal.addEventListener('click', function(e) { if (e.target === modal) close(); });
+    modal.querySelector('.tm-posswap-close').addEventListener('click', close);
 })();
 @if($leagueForSubs && $team->occurrence_id && !$tourStarted)
 (function(){

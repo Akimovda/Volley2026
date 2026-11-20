@@ -479,6 +479,9 @@ return [
     'setup_btn_create'      => 'Создать',
 
     'setup_unassigned_h3'    => 'Не распределены по командам (:n)',
+    'setup_posswap_title' => 'Ракировка: поменяться амплуа',
+    'setup_posswap_h3' => 'Ракировка амплуа',
+    'setup_posswap_with' => 'поменяется амплуа с:',
     'setup_unassigned_empty' => 'Все зарегистрированные игроки распределены по командам.',
     'setup_unassigned_level' => 'Уровень',
     'setup_unassigned_position' => 'Амплуа',

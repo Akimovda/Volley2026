@@ -403,6 +403,101 @@ class TournamentTeamController extends Controller
     }
 
     /**
+     * Ракировка ДО распределения по командам (индивидуальная запись, страница setup):
+     * два записавшихся на тур игрока, ещё не состоящих в командах, меняются амплуа
+     * в своих записях (event_registrations.position). Число мест по амплуа не меняется.
+     */
+    public function swapRegistrationPositions(Request $request, Event $event): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless($user && ($user->isAdmin() || (int) $event->organizer_id === (int) $user->id), 403);
+
+        $data = $request->validate([
+            'occurrence_id' => ['required', 'integer'],
+            'user_a'        => ['required', 'integer'],
+            'user_b'        => ['required', 'integer', 'different:user_a'],
+        ]);
+        $occurrence = EventOccurrence::where('event_id', $event->id)->findOrFail((int) $data['occurrence_id']);
+        $back = redirect()->route('tournament.setup', ['event' => $event->id, 'occurrence_id' => $occurrence->id]);
+
+        $inTeam = EventTeamMember::whereHas('team', fn ($q) => $q->where('event_id', $event->id)->where('occurrence_id', $occurrence->id))
+            ->whereIn('user_id', [(int) $data['user_a'], (int) $data['user_b']])
+            ->exists();
+        if ($inTeam) {
+            return $back->withErrors(['team' => __('Игрок уже в команде — меняйте амплуа на странице команды.')]);
+        }
+
+        $regs = \App\Models\EventRegistration::where('occurrence_id', $occurrence->id)
+            ->whereIn('user_id', [(int) $data['user_a'], (int) $data['user_b']])
+            ->whereNull('cancelled_at')
+            ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+            ->with('user')
+            ->get()
+            ->keyBy('user_id');
+        $a = $regs->get((int) $data['user_a']);
+        $b = $regs->get((int) $data['user_b']);
+        if (!$a || !$b) {
+            return $back->withErrors(['team' => __('Игрок не записан на этот тур.')]);
+        }
+        if (empty($a->position) || empty($b->position) || $a->position === $b->position) {
+            return $back->withErrors(['team' => __('У игроков одинаковое или не указанное амплуа — меняться нечем.')]);
+        }
+
+        DB::transaction(function () use ($a, $b) {
+            [$pa, $pb] = [$a->position, $b->position];
+            $a->position = $pb;
+            $a->save();
+            $b->position = $pa;
+            $b->save();
+        });
+
+        $this->dispatchAnnounceRefresh($event, (int) $occurrence->id);
+
+        return $back->with('success', __('Ракировка выполнена: :a и :b поменялись амплуа.', [
+            'a' => trim(($a->user->last_name ?? '') . ' ' . ($a->user->first_name ?? '')),
+            'b' => trim(($b->user->last_name ?? '') . ' ' . ($b->user->first_name ?? '')),
+        ]));
+    }
+
+    /**
+     * Ракировка: игрок меняется амплуа с другим игроком своей команды.
+     */
+    public function swapMemberPositions(
+        Request $request,
+        Event $event,
+        EventTeam $team,
+        EventTeamMember $member,
+        TournamentTeamService $service
+    ): RedirectResponse {
+        abort_unless((int) $team->event_id === (int) $event->id, 404);
+        abort_unless((int) $member->event_team_id === (int) $team->id, 404);
+        $canManage = (int) $team->captain_user_id === (int) $request->user()->id
+            || (int) $event->organizer_id === (int) $request->user()->id
+            || $request->user()->isAdmin();
+        abort_unless($canManage, 403);
+
+        $data = $request->validate([
+            'other_member_id' => ['required', 'integer'],
+        ]);
+        $other = EventTeamMember::query()
+            ->where('event_team_id', $team->id)
+            ->find((int) $data['other_member_id']);
+        abort_unless($other, 404);
+
+        try {
+            $service->swapMemberPositions($team, $member, $other, $request->user()->id);
+            $this->dispatchAnnounceRefresh($event, $team->occurrence_id ? (int) $team->occurrence_id : null);
+
+            return redirect()->route('tournamentTeams.show', [$event, $team])->with('success', __('Ракировка выполнена: :a и :b поменялись амплуа.', [
+                'a' => $member->user->name ?? '',
+                'b' => $other->user->name ?? '',
+            ]));
+        } catch (DomainException $e) {
+            return redirect()->route('tournamentTeams.show', [$event, $team])->withErrors(['member' => $e->getMessage()]);
+        }
+    }
+
+    /**
      * Перевод игрока между основным составом и запасными в рамках команды
      * (не путать с командным резервом/листом ожидания турнира).
      */
