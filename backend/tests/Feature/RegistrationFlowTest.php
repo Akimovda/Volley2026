@@ -139,23 +139,22 @@ class RegistrationFlowTest extends PgsqlTestCase
     }
 
     /**
-     * СТРАННОСТЬ: классика с амплуа принимает запись БЕЗ позиции (position=NULL), пока есть общий запас мест.
-     * Такая запись не занимает ни одного ролевого слота.
+     * Классика по амплуа: запись БЕЗ позиции отклоняется (фикс 2026-11-20). Раньше принималась с position=NULL,
+     * не занимала ролевой слот — и следом проходила запись на «свободный» слот: перебор 13 из 12.
      */
-    public function test_classic_join_without_position_is_accepted_while_room(): void
+    public function test_classic_join_without_position_is_rejected(): void
     {
         $o = $this->classic42();
         $u = $this->makeUser();
 
-        $this->joinHttp($u, $o, null)->assertOk();
-        $reg = EventRegistration::where('occurrence_id', $o->id)->where('user_id', $u->id)->first();
-        $this->assertNull($reg->position);
+        $this->joinHttp($u, $o, null)
+            ->assertStatus(422)
+            ->assertJson(['ok' => false, 'message' => 'Выберите позицию: Доигровщик, Связующий.']);
+        $this->assertFalse(EventRegistration::where('occurrence_id', $o->id)->where('user_id', $u->id)->exists());
     }
 
-    /**
-     * Проверка на перебор: 11 по ролям + 1 без позиции = 12 (полный состав), затем запись на свободный по слоту outside.
-     */
-    public function test_classic_null_position_and_role_slots_do_not_overbook(): void
+    /** Регрессия перебора: 11 по ролям, запись без позиции отклонена, состав не больше max_players. */
+    public function test_classic_null_position_cannot_overbook(): void
     {
         $o = $this->classic42();
         for ($i = 0; $i < 4; $i++) {
@@ -164,15 +163,46 @@ class RegistrationFlowTest extends PgsqlTestCase
         for ($i = 0; $i < 7; $i++) {
             $this->seatDirect($o, 'outside');
         }
-        $this->joinHttp($this->makeUser(), $o, null)->assertOk(); // 12-й без позиции
+        $this->joinHttp($this->makeUser(), $o, null)->assertStatus(422);
+        $this->joinHttp($this->makeUser(), $o, 'outside')->assertOk(); // 12-й — на последний слот outside
+        $this->joinHttp($this->makeUser(), $o, 'outside')->assertStatus(422);
+        $this->assertSame(12, $this->activeRegs($o)->count());
+    }
 
-        $resp = $this->joinHttp($this->makeUser(), $o, 'outside'); // слот outside 7/8 «свободен»
-        $total = $this->activeRegs($o)->count();
-        if ($total > 12) {
-            $this->markTestIncomplete("БАГ: перебор — {$total} активных записей при max_players=12 (запись без позиции + слот outside). Ответ: " . $resp->getContent());
+    /** Классика 5×1: без позиции — тот же отказ со списком позиций события. */
+    public function test_classic_51_join_without_position_is_rejected(): void
+    {
+        $o = $this->classic51();
+        $this->joinHttp($this->makeUser(), $o, null)
+            ->assertStatus(422)
+            ->assertJson(['message' => 'Выберите позицию: ЦБ, Диагональный, Доигровщик, Связующий.']);
+    }
+
+    /** Одна основная роль (без амплуа, пляж) — запись без позиции по-прежнему принимается (быстрая кнопка в карточке). */
+    public function test_single_role_events_still_accept_join_without_position(): void
+    {
+        $this->joinHttp($this->makeUser(), $this->classicNoPositions(), null)->assertOk();
+        $this->joinHttp($this->makeUser(), $this->beach2x2(), null)->assertOk();
+    }
+
+    /** Одна роль: записи без позиции + с позицией player не превышают вместимость (общая проверка Guard). */
+    public function test_single_role_mixed_null_and_player_do_not_overbook(): void
+    {
+        $b = $this->beach2x2();
+        for ($i = 0; $i < 3; $i++) {
+            $this->joinHttp($this->makeUser(), $b, null)->assertOk();
         }
-        $resp->assertStatus(422);
-        $this->assertSame(12, $total);
+        $this->joinHttp($this->makeUser(), $b, 'player')->assertOk();
+        $this->joinHttp($this->makeUser(), $b, 'player')->assertStatus(422);
+        $this->assertSame(4, $this->activeRegs($b)->count());
+
+        $c = $this->classicNoPositions();
+        for ($i = 0; $i < 11; $i++) {
+            $this->joinHttp($this->makeUser(), $c, null)->assertOk();
+        }
+        $this->joinHttp($this->makeUser(), $c, 'player')->assertOk();
+        $this->joinHttp($this->makeUser(), $c, 'player')->assertStatus(422);
+        $this->assertSame(12, $this->activeRegs($c)->count());
     }
 
     public function test_classic_without_positions_uses_player_slot(): void
