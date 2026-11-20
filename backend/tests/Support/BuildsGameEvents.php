@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
  * и max_players в тестах совпадают с боевыми (а не прописаны руками).
  *
  * Готовые пресеты: classic42(), classic51(), classic51Libero(), classicNoPositions(), beach2x2(), beach2x2Roles().
- * Опции ($o): teams, reserve, min_players, paid (bool), payment_method, price_minor, gender (массив game_gender_*),
+ * Опции ($o): teams, reserve, min_players, paid (bool), payment_method, price_minor, gender (массив game_gender_*), aq (авто-кворум),
  *             format (game|training_game), starts_in_hours, registration_ends_in_hours, title.
  */
 trait BuildsGameEvents
@@ -149,6 +149,12 @@ trait BuildsGameEvents
         if (array_key_exists('reserve', $o)) {
             $data['game_reserve_players_max'] = $o['reserve'];
         }
+        // Авто увеличение кворума: ['aq' => ['enabled' => 1, 'per' => 5, 'max' => 4]]
+        if (isset($o['aq'])) {
+            $data['auto_quorum_enabled']          = $o['aq']['enabled'] ?? 1;
+            $data['auto_quorum_players_per_team'] = $o['aq']['per'] ?? null;
+            $data['auto_quorum_max_teams']        = $o['aq']['max'] ?? null;
+        }
         foreach ((array) ($o['gender'] ?? []) as $k => $v) {
             $data[$k] = $v; // game_gender_policy / _side / _max / _positions / _reg_starts_days_before
         }
@@ -217,6 +223,7 @@ trait BuildsGameEvents
             'timezone'     => $event->timezone,
             'location_id'  => $event->location_id,
             'game_subtype' => $event->gameSettings?->subtype,
+            'allow_registration' => (int) $event->allow_registration, // настоящая форма шлёт чекбокс всегда
         ], $fields));
     }
 
