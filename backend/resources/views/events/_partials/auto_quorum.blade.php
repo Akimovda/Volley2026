@@ -25,6 +25,7 @@
         'first_pair' => __('events.auto_quorum_calc_first_pair'),
         'next'       => __('events.auto_quorum_calc_next'),
         'none'       => __('events.auto_quorum_calc_none'),
+        'none_pair'  => __('events.auto_quorum_calc_none_pair'),
     ];
 @endphp
 <div class="aq-block mt-1" id="aq_block"
@@ -100,7 +101,7 @@
         var base = parseInt(val(ids.teams, '2'), 10) || 2;
         var p = parseInt(per.value, 10) || defaultPer();
         var m = parseInt(max.value, 10) || 0;
-        if (m <= base) { calc.textContent = t.none; return; }
+        if (m <= base) { calc.textContent = beach ? t.none_pair : t.none; return; }
         var parts = [];
         for (var k = base + 1; k <= m && parts.length < 6; k++) {
             parts.push(fmt(parts.length ? t.next : (beach ? t.first_pair : t.first_team), k, k * p));

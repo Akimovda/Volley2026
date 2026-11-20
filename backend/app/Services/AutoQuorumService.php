@@ -76,28 +76,37 @@ class AutoQuorumService
             return $errors;
         }
 
+        $sfx   = $direction === 'beach' ? '_pair' : '';   // у пляжа — «пар», у классики — «команд»
         $teams = (int) ($data['teams_count'] ?? $event?->gameSettings?->teams_count ?? 2);
         $max   = $data['auto_quorum_max_teams'] ?? null;
         if ($max === null || $max === '') {
-            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_required');
+            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_required' . $sfx);
         } elseif ((int) $max < $teams) {
-            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_lt_teams', ['teams' => $teams]);
+            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_lt_teams' . $sfx, ['teams' => $teams]);
         } elseif ((int) $max > 50) {
-            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_too_big');
+            $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_too_big' . $sfx);
         } elseif ($event) {
-            $expanded = (int) DB::table('event_occurrences')
+            // будущая дата с наибольшим расширением (при равенстве — самая поздняя)
+            $expanded = DB::table('event_occurrences')
                 ->where('event_id', $event->id)
                 ->where('starts_at', '>', now('UTC'))
                 ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
-                ->max('quorum_teams_count');
-            if ($expanded > 0 && (int) $max < $expanded) {
-                $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_lt_expanded', ['teams' => $expanded]);
+                ->whereNotNull('quorum_teams_count')
+                ->orderByDesc('quorum_teams_count')->orderByDesc('starts_at')
+                ->first(['starts_at', 'timezone', 'quorum_teams_count']);
+            if ($expanded && (int) $max < (int) $expanded->quorum_teams_count) {
+                $tz = $expanded->timezone ?: ($event->timezone ?: 'Europe/Moscow');
+                $errors['auto_quorum_max_teams'] = __('events.auto_quorum_err_max_lt_expanded', [
+                    'date'  => Carbon::parse($expanded->starts_at, 'UTC')->setTimezone($tz)->format('d.m.Y'),
+                    'teams' => (int) $expanded->quorum_teams_count,
+                    'unit'  => __($direction === 'beach' ? 'events.auto_quorum_unit_pairs' : 'events.auto_quorum_unit_teams'),
+                ]);
             }
         }
 
         $per = $data['auto_quorum_players_per_team'] ?? null;
         if ($per !== null && $per !== '' && ((int) $per < 1 || (int) $per > 20)) {
-            $errors['auto_quorum_players_per_team'] = __('events.auto_quorum_err_per_team');
+            $errors['auto_quorum_players_per_team'] = __('events.auto_quorum_err_per_team' . $sfx);
         }
 
         return $errors;

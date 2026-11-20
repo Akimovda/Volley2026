@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Queue;
 use Tests\Support\PgsqlTestCase;
 
 /**
- * Авто увеличение кворума, ЭТАП 3 (docs/auto-quorum.md). Запуск: tools/test-pgsql.sh --filter AutoQuorumTest
+ * Автоувеличение кворума, ЭТАП 3 (docs/auto-quorum.md). Запуск: tools/test-pgsql.sh --filter AutoQuorumTest
  */
 class AutoQuorumTest extends PgsqlTestCase
 {
@@ -274,7 +274,24 @@ class AutoQuorumTest extends PgsqlTestCase
         (new NotifyOrganizerQuorumExpandedJob($o->id, 2, 3, 3))->handle(app(\App\Services\UserNotificationService::class));
         $n = DB::table('user_notifications')->where('user_id', $this->organizer()->id)->where('type', 'event_quorum_expanded')->first();
         $this->assertNotNull($n);
-        $this->assertStringContainsString('расширена до 3 команд — проверьте площадку', $n->title);
+        $starts = Carbon::parse($o->starts_at, 'UTC')->setTimezone('Europe/Moscow');
+        $this->assertSame('Игра ' . $starts->format('d.m.Y H:i') . ' расширена до 3 команд — проверьте, хватит ли площадки', $n->title);
+        $this->assertStringContainsString(': было 2 команды, стало 3. Из листа ожидания в основной состав переведено 3 игрока.', $n->body);
+    }
+
+    public function test_notification_body_plurals_and_pairs(): void
+    {
+        $svc = app(\App\Services\UserNotificationService::class);
+        $o = $this->aqGame();
+        (new NotifyOrganizerQuorumExpandedJob($o->id, 5, 6, 1))->handle($svc);
+        (new NotifyOrganizerQuorumExpandedJob($o->id, 21, 22, 5))->handle($svc);
+        $b = $this->beach2x2(['aq' => ['enabled' => 1, 'max' => 4]]);
+        (new NotifyOrganizerQuorumExpandedJob($b->id, 2, 3, 2))->handle($svc);
+        $rows = DB::table('user_notifications')->where('user_id', $this->organizer()->id)->where('type', 'event_quorum_expanded')->orderBy('id')->get();
+        $this->assertStringContainsString('было 5 команд, стало 6. Из листа ожидания в основной состав переведено 1 игрок.', $rows[0]->body);
+        $this->assertStringContainsString('было 21 команда, стало 22. Из листа ожидания в основной состав переведено 5 игроков.', $rows[1]->body);
+        $this->assertStringContainsString('расширена до 3 пар — проверьте, хватит ли площадки', $rows[2]->title);
+        $this->assertStringContainsString('было 2 пары, стало 3. Из листа ожидания в основной состав переведено 2 игрока.', $rows[2]->body);
     }
 
     public function test_gender_quota_scales_with_date_teams(): void
@@ -380,10 +397,33 @@ class AutoQuorumTest extends PgsqlTestCase
     {
         $o = $this->aqGame();
         DB::table('event_occurrences')->where('id', $o->id)->update(['quorum_teams_count' => 4]);
+        $date = Carbon::parse($o->starts_at, 'UTC')->setTimezone('Europe/Moscow')->format('d.m.Y');
         $this->updateEventHttp($o, ['teams_count' => 2, 'auto_quorum_enabled' => 1, 'auto_quorum_max_teams' => 3])
-            ->assertSessionHasErrors('auto_quorum_max_teams');
+            ->assertSessionHasErrors(['auto_quorum_max_teams' => "Дата {$date} уже расширена до 4 команд — максимум не может быть меньше 4."]);
         $this->updateEventHttp($o, ['teams_count' => 2, 'auto_quorum_enabled' => 1, 'auto_quorum_max_teams' => 4])
             ->assertSessionHasNoErrors();
+    }
+
+    public function test_validation_texts_teams_vs_pairs(): void
+    {
+        $svc = app(AutoQuorumService::class);
+        $c = fn (array $d, string $dir) => $svc->validateSettings(['auto_quorum_enabled' => 1, 'teams_count' => 3] + $d, 'game', $dir, 'single');
+        $this->assertSame('Укажите максимум команд.', $c([], 'classic')['auto_quorum_max_teams']);
+        $this->assertSame('Укажите максимум пар.', $c([], 'beach')['auto_quorum_max_teams']);
+        $this->assertSame('Максимум команд не может быть меньше числа команд (3).', $c(['auto_quorum_max_teams' => 2], 'classic')['auto_quorum_max_teams']);
+        $this->assertSame('Максимум пар не может быть меньше числа пар (3).', $c(['auto_quorum_max_teams' => 2], 'beach')['auto_quorum_max_teams']);
+        $this->assertSame('Максимум пар — не больше 50.', $c(['auto_quorum_max_teams' => 51], 'beach')['auto_quorum_max_teams']);
+        $this->assertSame('Игроков на команду: от 1 до 20.', $c(['auto_quorum_max_teams' => 4, 'auto_quorum_players_per_team' => 21], 'classic')['auto_quorum_players_per_team']);
+        $this->assertSame('Игроков на пару: от 1 до 20.', $c(['auto_quorum_max_teams' => 4, 'auto_quorum_players_per_team' => 21], 'beach')['auto_quorum_players_per_team']);
+        $this->assertSame('Автоувеличение кворума нельзя совмещать со «Статистикой»: она работает только с 2 командами.',
+            $c(['auto_quorum_max_teams' => 4, 'collect_stats' => 1], 'classic')['auto_quorum_enabled']);
+
+        // дата пляжа уже расширена — «пар»
+        $b = $this->beach2x2(['aq' => ['enabled' => 1, 'max' => 4]]);
+        DB::table('event_occurrences')->where('id', $b->id)->update(['quorum_teams_count' => 4]);
+        $date = Carbon::parse($b->starts_at, 'UTC')->setTimezone('Europe/Moscow')->format('d.m.Y');
+        $err = $svc->validateSettings(['auto_quorum_enabled' => 1, 'teams_count' => 2, 'auto_quorum_max_teams' => 3], 'game', 'beach', 'single', $b->event->fresh('gameSettings'));
+        $this->assertSame("Дата {$date} уже расширена до 4 пар — максимум не может быть меньше 4.", $err['auto_quorum_max_teams']);
     }
 
     public function test_validation_format_and_mode_for_create(): void
@@ -422,7 +462,8 @@ class AutoQuorumTest extends PgsqlTestCase
             ->assertOk()
             ->assertSee('id="aq_switch"', false)
             ->assertSee('up-switch is-on', false)
-            ->assertSee('Авто увеличение кворума');
+            ->assertSee('Автоувеличение кворума')
+            ->assertSee('Другие даты серии не меняются.');
 
         DB::table('events')->where('id', $o->event_id)->update(['registration_mode' => 'team']);
         $this->actingAs($this->organizer())->get("/events/create/event_management/{$o->event_id}/edit")
@@ -439,5 +480,35 @@ class AutoQuorumTest extends PgsqlTestCase
         $this->assertGreaterThan($hint, $tgl, 'тумблер — сразу после подсказки о режиме регистрации');
         $this->assertStringContainsString('data-show-if="format=game|training_game,registration_mode=single"', $html);
         $this->assertStringContainsString('data-hide-if="collect_stats=1"', $html);
+    }
+
+    /** Карточки дат: лента /events, страница локации и подгрузка мест /occurrences/{id}/availability — по дате. */
+    public function test_cards_show_expanded_date_capacity(): void
+    {
+        $a = $this->aqGame();
+        $b = $this->addOccurrence($a, 7);
+        $this->fillMain($a);
+        for ($i = 0; $i < 3; $i++) {
+            $this->wl($a);
+        }
+        $this->assertSame(3, $this->teams($a));
+
+        // живая подгрузка мест на карточке (seatline): /occurrences/{id}/availability
+        $this->getJson("/occurrences/{$a->id}/availability")->assertOk()
+            ->assertJsonPath('meta.max_players', 18)->assertJsonPath('meta.total_capacity', 18)->assertJsonPath('meta.remaining_total', 3);
+        $this->getJson("/occurrences/{$b->id}/availability")->assertOk()
+            ->assertJsonPath('meta.max_players', 12)->assertJsonPath('meta.remaining_total', 12);
+
+        // карточки страницы локации: у расширенной даты 18, у соседней 12
+        DB::table('locations')->where('id', $a->location_id)->update(['organizer_id' => null]); // публичная страница — только общие локации
+        $loc = $this->followingRedirects()->get("/locations/{$a->location_id}-x")->assertOk()->getContent();
+        preg_match_all('~data-max-players="(\d+)"~', $loc, $m);
+        $this->assertContains('18', $m[1], 'карточка расширенной даты на странице локации');
+        $this->assertContains('12', $m[1], 'карточка соседней даты на странице локации');
+
+        // лента /events (ближайшая дата серии — расширенная)
+        $ev = $this->actingAs($this->organizer())->get('/events')->assertOk()->getContent();
+        preg_match_all('~data-max-players="(\d+)"~', $ev, $m2);
+        $this->assertContains('18', $m2[1], 'карточка расширенной даты в ленте');
     }
 }
