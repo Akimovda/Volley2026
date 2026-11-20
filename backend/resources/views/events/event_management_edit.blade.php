@@ -927,6 +927,21 @@
                             </div>
                         </div>
 
+                        {{-- Авто увеличение кворума (docs/auto-quorum.md): только игры/тренировочные игры с одиночной записью --}}
+                        @if(in_array((string) $event->format, \App\Services\AutoQuorumService::FORMATS, true) && in_array((string) ($event->registration_mode ?? 'single'), ['single', ''], true))
+                        <div class="col-md-12">
+                            <div class="card" style="overflow:visible">
+                                @include('events._partials.auto_quorum', [
+                                    'aqEnabled'   => (bool) ($event->gameSettings?->auto_quorum_enabled ?? false),
+                                    'aqPer'       => $event->gameSettings?->auto_quorum_players_per_team,
+                                    'aqMax'       => $event->gameSettings?->auto_quorum_max_teams,
+                                    'aqDirection' => (string) ($event->direction ?? 'classic'),
+                                    'aqIds'       => ['subtype' => 'mgmt_game_subtype', 'teams' => 'mgmt_teams_count', 'stats' => 'collect_stats_edit'],
+                                ])
+                            </div>
+                        </div>
+                        @endif
+
                         @if(!$isBeachGame)
                         {{-- Запись по амплуа (классика, игра, подтип 4-2). Снять галочку = запись общим списком, как в пляжке --}}
                         <div class="col-md-6" id="mgmt_reg_by_positions_block" style="{{ old('game_subtype', $event->gameSettings?->subtype) === '4x2' ? '' : 'display:none' }}">

@@ -402,6 +402,16 @@
 														{{ __('events.reg_mode_hint_beach') }}
 													</li>
 												</ul>
+
+												{{-- Авто увеличение кворума (docs/auto-quorum.md): игры/тренировочные игры, одиночная запись, без «Статистики» --}}
+												@include('events._partials.auto_quorum', [
+													'aqEnabled' => $prefill['auto_quorum_enabled'] ?? false,
+													'aqPer'     => $prefill['auto_quorum_players_per_team'] ?? null,
+													'aqMax'     => $prefill['auto_quorum_max_teams'] ?? null,
+													'aqShowIf'  => 'format=game|training_game,registration_mode=single',
+													'aqHideIf'  => 'collect_stats=1',
+													'aqIds'     => ['direction' => 'direction', 'subtype' => 'game_subtype', 'libero' => 'game_libero_mode', 'teams' => 'teams_count', 'stats' => 'collect_stats'],
+												])
 											</div>
 										</div>
 
