@@ -1018,10 +1018,12 @@ $tourNumber = $seasonData
 				// (нужен там же для $availablePositions формы "Добавить игрока").
 				$teamsHeaderKey = $isIndividualTournament ? 'tournaments.setup_teams_h2_individual' : 'tournaments.setup_teams_h2';
 			@endphp
-			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __($teamsHeaderKey, ['n' => $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
+			<h2 class="-mt-05" style="cursor:pointer;user-select:none" onclick="var b=document.getElementById('teams-body');b.style.display=b.style.display==='none'?'':'none';this.querySelector('.toggle-icon').textContent=b.style.display==='none'?'▶':'▼'">{{ __($teamsHeaderKey, ['n' => $isIndividualTournament ? $completeTeams->count() + $incompleteTeams->count() : $completeTeams->count()]) }} <span class="toggle-icon" style="font-size:14px">{{ $hasStages ? '▶' : '▼' }}</span></h2>
 			<div id="teams-body" style="{{ $hasStages ? 'display:none' : '' }}">
 			@if($completeTeams->isEmpty())
+			@if($incompleteTeams->isEmpty())
 			<div class="alert alert-info">{{ __('tournaments.setup_teams_empty') }}</div>
+			@endif
 			@else
 			<div class="row">
 				@foreach($completeTeams as $team)
@@ -1120,21 +1122,51 @@ $tourNumber = $seasonData
 			@endif
 
 			@if($incompleteTeams->isNotEmpty())
-			<h3 class="mt-2 mb-05"><x-ico name="clock" /> Ищут партнёра ({{ $incompleteTeams->count() }})</h3>
+			@php
+				$tsuIncPairs = $incompleteTeams->first()?->team_kind === 'beach_pair';
+				$tsuPosService = app(\App\Services\TournamentTeamService::class);
+			@endphp
+			<style>
+			.tsu-inc-card{display:flex;flex-direction:column;gap:.8rem;border-style:dashed;overflow:visible}
+			.tsu-inc-name{font-size:1.8rem}
+			.tsu-inc-list{display:flex;flex-direction:column;gap:.4rem}
+			.tsu-inc-m{display:flex;justify-content:space-between;gap:.8rem;align-items:baseline}
+			.tsu-inc-m span:last-child{font-size:1.3rem;opacity:.7;white-space:nowrap}
+			.tsu-inc-comp{display:flex;flex-wrap:wrap;gap:.4rem}
+			.tsu-inc-chip{padding:.1rem .8rem;border-radius:99px;font-size:1.3rem;font-weight:600;background:#dcfce7;color:#166534}
+			.tsu-inc-chip--short{background:#fee2e2;color:#991b1b}
+			.tsu-inc-foot{display:flex;justify-content:space-between;align-items:center;gap:.8rem;margin-top:auto}
+			.tsu-inc-add{display:flex;flex-direction:column;gap:.6rem}
+			.tsu-inc-add .btn{width:100%}
+			</style>
+			<h3 class="mt-2 mb-05"><x-ico name="clock" /> {{ $tsuIncPairs ? 'Ищут партнёра' : 'Неполные команды' }} ({{ $incompleteTeams->count() }})</h3>
 			<div class="row">
 				@foreach($incompleteTeams as $team)
+				@php
+					$members = $team->members->load('user');
+					$tsuCap = $tsuPosService->getPositionCapacity($team);
+				@endphp
 				<div class="col-md-6 col-xl-3">
-					<div class="card" style="opacity:.8;border-style:dashed;overflow:visible">
-						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 d-block mb-1">
-							{{ $team->name }}
-						</a>
-						@php $members = $team->members->load('user'); @endphp
-						@foreach($members as $m)
-						<div>{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</div>
-						@endforeach
-						<div class="mt-1 d-flex between fvc">
-							<div class="mt-05 cd b-600" style="color:#dc2626">{{ __('tournaments.badge_roster_incomplete') }}</div>
-							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
+					<div class="card tsu-inc-card">
+						<a href="{{ route('tournamentTeams.show', [$event, $team]) }}" class="blink b-600 tsu-inc-name">{{ $team->name }}</a>
+						<div class="tsu-inc-list">
+							@foreach($members as $m)
+							<div class="tsu-inc-m">
+								<span>@if($m->team_role === 'captain')<x-ico name="crown" size="1em" /> @endif{{ trim(($m->user->last_name ?? '') . ' ' . ($m->user->first_name ?? '')) ?: $m->user->name ?? '?' }}</span>
+								@if($m->position_code)<span>{{ __('events.positions.' . $m->position_code) }}</span>@endif
+							</div>
+							@endforeach
+						</div>
+						@if(!empty($tsuCap))
+						<div class="tsu-inc-comp">
+							@foreach($tsuCap as $info)
+							<span class="tsu-inc-chip @if($info['current'] < $info['max']) tsu-inc-chip--short @endif">{{ $info['label'] }} {{ $info['current'] }}/{{ $info['max'] }}</span>
+							@endforeach
+						</div>
+						@endif
+						<div class="tsu-inc-foot">
+							<span class="b-600" style="color:#dc2626">{{ __('tournaments.badge_roster_incomplete') }}</span>
+							<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}">
 								@csrf @method('DELETE')
 								<button type="submit" class="icon-delete btn-alert btn btn-danger btn-svg" data-title="{{ __('tournaments.setup_team_delete_title', ['name' => $team->name]) }}" data-icon="warning" data-confirm-text="{{ __('tournaments.btn_delete') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
 								</button>
@@ -1144,18 +1176,18 @@ $tourNumber = $seasonData
 						     неполную команду, переиспользуя tournamentTeams.addMemberByOrganizer
 						     (тот же роут, что и "Добавить в состав" на странице команды). --}}
 						@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
-						<form method="POST" action="{{ route('tournamentTeams.addMemberByOrganizer', [$event, $team]) }}" class="form mt-1" style="display:flex;gap:6px;align-items:center">
+						<form method="POST" action="{{ route('tournamentTeams.addMemberByOrganizer', [$event, $team]) }}" class="form tsu-inc-add">
 							@csrf
 							<input type="hidden" name="team_role" value="player">
 							<input type="hidden" name="position_code" id="add2team-pos-{{ $team->id }}">
-							<select name="user_id" class="add2team-select" data-team-id="{{ $team->id }}" required style="flex:1;min-width:0">
+							<select name="user_id" class="add2team-select" data-team-id="{{ $team->id }}" required>
 								<option value="">{{ __('tournaments.setup_add_to_team_placeholder') }}</option>
 								@foreach($unassignedPlayers as $p)
-								@php $addOptPos = in_array($p->reg_position, ['setter','outside','opposite','middle','libero'], true) ? $p->reg_position : ''; @endphp
+								@php $addOptPos = in_array($p->reg_position, ['setter','outside','opposite','middle','libero','blocker','defender'], true) ? $p->reg_position : ''; @endphp
 								<option value="{{ $p->id }}" data-position="{{ $addOptPos }}">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</option>
 								@endforeach
 							</select>
-							<button type="submit" class="btn btn-secondary btn-small">{{ __('tournaments.setup_add_to_team_btn') }}</button>
+							<button type="submit" class="btn btn-secondary btn-small"><x-ico name="user-plus" /> {{ __('tournaments.setup_add_to_team_btn') }}</button>
 						</form>
 						@endif
 					</div>
