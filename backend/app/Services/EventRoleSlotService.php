@@ -139,13 +139,17 @@ class EventRoleSlotService
     }
 
     /**
-     * Лимит роли для ДАТЫ (авто увеличение кворума, docs/auto-quorum.md). Не расширенная дата
-     * (quorum_teams_count IS NULL) — max_slots мероприятия, без загрузки модели даты (как раньше).
+     * Лимит роли для ДАТЫ (авто увеличение кворума, docs/auto-quorum.md). Дата без своего числа команд
+     * (quorum_teams_count IS NULL и нет «команд на этой дате» в форме даты) — max_slots мероприятия,
+     * модель даты не грузится (один лёгкий SELECT).
      */
     public function slotLimitForOccurrence(int $occurrenceId, EventRoleSlot $slot, ?Collection $slots = null): int
     {
-        $quorumTeams = \DB::table('event_occurrences')->where('id', $occurrenceId)->value('quorum_teams_count');
-        if ($quorumTeams === null) {
+        $row = \DB::table('event_occurrences as o')
+            ->leftJoin('event_occurrence_game_settings as og', 'og.occurrence_id', '=', 'o.id')
+            ->where('o.id', $occurrenceId)
+            ->first(['o.quorum_teams_count', 'og.teams_count as own_teams']);
+        if (!$row || ($row->quorum_teams_count === null && $row->own_teams === null)) {
             return (int) $slot->max_slots;
         }
 

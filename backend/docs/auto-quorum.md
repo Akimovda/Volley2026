@@ -63,6 +63,26 @@
 - Advisory-локи записи (дата, позиция) не менялись.
 - Тесты: `tests/Unit/OccurrenceLimitServiceTest.php`, `tests/Feature/DateCapacityTest.php`; тесты этапа 1 — без правок, зелёные.
 
+## Этап 3 — авторасширение (ветка `auto-quorum-stage3`, на проде — после ОК владельца)
+- **A. Ёмкость даты = число команд.** «Команд на этой дате» в форме даты (`event_occurrence_game_settings.teams_count`) реально меняет ёмкость: `OccurrenceLimitService::hasOwnTeams()` → лимиты ролей по схеме; `occurrence.max_players = размер команды × команд даты` (`derivedMaxPlayers()`) при сохранении даты и при правке серии, в т.ч. у `is_individually_edited` (своё число команд/авторасширение сохраняется, иначе — команды серии). `seriesMaxPlayers` убран: анонс, пляж, лист ожидания читают `maxPlayers` даты.
+- **B. Настройки:** `event_game_settings.auto_quorum_enabled / auto_quorum_players_per_team / auto_quorum_max_teams`, `event_occurrences.quorum_expanded_at`, журнал `event_occurrence_quorum_log`. Валидация (создание и редактирование) — `AutoQuorumService::validateSettings()`: game/training_game, одиночная запись, не со «Статистикой», максимум ≥ команд и ≥ уже расширенных будущих дат, игроков на команду 1–20. Выключение не сворачивает.
+- **C. Форма:** партиал `events/_partials/auto_quorum.blade.php`, переключатель `.up-switch` (как в профиле). perTeam по умолчанию: классика — размер команды − 1 (4-2/5-1 → 5, с либеро → 6), пляж — 2. При включении максимум предзаполняется «команд + 2».
+- **D. `AutoQuorumService::maybeExpand()`:** `pg_advisory_xact_lock(occurrence_id, QUORUM_KEY = -20261120)` (отрицательный — не пересекается с `crc32(position) & 0x7fffffff`); N = активные (основа + запасные) + лист ожидания; `target = min(max, max(текущие, floor(N / perTeam)))`; условный `UPDATE … WHERE COALESCE(quorum_teams_count, base) = old` (идемпотентно); журнал. После коммита — `autoBookNext` по ролям новых слотов (роль × добавленных команд; пляж «По амплуа» +1 Бл +1 Защ), `promoted_user_ids` в журнал, `RefreshOccurrenceAnnouncementJob`, `NotifyOrganizerQuorumExpandedJob` (тип `event_quorum_expanded`, организатор + помощники, каналы как у уведомлений о записи). Гендерная квота даты — `OccurrenceLimitService::genderLimitFor()`. `BotAssistantService` — ёмкость даты.
+- **E. Точки вызова** (`safeMaybeExpand`, после коммита, ошибка → лог + Sentry, запись не ломается): `storeOccurrence`, `WaitlistService::join`, ручное добавление организатором, `PremiumAutoBookingJob` / `AutoBookingSubscriptionJob`, сохранение настроек мероприятия (`expandEventDates`), `auto-quorum:sweep` каждые 5 минут.
+- **F.** Страница «Управление записями»: «Расширено до N команд (дата/время)».
+- Тесты: `tests/Feature/AutoQuorumTest.php`, `tests/Unit/AutoQuorumCalcTest.php`; два теста этапа 1 про странности №3/№4 переписаны под правило A.
+
+## Решения владельца по этапу 3 (2026-11-20)
+- perTeam по умолчанию для пляжа = размер пары (2×2 → 2, 3×3 → 3, 4×4 → 4).
+- Уведомление о расширении (`event_quorum_expanded`) — организатору и помощникам всегда, независимо от флага уведомлений о записях игроков.
+- Тексты ru — правки отдельным коммитом после деплоя этапа 3.
+
+## Дальше (бэклог)
+- Горизонтальный overflow +67px в форме редактирования мероприятия на 1280 px (был до авто-кворума, остаётся со скрытым блоком тумблера).
+- Дата со своей схемой (переопределение `subtype` в форме даты, напр. 5-1 в серии 4-2): роли новой схемы не появляются — слоты берутся из `event_role_slots` мероприятия.
+- Тесты на вызов `safeMaybeExpand` в `PremiumAutoBookingJob` и `AutoBookingSubscriptionJob`.
+- Этап 4: классика `team` (+1 команда при ≥3 в листе ожидания) и пляж `mixed_group` (расширение кратно, значение задаёт организатор).
+
 ## Тесты (этап 1)
 
 **Где и на чём.** На Contabo (`185.225.232.210`), локальный PostgreSQL 16 (как на проде — 16.x), отдельная БД `volley_test` и пользователь `volley_test` (только localhost, `scram-sha-256`, сессия в UTC: `ALTER DATABASE volley_test SET timezone TO 'UTC'`). Прод-БД и прод-креды тесты не используют.

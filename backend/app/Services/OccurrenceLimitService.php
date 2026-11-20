@@ -8,17 +8,17 @@ use App\Models\EventRoleSlot;
 use Illuminate\Support\Collection;
 
 /**
- * Ёмкость КОНКРЕТНОЙ даты (авто увеличение кворума, docs/auto-quorum.md, этап 2).
+ * Ёмкость КОНКРЕТНОЙ даты (авто увеличение кворума, docs/auto-quorum.md).
  *
- * Главный инвариант: пока дата не расширена (event_occurrences.quorum_teams_count IS NULL), все методы
- * возвращают РОВНО то, что потребители брали до этапа 2:
- *   - лимит роли — event_role_slots.max_slots мероприятия;
- *   - maxPlayers() — event_occurrences.max_players ?? event_game_settings.max_players (как effectiveMaxPlayers());
- *   - seriesMaxPlayers() — event_game_settings.max_players (для тех, кто раньше читал только уровень мероприятия:
- *     анонс, пляжная ветка WaitlistService).
- * Новый расчёт (роли на команду из GameCalculator × число команд даты) включается ТОЛЬКО у расширенной даты.
+ * Правило (решение владельца 2026-11-20, этап 3, шаг A): ёмкость даты задаётся ТОЛЬКО числом команд.
+ * Число команд даты — quorum_teams_count (авторасширение) ?? «команд на этой дате» из формы даты
+ * (event_occurrence_game_settings.teams_count) ?? teams_count мероприятия.
+ *   - У даты со «своим» числом команд (hasOwnTeams) лимиты ролей и основной состав считаются по схеме:
+ *     роли на команду (GameCalculator) × команд даты.
+ *   - Иначе — как у мероприятия: max_slots слотов; основной состав — occurrence.max_players ?? мероприятия
+ *     (occurrence.max_players теперь производное: размер команды × команд даты, см. derivedMaxPlayers()).
  *
- * Не путать с OccurrenceCapacityService (вместимость площадки/брони).
+ * Не путать с OccurrenceCapacityService (вместимость площадки/брони, автозапись по абонементу/Premium).
  */
 class OccurrenceLimitService
 {
@@ -35,6 +35,40 @@ class OccurrenceLimitService
         }
 
         return (int) ($occ->effectiveGameSettings()->teams_count ?? 0);
+    }
+
+    /**
+     * У даты своё число команд, отличное от мероприятия: расширена авто-кворумом или в форме даты задано
+     * «команд на этой дате». Тогда лимиты ролей считаются по схеме, а не берутся из max_slots мероприятия.
+     */
+    public function hasOwnTeams(EventOccurrence $occ): bool
+    {
+        if ($this->isExpanded($occ)) {
+            return true;
+        }
+        $override = $occ->gameSettingsOverride?->teams_count;
+
+        return $override !== null && (int) $override > 0 && (int) $override !== $this->baseTeams($occ);
+    }
+
+    /**
+     * Основной состав даты по правилу «ёмкость = число команд»: размер команды × команд даты.
+     * null — схема к мероприятию неприменима (мастер-класс, King Beach, командный турнир и т.п.) — тогда
+     * вызывающий код оставляет прежнее значение (max_players мероприятия).
+     */
+    public function derivedMaxPlayers(EventOccurrence $occ): ?int
+    {
+        $event = $this->event($occ);
+        if (!$event || !in_array((string) $event->format, ['game', 'training_game', 'training', 'training_pro_am', 'camp', 'coach_student'], true)) {
+            return null;
+        }
+        if (in_array((string) $event->registration_mode, ['king_beach', 'team_classic', 'team_beach'], true)) {
+            return null;
+        }
+        $size  = $this->teamSize($occ);
+        $teams = $this->teamsFor($occ);
+
+        return ($size > 0 && $teams > 0) ? $size * $teams : null;
     }
 
     /** Число команд мероприятия (база, от которой считается расширение и масштабируются квоты). */
@@ -67,7 +101,7 @@ class OccurrenceLimitService
 
     /**
      * Лимиты всех ролей-слотов мероприятия для даты: роль => мест.
-     * Не расширена — max_slots как есть. Расширена — роли на команду × команд даты; роль, которой нет в схеме
+     * Своего числа команд нет — max_slots как есть. Есть (hasOwnTeams) — роли на команду × команд даты; роль, которой нет в схеме
      * (рассинхрон данных, 'reserve' как слот), — max_slots без изменений.
      *
      * @param  Collection|null  $slots  слоты мероприятия (EventRoleSlot), если уже загружены вызывающим
@@ -82,7 +116,7 @@ class OccurrenceLimitService
             $limits[(string) $slot->role] = (int) $slot->max_slots;
         }
 
-        if (!$this->isExpanded($occ)) {
+        if (!$this->hasOwnTeams($occ)) {
             return $limits;
         }
 
@@ -103,7 +137,10 @@ class OccurrenceLimitService
         return $this->roleLimits($occ, $slots)[$role] ?? 0;
     }
 
-    /** Основной состав даты. Не расширена — как EventOccurrence::effectiveMaxPlayers() до этапа 2. */
+    /**
+     * Основной состав даты. Расширена — размер команды × команд даты; иначе occurrence.max_players ?? мероприятия
+     * (occurrence.max_players производное — пересчитывается при сохранении даты и правке серии).
+     */
     public function maxPlayers(EventOccurrence $occ): int
     {
         if ($this->isExpanded($occ)) {
@@ -114,18 +151,17 @@ class OccurrenceLimitService
     }
 
     /**
-     * Основной состав для потребителей, которые до этапа 2 читали ТОЛЬКО уровень мероприятия
-     * (анонс, пляжная ветка WaitlistService): не расширена — event_game_settings.max_players,
-     * расширена — ёмкость даты. Переопределение max_players даты здесь по-прежнему не учитывается
-     * (странность №3/№4 этапа 1 — не меняем поведение без решения владельца).
+     * Гендерная квота mixed_limited для даты: floor(gender_limited_max / команд мероприятия × команд даты).
+     * Дата без своего числа команд — квота как есть.
      */
-    public function seriesMaxPlayers(EventOccurrence $occ): int
+    public function genderLimitFor(EventOccurrence $occ, int $eventLimit): int
     {
-        if ($this->isExpanded($occ)) {
-            return $this->maxPlayers($occ);
+        if (!$this->hasOwnTeams($occ)) {
+            return $eventLimit;
         }
+        $base = $this->baseTeams($occ);
 
-        return (int) ($this->event($occ)?->gameSettings?->max_players ?? 0);
+        return $base > 0 ? intdiv($eventLimit * $this->teamsFor($occ), $base) : $eventLimit;
     }
 
     /** Лимит запасных даты. Сейчас от даты не зависит (не масштабируется при расширении). */

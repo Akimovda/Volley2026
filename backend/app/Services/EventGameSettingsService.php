@@ -922,6 +922,15 @@ class EventGameSettingsService
             'registration_without_positions' => $noPositions,
             'registration_by_roles' => $byBeachRoles,
         ];
+
+        // Авто увеличение кворума (docs/auto-quorum.md): только игры/тренировочные игры с одиночной записью
+        $aqAllowed = in_array((string) ($data['format'] ?? $event->format ?? ''), \App\Services\AutoQuorumService::FORMATS, true)
+            && in_array((string) ($data['registration_mode'] ?? $event->registration_mode ?? 'single'), ['single', ''], true);
+        $egsPayload['auto_quorum_enabled'] = $aqAllowed && !empty($data['auto_quorum_enabled']);
+        $egsPayload['auto_quorum_players_per_team'] = (isset($data['auto_quorum_players_per_team']) && $data['auto_quorum_players_per_team'] !== '')
+            ? (int) $data['auto_quorum_players_per_team'] : null;
+        $egsPayload['auto_quorum_max_teams'] = (isset($data['auto_quorum_max_teams']) && $data['auto_quorum_max_teams'] !== '')
+            ? (int) $data['auto_quorum_max_teams'] : null;
     
         if (empty($egsPayload['subtype'])) {
             $egsPayload['subtype'] = ($direction === 'beach') ? '2x2' : '4x2';

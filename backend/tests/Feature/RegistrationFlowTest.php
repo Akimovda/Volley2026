@@ -616,8 +616,9 @@ class RegistrationFlowTest extends PgsqlTestCase
     }
 
     /**
-     * Серия: max_players переписывается у всех будущих дат, КРОМЕ отредактированных вручную (is_individually_edited).
-     * СТРАННОСТЬ: слоты (event_role_slots) общие на мероприятие, поэтому у такой даты слоты 18, а max_players 12.
+     * Серия: max_players переписывается у всех будущих дат. С этапа 3 (правило «ёмкость даты = число команд»)
+     * дата, отредактированная вручную (is_individually_edited), тоже пересчитывается — от своего числа команд,
+     * а без него — от новых команд серии (раньше оставалась 12 при слотах 18 — странность №3 этапа 1).
      */
     public function test_edit_teams_count_series_updates_all_future_dates(): void
     {
@@ -637,7 +638,8 @@ class RegistrationFlowTest extends PgsqlTestCase
 
         $this->assertSame(18, (int) EventOccurrence::find($o->id)->max_players);
         $this->assertSame(18, (int) EventOccurrence::find($o2->id)->max_players);
-        $this->assertSame(12, (int) EventOccurrence::find($o3->id)->max_players);
+        $this->assertSame(18, (int) EventOccurrence::find($o3->id)->max_players, 'своих команд нет — по серии');
+        $this->assertTrue((bool) EventOccurrence::find($o3->id)->is_individually_edited, 'остальные поля даты защищены как раньше');
         $this->assertSame(['outside' => 12, 'setter' => 6], $this->slots($o3));
     }
 
@@ -684,16 +686,16 @@ class RegistrationFlowTest extends PgsqlTestCase
     }
 
     /**
-     * СТРАННОСТЬ (важно для этапа 2): анонс берёт max_players из настроек мероприятия, а не даты —
-     * индивидуальный max_players даты в анонсе не виден.
+     * Анонс берёт ёмкость ДАТЫ (с этапа 3: OccurrenceLimitService::maxPlayers; раньше — только мероприятия,
+     * странность №4 этапа 1).
      */
-    public function test_announcement_ignores_occurrence_max_players(): void
+    public function test_announcement_uses_occurrence_capacity(): void
     {
         $o = $this->classic42();
         $o->forceFill(['max_players' => 18])->save();
 
         $msg = app(OccurrenceAnnouncementMessageBuilder::class)->build($o->fresh('event'));
-        $this->assertStringContainsString('из 12', $msg->text);
+        $this->assertStringContainsString('из 18', $msg->text);
         $this->assertSame(18, $o->fresh()->effectiveMaxPlayers());
     }
 }

@@ -48,7 +48,7 @@ final class BotAssistantService
         }
 
         // Получаем настройки игры
-        $maxPlayers = $this->getMaxPlayers($event);
+        $maxPlayers = $this->getMaxPlayers($occurrence); // ёмкость даты (авто увеличение кворума)
         if ($maxPlayers < 4) {
             return; // слишком маленький формат
         }
@@ -208,7 +208,7 @@ final class BotAssistantService
         }
     
         // Проверяем что ещё есть место (общий лимит)
-        $maxPlayers = $this->getMaxPlayers($event);
+        $maxPlayers = $this->getMaxPlayers($occurrence); // ёмкость даты (авто увеличение кворума)
         $currentCount = EventRegistration::query()
             ->where('occurrence_id', $occurrence->id)
             ->where('status', 'confirmed')
@@ -267,7 +267,7 @@ final class BotAssistantService
         $free = [];
         foreach ($slots as $slot) {
             $takenCount = (int)($taken[$slot->role] ?? 0);
-            $maxSlots = (int)$slot->max_slots;
+            $maxSlots = app(EventRoleSlotService::class)->slotLimitForOccurrence((int) $occurrence->id, $slot, $slots);
             // Боты могут занимать только если остается минимум 1 свободное место
             $availableForBots = max(0, $maxSlots - $takenCount - 1);
             if ($availableForBots > 0) {
@@ -359,13 +359,12 @@ final class BotAssistantService
             ->get();
     }
 
-    private function getMaxPlayers(Event $event): int
+    private function getMaxPlayers(EventOccurrence $occurrence): int
     {
-        $settings = DB::table('event_game_settings')
-            ->where('event_id', $event->id)
-            ->value('max_players');
+        // Ёмкость ДАТЫ (OccurrenceLimitService): учитывает «команд на этой дате» и авторасширение кворума
+        $occurrence->loadMissing('event.gameSettings');
 
-        return (int) ($settings ?? 0);
+        return app(OccurrenceLimitService::class)->maxPlayers($occurrence);
     }
 
     private function getGenderPolicy(Event $event): string

@@ -30,6 +30,11 @@ class EventGameSetting extends Model
         'registration_without_positions',
         'registration_by_roles',
         'track_lineup',
+
+        // Авто увеличение кворума (docs/auto-quorum.md)
+        'auto_quorum_enabled',
+        'auto_quorum_players_per_team',
+        'auto_quorum_max_teams',
     ];
 
     protected $casts = [
@@ -37,6 +42,9 @@ class EventGameSetting extends Model
         'gender_limited_positions' => 'array',
 
         'teams_count' => 'integer',
+        'auto_quorum_enabled' => 'boolean',
+        'auto_quorum_players_per_team' => 'integer',
+        'auto_quorum_max_teams' => 'integer',
         'min_players' => 'integer',
         'max_players' => 'integer',
 

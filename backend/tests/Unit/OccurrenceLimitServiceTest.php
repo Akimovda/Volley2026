@@ -60,7 +60,6 @@ class OccurrenceLimitServiceTest extends TestCase
         $this->assertFalse($this->svc->isExpanded($o));
         $this->assertSame(['setter' => 5, 'outside' => 7], $this->svc->roleLimits($o, $slots));
         $this->assertSame(12, $this->svc->maxPlayers($o));
-        $this->assertSame(12, $this->svc->seriesMaxPlayers($o));
         $this->assertSame(2, $this->svc->teamsFor($o));
     }
 
@@ -68,7 +67,6 @@ class OccurrenceLimitServiceTest extends TestCase
     {
         [$o] = $this->occ('classic', ['subtype' => '4x2', 'max_players' => 12], [], null, 18);
         $this->assertSame(18, $this->svc->maxPlayers($o), 'как effectiveMaxPlayers(): max_players даты в приоритете');
-        $this->assertSame(12, $this->svc->seriesMaxPlayers($o), 'уровень мероприятия — как раньше у анонса');
     }
 
     public function test_teams_for_uses_override_then_event(): void
@@ -80,6 +78,32 @@ class OccurrenceLimitServiceTest extends TestCase
         $this->assertSame(3, $this->svc->teamsFor($o), 'quorum_teams_count важнее переопределения');
     }
 
+    public function test_own_teams_from_date_form_uses_scheme(): void
+    {
+        // «команд на этой дате» = 3 в форме даты (без авторасширения) — лимиты по схеме
+        [$o, $slots] = $this->occ('classic', ['subtype' => '4x2'], ['setter' => 4, 'outside' => 8], null, 18, ['teams_count' => 3]);
+        $this->assertFalse($this->svc->isExpanded($o));
+        $this->assertTrue($this->svc->hasOwnTeams($o));
+        $this->assertSame(['setter' => 6, 'outside' => 12], $this->svc->roleLimits($o, $slots));
+        $this->assertSame(18, $this->svc->derivedMaxPlayers($o));
+
+        // переопределение равно серии — своего числа команд нет
+        [$o, $slots] = $this->occ('classic', ['subtype' => '4x2'], ['setter' => 4, 'outside' => 8], null, null, ['teams_count' => 2]);
+        $this->assertFalse($this->svc->hasOwnTeams($o));
+        $this->assertSame(['setter' => 4, 'outside' => 8], $this->svc->roleLimits($o, $slots));
+        $this->assertSame(12, $this->svc->derivedMaxPlayers($o));
+    }
+
+    public function test_derived_max_players_null_for_non_team_formats(): void
+    {
+        [$o] = $this->occ('classic', ['subtype' => '4x2'], []);
+        $o->event->format = 'master_class';
+        $this->assertNull($this->svc->derivedMaxPlayers($o));
+        $o->event->format = 'game';
+        $o->event->registration_mode = 'team_classic';
+        $this->assertNull($this->svc->derivedMaxPlayers($o));
+    }
+
     public function test_classic_4x2_expanded(): void
     {
         [$o, $slots] = $this->occ('classic', ['subtype' => '4x2'], ['setter' => 4, 'outside' => 8], 3);
@@ -89,7 +113,6 @@ class OccurrenceLimitServiceTest extends TestCase
         $this->assertSame(['setter' => 6, 'outside' => 12], $this->svc->roleLimits($o, $slots));
         $this->assertSame(12, $this->svc->roleLimit($o, 'outside', $slots));
         $this->assertSame(18, $this->svc->maxPlayers($o));
-        $this->assertSame(18, $this->svc->seriesMaxPlayers($o));
     }
 
     public function test_classic_5x1_with_and_without_libero_expanded(): void

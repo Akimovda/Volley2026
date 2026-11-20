@@ -122,6 +122,11 @@ class WaitlistService
             }
         }
 
+        // Авто увеличение кворума: лист ожидания входит в N (safe: ошибка не ломает вступление в очередь)
+        if ($entry->wasRecentlyCreated) {
+            app(AutoQuorumService::class)->safeMaybeExpand($occurrence);
+        }
+
         return $entry;
     }
 
@@ -429,8 +434,8 @@ class WaitlistService
 
                 // Пляжка: проверка по общему лимиту
                 if ($direction === 'beach') {
-                    // Ёмкость даты (расширенная дата — по числу пар даты; иначе как раньше — уровень мероприятия)
-                    $maxPlayers = app(OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
+                    // Ёмкость даты (OccurrenceLimitService::maxPlayers — по числу пар даты)
+                    $maxPlayers = app(OccurrenceLimitService::class)->maxPlayers($occurrence);
                     $registered = DB::table('event_registrations')
                         ->where('occurrence_id', $occurrence->id)
                         ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
@@ -626,8 +631,8 @@ class WaitlistService
         $direction = $event->registrationDirection();
 
         if ($direction === 'beach') {
-            // Для пляжки — проверяем общий лимит (ёмкость даты; не расширена — уровень мероприятия, как раньше)
-            $maxPlayers = app(OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
+            // Для пляжки — проверяем общий лимит (ёмкость даты)
+            $maxPlayers = app(OccurrenceLimitService::class)->maxPlayers($occurrence);
 
             $registered = DB::table('event_registrations')
                 ->where('occurrence_id', $occurrence->id)

@@ -728,6 +728,10 @@ use App\Services\StaffLogService;
 				$prefill['game_reserve_players_max'] = $gs->reserve_players_max;
 				$prefill['game_registration_by_positions'] = !((bool) ($gs->registration_without_positions ?? false));
 				$prefill['game_registration_by_roles'] = $src->registersByBeachRoles();
+				// Авто увеличение кворума — копируем настройки исходного мероприятия
+				$prefill['auto_quorum_enabled'] = (bool) ($gs->auto_quorum_enabled ?? false);
+				$prefill['auto_quorum_players_per_team'] = $gs->auto_quorum_players_per_team ?? null;
+				$prefill['auto_quorum_max_teams'] = $gs->auto_quorum_max_teams ?? null;
 				$prefill['track_lineup'] = (bool) ($src->format === 'tournament'
 					? ($src->tournamentSetting?->track_lineup ?? false)
 					: ($gs->track_lineup ?? false));

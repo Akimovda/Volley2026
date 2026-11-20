@@ -100,6 +100,11 @@ Schedule::command('subscriptions:auto-booking')
     ->everyFiveMinutes()
     ->withoutOverlapping();
 
+// Авто увеличение кворума: страховочный проход по будущим датам с включённой функцией (docs/auto-quorum.md)
+Schedule::command('auto-quorum:sweep')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
+
 // Ранняя запись для владельцев абонементов: уведомление об открытии окна
 Schedule::command('subscriptions:notify-early-registration')
     ->everyMinute()

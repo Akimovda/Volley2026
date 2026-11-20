@@ -218,7 +218,11 @@ class EventRegistrationController extends Controller
         $couponCode     = $request->input('coupon_code');
 
         try {
-            return $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+            $response = $this->persistRegistration($user, $occurrence, $position, $subscriptionId, $couponCode);
+            // Авто увеличение кворума — после коммита записи (safe: ошибка не ломает запись)
+            app(\App\Services\AutoQuorumService::class)->safeMaybeExpand($occurrence);
+
+            return $response;
         } catch (\Exception $e) {
             $isNoSlots = in_array($e->getMessage(), [
                 'Свободных мест на этой позиции больше нет.',
@@ -385,8 +389,8 @@ class EventRegistrationController extends Controller
                 // join без position вообще. Живой COUNT под уже взятым advisory lock (roleKey=0
                 // для пустой позиции — та же формула, что и в waitlist autoBookNext).
                 $occurrence->event->loadMissing('gameSettings');
-                // ёмкость даты (авто увеличение кворума); не расширена — max_players мероприятия, как раньше
-                $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
+                // ёмкость даты (авто увеличение кворума, OccurrenceLimitService::maxPlayers)
+                $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occurrence);
                 if ($maxPlayers > 0) {
                     $registered = \DB::table('event_registrations')
                         ->where('occurrence_id', $occurrence->id)

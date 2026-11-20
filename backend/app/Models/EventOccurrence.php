@@ -86,6 +86,7 @@ class EventOccurrence extends Model
         'max_players' => 'integer',
         // Авто увеличение кворума: число команд даты после расширения (NULL — как у мероприятия), docs/auto-quorum.md
         'quorum_teams_count' => 'integer',
+        'quorum_expanded_at' => 'datetime',
 
         'classic_level_min' => 'integer',
         'classic_level_max' => 'integer',

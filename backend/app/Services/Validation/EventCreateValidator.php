@@ -85,6 +85,10 @@
             'is_snow' => ['nullable','boolean'],
             'is_outdoor' => ['nullable','boolean'],
             'collect_stats' => ['nullable','boolean'],
+            // Авто увеличение кворума (docs/auto-quorum.md)
+            'auto_quorum_enabled' => ['nullable','boolean'],
+            'auto_quorum_players_per_team' => ['nullable','integer','min:1','max:20'],
+            'auto_quorum_max_teams' => ['nullable','integer','min:2','max:50'],
             'stats_rated' => ['nullable','boolean'],
             'with_minors' => ['nullable','boolean'],
 			
@@ -552,6 +556,16 @@
             // Игра со статистикой — матч строго между двумя командами
             if (($data['format'] ?? '') === 'game' && !empty($data['collect_stats']) && (int) ($data['teams_count'] ?? 2) > 2) {
                 $v->errors()->add('teams_count', __('events.stats_teams_limit'));
+            }
+
+            // Авто увеличение кворума: формат/режим/«Статистика»/максимум команд
+            foreach (app(\App\Services\AutoQuorumService::class)->validateSettings(
+                $data,
+                (string) ($data['format'] ?? ''),
+                (string) ($data['direction'] ?? 'classic'),
+                (string) ($data['registration_mode'] ?? 'single')
+            ) as $field => $message) {
+                $v->errors()->add($field, $message);
             }
 
             $format = (string) ($data['format'] ?? '');

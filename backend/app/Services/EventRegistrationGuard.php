@@ -196,7 +196,10 @@
                 $settings,
                 $registrations,
                 $maxPlayers,
-                $result
+                $result,
+                null,
+                false,
+                $occurrence
             );
 			
 			// 4. Проверка уровня игрока
@@ -1153,7 +1156,7 @@
 
 			$registrations = $query->get();
 
-			$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result, $onlyPosition, $excludeLimitedQuota);
+			$this->applyGenderPolicy($user, $settings, $registrations, $maxPlayers, $result, $onlyPosition, $excludeLimitedQuota, $occurrence);
 
 			return $result;
 		}
@@ -1269,7 +1272,8 @@
             int $maxPlayers,
             GuardResult $result,
             ?string $onlyPosition = null,
-            bool $excludeLimitedQuota = false
+            bool $excludeLimitedQuota = false,
+            ?EventOccurrence $occurrence = null
         ): array {
 			
 			$policy = (string)($settings?->gender_policy ?? 'mixed_open');
@@ -1333,6 +1337,10 @@
 				
 				$side = $settings->gender_limited_side;
 				$limit = (int)($settings->gender_limited_max ?? 0);
+				// Квота даты масштабируется по числу команд даты (авто увеличение кворума, docs/auto-quorum.md)
+				if ($occurrence) {
+					$limit = app(OccurrenceLimitService::class)->genderLimitFor($occurrence, $limit);
+				}
 				
 				$positions = $settings->gender_limited_positions ?? [];
 				
