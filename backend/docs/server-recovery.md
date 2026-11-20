@@ -46,7 +46,7 @@ DNS — Cloudflare (A `volleyplay.club`, `www` → прод, «DNS only»). Ме
 | вс 01:30 | `/etc/cron.d/pg_basebackup` → `/usr/local/bin/pg_basebackup_push.sh` (postgres) | базовая копия `pg_basebackup -Ft -z -X fetch` + `startwal.txt` | `/home/pgwal/base/<ГГГГММДД_ЧЧММСС>/` |
 | 02:00 | cron appuser → `~/pgbackup/pg_backup_push.sh` | `pg_dump -Fc` → **age** | `pgbackup`: `/home/pgbackup/pgdumps/volleyplay_ДАТА.dump.age` |
 | 02:05 | `/etc/cron.d/pg_config_snapshot` → `/usr/local/sbin/pg_config_snapshot.sh` (root) | копирует `pg_hba.conf`, `postgresql.auto.conf`, `enable-wal-archiving.sh`, ключ WAL + known_hosts в `~appuser/filesbackup/pgcfg/` | (уезжает в 02:10 внутри архива конфигов) |
-| 02:10 | cron appuser → `~/filesbackup/env_backup_push.sh` | `.env` сайта, ключ Firebase, ключ APNs, `.env` обоих ботов — **открытым текстом**; архив `server-config_ДАТА.tar.gz` → **age** | `filesbackup`: `/home/filesbackup/backups/env/` |
+| 02:10 | cron appuser → `~/filesbackup/env_backup_push.sh` | `.env` сайта, ключ Firebase, ключи APNs, `.env` обоих ботов, архив `server-config_ДАТА.tar.gz` — всё **шифруется age на проде** (с 20.11) | `filesbackup`: `/home/filesbackup/backups/env/*.age` |
 | 02:20 | cron appuser → `~/filesbackup/media_backup_push.sh` | `storage/app/public/` (rsync без `--delete`, ≈2 ГБ) | `/home/filesbackup/backups/storage/` |
 
 Состав `server-config_ДАТА.tar.gz.age`: nginx (`sites-available/volleyplay.club`, `conf.d/`), `php/8.3/fpm/pool.d/prod.conf`, 3 файла supervisor, 2 юнита ботов, `postgresql.conf`, скрипты `pg_archive_wal.sh`, `pg_basebackup_push.sh`, `pg_config_snapshot.sh`, `/etc/cron.d/pg_basebackup` и `pg_config_snapshot`, сами бэкап-скрипты appuser, каталог `pgcfg/` (см. 02:05), crontab appuser.
@@ -61,9 +61,9 @@ DNS — Cloudflare (A `volleyplay.club`, `www` → прод, «DNS only»). Ме
 | 03:10 | `disk_check.sh` | тревога при заполнении диска ≥ 85 % |
 | 03:50 | `wal_retention.sh` | остаются 3 последние базовые копии, WAL старше `startwal` самой старой — удаляется |
 | 04:45 | `daily_check.sh` | Telegram-сводка: есть ли дамп и .env за сегодня, размер медиа, диск |
-| 05:00 | `encrypt_old_backups.sh` | шифрует age всё незашифрованное старше суток в `pgdumps`, `env`, `config` (т.е. `.env`/ключи лежат открытыми ~1–2 суток) |
-| 1-го числа 04:45 | `restore_test.sh` | ежемесячный тест `pg_restore` последнего дампа |
-| вручную | `pitr_restore_test.sh ["момент"]` | репетиция PITR в изолированном контейнере `postgres:16` (см. `db-pitr.md`) |
+| 05:00 | `encrypt_old_backups.sh` | страховка: шифрует age всё незашифрованное старше суток в `pgdumps`, `env`, `config` (с 20.11 всё приходит уже зашифрованным) |
+| вс 04:30 | `pitr_weekly_check.sh` | **еженедельная проверка восстановления**: `pitr_restore_test.sh` (последняя базовая копия + весь WAL в изолированном `postgres:16`), восстановление должно дойти до самого свежего сегмента архива; итог — в Telegram и `restore_test_status.txt`. Заменил ежемесячный `restore_test.sh` (дампы `.age`, ключа здесь нет) |
+| вручную | `pitr_restore_test.sh ["момент"]` | репетиция PITR (с выводом чисел) — см. `db-pitr.md` |
 
 Уведомления — `notify.sh` (бот и чат в `/opt/pgbackup/telegram.conf`, root 600).
 
@@ -83,7 +83,7 @@ DNS — Cloudflare (A `volleyplay.club`, `www` → прод, «DNS only»). Ме
 
 ## 5. Порядок восстановления / переезда на новый сервер
 
-**0. Подготовка (на Contabo, root).** Взять последние файлы: `pgdumps/volleyplay_ДАТА.dump.age`, из `backups/env/` — `env_ДАТА`, `fcm_*`, `apns_*`, `bot-*_env_ДАТА` (старше суток — уже `.age`), `server-config_ДАТА.tar.gz.age`; медиа `backups/storage/`. Для PITR — `/home/pgwal/base/<последняя>/` и `/home/pgwal/wal/` (см. `db-pitr.md`). Расшифровка — **на Mac владельца** (`age -d -i <ключ> файл.age > файл`), на новый сервер переносить уже расшифрованное `scp`-ом; закрытый ключ на серверах не оставлять. После завершения — удалить расшифрованные копии (16.11 в `/opt/recovery` на проде остались ключ и секреты — удалено 20.11).
+**0. Подготовка (на Contabo, root).** Взять последние файлы: `pgdumps/volleyplay_ДАТА.dump.age`, из `backups/env/` — `env_ДАТА`, `fcm_*`, `apns_*`, `bot-*_env_ДАТА` (старше суток — уже `.age`), `server-config_ДАТА.tar.gz.age`; медиа `backups/storage/`. Для PITR — `/home/pgwal/base/<последняя>/` и `/home/pgwal/wal/` (см. `db-pitr.md`). Всё, кроме медиа, WAL и базовых копий, — `.age`. Расшифровка — **на Mac владельца** (`age -d -i <ключ> файл.age > файл`), на новый сервер переносить уже расшифрованное `scp`-ом; закрытый ключ на серверах не оставлять. После завершения — удалить расшифрованные копии (16.11 в `/opt/recovery` на проде остались ключ и секреты — удалено 20.11).
 
 1. **ОС**: Ubuntu 24.04. Пакеты: nginx, php8.3-fpm + расширения проекта, postgresql-16, redis-server, supervisor, certbot + python3-certbot-nginx, Node 20, composer, python3-venv, fail2ban, ufw, git, age, rsync, **библиотеки headless Chrome для PDF**: `libatk1.0-0t64 libatk-bridge2.0-0t64 libatspi2.0-0t64 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2t64`. Пользователь `appuser`. На образе с ispmanager — не настраивать сайт через панель.
 2. **Код**: `git clone` в `/var/www/volleyplay`, ветка `production` от `origin/main`; `composer install --no-dev --optimize-autoloader`; `npm install --legacy-peer-deps && npm run build`; `git status` — чисто.
@@ -119,10 +119,10 @@ DNS — Cloudflare (A `volleyplay.club`, `www` → прод, «DNS only»). Ме
 ## 7. Плановые работы на проде (для полноты картины)
 - Воркеры очередей `numprocs=2` (дедупликация рассылок по общему чату при двух воркерах теоретически может пропустить дубль).
 - Чистка 03:40: `maintenance:prune-old-records --days=45` (`channel_publish_logs`, `notification_deliveries`, `page_views` → `page_view_totals`).
-- Метрики в Kuma каждые 5 мин: `ops:report-metrics` (пороги: диск ≥ 80 %, память < 15 %, load5/ядро > 1.0, очередь > 500 или старейшая > 10 мин, WAL > 30 мин).
+- Метрики в Kuma каждые 5 мин: `ops:report-metrics` (пороги: диск ≥ 80 %, память < 15 %, load5/ядро > 1.0, очередь > 500 или старейшая > 10 мин, WAL > 12 мин).
 
-## 8. Известные дыры (на 2026-11-20)
-- `restore_test.sh` ищет только `*.dump/*.sql(.gz)`, а дампы теперь `*.dump.age`, закрытого ключа на Contabo нет → **тест 01.12 упадёт** («no dump files found»). Варианты: подменять его на `pitr_restore_test.sh` (базовые копии не шифруются) или проверять дамп на Mac.
-- **Базовые копии и WAL не шифруются** (а в них вся БД), `.env`/ключи приходят открытыми и шифруются на Contabo только через сутки — шифрование дампов закрывает не всё.
-- ~~Цепочка WAL порвана чисткой 19.11~~ — исправлено 20.11: старые копии удалены, защита в `wal_retention.sh`, новая базовая копия, репетиция PITR совпала с продом.
-- ~~Закрытый ключ age и расшифрованные секреты в `/opt/recovery` на проде~~ — удалено 20.11.
+## 8. Цель и решения (2026-11-20)
+- **Цель: при падении сервера терять не больше 5–15 минут данных.** Обеспечивает архив WAL (сегмент уходит на Contabo минимум раз в 5 мин), тревога Kuma через 12 мин без выгрузки и еженедельная проверка `pitr_weekly_check.sh`, что цепочка восстанавливается до конца. Ночной дамп — второй, независимый уровень (потеря до суток).
+- Секреты (`.env`, ключи, конфиги) шифруются на проде до отправки. **WAL и базовые копии намеренно не шифруются**: иначе на Contabo невозможна автоматическая репетиция восстановления (закрытый ключ только у владельца). Их каталоги доступны только root и `pgwal` (700), сервер — наш.
+- Медиа (`storage/app/public`) не шифруется — публичные файлы сайта.
+- Исправлено 20.11: обрыв цепочки WAL после чистки 19.11 (старые копии удалены, защита в `wal_retention.sh`, новая базовая копия, репетиция = прод); закрытый ключ age и расшифрованные секреты удалены из `/opt/recovery` на проде.
