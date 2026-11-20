@@ -915,6 +915,15 @@ if ($role === 'admin') {
             \App\Models\EventOccurrenceGameSetting::where('occurrence_id', $occurrence->id)->delete();
         }
 
+        // Ёмкость даты задаётся ТОЛЬКО числом команд (docs/auto-quorum.md, этап 3 A):
+        // max_players даты = размер команды × «команд на этой дате» (или авторасширение / команды серии).
+        $occurrence->load('event.gameSettings', 'gameSettingsOverride');
+        $derivedMax = app(\App\Services\OccurrenceLimitService::class)->derivedMaxPlayers($occurrence);
+        if ($derivedMax !== null && (int) $occurrence->max_players !== $derivedMax) {
+            $occurrence->max_players = $derivedMax;
+            $occurrence->save();
+        }
+
         return redirect()
             ->to(route('events.show', $event) . '?occurrence=' . $occurrence->id)
             ->with('status', __('Изменения сохранены.'));
@@ -1749,9 +1758,18 @@ if ($role === 'admin') {
                     $newHour   = $newEventStartInTz->hour;
                     $newMinute = $newEventStartInTz->minute;
 
+                    $limitSvc = app(\App\Services\OccurrenceLimitService::class);
                     foreach ($futureOccs as $occ) {
-                        // Индивидуально отредактированные повторения защищены от перезаписи
+                        // Индивидуально отредактированные повторения защищены от перезаписи — КРОМЕ ёмкости:
+                        // она задаётся числом команд (docs/auto-quorum.md, этап 3 A) и пересчитывается от
+                        // «команд на этой дате» / авторасширения даты, а без них — от новых команд серии.
                         if ((bool)($occ->is_individually_edited ?? false)) {
+                            $occ->setRelation('event', $event);
+                            $derived = $limitSvc->derivedMaxPlayers($occ);
+                            if ($derived !== null && (int) $occ->max_players !== $derived) {
+                                $occ->max_players = $derived;
+                                $occ->save();
+                            }
                             continue;
                         }
 
@@ -1778,7 +1796,8 @@ if ($role === 'admin') {
                         $occ->timezone           = $event->timezone ?: 'UTC';
                         $occ->location_id        = $event->location_id ?? null;
                         $occ->allow_registration = $event->allow_registration ?? null;
-                        $occ->max_players        = $event->gameSettings?->max_players ?? null;
+                        $occ->setRelation('event', $event);
+                        $occ->max_players        = $limitSvc->derivedMaxPlayers($occ) ?? ($event->gameSettings?->max_players ?? null);
                         $occ->age_policy         = $event->age_policy ?? null;
                         $occ->child_age_min      = $event->child_age_min ?? null;
                         $occ->child_age_max      = $event->child_age_max ?? null;
