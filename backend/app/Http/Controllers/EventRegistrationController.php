@@ -364,9 +364,12 @@ class EventRegistrationController extends Controller
                         throw new \Exception('Свободных мест на этой позиции больше нет.');
                     }
                 }
-            } elseif ($occurrence->event->registersByBeachRoles() || ((string) ($occurrence->event->direction ?? 'classic') === 'beach' && app(EventRoleSlotService::class)->requiresPositionChoice($occurrence->event))) {
-                // Пляжка «По амплуа» (или пляжка с несколькими ролями-слотами — страховка от рассинхрона флага и слотов):
-                // без выбранной позиции слоты не посчитать — как у классики, нужно выбрать амплуа
+            } elseif ($occurrence->event->registersByBeachRoles() || app(EventRoleSlotService::class)->requiresPositionChoice($occurrence->event)) {
+                // Пляжка «По амплуа» и любое событие с несколькими ролями-слотами (классика по амплуа):
+                // без выбранной позиции слоты не посчитать — нужно выбрать амплуа.
+                // Раньше классика пропускала пустую позицию: запись с position=NULL не занимала ни одного
+                // ролевого слота, и следом проходила запись на «свободный» слот — перебор состава (13 из 12).
+                // Веб-форма классики всегда шлёт позицию (модалка выбора), так что это закрывает прямые запросы/API.
                 // Текст по факту: пара «По амплуа» — Блокирующий/Защитник; иначе перечисляем реальные позиции события
                 $__roles = app(EventRoleSlotService::class)->mainRoles($occurrence->event);
                 throw new \Exception(
