@@ -477,6 +477,7 @@ if ($role === 'admin') {
         $nowUtc  = \Carbon\Carbon::now('UTC');
         $occStart = \Carbon\Carbon::parse($occurrence->starts_at, 'UTC');
 
+        // Вычислить окна регистрации по смещениям серии
         $regStarts = null;
         $subRegStarts = null;
         $regEnds   = null;
@@ -534,6 +535,7 @@ if ($role === 'admin') {
         $occurrence->is_individually_edited = false;
         $occurrence->save();
 
+        // Удалить override игровых настроек occurrence
         \App\Models\EventOccurrenceGameSetting::where('occurrence_id', $occurrence->id)->delete();
 
         return redirect()
