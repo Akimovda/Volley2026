@@ -201,6 +201,9 @@ class TournamentTeamDistributionService
                         'event_team_id'       => $team->id,
                         'user_id'             => $member['user_id'],
                         'role_code'           => $isCaptain ? 'captain' : $member['position'],
+                        // team_role обязателен: по нему страница команды подписывает роль
+                        // (без него — пустой чип), работают основа/запас и смена амплуа.
+                        'team_role'           => $isCaptain ? 'captain' : 'player',
                         'position_code'       => $member['position'],
                         'confirmation_status' => 'confirmed',
                         'joined_at'           => now(),
