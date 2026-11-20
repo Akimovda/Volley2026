@@ -53,7 +53,7 @@
 - Нововведение затрагивает анонсы в каналах: после расширения анонс обновляется, а список и «Осталось мест: X из Y» должны авто-расширяться до новой ёмкости даты.
 - Сейчас (этап 1, зафиксировано тестом) `OccurrenceAnnouncementMessageBuilder` берёт `max_players` и `reserve_players_max` из **настроек мероприятия** (`loadGameSettings()`), а не даты — на этапе 2 перевести на ёмкость даты.
 
-## Этап 2 — ёмкость даты (сделано 2026-11-21, ветка `auto-quorum-stage2`)
+## Этап 2 — ёмкость даты (на проде с 2026-11-20, `main` 3fb430ea)
 - Колонка `event_occurrences.quorum_teams_count smallint NULL` (миграция `2026_11_21_100000_…`). NULL — дата не расширена.
 - Сервис `App\Services\OccurrenceLimitService` (не путать с `OccurrenceCapacityService` — площадка/брони):
   `isExpanded`, `teamsFor` (quorum ?? override.teams_count ?? event.teams_count), `baseTeams`, `perTeamRoles`/`teamSize` (из `GameCalculator` по схеме даты; «без амплуа» — player = размер команды; пляж — player = размер пары, «По амплуа» — Бл 1 + Защ 1; пляжная 4×4 → ключ `4x4_beach`), `roleLimits`/`roleLimit`, `maxPlayers`, `seriesMaxPlayers`, `reserveMax`.

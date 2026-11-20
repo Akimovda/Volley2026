@@ -3,12 +3,14 @@
 _Вынесено из CLAUDE.md 2026-10-23 без изменения содержания. Полный исходник: docs/archive/CLAUDE.full-2026-10-23.md_
 
 ## Деплой (dev к prod)
+- **С 2026-11-20: на проде только `git merge --ff-only origin/main`, git и artisan — от `appuser`.** До этого production шла merge-коммитами поверх main (в main их не было, отличие — 2 строки комментариев от разрешения конфликта 28.10); история production влита в main (3fb430ea), теперь production — предок main. Если `--ff-only` не проходит — на проде кто-то закоммитил/смержил руками: не мержить обычным merge, разобраться.
+- **git от root на проде портит владельца**: файлы worktree и `.git/objects`/`.git/index` становятся root:root, после чего `appuser` не может `fetch`/`merge` (20.11 так было после выкаток от root: 425 объектов + 17 файлов, возвращены `chown appuser:appuser`). Даже `git status` от root переписывает `.git/index`. Для чтения от root — `git -c safe.directory=... log/diff`, без status.
 - Прод находится на ветке `production` (НЕ `main`)
 - Деплой: merge origin/main в production; проверить: `git merge-base --is-ancestor <hash> HEAD && echo "уже в проде"`
 
 ```
 cd /var/www/volleyplay/backend
-git fetch origin && git merge origin/main --no-edit
+sudo -u appuser git fetch origin && sudo -u appuser git merge --ff-only origin/main   # только fast-forward (решение владельца 2026-11-20)
 composer install --no-dev --optimize-autoloader
 npm install --legacy-peer-deps && npm run build
 php artisan livewire:publish --assets
