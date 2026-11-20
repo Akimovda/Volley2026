@@ -115,8 +115,9 @@ class ReportServerMetrics extends Command
                     from pg_stat_archiver");
                 $min = $a->since_arch === null ? 9999 : intdiv((int) $a->since_arch, 60);
                 $out['wal'] = [
-                    // сегмент выгружается минимум раз в 5 минут (archive_timeout): 30 минут тишины или текущая ошибка — тревога
-                    'ok'   => !$a->failing && $min <= 30,
+                    // сегмент выгружается минимум раз в 5 минут (archive_timeout). Цель — потеря данных при аварии ≤ 5–15 мин,
+                    // поэтому тревога уже после 12 минут без выгрузки (пропущены 2 интервала) или при текущей ошибке.
+                    'ok'   => !$a->failing && $min <= 12,
                     'ping' => min($min, 9999),
                     'msg'  => sprintf('Архив WAL: последний сегмент %d мин назад, выгружено %d, ошибок %d%s', $min, $a->archived_count, $a->failed_count, $a->failing ? ' — СЕЙЧАС ОШИБКА' : ''),
                 ];
