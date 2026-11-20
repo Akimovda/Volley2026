@@ -168,9 +168,11 @@ class EventRegistrationsManagementController extends Controller
         }
 
         // max_players: из occurrence если открыта конкретная дата, иначе из event_game_settings
-        if ($occurrence && app(\App\Services\OccurrenceLimitService::class)->isExpanded($occurrence)) {
+        // $occurrence здесь — строка DB::table (stdClass); сервису ёмкости нужна модель даты
+        $occModel = $occurrence ? \App\Models\EventOccurrence::with('event.gameSettings')->find((int) $occurrence->id) : null;
+        if ($occModel && app(\App\Services\OccurrenceLimitService::class)->isExpanded($occModel)) {
             // расширенная дата (авто увеличение кворума) — ёмкость даты
-            $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occurrence);
+            $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->maxPlayers($occModel);
         } elseif ($occurrence && $occurrence->max_players > 0) {
             $maxPlayers = (int) $occurrence->max_players;
         } else {

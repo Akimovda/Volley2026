@@ -248,6 +248,19 @@ class DateCapacityTest extends PgsqlTestCase
         $this->assertFalse($this->isActive($b, $v));
     }
 
+    /** Регрессия (2026-11-20): страница «Управление записями» с выбранной датой не падает; ёмкость — по дате. */
+    public function test_registrations_management_page_shows_date_capacity(): void
+    {
+        $a = $this->classic42();
+        $b = $this->addOccurrence($a, 7);
+        $a = $this->expand($a, 3);
+
+        $this->actingAs($this->organizer())->get("/events/{$a->event_id}/registrations?occurrence={$a->id}")
+            ->assertOk()->assertSee('18/18');
+        $this->actingAs($this->organizer())->get("/events/{$b->event_id}/registrations?occurrence={$b->id}")
+            ->assertOk()->assertSee('12/12');
+    }
+
     public function test_not_expanded_date_unchanged(): void
     {
         $a = $this->classic42();
