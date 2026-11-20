@@ -447,10 +447,11 @@ $tourNumber = $seasonData
 			});
 		</script>
 		@endif
-		@if($errors->any())
+		@php $tsuTopErrors = ($errors->has('team') && old('from_setup')) ? collect($errors->getBag('default')->getMessages())->except('team')->flatten()->all() : $errors->all(); @endphp
+		@if(!empty($tsuTopErrors))
 		<div class="ramka">
 			<div class="alert alert-error">
-				@foreach($errors->all() as $err)
+				@foreach($tsuTopErrors as $err)
                 {{ $err }}<br>
 				@endforeach
 			</div>
@@ -1382,9 +1383,16 @@ $tourNumber = $seasonData
 			.tsu-team-actions>.tsu-team-create:has(details[open]){order:9;flex-basis:100%}
 			</style>
 			<div class="tsu-team-actions">
-			{{-- Создать команду организатором --}}
-			<div class="mt-1 tsu-team-create">
-				<details>
+			{{-- Создать команду организатором. После ошибки (например, состав не по схеме) форма
+			     возвращается раскрытой и заполненной (old()), страница прокручивается к ней. --}}
+			@php
+				$tsuCreateFailed = $errors->has('team') && old('from_setup');
+				$tsuOldCaptainId = (int) old('captain_user_id', 0);
+				$tsuOldCaptain = $tsuOldCaptainId ? $unassignedPlayers->firstWhere('id', $tsuOldCaptainId) : null;
+				$tsuOldMembers = array_map('intval', (array) old('member_user_ids', []));
+			@endphp
+			<div class="mt-1 tsu-team-create" id="tsu-create-team" @if($tsuCreateFailed) data-tsu-create-failed="1" @endif>
+				<details @if($tsuCreateFailed) open @endif>
 					<summary class="btn btn-secondary"><x-ico name="plus" /> {{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-2 form">
                         @csrf
@@ -1397,7 +1405,7 @@ $tourNumber = $seasonData
 								<div class="col-md-6">
 									<div class="card">
 										<label>{{ __('tournaments.setup_team_label_name') }}</label>
-										<input type="text" name="name" placeholder="{{ __('tournaments.setup_team_ph_name') }}">
+										<input type="text" name="name" placeholder="{{ __('tournaments.setup_team_ph_name') }}" value="{{ $tsuCreateFailed ? old('name') : '' }}">
 									</div>
 								</div>
 								<div class="col-md-6">
@@ -1405,9 +1413,10 @@ $tourNumber = $seasonData
 										<label>{{ __('tournaments.setup_team_label_captain') }}</label>
 										@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
 										<div style="position:relative" id="manual-captain-ac-wrap">
-											<input type="text" id="manual-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off">
-											<input type="hidden" name="captain_user_id" id="manual-captain-id">
-											<input type="hidden" name="captain_position_code" id="manual-captain-position">
+											<input type="text" id="manual-captain-search" placeholder="{{ __('tournaments.setup_team_ph_captain') }}" autocomplete="off"
+												value="{{ ($tsuCreateFailed && $tsuOldCaptain) ? (trim(($tsuOldCaptain->last_name ?? '') . ' ' . ($tsuOldCaptain->first_name ?? '')) ?: ($tsuOldCaptain->name ?? '')) : '' }}">
+											<input type="hidden" name="captain_user_id" id="manual-captain-id" value="{{ ($tsuCreateFailed && $tsuOldCaptain) ? $tsuOldCaptain->id : '' }}">
+											<input type="hidden" name="captain_position_code" id="manual-captain-position" value="{{ ($tsuCreateFailed && $tsuOldCaptain) ? old('captain_position_code') : '' }}">
 											<div id="manual-captain-dd" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:.4rem;z-index:50;background:var(--bg-card,#fff);border:.1rem solid var(--border-color,#eee);border-radius:1.2rem;box-shadow:0 1rem 3rem rgba(0,0,0,.1);max-height:22rem;overflow-y:auto"></div>
 										</div>
 										@else
@@ -1430,10 +1439,15 @@ $tourNumber = $seasonData
 								<div class="col-md-12">
 									<div class="card" style="overflow:visible">
 										<label>{{ __('tournaments.setup_team_label_members') }}</label>
+										@if($tsuCreateFailed)
+										<div class="alert alert-error mt-1"><x-ico name="warn" /> {{ $errors->first('team') }}</div>
+										@endif
 										<div id="manual-members-list" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:.5rem">
 											@foreach($unassignedPlayers as $p)
 											<label class="checkbox-item" data-user-id="{{ $p->id }}" style="display:flex;align-items:center;gap:6px;margin:0">
-												<input type="checkbox" name="member_user_ids[]" value="{{ $p->id }}">
+												<input type="checkbox" name="member_user_ids[]" value="{{ $p->id }}"
+													@if($tsuCreateFailed && in_array((int) $p->id, $tsuOldMembers, true)) checked @endif
+													@if($tsuCreateFailed && $tsuOldCaptain && (int) $p->id === (int) $tsuOldCaptain->id) disabled @endif>
 												<div class="custom-checkbox"></div>
 												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} <x-ico :name="$p->gender === 'f' ? 'female' : 'male'" size="1em" />@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</span>
 											</label>
@@ -4393,6 +4407,18 @@ $tourNumber = $seasonData
 			}, true);
 			var st = null;
 			try { st = JSON.parse(sessionStorage.getItem(KEY) || 'null'); sessionStorage.removeItem(KEY); } catch (e) {}
+			// Ошибка в форме «Создать команду»: показываем блок команд и прокручиваем к форме (с учётом липкой шапки)
+			var failed = document.querySelector('[data-tsu-create-failed]');
+			if (failed) {
+				var tb = document.getElementById('teams-body');
+				if (tb) { tb.style.display = ''; var tic = tb.previousElementSibling && tb.previousElementSibling.querySelector('.toggle-icon'); if (tic) tic.textContent = '▼'; }
+				var goForm = function () {
+					var head = (typeof window.getFixedHeaderBottom === 'function') ? window.getFixedHeaderBottom() : 90;
+					window.scrollTo(0, failed.getBoundingClientRect().top + window.scrollY - head - 12);
+				};
+				goForm(); window.addEventListener('load', function () { goForm(); setTimeout(goForm, 300); });
+				return;
+			}
 			if (!st || st.p !== location.pathname || Date.now() - st.t > 30000) return;
 			BODIES.forEach(function (id) {
 				var el = document.getElementById(id), open = st.o.indexOf(id) !== -1;
