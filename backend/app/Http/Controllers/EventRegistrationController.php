@@ -385,7 +385,8 @@ class EventRegistrationController extends Controller
                 // join без position вообще. Живой COUNT под уже взятым advisory lock (roleKey=0
                 // для пустой позиции — та же формула, что и в waitlist autoBookNext).
                 $occurrence->event->loadMissing('gameSettings');
-                $maxPlayers = (int) ($occurrence->event->gameSettings?->max_players ?? 0);
+                // ёмкость даты (авто увеличение кворума); не расширена — max_players мероприятия, как раньше
+                $maxPlayers = app(\App\Services\OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
                 if ($maxPlayers > 0) {
                     $registered = \DB::table('event_registrations')
                         ->where('occurrence_id', $occurrence->id)

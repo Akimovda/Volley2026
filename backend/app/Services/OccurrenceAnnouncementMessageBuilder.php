@@ -574,7 +574,9 @@ class OccurrenceAnnouncementMessageBuilder
                 $lines[] = $header;
             }
         } else {
-            $maxPlayers  = (int) ($gameSettings['max_players'] ?? 0);
+            // Ёмкость даты (авто увеличение кворума): расширенная дата — «из M» по числу команд даты;
+            // не расширена — как раньше, max_players мероприятия
+            $maxPlayers  = app(OccurrenceLimitService::class)->seriesMaxPlayers($occurrence);
             $reserveMax  = (int) ($gameSettings['reserve_players_max'] ?? 0);
             $totalMax    = $maxPlayers + $reserveMax;
             $registered  = $this->countRegistered((int) $occurrence->id);

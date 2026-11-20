@@ -449,7 +449,12 @@ class FriendlyGameService
             throw new InvalidArgumentException("Команда «{$name}» уже есть на этом туре — выберите другое название.");
         }
 
-        $limit = (int) ($event->tournament_teams_count ?: ($event->gameSettings?->teams_count ?? 0));
+        // Лимит команд тура. Расширенная дата игры (авто увеличение кворума) — число команд ДАТЫ;
+        // иначе как раньше: tournament_teams_count ?: teams_count мероприятия.
+        $limits = app(OccurrenceLimitService::class);
+        $limit = ($event->format !== 'tournament' && $limits->isExpanded($occurrence))
+            ? $limits->teamsFor($occurrence)
+            : (int) ($event->tournament_teams_count ?: ($event->gameSettings?->teams_count ?? 0));
         if ($limit > 0 && $this->eventTeams($event, $occurrence->id)->filter(fn ($t) => $t->reserve_position === null)->count() >= $limit) {
             throw new InvalidArgumentException("На туре уже собрано максимальное число команд ({$limit}).");
         }

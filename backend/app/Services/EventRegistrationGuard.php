@@ -162,10 +162,8 @@
 			
 			$settings = $event->gameSettings ?? null;
 			
-			$maxPlayers = (int)(
-				$occurrence->max_players
-				?? ($settings?->max_players ?? 0)
-			);
+			// Ёмкость даты (docs/auto-quorum.md): не расширена — occurrence.max_players ?? event_game_settings.max_players, как раньше
+			$maxPlayers = app(OccurrenceLimitService::class)->maxPlayers($occurrence);
 			
 			/*
 				|--------------------------------------------------------------------------
@@ -211,7 +209,8 @@
 				$registrationsByPosition,
 				$userRegistration,
 				$position,
-				$user
+				$user,
+				app(OccurrenceLimitService::class)->roleLimits($occurrence, $this->slotService->getSlots($event))
 			);
 			
 			// 6. Проверка доступности мест / позиций
@@ -548,11 +547,14 @@
 			Collection $registrationsByPosition,
 			$userRegistration,
 			?string $position,
-			?User $user
+			?User $user,
+			array $roleLimits = []
 		): array {
 			
 			$freePositions = [];
 			$slots = $this->slotService->getSlots($event);
+			// Лимит роли для ДАТЫ (OccurrenceLimitService::roleLimits); не расширена — равен max_slots
+			$limitOf = fn ($slot) => (int) ($roleLimits[$slot->role] ?? $slot->max_slots);
 
 			/*
 				|--------------------------------------------------------------------------
@@ -616,7 +618,7 @@
 			foreach ($slots as $slot) {
 				
 				$taken = $takenPerRole[$slot->role] ?? 0;
-				$free  = $slot->max_slots - $taken;
+				$free  = $limitOf($slot) - $taken;
 				
 				// Проверяем наличие свободных мест на позиции
 				if ($free <= 0) {
@@ -659,7 +661,7 @@
 				$freePositions[] = [
 					'key'   => $slot->role,
 					'free'  => $free,
-					'limit' => $slot->max_slots
+					'limit' => $limitOf($slot)
 				];
 			}
 
@@ -679,7 +681,7 @@
 			if ($reserveMax > 0 && empty($freePositions)) {
 				// Все слоты глобально заняты (без гендерного фильтра)
 				$allMainFull = collect($slots)->every(
-					fn($s) => ($s->max_slots - ($takenPerRole[$s->role] ?? 0)) <= 0
+					fn($s) => ($limitOf($s) - ($takenPerRole[$s->role] ?? 0)) <= 0
 				);
 				if ($allMainFull) {
 					// Гендерный фильтр для reserve
