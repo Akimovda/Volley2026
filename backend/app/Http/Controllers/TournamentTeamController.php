@@ -243,12 +243,53 @@ class TournamentTeamController extends Controller
                     autoApprove: $isOrganizerOrAdmin,
                 );
 
+                // Индивидуальная запись: у отмеченных игроков амплуа уже есть в записи на тур.
+                // Раньше участники добавлялись БЕЗ амплуа → в классике сервис отказывал
+                // («нужно указать амплуа») и откатывал всю команду. Плюс проверяем состав по
+                // схеме ДО добавления: на позицию нельзя поставить больше, чем в схеме
+                // (4-2: 2 связующих + 4 доигровщика); меньше — можно, команду дополнят позже.
+                $regPositions = [];
+                if (!empty($additionalMemberIds) && !empty($data['occurrence_id'])) {
+                    $regPositions = \App\Models\EventRegistration::where('occurrence_id', (int) $data['occurrence_id'])
+                        ->whereIn('user_id', $additionalMemberIds)
+                        ->whereNull('cancelled_at')
+                        ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                        ->pluck('position', 'user_id')
+                        ->all();
+                }
+                $capacity = !empty($additionalMemberIds) ? $service->getPositionCapacity($team->fresh()) : [];
+                if (!empty($capacity)) {
+                    $want = [];
+                    foreach ($additionalMemberIds as $memberId) {
+                        $p = $regPositions[$memberId] ?? null;
+                        if ($p !== null && array_key_exists($p, $capacity)) {
+                            $want[$p] = ($want[$p] ?? 0) + 1;
+                        }
+                    }
+                    $over = [];
+                    foreach ($capacity as $code => $info) {
+                        $total = (int) $info['current'] + (int) ($want[$code] ?? 0);
+                        if ($total > (int) $info['max']) {
+                            $over[] = "{$info['label']} — {$total} из {$info['max']}";
+                        }
+                    }
+                    if (!empty($over)) {
+                        $scheme = collect($capacity)->map(fn ($i) => "{$i['label']} {$i['max']}")->implode(', ');
+                        throw new DomainException(
+                            'Состав не соответствует схеме (' . $scheme . '): ' . implode('; ', $over)
+                            . '. Снимите отметку с лишних игроков — их можно поставить в другую команду.'
+                        );
+                    }
+                }
+
                 foreach ($additionalMemberIds as $memberId) {
+                    $p = $regPositions[$memberId] ?? null;
                     $service->addMemberByOrganizer(
                         team: $team,
                         player: \App\Models\User::findOrFail($memberId),
                         organizer: $request->user(),
-                        teamRole: 'player',
+                        teamRole: $p === 'reserve' ? 'reserve' : 'player',
+                        positionCode: ($p !== null && array_key_exists($p, $capacity)) ? $p : null,
                     );
                 }
 
