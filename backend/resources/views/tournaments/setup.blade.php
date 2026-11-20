@@ -6,7 +6,11 @@
     // (турнир проходит в конкретном городе), а не по городу каждого игрока —
     // иначе в одном ростере была бы смесь терминологий.
     $levelScope = level_terminology_scope_for_event($event);
+    // SVG-иконки для текстов, которые собирает JS (бейдж «бот», «Главное» у фото)
+    $tsuIcoStar  = \Illuminate\Support\Facades\Blade::render('<x-ico name="star" size="1em" />');
+    $tsuIcoRobot = \Illuminate\Support\Facades\Blade::render('<x-ico name="robot" size="1em" />');
 	@endphp
+	<script>var tsuIcoRobot = @json($tsuIcoRobot);</script>
 	<x-slot name="title">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
 	
     <x-slot name="h1">{{ __('tournaments.setup_title_with', ['title' => $event->title]) }}</x-slot>
@@ -316,7 +320,7 @@ $tourNumber = $seasonData
 				</div>
 				@endif
 				<div class="mt-1">
-					<a href="{{ route('broadcast.setup', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small">📡 {{ __('stream.btn_setup') }} <x-beta-badge /></a>
+					<a href="{{ route('broadcast.setup', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small"><x-ico name="broadcast" /> {{ __('stream.btn_setup') }} <x-beta-badge /></a>
 					@unless(\App\Services\Broadcast\StreamChecklist::hasMatches($event, $selectedOccurrence?->id))<div class="f-13" style="opacity:.7;margin-top:.3rem">{{ __('stream.cl_create_match_first') }}</div>@endunless
 				</div>
 			</div>
@@ -387,12 +391,12 @@ $tourNumber = $seasonData
 						@if(!$isIncomplete || $canApproveIncomplete)
 						<form method="POST" action="{{ route('tournament.application.approve', [$event, $app]) }}">
 							@csrf
-							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="{{ __('tournaments.apps_confirm_approve') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_apps_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_approve') }}</button>
+							<button type="submit" class="btn btn-small btn-primary btn-alert" data-title="{{ __('tournaments.apps_confirm_approve') }}" data-icon="question" data-confirm-text="{{ __('tournaments.setup_apps_yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}"><x-ico name="check" /> {{ __('tournaments.setup_apps_btn_approve') }}</button>
 						</form>
 						@endif
 						<form method="POST" action="{{ route('tournament.application.reject', [$event, $app]) }}">
 							@csrf
-							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="{{ __('tournaments.apps_confirm_reject') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_apps_no') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_apps_btn_reject') }}</button>
+							<button type="submit" class="btn btn-small btn-secondary btn-alert" data-title="{{ __('tournaments.apps_confirm_reject') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.setup_apps_no') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}"><x-ico name="x" /> {{ __('tournaments.setup_apps_btn_reject') }}</button>
 						</form>
 					</div>
 				</div>
@@ -402,7 +406,7 @@ $tourNumber = $seasonData
 		@elseif(($applicationMode ?? 'manual') === 'auto')
 		<div class="ramka">
 			<div class="alert alert-success">
-				{!! __('tournaments.setup_apps_auto_mode') !!}
+				<x-ico name="check" /> {!! __('tournaments.setup_apps_auto_mode') !!}
 			</div>
 		</div>
 		@endif
@@ -582,20 +586,20 @@ $tourNumber = $seasonData
 									@if($existingSub)
 									<div class="f-12 mt-025 d-flex gap-1 align-items-center flex-wrap">
 										@if($existingSub->status === 'confirmed')
-										<span class="alert-success p-1 pt-025 pb-025">✓ {{ __('tournaments.substitution_confirmed') }}:</span>
+										<span class="alert-success p-1 pt-025 pb-025"><x-ico name="check" /> {{ __('tournaments.substitution_confirmed') }}:</span>
 										@else
-										<span class="alert-warning p-1 pt-025 pb-025">⏳ {{ __('tournaments.awaiting_confirmation') }}:</span>
+										<span class="alert-warning p-1 pt-025 pb-025"><x-ico name="clock" /> {{ __('tournaments.awaiting_confirmation') }}:</span>
 										@endif
 										<span>{{ $existingSub->substitutePlayer->last_name }} {{ $existingSub->substitutePlayer->first_name }}</span>
 										<span style="opacity:.5">{{ __('tournaments.sub_instead_of', ['name' => $existingSub->originalPlayer->last_name.' '.$existingSub->originalPlayer->first_name]) }}</span>
 										@if(!$_tourStarted)
 										@if($existingSub->status === 'pending')
 										<form method="POST" action="{{ route('substitutions.confirm', $existingSub) }}" style="display:inline">@csrf
-											<button type="submit" class="btn btn-small" style="padding:1px 6px;font-size:11px">✓</button>
+											<button type="submit" class="btn btn-small" style="padding:1px 6px;font-size:11px" title="OK"><x-ico name="check" /></button>
 										</form>
 										@endif
 										<form method="POST" action="{{ route('substitutions.cancel', $existingSub) }}" style="display:inline">@csrf
-											<button type="submit" class="btn btn-small btn-secondary" style="padding:1px 6px;font-size:11px">✕</button>
+											<button type="submit" class="btn btn-small btn-secondary" style="padding:1px 6px;font-size:11px"><x-ico name="x" /></button>
 										</form>
 										@endif
 									</div>
@@ -631,7 +635,7 @@ $tourNumber = $seasonData
 								<td class="text-center" style="white-space:nowrap">
 									<form method="POST" action="{{ route('divisions.teams.toReserve', $lt) }}" style="display:inline">
 										@csrf
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_to_reserve') }}</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_to_reserve_title') }}" data-icon="warning" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}"><x-ico name="dot-red" /> {{ __('tournaments.setup_btn_to_reserve') }}</button>
 									</form>
 									<form method="POST" action="{{ route('divisions.teams.destroy', $lt) }}" style="display:inline">
 										@csrf
@@ -647,7 +651,7 @@ $tourNumber = $seasonData
 
 				{{-- ===== ЛИСТ ОЖИДАНИЯ ===== --}}
 				@if($_reserveTeams->count())
-				<h3 class="mt-2 mb-05">⏳ {{ __('tournaments.setup_series_waitlist_h2') }} ({{ $_reserveTeams->count() }})</h3>
+				<h3 class="mt-2 mb-05"><x-ico name="clock" /> {{ __('tournaments.setup_series_waitlist_h2') }} ({{ $_reserveTeams->count() }})</h3>
 				<div class="table-scrollable">
 					<div class="table-drag-indicator"></div>
 					<table class="table">
@@ -703,7 +707,7 @@ $tourNumber = $seasonData
 									<form method="POST" action="{{ route('divisions.teams.activate', $lt) }}" style="display:inline">
 										@csrf
 										<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence?->id }}">
-										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_activate_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">{{ __('tournaments.setup_btn_activate') }}</button>
+										<button type="submit" class="btn btn-secondary btn-alert btn-small" data-title="{{ __('tournaments.setup_activate_title') }}" data-icon="info" data-confirm-text="{{ __('tournaments.yes') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}"><x-ico name="dot-green" /> {{ __('tournaments.setup_btn_activate') }}</button>
 									</form>
 									@if($lt->status === 'reserve')
 									<form method="POST" action="{{ route('divisions.teams.moveReserve', $lt) }}" style="display:inline">
@@ -746,7 +750,7 @@ $tourNumber = $seasonData
 					$_addLeagueActive  = $leagueTeams->where('status', 'active')->count();
 					$_addLeagueFull    = $_addLeagueMax && $_addLeagueActive >= $_addLeagueMax;
 					@endphp
-				<summary class="btn btn-secondary">➕ Добавить в состав / резерв</summary>
+				<summary class="btn btn-secondary"><x-ico name="plus" /> Добавить в состав / резерв</summary>
 					<form method="POST" action="{{ route('divisions.createAndAdd', $seasonData['league']) }}" class="mt-2 form">
 						@csrf
 						@if($selectedOccurrence)
@@ -810,11 +814,11 @@ $tourNumber = $seasonData
 									</select>
 									@if($_addLeagueFull)
 									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding-top:6px;padding-bottom:6px;margin:6px 0 0;line-height:1.4">
-										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax }}). Добавление переведёт в резерв или вернёт ошибку.
+										<x-ico name="warn" /> Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax }}). Добавление переведёт в резерв или вернёт ошибку.
 									</div>
 									@else
 									<div class="alert alert-warning mt-1" id="league-cap-warning" style="font-size:13px;padding-top:6px;padding-bottom:6px;margin:6px 0 0;line-height:1.4;display:none">
-										⚠ Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax ?? '∞' }}). Добавление переведёт в резерв или вернёт ошибку.
+										<x-ico name="warn" /> Основной состав заполнен ({{ $_addLeagueActive }}/{{ $_addLeagueMax ?? '∞' }}). Добавление переведёт в резерв или вернёт ошибку.
 									</div>
 									@endif
 								</div>
@@ -859,7 +863,7 @@ $tourNumber = $seasonData
 		@if($leagueForSubs && $selectedOccurrence && !$_tourStarted)
 		<div id="subModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
 			<div class="card p-3" style="max-width:480px;width:95%;max-height:90vh;overflow-y:auto;position:relative">
-				<button onclick="closeSubModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer">✕</button>
+				<button onclick="closeSubModal()" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:18px;cursor:pointer" aria-label="close"><x-ico name="x" size="1.3em" /></button>
 				<h3 class="-mt-05 mb-2" id="subModalTitle">{{ __('tournaments.find_substitute') }}</h3>
 
 				{{-- Шаг 1: выбор кого заменяем --}}
@@ -1064,7 +1068,7 @@ $tourNumber = $seasonData
 							<div style="display:flex;gap:4px;align-items:center">
 								<form method="POST" action="{{ route('tournamentTeams.sendToWaitlist', [$event, $team]) }}" class="mt-1">
 									@csrf
-									<button type="submit" class="btn btn-secondary btn-small btn-alert" data-title="Переместить «{{ $team->name }}» в резерв?" data-icon="warning" data-confirm-text="В резерв" data-cancel-text="{{ __('tournaments.btn_cancel') }}" title="В резерв">⏳</button>
+									<button type="submit" class="btn btn-secondary btn-small btn-alert" data-title="Переместить «{{ $team->name }}» в резерв?" data-icon="warning" data-confirm-text="В резерв" data-cancel-text="{{ __('tournaments.btn_cancel') }}" title="В резерв"><x-ico name="clock" /></button>
 								</form>
 								<form method="POST" action="{{ route('tournamentTeams.destroy', [$event, $team]) }}" class="mt-1">
 									@csrf @method('DELETE')
@@ -1081,7 +1085,7 @@ $tourNumber = $seasonData
 
 			@if(($eventReserveTeams ?? collect())->isNotEmpty())
 			@php $reserveHasFreeSlot = !app(\App\Services\TournamentTeamService::class)->eventTournamentIsFull($event, (int) ($selectedOccurrence->id ?? 0)); @endphp
-			<h3 class="mt-2 mb-05">⏳ Резерв ({{ $eventReserveTeams->count() }})</h3>
+			<h3 class="mt-2 mb-05"><x-ico name="clock" /> Резерв ({{ $eventReserveTeams->count() }})</h3>
 			<div class="row">
 				@foreach($eventReserveTeams as $team)
 				<div class="col-md-6 col-xl-3">
@@ -1116,7 +1120,7 @@ $tourNumber = $seasonData
 			@endif
 
 			@if($incompleteTeams->isNotEmpty())
-			<h3 class="mt-2 mb-05">⏳ Ищут партнёра ({{ $incompleteTeams->count() }})</h3>
+			<h3 class="mt-2 mb-05"><x-ico name="clock" /> Ищут партнёра ({{ $incompleteTeams->count() }})</h3>
 			<div class="row">
 				@foreach($incompleteTeams as $team)
 				<div class="col-md-6 col-xl-3">
@@ -1187,8 +1191,7 @@ $tourNumber = $seasonData
 					$pLevel = ($event->direction === 'beach' ? $p->beach_level : $p->classic_level);
 					$pLevel = !is_null($pLevel) && $pLevel !== '' ? (int) $pLevel : null;
 					$pGenderColor = $p->gender === 'f' ? '#e5395e' : '#2967BA';
-					$pGenderSign = $p->gender === 'f' ? '♀' : '♂';
-				@endphp
+									@endphp
 				<div class="col-md-6 col-xl-3">
 					<div class="card" style="opacity:.9">
 						<div style="display:flex;align-items:center;gap:10px">
@@ -1196,7 +1199,7 @@ $tourNumber = $seasonData
 							<div style="min-width:0">
 								<div class="b-600" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }}</div>
 								<div class="f-13" style="opacity:.85">
-									<span style="color:{{ $pGenderColor }};font-weight:700">{{ $pGenderSign }}</span> ·
+									<span style="color:{{ $pGenderColor }};font-weight:700"><x-ico :name="$p->gender === 'f' ? 'female' : 'male'" size="1em" /></span> ·
 									{{ __('tournaments.setup_unassigned_level') }}:
 									@if($pLevel)
 									<span class="levelmark levelmark--event level-{{ $pLevel }}">{{ level_name_short($pLevel, $levelScope) }}</span>
@@ -1222,7 +1225,7 @@ $tourNumber = $seasonData
 				@if($selectedOccurrence)
 				<div class="mt-1">
 					<details>
-						<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_add_player') }}</summary>
+						<summary class="btn btn-secondary"><x-ico name="plus" /> {{ __('tournaments.setup_btn_add_player') }}</summary>
 						<form method="POST" action="{{ route('events.registrations.add', $event) }}" class="mt-2 form" id="add-player-form">
 							@csrf
 							<input type="hidden" name="occurrence_id" value="{{ $selectedOccurrence->id }}">
@@ -1251,7 +1254,7 @@ $tourNumber = $seasonData
 								</div>
 								@endif
 								<div class="col-md-12 text-center">
-									<button type="submit" class="btn">{{ __('tournaments.setup_btn_add_player') }}</button>
+									<button type="submit" class="btn"><x-ico name="plus" /> {{ __('tournaments.setup_btn_add_player') }}</button>
 								</div>
 							</div>
 						</form>
@@ -1273,10 +1276,18 @@ $tourNumber = $seasonData
 				@endif
 			@endif
 
+			{{-- Создать команду / Распределить случайно / Отменить распределение — в один ряд.
+			     Раскрытая форма создания уходит на всю ширину под кнопки. --}}
+			<style>
+			.tsu-team-actions{display:flex;flex-wrap:wrap;gap:1rem;align-items:flex-start}
+			.tsu-team-actions>.mt-1{margin-top:1rem}
+			.tsu-team-actions>.tsu-team-create:has(details[open]){order:9;flex-basis:100%}
+			</style>
+			<div class="tsu-team-actions">
 			{{-- Создать команду организатором --}}
-			<div class="mt-1">
+			<div class="mt-1 tsu-team-create">
 				<details>
-					<summary class="btn btn-secondary">{{ __('tournaments.setup_btn_create_team') }}</summary>
+					<summary class="btn btn-secondary"><x-ico name="plus" /> {{ __('tournaments.setup_btn_create_team') }}</summary>
                     <form method="POST" action="{{ route('tournamentTeams.store', $event) }}" class="mt-2 form">
                         @csrf
 						<input type="hidden" name="from_setup" value="1">
@@ -1326,7 +1337,7 @@ $tourNumber = $seasonData
 											<label class="checkbox-item" data-user-id="{{ $p->id }}" style="display:flex;align-items:center;gap:6px;margin:0">
 												<input type="checkbox" name="member_user_ids[]" value="{{ $p->id }}">
 												<div class="custom-checkbox"></div>
-												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} ({{ $p->gender === 'f' ? '♀' : '♂' }})@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</span>
+												<span>{{ trim(($p->last_name ?? '') . ' ' . ($p->first_name ?? '')) ?: ($p->name ?? '?') }} <x-ico :name="$p->gender === 'f' ? 'female' : 'male'" size="1em" />@if($p->reg_position) — {{ __('events.positions.' . $p->reg_position) }}@endif</span>
 											</label>
 											@endforeach
 										</div>
@@ -1341,6 +1352,148 @@ $tourNumber = $seasonData
 					</form>
 				</details>
 			</div>
+			@if($isIndividualTournament)
+			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
+			@php
+				$remainingTeamsCount = max(0, ($event->tournament_teams_count ?? 0) - ($completeTeams->count() + $incompleteTeams->count()));
+				$distributeConfirmText = __('events.tournament_distribute_confirm', [
+					'n' => $remainingTeamsCount,
+					'p' => $unassignedPlayers->count(),
+				]);
+			@endphp
+			<div class="mt-1">
+				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"
+					data-event-id="{{ $event->id }}"
+					data-occurrence-id="{{ $selectedOccurrence?->id }}">
+					<x-ico name="dice" /> {{ __('events.tournament_distribute_random_btn') }}
+				</button>
+			</div>
+			<script>
+			(function() {
+				var btn = document.getElementById('distribute-teams-btn');
+				if (!btn) return;
+				var defaultText = btn.textContent.trim();
+				btn.addEventListener('click', function() {
+					var eventId = btn.dataset.eventId;
+					var occurrenceId = btn.dataset.occurrenceId;
+
+					swal({
+						title: @json(__('events.tournament_distribute_random_btn')),
+						text: @json($distributeConfirmText),
+						icon: 'warning',
+						buttons: {
+							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
+							confirm: { text: @json(__('events.tournament_distribute_btn')), value: true, visible: true, closeModal: true },
+						},
+						dangerMode: true,
+					}).then(function(confirmed) {
+						if (!confirmed) return;
+
+						btn.disabled = true;
+						btn.textContent = '...';
+						fetch('/events/' + eventId + '/distribute-individual', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							},
+							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
+							credentials: 'same-origin',
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.ok) {
+								location.reload();
+							} else {
+								swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
+								btn.disabled = false;
+								btn.textContent = defaultText;
+							}
+						})
+						.catch(function() {
+							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
+							btn.disabled = false;
+							btn.textContent = defaultText;
+						});
+					});
+				});
+			})();
+			</script>
+			@endif
+
+			@if($isIndividualTournament && ($completeTeams->count() + $incompleteTeams->count()) > 0)
+			{{-- Отменить распределение: разбирает ВСЕ команды тура (и случайные, и
+			     созданные вручную), возвращая всех игроков в пул нераспределённых.
+			     Регистрации на мероприятие не трогает — см. disbandAllTeams(). Только
+			     для индивидуальной записи — у остальных типов турниров нет пула
+			     "нераспределённых", команды там формируются по-другому. --}}
+			@php
+				$disbandConfirmText = __('events.tournament_disband_confirm', [
+					'n' => $completeTeams->count() + $incompleteTeams->count(),
+				]);
+			@endphp
+			<div class="mt-1">
+				<button type="button" id="disband-teams-btn" class="btn btn-secondary btn-alert"
+					data-event-id="{{ $event->id }}"
+					data-occurrence-id="{{ $selectedOccurrence?->id }}">
+					<x-ico name="disband" /> {{ __('events.tournament_disband_btn') }}
+				</button>
+			</div>
+			<script>
+			(function() {
+				var btn = document.getElementById('disband-teams-btn');
+				if (!btn) return;
+				var defaultText = btn.textContent.trim();
+				btn.addEventListener('click', function() {
+					var eventId = btn.dataset.eventId;
+					var occurrenceId = btn.dataset.occurrenceId;
+
+					swal({
+						title: @json(__('events.tournament_disband_btn')),
+						text: @json($disbandConfirmText),
+						icon: 'warning',
+						buttons: {
+							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
+							confirm: { text: @json(__('events.tournament_disband_btn')), value: true, visible: true, closeModal: true },
+						},
+						dangerMode: true,
+					}).then(function(confirmed) {
+						if (!confirmed) return;
+
+						btn.disabled = true;
+						btn.textContent = '...';
+						fetch('/events/' + eventId + '/disband-all-teams', {
+							method: 'POST',
+							headers: {
+								'Content-Type': 'application/json',
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							},
+							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
+							credentials: 'same-origin',
+						})
+						.then(function(r) { return r.json(); })
+						.then(function(data) {
+							if (data.ok) {
+								location.reload();
+							} else {
+								swal({ title: 'Ошибка', text: data.message || 'Не удалось разобрать команды.', icon: 'error', button: 'Понятно' });
+								btn.disabled = false;
+								btn.textContent = defaultText;
+							}
+						})
+						.catch(function() {
+							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
+							btn.disabled = false;
+							btn.textContent = defaultText;
+						});
+					});
+				});
+			})();
+			</script>
+			@endif
+			</div>
 
 			@if($isIndividualTournament && $unassignedPlayers->isNotEmpty())
 			<script>
@@ -1349,8 +1502,8 @@ $tourNumber = $seasonData
 					positionLabel — только для отображения в дропдауне; positionCode —
 					только известные амплуа классики (не reserve/player — они не валидны
 					как captain_position_code на сервере). Массив собирается заранее в
-					@php (см. CLAUDE.md, раздел про @json(__(...))) — сложное
-					многострочное выражение ПРЯМО внутри @json(...) ломает извлечение
+					php-блоке (см. CLAUDE.md, раздел про json и __()) — сложное
+					многострочное выражение ПРЯМО внутри директивы json ломает извлечение
 					аргумента директивы Blade (регэксп с рекурсивным подсчётом скобок не
 					вытягивает такую вложенность и обрезает выражение раньше времени).
 				--}}
@@ -1439,147 +1592,6 @@ $tourNumber = $seasonData
 			</script>
 			@endif
 
-			@if($isIndividualTournament)
-			{{-- Случайное распределение игроков по командам (только индивидуальная запись) --}}
-			@php
-				$remainingTeamsCount = max(0, ($event->tournament_teams_count ?? 0) - ($completeTeams->count() + $incompleteTeams->count()));
-				$distributeConfirmText = __('events.tournament_distribute_confirm', [
-					'n' => $remainingTeamsCount,
-					'p' => $unassignedPlayers->count(),
-				]);
-			@endphp
-			<div class="mt-1">
-				<button type="button" id="distribute-teams-btn" class="btn btn-secondary"
-					data-event-id="{{ $event->id }}"
-					data-occurrence-id="{{ $selectedOccurrence?->id }}">
-					{{ __('events.tournament_distribute_random_btn') }}
-				</button>
-			</div>
-			<script>
-			(function() {
-				var btn = document.getElementById('distribute-teams-btn');
-				if (!btn) return;
-				var defaultText = btn.textContent.trim();
-				btn.addEventListener('click', function() {
-					var eventId = btn.dataset.eventId;
-					var occurrenceId = btn.dataset.occurrenceId;
-
-					swal({
-						title: @json(__('events.tournament_distribute_random_btn')),
-						text: @json($distributeConfirmText),
-						icon: 'warning',
-						buttons: {
-							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
-							confirm: { text: @json(__('events.tournament_distribute_btn')), value: true, visible: true, closeModal: true },
-						},
-						dangerMode: true,
-					}).then(function(confirmed) {
-						if (!confirmed) return;
-
-						btn.disabled = true;
-						btn.textContent = '...';
-						fetch('/events/' + eventId + '/distribute-individual', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-								'Accept': 'application/json',
-							},
-							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
-							credentials: 'same-origin',
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) {
-							if (data.ok) {
-								location.reload();
-							} else {
-								swal({ title: 'Ошибка', text: data.message || 'Не удалось распределить игроков.', icon: 'error', button: 'Понятно' });
-								btn.disabled = false;
-								btn.textContent = defaultText;
-							}
-						})
-						.catch(function() {
-							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
-							btn.disabled = false;
-							btn.textContent = defaultText;
-						});
-					});
-				});
-			})();
-			</script>
-			@endif
-
-			@if($isIndividualTournament && ($completeTeams->count() + $incompleteTeams->count()) > 0)
-			{{-- Отменить распределение: разбирает ВСЕ команды тура (и случайные, и
-			     созданные вручную), возвращая всех игроков в пул нераспределённых.
-			     Регистрации на мероприятие не трогает — см. disbandAllTeams(). Только
-			     для индивидуальной записи — у остальных типов турниров нет пула
-			     "нераспределённых", команды там формируются по-другому. --}}
-			@php
-				$disbandConfirmText = __('events.tournament_disband_confirm', [
-					'n' => $completeTeams->count() + $incompleteTeams->count(),
-				]);
-			@endphp
-			<div class="mt-1">
-				<button type="button" id="disband-teams-btn" class="btn btn-secondary btn-alert"
-					data-event-id="{{ $event->id }}"
-					data-occurrence-id="{{ $selectedOccurrence?->id }}">
-					{{ __('events.tournament_disband_btn') }}
-				</button>
-			</div>
-			<script>
-			(function() {
-				var btn = document.getElementById('disband-teams-btn');
-				if (!btn) return;
-				var defaultText = btn.textContent.trim();
-				btn.addEventListener('click', function() {
-					var eventId = btn.dataset.eventId;
-					var occurrenceId = btn.dataset.occurrenceId;
-
-					swal({
-						title: @json(__('events.tournament_disband_btn')),
-						text: @json($disbandConfirmText),
-						icon: 'warning',
-						buttons: {
-							cancel: { text: @json(__('tournaments.btn_cancel')), value: null, visible: true, closeModal: true },
-							confirm: { text: @json(__('events.tournament_disband_btn')), value: true, visible: true, closeModal: true },
-						},
-						dangerMode: true,
-					}).then(function(confirmed) {
-						if (!confirmed) return;
-
-						btn.disabled = true;
-						btn.textContent = '...';
-						fetch('/events/' + eventId + '/disband-all-teams', {
-							method: 'POST',
-							headers: {
-								'Content-Type': 'application/json',
-								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-								'Accept': 'application/json',
-							},
-							body: JSON.stringify({ occurrence_id: occurrenceId ? parseInt(occurrenceId) : null }),
-							credentials: 'same-origin',
-						})
-						.then(function(r) { return r.json(); })
-						.then(function(data) {
-							if (data.ok) {
-								location.reload();
-							} else {
-								swal({ title: 'Ошибка', text: data.message || 'Не удалось разобрать команды.', icon: 'error', button: 'Понятно' });
-								btn.disabled = false;
-								btn.textContent = defaultText;
-							}
-						})
-						.catch(function() {
-							swal({ title: 'Ошибка', text: 'Ошибка соединения.', icon: 'error', button: 'Понятно' });
-							btn.disabled = false;
-							btn.textContent = defaultText;
-						});
-					});
-				});
-			})();
-			</script>
-			@endif
 
 			</div>{{-- /teams-body --}}
 		</div>
@@ -1656,12 +1668,12 @@ $tourNumber = $seasonData
 			     форму для добавления ЕЩЁ ОДНОЙ отдельной стадии. --}}
 			<span class="stage-toggle-subdued" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage_subdued') }}</span>
 			@else
-			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'">{{ __('tournaments.setup_btn_add_stage') }}
+			<div class="btn btn-secondary" style="cursor:pointer" onclick="var b=this.nextElementSibling;b.style.display=b.style.display==='none'?'':'none';var ic=this.querySelector('.toggle-icon');if(ic)ic.textContent=b.style.display==='none'?'+':'-'"><x-ico name="plus" /> {{ __('tournaments.setup_btn_add_stage') }}
 			</div>
 			@endif
 			<div style="{{ $hasStages ? 'display:none' : '' }}">
 				@if($hasStages && $lastStageHasMatches)
-				<div class="stage-form-warning">⚠️ {{ __('tournaments.setup_new_stage_warning') }}</div>
+				<div class="stage-form-warning"><x-ico name="warn" /> {{ __('tournaments.setup_new_stage_warning') }}</div>
 				@endif
 				<form class="mt-2 form" method="POST" action="{{ route('tournament.stages.store', $event) }}">
 					@csrf
@@ -1827,7 +1839,7 @@ $tourNumber = $seasonData
 						<div class="card">
 							<p class="f-16">{{ __('tournaments.setup_stage_koc_hint') }}</p>
 							<p class="f-16">{{ __('tournaments.koc_form_courts_alt_hint') }}</p>
-							<a href="{{ route('tournament.kingOfCourt.formCourtsForm', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small" style="display:inline-block">🏆 {{ __('tournaments.koc_btn_form_courts') }}</a>
+							<a href="{{ route('tournament.kingOfCourt.formCourtsForm', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-secondary btn-small" style="display:inline-block"><x-ico name="trophy" /> {{ __('tournaments.koc_btn_form_courts') }}</a>
 						</div>
 					</div>
 					{{-- Swiss: специфичные настройки --}}
@@ -2264,7 +2276,7 @@ $tourNumber = $seasonData
 			@php $currentMvp = \App\Models\User::find($event->tournament_mvp_user_id); @endphp
 			<div class="card" style="text-align:center;background:rgba(231,97,47,.06);border:1px solid rgba(231,97,47,.2)">
 				<div class="f-13 b-600 mb-1">{{ __('tournaments.setup_mvp_current') }}</div>
-				<div class="f-20 b-800">⭐
+				<div class="f-20 b-800"><x-ico name="star" />
 					<a href="{{ route('users.show', $currentMvp) }}" class="blink">
 						{{ trim(($currentMvp->last_name ?? '') . ' ' . ($currentMvp->first_name ?? '')) ?: $currentMvp->name ?? '?' }}
 					</a>
@@ -2600,7 +2612,7 @@ $tourNumber = $seasonData
 							<div class="b-600 mb-1">{{ implode(' = ', $labels) }}</div>
 							
 							@if($tset->method === 'match')
-							<p>{{ __('tournaments.setup_tb_match_created') }}</p>
+							<p><x-ico name="ball" /> {{ __('tournaments.setup_tb_match_created') }}</p>
 							@php $ms = $tset->match_settings ?? []; @endphp
 							<p>{{ __('tournaments.setup_tb_rules', ['pts' => $ms['points_to_win'] ?? '?', 'margin' => !empty($ms['two_point_margin']) ? __('tournaments.setup_tb_two_point_margin') : '']) }}</p>
 							@else
@@ -2613,20 +2625,20 @@ $tourNumber = $seasonData
 									<button type="submit" class="btn btn-secondary btn-alert"
 									data-title="{{ __('tournaments.setup_tb_full_diff_title') }}" data-icon="info"
 									data-confirm-text="{{ __('tournaments.setup_tb_btn_apply') }}" data-cancel-text="{{ __('tournaments.btn_cancel') }}">
-										{{ __('tournaments.setup_tb_btn_full_diff') }}
+										<x-ico name="trend" /> {{ __('tournaments.setup_tb_btn_full_diff') }}
 									</button>
 								</form>
 								
 								{{-- Вариант 2: сыграть мини-матчи --}}
 								<button type="button" class="btn btn-secondary"
 								onclick="document.getElementById('tbset-match-{{ $tset->id }}').style.display='block';this.style.display='none'">
-									{{ __('tournaments.setup_tb_btn_match') }}
+									<x-ico name="ball" /> {{ __('tournaments.setup_tb_btn_match') }}
 								</button>
 								
 								{{-- Вариант 3: жребий --}}
 								<button type="button" class="btn btn-secondary"
 								onclick="document.getElementById('tbset-lot-{{ $tset->id }}').style.display='block';this.style.display='none'">
-									{{ __('tournaments.setup_tb_btn_lottery') }}
+									<x-ico name="dice" /> {{ __('tournaments.setup_tb_btn_lottery') }}
 								</button>
 							</div>
 							
@@ -2745,8 +2757,8 @@ $tourNumber = $seasonData
 
 						@if($hasCrosstable)
 						<div class="d-flex fvc mb-2" style="gap:6px">
-							<button class="btn btn-small btn-secondary ct-view-btn ct-view-btn--active" data-group="{{ $groupId }}" data-view="list" style="font-size:12px">📋 {{ __('tournaments.view_list') }}</button>
-							<button class="btn btn-small btn-secondary ct-view-btn" data-group="{{ $groupId }}" data-view="crosstable" style="font-size:12px">📊 {{ __('tournaments.view_crosstable') }}</button>
+							<button class="btn btn-small btn-secondary ct-view-btn ct-view-btn--active" data-group="{{ $groupId }}" data-view="list" style="font-size:12px"><x-ico name="clipboard" /> {{ __('tournaments.view_list') }}</button>
+							<button class="btn btn-small btn-secondary ct-view-btn" data-group="{{ $groupId }}" data-view="crosstable" style="font-size:12px"><x-ico name="chart" /> {{ __('tournaments.view_crosstable') }}</button>
 						</div>
 						@endif
 
@@ -2804,7 +2816,7 @@ $tourNumber = $seasonData
 											<td style="text-align:center">
 												<div class="text-center d-flex gap-1">
 													@if($match->isCompleted())
-													<span class="b-600 alert-success pt-05 pb-05 p-1">✓</span>
+													<span class="b-600 alert-success pt-05 pb-05 p-1"><x-ico name="check" /></span>
 													@if(!$stageHasDivDistribution)
 													<a href="{{ route('tournament.matches.score.form', $match) }}?edit=1" class="btn icon-edit btn-svg btn-secondary" title="{{ __('tournaments.setup_match_fix_title') }}"></a>
 													@endif
@@ -2826,10 +2838,10 @@ $tourNumber = $seasonData
 												@endif
 												@if($match->isCompleted())
 												<a href="{{ route('tournament.matches.player_stats.form', $match) }}" class="btn btn-secondary btn-small" title="{{ __('tournaments.setup_match_player_stats_title') }}">
-													📊
+													<x-ico name="chart" />
 												</a>
 												<a href="{{ route('tournament.matches.pdf_stats', $match) }}" data-file-download class="btn btn-secondary btn-small" title="{{ __('tournaments.rally_btn_pdf_stats') }}">
-													📊 PDF
+													<x-ico name="file-text" /> PDF
 												</a>
 												@endif
 											</td>
@@ -3253,7 +3265,7 @@ $tourNumber = $seasonData
 			&& $finalsMode !== 'divisions' && !$hasDivStages && $finalsTargetStages->isEmpty()
 			&& $stage->groups->count() >= 2)
 		<div class="p-3 mt-2 alert-warning" style="border-radius:10px">
-			<div class="b-700 mb-1">{{ __('tournaments.setup_no_finals_stage_h4') }}</div>
+			<div class="b-700 mb-1"><x-ico name="warn" /> {{ __('tournaments.setup_no_finals_stage_h4') }}</div>
 			<p class="f-13" style="margin-bottom:10px">{{ __('tournaments.setup_no_finals_stage_hint') }}</p>
 			<form method="POST" action="{{ route('tournament.stages.quickCreateFinals', $stage) }}">
 				@csrf
@@ -3274,7 +3286,7 @@ $tourNumber = $seasonData
 		@endphp
 		@if($allDivsCompleted)
 		<div class="ramka">
-			<h3 style="margin:0 0 8px">{{ __('tournaments.setup_groups_completed_h3') }}</h3>
+			<h3 style="margin:0 0 8px"><x-ico name="check" /> {{ __('tournaments.setup_groups_completed_h3') }}</h3>
 			<p class="f-14" style="color:#6b7280;margin-bottom:12px">
 				{{ __('tournaments.setup_groups_completed_text', ['medium' => $hasMedium ? __('tournaments.setup_groups_with_medium') : '']) }}
 			</p>
@@ -3289,7 +3301,7 @@ $tourNumber = $seasonData
 		@if($divStages->isNotEmpty())
 		<div class="ramka" style="text-align:center">
 			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-				{{ __('tournaments.setup_btn_round_results') }}
+				<x-ico name="chart" /> {{ __('tournaments.setup_btn_round_results') }}
 			</a>
 		</div>
 		@endif
@@ -3304,7 +3316,7 @@ $tourNumber = $seasonData
 		@if(!$event->season_id && $allCompleted)
 		<div class="ramka" style="text-align:center">
 			<a href="{{ route('tournament.public.show', $event) }}{{ $selectedOccurrence ? '?occurrence_id=' . $selectedOccurrence->id : '' }}" class="btn btn-primary p-3 f-16" style="display:inline-block">
-				{{ __('tournaments.setup_btn_tournament_results') }}
+				<x-ico name="chart" /> {{ __('tournaments.setup_btn_tournament_results') }}
 			</a>
 		</div>
 		@endif
@@ -3734,7 +3746,7 @@ $tourNumber = $seasonData
 							var label = u.label || u.name || '#' + u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
-							var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+							var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">' + tsuIcoRobot + ' бот</span>' : '';
 							div.innerHTML = '<div class="text-sm">' + esc(label) + botBadge + '</div>';
 							div.addEventListener('click', function() {
 								inp.value = label;
@@ -3798,7 +3810,7 @@ $tourNumber = $seasonData
 							var label = u.label || u.name || '#'+u.id;
 							var div = document.createElement('div');
 							div.className = 'trainer-item form-select-option';
-							var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">🤖 бот</span>' : '';
+							var botBadge = u.is_bot ? '<span style="display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;margin-left:.5rem">' + tsuIcoRobot + ' бот</span>' : '';
 							div.innerHTML = '<div class="text-sm">'+esc(label)+botBadge+'</div>';
 							div.addEventListener('click', function() {
 								inp.value = label; hidden.value = String(u.id); hideDd();
@@ -3870,6 +3882,7 @@ $tourNumber = $seasonData
 			var selectedPhotos = savedPhotos.slice();
 			var tPhotoSelectLabel = @json(__('tournaments.setup_photos_select'));
 			var tPhotoMainLabel   = @json(__('tournaments.setup_photo_main'));
+			var tPhotoMainIco     = @json($tsuIcoStar);
 			var tPhotoPosLabel    = @json(__('tournaments.setup_photo_pos_n', ['n' => '']));
 
 			function updateTournamentUI() {
@@ -3880,7 +3893,7 @@ $tourNumber = $seasonData
 					var badge = cb.closest('.swiper-slide').querySelector('.photo-order-badge');
 					if (isSelected) {
 						var order = selectedPhotos.indexOf(id) + 1;
-						badge.textContent = order === 1 ? tPhotoMainLabel : (tPhotoPosLabel + order);
+						if (order === 1) { badge.innerHTML = tPhotoMainIco + ' '; badge.appendChild(document.createTextNode(tPhotoMainLabel)); } else { badge.textContent = tPhotoPosLabel + order; }
 					} else {
 						badge.textContent = '';
 					}

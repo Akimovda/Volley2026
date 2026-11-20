@@ -153,6 +153,25 @@ class TournamentTeamController extends Controller
                 ? \App\Models\EventOccurrence::find((int) $data['occurrence_id'])
                 : null;
 
+            // Индивидуальная запись: амплуа капитана уже известно из его записи на тур.
+            // Форма шлёт его скрытым полем только при выборе капитана в автокомплите;
+            // если капитан — первый отмеченный чекбоксом игрок (или поле не заполнилось
+            // на клиенте), берём позицию из event_registrations, иначе createTeam()
+            // падает с «Для капитана … нужно указать амплуа».
+            if (empty($data['captain_position_code'])
+                && ($event->registration_mode ?? '') === 'tournament_individual'
+                && $occurrence
+            ) {
+                $regPosition = \App\Models\EventRegistration::where('occurrence_id', $occurrence->id)
+                    ->where('user_id', $captainUser->id)
+                    ->whereNull('cancelled_at')
+                    ->whereRaw('(is_cancelled IS NULL OR is_cancelled = false)')
+                    ->value('position');
+                if (in_array($regPosition, ['setter', 'outside', 'opposite', 'middle', 'libero', 'blocker', 'defender'], true)) {
+                    $data['captain_position_code'] = $regPosition;
+                }
+            }
+
             $isOrganizerOrAdmin = (int) $event->organizer_id === (int) $request->user()->id
                 || $request->user()->isAdmin();
 
