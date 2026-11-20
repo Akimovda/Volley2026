@@ -150,6 +150,20 @@ class OccurrenceLimitService
         return (int) ($occ->max_players ?? $this->event($occ)?->gameSettings?->max_players ?? 0);
     }
 
+    /**
+     * Гендерная квота mixed_limited для даты: floor(gender_limited_max / команд мероприятия × команд даты).
+     * Дата без своего числа команд — квота как есть.
+     */
+    public function genderLimitFor(EventOccurrence $occ, int $eventLimit): int
+    {
+        if (!$this->hasOwnTeams($occ)) {
+            return $eventLimit;
+        }
+        $base = $this->baseTeams($occ);
+
+        return $base > 0 ? intdiv($eventLimit * $this->teamsFor($occ), $base) : $eventLimit;
+    }
+
     /** Лимит запасных даты. Сейчас от даты не зависит (не масштабируется при расширении). */
     public function reserveMax(EventOccurrence $occ): int
     {
